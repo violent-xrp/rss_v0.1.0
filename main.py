@@ -1,0 +1,318 @@
+"""
+RSS v3 — CLI Entry Point
+Usage:
+  python main.py test              Run test suite
+  python main.py demo              Interactive governed AI chat
+  python main.py status            Show system status
+  python main.py add-term          Add a sealed term
+  python main.py add-synonym       Add a synonym for a sealed term
+  python main.py disallow          Mark a term as disallowed
+  python main.py add-entry         Add a hub entry
+  python main.py list-terms        List all sealed terms (+ synonyms + disallowed)
+  python main.py list-hub          List hub entries
+  python main.py export-trace      Export TRACE audit log to file
+"""
+import sys
+from config import RSSConfig, RSS_VERSION
+from runtime import bootstrap
+from meaning_law import Term
+from trace_export import export_trace_json, export_trace_text, export_from_db
+
+
+def run_tests(rss):
+    """Core acceptance tests."""
+    tests = [
+        ("quote",             True,  "SEALED term"),
+        ("Quote",             True,  "Case-insensitive sealed term"),
+        ("RFI",               True,  "SEALED construction term"),
+        ("change order",      True,  "SEALED multi-word term"),
+        ("estimate",          False, "Ambiguous — unknown phrase"),
+        ("delete everything", False, "Unknown phrase — passes through"),
+        ("foobar baz",        False, "Unknown phrase"),
+        ("submittal",         True,  "SEALED term"),
+        ("purchase order",    True,  "New v3 term"),
+        ("NCR",               True,  "New v3 term"),
+    ]
+
+    passed = 0
+    failed = 0
+    for text, should_pass, desc in tests:
+        result = rss.process_request(text, use_llm=False)
+        ok = "error" not in result
+        status = "PASS" if ok == should_pass else "FAIL"
+        error_info = result.get("error", result.get("meaning", "OK"))
+        classification = result.get("classification", "—")
+        print(f"  [{status}] '{text}' -> {error_info} (class={classification}) — {desc}")
+        if status == "PASS":
+            passed += 1
+        else:
+            failed += 1
+
+    print(f"\n  Results: {passed} passed, {failed} failed")
+    return failed == 0
+
+
+def run_demo(rss):
+    """Interactive governed AI chat."""
+    # Load sample project data (persisted for future sessions)
+    if rss.hubs.hub_stats()["WORK"] == 0:
+        print("  Loading sample project data...")
+        rss.save_hub_entry("WORK", "Morrison Electrical panel upgrade quote: $245,000. Includes main switchgear replacement and 200A service panel.")
+        rss.save_hub_entry("WORK", "Johnson HVAC RFI-042: Duct routing conflict in structural bay 4. Pending engineer response.")
+        rss.save_hub_entry("WORK", "Daily log Feb 27: Concrete pour Building C complete. 12 workers on site.")
+        rss.save_hub_entry("WORK", "Submittal SUB-018: Fire alarm panel specs sent to architect. Awaiting approval.")
+        rss.save_hub_entry("PERSONAL", "Salary negotiation notes: asking for 15 percent raise next quarter", redline=True)
+    else:
+        print(f"  Project data already loaded: {rss.hubs.hub_stats()['WORK']} WORK entries")
+
+    print(f"  LLM: {'connected' if rss.llm.is_available() else 'fallback mode'}")
+    print("  Type your question. 'quit' to exit.\n")
+
+    while True:
+        try:
+            text = input("You: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            break
+        if text.lower() in ("quit", "exit", "q"):
+            break
+        if not text:
+            continue
+        result = rss.process_request(text, use_llm=True)
+        if "error" in result:
+            print(f"RSS: I can't help with that right now.\n")
+        else:
+            response = result.get("llm_response", "No response available.")
+            print(f"RSS: {response}\n")
+
+
+def show_status(rss):
+    """Show system status."""
+    print(f"\n  Version:      {rss.config.version}")
+    print(f"  Sealed terms: {len(rss.meaning.list_sealed())}")
+    print(f"  TRACE events: {rss.persistence.event_count()}")
+    print(f"  LLM:          {'available' if rss.llm.is_available() else 'fallback mode'}")
+    print(f"  DB:           {rss.config.db_path}")
+    print(f"  Hub stats:    {rss.hubs.hub_stats()}")
+    print(f"  Seats:        {rss.ward.list_seats()}")
+    print(f"  Chain valid:  {rss.trace.verify_chain()}")
+
+    terms = rss.meaning.list_sealed()
+    if terms:
+        print(f"\n  Sealed terms:")
+        for t in terms:
+            print(f"    [{t['id']}] {t['label']} — {t['definition']} (v{t['version']})")
+
+
+def add_term(rss, args):
+    """Add a sealed term from CLI.
+    Usage: python main.py add-term <label> <definition>
+    Example: python main.py add-term invoice "Bill for completed work"
+    """
+    if len(args) < 2:
+        print("  Usage: python main.py add-term <label> <definition>")
+        print('  Example: python main.py add-term invoice "Bill for completed work"')
+        return
+
+    label = args[0]
+    definition = " ".join(args[1:])
+
+    # Check if term already exists
+    existing = [t["label"].lower() for t in rss.meaning.list_sealed()]
+    if label.lower() in existing:
+        print(f"  Term '{label}' already exists.")
+        return
+
+    term = Term(
+        id=label,
+        label=label,
+        definition=definition,
+        constraints=[],
+        version="1.0",
+    )
+    rss.save_term(term)
+    print(f"  Sealed term added: '{label}' — {definition}")
+    print(f"  Total terms: {len(rss.meaning.list_sealed())}")
+
+
+def add_entry(rss, args):
+    """Add a hub entry from CLI.
+    Usage: python main.py add-entry <hub> <content> [--redline]
+    Example: python main.py add-entry WORK "Morrison panel upgrade quote: $245K"
+    """
+    if len(args) < 2:
+        print("  Usage: python main.py add-entry <hub> <content> [--redline]")
+        print('  Example: python main.py add-entry WORK "Morrison panel upgrade"')
+        return
+
+    hub = args[0].upper()
+    redline = "--redline" in args
+    content_parts = [a for a in args[1:] if a != "--redline"]
+    content = " ".join(content_parts)
+
+    try:
+        entry = rss.save_hub_entry(hub, content, redline=redline)
+        print(f"  Entry added to {hub}: {entry.id}")
+        if redline:
+            print("  REDLINE: This entry will never reach the LLM.")
+        print(f"  Hub stats: {rss.hubs.hub_stats()}")
+    except Exception as e:
+        print(f"  Error: {e}")
+
+
+def add_synonym(rss, args):
+    """Add a synonym for a sealed term.
+    Usage: python main.py add-synonym <phrase> <term_label> [confidence]
+    Confidence: HIGH (auto-resolves), MED (requires confirmation), LOW
+    """
+    if len(args) < 2:
+        print("  Usage: python main.py add-synonym <phrase> <term_label> [HIGH|MED|LOW]")
+        print("  Example: python main.py add-synonym bid quote HIGH")
+        return
+
+    phrase = args[0]
+    term_label = args[1]
+    confidence = args[2].upper() if len(args) > 2 else "MED"
+
+    if confidence not in ("HIGH", "MED", "LOW"):
+        print(f"  Invalid confidence: {confidence}. Use HIGH, MED, or LOW.")
+        return
+
+    terms = rss.meaning.list_sealed()
+    match = [t for t in terms if t["label"].lower() == term_label.lower()]
+    if not match:
+        print(f"  No sealed term found with label '{term_label}'.")
+        print(f"  Available: {', '.join(t['label'] for t in terms)}")
+        return
+
+    term_id = match[0]["id"]
+    try:
+        rss.save_synonym(phrase, term_id, confidence)
+        print(f"  Synonym added: '{phrase}' -> '{term_label}' ({confidence})")
+    except Exception as e:
+        print(f"  Error: {e}")
+
+
+def disallow_term(rss, args):
+    """Mark a term as explicitly disallowed.
+    Usage: python main.py disallow <phrase> <reason>
+    """
+    if len(args) < 2:
+        print("  Usage: python main.py disallow <phrase> <reason>")
+        print('  Example: python main.py disallow hack "Security violation"')
+        return
+
+    phrase = args[0]
+    reason = " ".join(args[1:])
+
+    rss.save_disallowed(phrase, reason)
+    print(f"  Disallowed: '{phrase}' — {reason}")
+
+
+def list_terms(rss):
+    """List all sealed terms, synonyms, and disallowed terms."""
+    terms = rss.meaning.list_sealed()
+    if not terms:
+        print("  No sealed terms.")
+    else:
+        print(f"\n  Sealed terms ({len(terms)}):")
+        for t in terms:
+            print(f"    [{t['id']}] {t['label']} — {t['definition']} (v{t['version']})")
+
+    if rss.meaning._synonyms:
+        print(f"\n  Synonyms ({len(rss.meaning._synonyms)}):")
+        for phrase, info in rss.meaning._synonyms.items():
+            print(f"    '{phrase}' -> {info['term_id']} ({info['confidence']})")
+
+    if rss.meaning._disallowed:
+        print(f"\n  Disallowed ({len(rss.meaning._disallowed)}):")
+        for phrase, reason in rss.meaning._disallowed.items():
+            print(f"    '{phrase}' — {reason}")
+
+
+def list_hub(rss, args):
+    """List hub entries.
+    Usage: python main.py list-hub [hub_name]
+    """
+    hub_name = args[0].upper() if args else None
+    stats = rss.hubs.hub_stats()
+
+    if hub_name:
+        hubs_to_show = [hub_name]
+    else:
+        hubs_to_show = [h for h, count in stats.items() if count > 0]
+
+    if not hubs_to_show:
+        print("  No hub entries.")
+        return
+
+    for hub in hubs_to_show:
+        entries = rss.hubs.list_hub(hub)
+        print(f"\n  {hub} ({len(entries)} entries):")
+        for e in entries:
+            redline_tag = " [REDLINE]" if e.redline else ""
+            content_preview = e.content[:80] + "..." if len(e.content) > 80 else e.content
+            print(f"    {e.id}: {content_preview}{redline_tag}")
+
+
+def export_trace(rss, args):
+    """Export TRACE audit log.
+    Usage: python main.py export-trace [filename] [--text]
+    Default: JSON format, file=rss_trace_export.json
+    Exports from SQLite (all persisted events) + any in-memory events.
+    """
+    use_text = "--text" in args
+    clean_args = [a for a in args if a != "--text"]
+    
+    if use_text:
+        default_name = "rss_trace_export.txt"
+    else:
+        default_name = "rss_trace_export.json"
+    
+    filename = clean_args[0] if clean_args else default_name
+
+    # Use DB export (has all persisted events across sessions)
+    fmt = "text" if use_text else "json"
+    count = export_from_db(rss.persistence, filename, fmt)
+
+    print(f"  Exported {count} TRACE events to {filename}")
+    print(f"  Source: SQLite ({rss.config.db_path})")
+
+
+if __name__ == "__main__":
+    config = RSSConfig()
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "test"
+    extra_args = sys.argv[2:] if len(sys.argv) > 2 else []
+
+    # Use restore=True for commands that need persisted state
+    restore = cmd in ("demo", "status", "list-terms", "list-hub", "add-term", "add-entry", "add-synonym", "disallow", "export-trace")
+    rss = bootstrap(config, restore=restore)
+
+    print(f"\n  RSS v{RSS_VERSION} booted — AI that waits.\n")
+
+    if cmd == "test":
+        success = run_tests(rss)
+        rss.persistence.close()
+        sys.exit(0 if success else 1)
+    elif cmd == "demo":
+        run_demo(rss)
+    elif cmd == "status":
+        show_status(rss)
+    elif cmd == "add-term":
+        add_term(rss, extra_args)
+    elif cmd == "add-synonym":
+        add_synonym(rss, extra_args)
+    elif cmd == "disallow":
+        disallow_term(rss, extra_args)
+    elif cmd == "add-entry":
+        add_entry(rss, extra_args)
+    elif cmd == "list-terms":
+        list_terms(rss)
+    elif cmd == "list-hub":
+        list_hub(rss, extra_args)
+    elif cmd == "export-trace":
+        export_trace(rss, extra_args)
+    else:
+        print(f"  Unknown command: {cmd}")
+        print("  Commands: test | demo | status | add-term | add-synonym | disallow | add-entry | list-terms | list-hub | export-trace")
+
+    rss.persistence.close()
