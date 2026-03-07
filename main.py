@@ -87,7 +87,15 @@ def run_demo(rss):
 
 def show_status(rss):
     """Show system status."""
-    print(f"\n  Version:      {rss.config.version}")
+    ss = rss.is_safe_stopped()
+    if ss["active"]:
+        print(f"\n  *** SAFE-STOP ACTIVE ***")
+        print(f"  Reason:   {ss['reason']}")
+        print(f"  Since:    {ss.get('timestamp', 'unknown')}")
+        print(f"  Clear:    python main.py clear-safe-stop\n")
+
+    print(f"  Version:      {rss.config.version}")
+    print(f"  Safe-Stop:    {'ACTIVE' if ss['active'] else 'clear'}")
     print(f"  Sealed terms: {len(rss.meaning.list_sealed())}")
     print(f"  TRACE events: {rss.persistence.event_count()}")
     print(f"  LLM:          {'available' if rss.llm.is_available() else 'fallback mode'}")
@@ -284,7 +292,7 @@ if __name__ == "__main__":
     extra_args = sys.argv[2:] if len(sys.argv) > 2 else []
 
     # Use restore=True for commands that need persisted state
-    restore = cmd in ("demo", "status", "list-terms", "list-hub", "add-term", "add-entry", "add-synonym", "disallow", "export-trace")
+    restore = cmd in ("demo", "status", "list-terms", "list-hub", "add-term", "add-entry", "add-synonym", "disallow", "export-trace", "clear-safe-stop")
     rss = bootstrap(config, restore=restore)
 
     print(f"\n  RSS v{RSS_VERSION} booted — AI that waits.\n")
@@ -311,8 +319,16 @@ if __name__ == "__main__":
         list_hub(rss, extra_args)
     elif cmd == "export-trace":
         export_trace(rss, extra_args)
+    elif cmd == "clear-safe-stop":
+        ss = rss.is_safe_stopped()
+        if ss["active"]:
+            rss.clear_safe_stop()
+            print(f"  Safe-Stop cleared. Reason was: {ss['reason']}")
+            print(f"  System operational. T-0 authority exercised.")
+        else:
+            print("  System is not in Safe-Stop.")
     else:
         print(f"  Unknown command: {cmd}")
-        print("  Commands: test | demo | status | add-term | add-synonym | disallow | add-entry | list-terms | list-hub | export-trace")
+        print("  Commands: test | demo | status | add-term | add-synonym | disallow | add-entry | list-terms | list-hub | export-trace | clear-safe-stop")
 
     rss.persistence.close()

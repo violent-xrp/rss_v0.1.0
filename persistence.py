@@ -87,6 +87,11 @@ class Persistence:
                 phrase TEXT PRIMARY KEY,
                 reason TEXT
             )""",
+            """CREATE TABLE IF NOT EXISTS system_state (
+                key TEXT PRIMARY KEY,
+                value TEXT,
+                updated_at TEXT
+            )""",
             "CREATE INDEX IF NOT EXISTS idx_trace_code ON trace_events(event_code)",
             "CREATE INDEX IF NOT EXISTS idx_trace_artifact ON trace_events(artifact_id)",
             "CREATE INDEX IF NOT EXISTS idx_hub_hub ON hub_entries(hub)",
@@ -288,6 +293,34 @@ class Persistence:
                 {"phrase": r[0], "reason": r[1]}
                 for r in cur.fetchall()
             ]
+
+    # -----------------------------------------------------
+    # SYSTEM STATE (Safe-Stop, config flags)
+    # -----------------------------------------------------
+    def enter_safe_stop(self, reason: str) -> None:
+        """Persist Safe-Stop state. Survives restart. Only T-0 can clear."""
+        ts = datetime.now(UTC).isoformat()
+        with self._lock, self.conn:
+            self.conn.execute(
+                "INSERT OR REPLACE INTO system_state VALUES(?,?,?)",
+                ("SAFE_STOP", reason, ts),
+            )
+
+    def is_safe_stopped(self) -> dict:
+        """Check if system is in persistent Safe-Stop. Returns {active, reason, timestamp} or {active: False}."""
+        with self._lock:
+            cur = self.conn.execute(
+                "SELECT value, updated_at FROM system_state WHERE key='SAFE_STOP'"
+            )
+            row = cur.fetchone()
+            if row:
+                return {"active": True, "reason": row[0], "timestamp": row[1]}
+            return {"active": False}
+
+    def clear_safe_stop(self) -> None:
+        """Clear Safe-Stop. Only T-0 may call this."""
+        with self._lock, self.conn:
+            self.conn.execute("DELETE FROM system_state WHERE key='SAFE_STOP'")
 
     # -----------------------------------------------------
     def event_count(self) -> int:

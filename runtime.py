@@ -81,6 +81,46 @@ class Runtime:
         # Auto-authorize EXECUTE for default operation
         self.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0")
 
+    # ── Safe-Stop (persistent, survives restart) ──
+
+    def enter_safe_stop(self, reason: str):
+        """Enter persistent Safe-Stop. Only T-0 can clear. Pact §0.5"""
+        self.persistence.enter_safe_stop(reason)
+        self._log("SAFE_STOP_ENTERED", "SYSTEM", reason)
+
+    def clear_safe_stop(self):
+        """Clear Safe-Stop. T-0 only. Pact §0.5.2"""
+        self.persistence.clear_safe_stop()
+        self._log("SAFE_STOP_CLEARED", "SYSTEM", "T-0 cleared Safe-Stop")
+
+    def is_safe_stopped(self) -> dict:
+        """Check persistent Safe-Stop state."""
+        return self.persistence.is_safe_stopped()
+
+    # ── Genesis Verification (blocking) ──
+
+    def verify_genesis(self) -> dict:
+        """
+        Verify Section 0 integrity. Pact §0.2.1
+        Returns {verified: True/False, reason: str}
+        If section0.txt exists and hash mismatches: enters Safe-Stop.
+        If section0.txt doesn't exist: passes (dev mode, no file to check).
+        """
+        import os
+        if not os.path.exists(self.section0_path):
+            return {"verified": True, "reason": "Section 0 file not present (dev mode)"}
+
+        try:
+            with open(self.section0_path, "r", encoding="utf-8") as f:
+                section0_text = f.read()
+            verify_integrity(section0_text, self.section0_hash)
+            self._log("GENESIS_VERIFIED", "SYSTEM", "Section 0 hash valid")
+            return {"verified": True, "reason": "Hash match"}
+        except Exception as e:
+            reason = f"Genesis verification failed: {e}"
+            self.enter_safe_stop(reason)
+            return {"verified": False, "reason": reason}
+
     def _log(self, code: str, artifact_id: str, content: str):
         """Record event to TRACE and persist."""
         event = self.trace.record_event(code, "RUNTIME", artifact_id, content)
@@ -182,15 +222,22 @@ class Runtime:
         task_id = task_id or f"REQ-{datetime.now(UTC).timestamp()}"
 
         try:
-            # -- Step 1: Constitution integrity check --
-            try:
-                with open(self.section0_path, "r", encoding="utf-8") as f:
-                    section0_text = f.read()
-                verify_integrity(section0_text, self.section0_hash)
-            except FileNotFoundError:
-                pass  # Section 0 not required for MVP operation
-            except Exception:
-                pass  # Non-blocking in dev
+            # -- Step 0: Persistent Safe-Stop check (Pact §0.5) --
+            ss = self.is_safe_stopped()
+            if ss["active"]:
+                return {
+                    "error": "SAFE_STOP_ACTIVE",
+                    "reason": ss["reason"],
+                    "timestamp": ss.get("timestamp"),
+                }
+
+            # -- Step 1: Constitution integrity check (blocking, Pact §0.2.1) --
+            genesis = self.verify_genesis()
+            if not genesis["verified"]:
+                return {
+                    "error": "GENESIS_FAILURE",
+                    "reason": genesis["reason"],
+                }
 
             # -- Step 2: SCOPE — declare bounded envelope --
             policy = scope_policy or {
@@ -282,6 +329,7 @@ class Runtime:
             return result
 
         except SafeStopTriggered as e:
+            self.enter_safe_stop(str(e))
             self._log("SAFE_STOP", task_id, str(e))
             return {"error": "SAFE_STOP", "reason": str(e)}
         except Exception as e:
@@ -293,8 +341,16 @@ def bootstrap(config=None, restore: bool = False) -> Runtime:
     """
     Create Runtime with default sealed terms.
     If restore=True, also load saved state from SQLite.
+    Checks persistent Safe-Stop and Genesis on boot.
     """
     runtime = Runtime(config)
+
+    # Check persistent Safe-Stop (Pact §0.5.4)
+    ss = runtime.is_safe_stopped()
+    if ss["active"]:
+        print(f"  *** SAFE-STOP ACTIVE: {ss['reason']} ***")
+        print(f"  *** System halted since {ss.get('timestamp', 'unknown')} ***")
+        print(f"  *** Only T-0 can clear: runtime.clear_safe_stop() ***")
 
     # Always register default terms
     for label in DEFAULT_TERMS:

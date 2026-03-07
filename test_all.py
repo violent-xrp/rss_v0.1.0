@@ -650,6 +650,132 @@ def test_trace_export():
 
 
 # ============================================================
+# PERSISTENT SAFE-STOP (Pact §0.5)
+# ============================================================
+def test_safe_stop_persistent():
+    section("Persistent Safe-Stop (Pact §0.5)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        # Session 1: enter Safe-Stop
+        config = RSSConfig(db_path=path)
+        rss1 = bootstrap(config)
+
+        # System should not be safe-stopped initially
+        ss = rss1.is_safe_stopped()
+        check(ss["active"] == False, "not safe-stopped initially")
+
+        # Normal request works
+        r = rss1.process_request("quote", use_llm=False)
+        check("error" not in r, "request works before safe-stop")
+
+        # Enter Safe-Stop
+        rss1.enter_safe_stop("Genesis hash mismatch test")
+        ss = rss1.is_safe_stopped()
+        check(ss["active"] == True, "safe-stop entered")
+        check("Genesis" in ss["reason"], "safe-stop reason stored")
+
+        # Requests blocked while safe-stopped
+        r = rss1.process_request("quote", use_llm=False)
+        check(r.get("error") == "SAFE_STOP_ACTIVE", "requests blocked during safe-stop")
+
+        rss1.persistence.close()
+
+        # Session 2: Safe-Stop survives restart (Pact §0.5.4)
+        rss2 = bootstrap(config)
+        ss = rss2.is_safe_stopped()
+        check(ss["active"] == True, "safe-stop survives restart")
+
+        # Requests still blocked after restart
+        r = rss2.process_request("RFI", use_llm=False)
+        check(r.get("error") == "SAFE_STOP_ACTIVE", "requests blocked after restart")
+
+        # T-0 clears Safe-Stop (Pact §0.5.2)
+        rss2.clear_safe_stop()
+        ss = rss2.is_safe_stopped()
+        check(ss["active"] == False, "T-0 cleared safe-stop")
+
+        # Requests work again
+        r = rss2.process_request("quote", use_llm=False)
+        check("error" not in r, "requests work after T-0 clear")
+
+        rss2.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+# ============================================================
+# BLOCKING GENESIS VERIFICATION (Pact §0.2.1)
+# ============================================================
+def test_genesis_blocking():
+    section("Blocking Genesis (Pact §0.2.1)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    # Create a temporary section0.txt with wrong content
+    s0_path = path + ".section0.txt"
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # No section0.txt = dev mode, passes
+        genesis = rss.verify_genesis()
+        check(genesis["verified"] == True, "no section0.txt = dev mode pass")
+
+        # Create valid section0.txt
+        rss.section0_path = s0_path
+        with open(s0_path, "w") as f:
+            f.write("SOVEREIGN ROOT")
+        rss.section0_hash = __import__("hashlib").sha256(
+            "SOVEREIGN ROOT".encode()
+        ).hexdigest()
+
+        genesis = rss.verify_genesis()
+        check(genesis["verified"] == True, "valid section0.txt passes genesis")
+
+        # Tamper with section0.txt
+        with open(s0_path, "w") as f:
+            f.write("TAMPERED CONTENT")
+
+        genesis = rss.verify_genesis()
+        check(genesis["verified"] == False, "tampered section0 fails genesis")
+
+        # Safe-Stop should now be active (entered by verify_genesis)
+        ss = rss.is_safe_stopped()
+        check(ss["active"] == True, "genesis failure triggers persistent safe-stop")
+
+        # Requests blocked
+        r = rss.process_request("quote", use_llm=False)
+        check(r.get("error") == "SAFE_STOP_ACTIVE", "genesis failure blocks all requests")
+
+        # T-0 clears and fixes
+        rss.clear_safe_stop()
+        with open(s0_path, "w") as f:
+            f.write("SOVEREIGN ROOT")
+
+        genesis = rss.verify_genesis()
+        check(genesis["verified"] == True, "fixed section0 passes after T-0 clear")
+
+        r = rss.process_request("quote", use_llm=False)
+        check("error" not in r, "system operational after genesis fix")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        if os.path.exists(s0_path):
+            os.unlink(s0_path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+# ============================================================
 # LLM ADAPTER
 # ============================================================
 def test_llm():
@@ -802,6 +928,8 @@ if __name__ == "__main__":
     safe_run(test_persistence_roundtrip)
     safe_run(test_vocabulary_management)
     safe_run(test_trace_export)
+    safe_run(test_safe_stop_persistent)
+    safe_run(test_genesis_blocking)
     safe_run(test_llm)
     safe_run(test_runtime)
     safe_run(test_tecton)
