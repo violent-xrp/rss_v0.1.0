@@ -8,7 +8,7 @@ import hashlib
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, UTC
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 
 class SealError(Exception):
@@ -46,6 +46,12 @@ EXTERNAL_NAMES = ["Claude", "ChatGPT", "Gemini", "Grok", "Copilot"]
 class Seal:
     name: str = "SEAL"
     _canon_index: Dict[str, CanonArtifact] = field(default_factory=dict)
+    _integrity_check: Optional[Callable] = field(default=None)
+
+    def set_integrity_check(self, check_fn: Callable) -> None:
+        """Set a callable for pre-seal drift check (Pact §0.7.3).
+        check_fn() -> dict with {verified: bool, reason: str}"""
+        self._integrity_check = check_fn
 
     def seal(self, packet: SealPacket, council_vote: bool, t0_command: bool):
         if not council_vote:
@@ -54,6 +60,13 @@ class Seal:
             return {"error": "NO_T0_COMMAND"}
         if not packet.section_id or not packet.doc_id:
             return {"error": "MISSING_IDS"}
+
+        # Pre-seal drift check (Pact §0.7.3)
+        # Drift checks run before any new section is sealed.
+        if self._integrity_check is not None:
+            check = self._integrity_check()
+            if not check.get("verified", False):
+                return {"error": "INTEGRITY_CHECK_FAILED", "reason": check.get("reason", "Unknown")}
 
         # Smart external name check (adjustment #5)
         ext_issue = self._check_external_names(packet.draft_text)

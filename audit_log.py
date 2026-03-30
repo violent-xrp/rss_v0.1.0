@@ -27,8 +27,39 @@ class TraceEvent:
 
 @dataclass
 class AuditLog:
-    """Append-only, hash-chained audit log. No delete method exists."""
+    """Append-only, hash-chained audit log. No delete method exists.
+    Council Seat: TRACE — Evidentiary authority (record/verify). Pact §0.3.1
+    """
+    name: str = "TRACE"
     _events: List[TraceEvent] = field(default_factory=list)
+
+    def status(self) -> dict:
+        """Seat status for WARD CNS snapshot."""
+        return {
+            "state": "ACTIVE",
+            "event_count": len(self._events),
+            "chain_valid": self.verify_chain(),
+            "last_event": self._events[-1].event_code if self._events else None,
+        }
+
+    def handle(self, task: dict) -> dict:
+        """Seat handler for WARD routing. Evidentiary actions only (Pact §0.3.2)."""
+        action = task.get("action")
+        if action == "verify_chain":
+            return {"chain_valid": self.verify_chain(), "event_count": len(self._events)}
+        if action == "event_count":
+            return {"event_count": len(self._events)}
+        if action == "events_by_code":
+            code = task.get("event_code", "")
+            events = self.events_by_code(code)
+            return {"event_code": code, "count": len(events)}
+        if action == "last_event":
+            last = self.last_event()
+            if last:
+                return {"event_code": last.event_code, "artifact_id": last.artifact_id,
+                        "timestamp": last.timestamp.isoformat()}
+            return {"event_code": None}
+        return {"error": f"Unknown action: {action}"}
 
     def append(self, event: TraceEvent) -> None:
         if not event.event_code:

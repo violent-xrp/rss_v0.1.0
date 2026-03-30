@@ -64,8 +64,14 @@ class Runtime:
         self.persistence = Persistence(self.config.db_path)
         self.llm = LLMAdapter(self.config)
 
-        # Register seats with WARD
+        # Wire pre-seal drift check (Pact §0.7.3)
+        self.seal.set_integrity_check(self.verify_genesis)
+
+        # Register Council Seats with WARD (Pact §0.3.1)
+        # WARD itself is the router — 7 other seats register here.
+        # TRACE is evidentiary; WARD routes to it but also calls it directly for audit.
         seats = [
+            (self.trace, "TRACE"),
             (self.scope, "SCOPE"),
             (self.meaning, "RUNE"),
             (self.oath, "OATH"),
@@ -122,9 +128,18 @@ class Runtime:
             return {"verified": False, "reason": reason}
 
     def _log(self, code: str, artifact_id: str, content: str):
-        """Record event to TRACE and persist."""
+        """Record event to TRACE and persist.
+        Write-Ahead Guarantee (Pact §0.8.3): if audit write fails, execution aborts.
+        No operation may proceed without a durable audit record.
+        """
         event = self.trace.record_event(code, "RUNTIME", artifact_id, content)
-        self.persistence.save_trace_event(event)
+        try:
+            self.persistence.save_trace_event(event)
+        except Exception as e:
+            raise RuntimeError(
+                f"WRITE-AHEAD FAILURE (Pact §0.8.3): Audit write failed for "
+                f"{code}/{artifact_id}. Aborting operation. Detail: {e}"
+            ) from e
 
     def restore_from_db(self):
         """
@@ -330,10 +345,16 @@ class Runtime:
 
         except SafeStopTriggered as e:
             self.enter_safe_stop(str(e))
-            self._log("SAFE_STOP", task_id, str(e))
+            try:
+                self._log("SAFE_STOP", task_id, str(e))
+            except Exception:
+                pass  # Safe-Stop already persisted above; audit is best-effort here
             return {"error": "SAFE_STOP", "reason": str(e)}
         except Exception as e:
-            self._log("ERROR", task_id, str(e))
+            try:
+                self._log("ERROR", task_id, str(e))
+            except Exception:
+                pass  # If audit itself is broken, still return the error to caller
             return {"error": "UNEXPECTED_ERROR", "reason": str(e)}
 
 

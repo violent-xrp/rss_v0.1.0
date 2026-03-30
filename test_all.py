@@ -5,6 +5,7 @@ Updated: March 3, 2026 — added persistence round-trip + TRACE export tests
 """
 import os
 import json
+import sqlite3
 import tempfile
 import traceback
 from datetime import datetime, timedelta, UTC
@@ -909,6 +910,163 @@ def test_tecton():
 
 
 # ============================================================
+# TRACE AS WARD SEAT (Pact §0.3)
+# ============================================================
+def test_trace_seat():
+    section("TRACE as WARD Seat (Pact §0.3)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # TRACE should be registered in WARD
+        check("TRACE" in rss.ward.list_seats(), "TRACE registered as WARD seat")
+
+        # WARD should now have 7 seats (all except WARD itself)
+        check(len(rss.ward.list_seats()) == 7,
+              f"7 seats registered in WARD (got {len(rss.ward.list_seats())})")
+
+        # Route to TRACE through WARD
+        result = rss.ward.route("TRACE", {"action": "verify_chain"})
+        check(result.get("chain_valid") is not None, "WARD can route to TRACE")
+
+        result = rss.ward.route("TRACE", {"action": "event_count"})
+        check("event_count" in result, "TRACE handles event_count action")
+
+        # TRACE status works for CNS snapshot
+        cns = rss.ward.cns_tail()
+        check("TRACE" in cns and cns["TRACE"]["state"] == "ACTIVE",
+              "TRACE appears in CNS snapshot")
+
+        # Generate some events then query through WARD
+        rss.process_request("quote", use_llm=False)
+        result = rss.ward.route("TRACE", {"action": "last_event"})
+        check(result.get("event_code") is not None, "TRACE returns last event through WARD")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+# ============================================================
+# PRE-SEAL DRIFT CHECK (Pact §0.7.3)
+# ============================================================
+def test_pre_seal_drift_check():
+    section("Pre-Seal Drift Check (Pact §0.7.3)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    s0_path = path + ".section0.txt"
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # Seal with no section0.txt (dev mode) — should work
+        packet = SealPacket("S-TEST", 1, "DOC-TEST", "Test section content.")
+        result = rss.seal.seal(packet, council_vote=True, t0_command=True)
+        check(isinstance(result, CanonArtifact), "seal works in dev mode (no section0.txt)")
+
+        # Create valid section0.txt and set up genesis
+        rss.section0_path = s0_path
+        with open(s0_path, "w") as f:
+            f.write("SOVEREIGN ROOT")
+        rss.section0_hash = __import__("hashlib").sha256(
+            "SOVEREIGN ROOT".encode()
+        ).hexdigest()
+
+        # Seal with valid genesis — should work
+        packet2 = SealPacket("S-TEST2", 1, "DOC-TEST2", "Another section.")
+        result = rss.seal.seal(packet2, council_vote=True, t0_command=True)
+        check(isinstance(result, CanonArtifact), "seal works with valid genesis")
+
+        # Tamper with section0.txt — seal should REFUSE
+        with open(s0_path, "w") as f:
+            f.write("TAMPERED CONTENT")
+
+        # Clear safe-stop first (tampered genesis enters it)
+        rss.clear_safe_stop()
+
+        packet3 = SealPacket("S-TEST3", 1, "DOC-TEST3", "Should be blocked.")
+        result = rss.seal.seal(packet3, council_vote=True, t0_command=True)
+        check(isinstance(result, dict) and result.get("error") == "INTEGRITY_CHECK_FAILED",
+              "seal REFUSES when genesis is tampered (Pact §0.7.3)")
+
+        # Fix genesis and seal again — should work
+        rss.clear_safe_stop()
+        with open(s0_path, "w") as f:
+            f.write("SOVEREIGN ROOT")
+
+        packet4 = SealPacket("S-TEST4", 1, "DOC-TEST4", "After fix.")
+        result = rss.seal.seal(packet4, council_vote=True, t0_command=True)
+        check(isinstance(result, CanonArtifact), "seal works after genesis fix")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        if os.path.exists(s0_path):
+            os.unlink(s0_path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+# ============================================================
+# WRITE-AHEAD GUARANTEE (Pact §0.8.3)
+# ============================================================
+def test_write_ahead_guarantee():
+    section("Write-Ahead Guarantee (Pact §0.8.3)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # Normal request works (audit writes succeed)
+        r = rss.process_request("quote", use_llm=False)
+        check("error" not in r, "normal request works with audit")
+
+        # Test 1: _log raises RuntimeError when audit write fails
+        original_save = rss.persistence.save_trace_event
+        def broken_save(event):
+            raise sqlite3.OperationalError("disk I/O error")
+        rss.persistence.save_trace_event = broken_save
+
+        raised = False
+        try:
+            rss._log("TEST", "ART", "content")
+        except RuntimeError as e:
+            raised = True
+            check("WRITE-AHEAD" in str(e), "error message cites Pact §0.8.3")
+        check(raised, "_log raises RuntimeError when audit write fails")
+
+        # Test 2: Pipeline returns error when audit write fails mid-request
+        r = rss.process_request("RFI", use_llm=False)
+        check(r.get("error") == "UNEXPECTED_ERROR",
+              "pipeline aborts when audit write fails")
+
+        # Test 3: Restore audit and verify system recovers
+        rss.persistence.save_trace_event = original_save
+        r = rss.process_request("quote", use_llm=False)
+        check("error" not in r, "system recovers after audit restored")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+# ============================================================
 # RUN ALL
 # ============================================================
 if __name__ == "__main__":
@@ -933,6 +1091,9 @@ if __name__ == "__main__":
     safe_run(test_llm)
     safe_run(test_runtime)
     safe_run(test_tecton)
+    safe_run(test_trace_seat)
+    safe_run(test_pre_seal_drift_check)
+    safe_run(test_write_ahead_guarantee)
 
     print(f"\n{'='*60}")
     print(f"RSS v3 — {_pass} PASSED, {_fail} FAILED", end="")
