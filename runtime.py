@@ -202,11 +202,16 @@ class Runtime:
 
         return restored
 
-    def save_term(self, term: Term):
-        """Save a term to both RUNE and persistence."""
-        self.meaning.create_term(term)
+    def save_term(self, term: Term, force: bool = False):
+        """Save a term to both RUNE and persistence.
+        If force=True, bypasses anti-trojan scanner (§2.3.3). Logged by TRACE."""
+        self.meaning.create_term(term, force=force)
         self.persistence.save_sealed_term(term)
-        self._log("TERM_CREATED", term.id, f"Sealed term: {term.label}")
+        if force:
+            self._log("TERM_CREATED_FORCE", term.id,
+                       f"Sealed term (force override §2.3.3): {term.label} — {term.definition}")
+        else:
+            self._log("TERM_CREATED", term.id, f"Sealed term: {term.label}")
 
     def save_synonym(self, phrase: str, term_id: str, confidence: str):
         """Add synonym to RUNE and persist."""
@@ -219,6 +224,12 @@ class Runtime:
         self.meaning.disallow(phrase, reason)
         self.persistence.save_disallowed(phrase, reason)
         self._log("TERM_DISALLOWED", phrase, f"Disallowed: {phrase} — {reason}")
+
+    def remove_synonym(self, phrase: str):
+        """Remove synonym from RUNE and persistence (§2.4.4). Returns to null-state."""
+        self.meaning.remove_synonym(phrase)
+        self.persistence.delete_synonym(phrase)
+        self._log("SYNONYM_REMOVED", phrase, f"Synonym removed: {phrase} (returned to null-state)")
 
     def save_hub_entry(self, hub: str, content: str, redline: bool = False):
         """Add hub entry and persist it."""
@@ -319,8 +330,10 @@ class Runtime:
                 pav_text = "\n".join(
                     e.get("content", str(e)) for e in pav_view.entries
                 )
-                terms_text = ", ".join(
-                    t["label"] for t in self.meaning.list_sealed()
+                # Contextual reinjection (§2.9): inject canonical definitions, not just labels
+                terms_text = "\n".join(
+                    f"{t['label']}: {t['definition']}"
+                    for t in self.meaning.list_sealed()
                 )
                 llm_response = self.llm.call(pav_text, terms_text, text)
                 self._log("LLM_OK", task_id, f"LLM responded: {len(llm_response)} chars")
@@ -330,13 +343,13 @@ class Runtime:
                        f"meaning={meaning} class={classification} llm={'yes' if use_llm else 'no'}")
 
             # -- Build response --
+            # Note: redline_excluded count goes to TRACE only (§2.10.2 side-channel suppression)
             result = {
                 "meaning": meaning,
                 "classification": classification,
                 "term_id": term_status.term_id,
                 "task_id": task_id,
                 "pav_entries": len(pav_view.entries),
-                "redline_excluded": pav_view.redline_excluded,
             }
             if llm_response is not None:
                 result["llm_response"] = llm_response

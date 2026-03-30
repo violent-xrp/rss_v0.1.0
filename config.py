@@ -19,10 +19,10 @@ class RSSConfig:
     external_names: List[str] = field(default_factory=lambda: [
         "Claude", "ChatGPT", "Gemini", "Grok", "Copilot",
     ])
-    # High-risk action verbs for intent classification
+    # High-risk action verbs for intent classification and anti-trojan scanning (§2.3.1)
     high_risk_verbs: List[str] = field(default_factory=lambda: [
         "delete", "remove", "destroy", "override", "bypass", "terminate",
-        "revoke", "cancel", "purge", "wipe",
+        "revoke", "cancel", "purge", "wipe", "export", "run", "display",
     ])
     standard_verbs: List[str] = field(default_factory=lambda: [
         "draft", "review", "list", "read", "check", "view", "query", "get",

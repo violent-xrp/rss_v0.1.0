@@ -33,12 +33,21 @@ class LLMAdapter:
         if not self.is_available():
             return self._fallback(user_text, pav_text)
 
+        # Build prompt with contextual reinjection (§2.9)
+        # Term definitions are injected literally — no paraphrasing (§2.9.3)
+        terms_section = ""
+        if terms and terms.strip():
+            terms_section = (
+                f"\nProject terminology (use these exact definitions):\n{terms}\n"
+            )
+
         prompt = (
             f"You are a construction project assistant. "
             f"Answer based ONLY on the project data provided below. "
             f"If the data does not contain the answer, say 'I don't have that information in the current project data.' "
             f"Be concise and professional. Do not list definitions. Do not repeat the question.\n\n"
-            f"Project data:\n{pav_text}\n\n"
+            f"Project data:\n{pav_text}\n"
+            f"{terms_section}\n"
             f"Question: {user_text}"
         )
 

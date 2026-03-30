@@ -274,6 +274,14 @@ class Persistence:
                 for r in cur.fetchall()
             ]
 
+    def delete_synonym(self, phrase: str) -> None:
+        """Remove synonym from persistence (§2.4.4). No ghost mappings on restart."""
+        with self._lock, self.conn:
+            self.conn.execute(
+                "DELETE FROM synonyms WHERE phrase=?",
+                (phrase.lower(),),
+            )
+
     # -----------------------------------------------------
     # DISALLOWED TERMS
     # -----------------------------------------------------

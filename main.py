@@ -113,16 +113,20 @@ def show_status(rss):
 
 def add_term(rss, args):
     """Add a sealed term from CLI.
-    Usage: python main.py add-term <label> <definition>
+    Usage: python main.py add-term <label> <definition> [--force]
     Example: python main.py add-term invoice "Bill for completed work"
+    Use --force for definitions that legitimately contain high-risk verbs (§2.3.3).
     """
     if len(args) < 2:
-        print("  Usage: python main.py add-term <label> <definition>")
+        print("  Usage: python main.py add-term <label> <definition> [--force]")
         print('  Example: python main.py add-term invoice "Bill for completed work"')
+        print("  Use --force for definitions with legitimate high-risk verbs (§2.3.3)")
         return
 
-    label = args[0]
-    definition = " ".join(args[1:])
+    force = "--force" in args
+    clean_args = [a for a in args if a != "--force"]
+    label = clean_args[0]
+    definition = " ".join(clean_args[1:])
 
     # Check if term already exists
     existing = [t["label"].lower() for t in rss.meaning.list_sealed()]
@@ -137,9 +141,14 @@ def add_term(rss, args):
         constraints=[],
         version="1.0",
     )
-    rss.save_term(term)
-    print(f"  Sealed term added: '{label}' — {definition}")
-    print(f"  Total terms: {len(rss.meaning.list_sealed())}")
+    try:
+        rss.save_term(term, force=force)
+        print(f"  Sealed term added: '{label}' — {definition}")
+        if force:
+            print("  NOTE: Anti-trojan scanner bypassed (T-0 force override, logged by TRACE)")
+        print(f"  Total terms: {len(rss.meaning.list_sealed())}")
+    except Exception as e:
+        print(f"  Error: {e}")
 
 
 def add_entry(rss, args):
@@ -196,6 +205,24 @@ def add_synonym(rss, args):
     try:
         rss.save_synonym(phrase, term_id, confidence)
         print(f"  Synonym added: '{phrase}' -> '{term_label}' ({confidence})")
+    except Exception as e:
+        print(f"  Error: {e}")
+
+
+def remove_synonym_cmd(rss, args):
+    """Remove a synonym (§2.4.4).
+    Usage: python main.py remove-synonym <phrase>
+    Returns phrase to null-state (AMBIGUOUS). No ghost mappings.
+    """
+    if len(args) < 1:
+        print("  Usage: python main.py remove-synonym <phrase>")
+        print("  Example: python main.py remove-synonym bid")
+        return
+
+    phrase = args[0]
+    try:
+        rss.remove_synonym(phrase)
+        print(f"  Synonym removed: '{phrase}' (returned to null-state)")
     except Exception as e:
         print(f"  Error: {e}")
 
@@ -292,7 +319,7 @@ if __name__ == "__main__":
     extra_args = sys.argv[2:] if len(sys.argv) > 2 else []
 
     # Use restore=True for commands that need persisted state
-    restore = cmd in ("demo", "status", "list-terms", "list-hub", "add-term", "add-entry", "add-synonym", "disallow", "export-trace", "clear-safe-stop")
+    restore = cmd in ("demo", "status", "list-terms", "list-hub", "add-term", "add-entry", "add-synonym", "remove-synonym", "disallow", "export-trace", "clear-safe-stop")
     rss = bootstrap(config, restore=restore)
 
     print(f"\n  RSS v{RSS_VERSION} booted — AI that waits.\n")
@@ -309,6 +336,8 @@ if __name__ == "__main__":
         add_term(rss, extra_args)
     elif cmd == "add-synonym":
         add_synonym(rss, extra_args)
+    elif cmd == "remove-synonym":
+        remove_synonym_cmd(rss, extra_args)
     elif cmd == "disallow":
         disallow_term(rss, extra_args)
     elif cmd == "add-entry":
@@ -329,6 +358,6 @@ if __name__ == "__main__":
             print("  System is not in Safe-Stop.")
     else:
         print(f"  Unknown command: {cmd}")
-        print("  Commands: test | demo | status | add-term | add-synonym | disallow | add-entry | list-terms | list-hub | export-trace | clear-safe-stop")
+        print("  Commands: test | demo | status | add-term | add-synonym | remove-synonym | disallow | add-entry | list-terms | list-hub | export-trace | clear-safe-stop")
 
     rss.persistence.close()
