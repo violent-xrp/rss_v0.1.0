@@ -15,6 +15,7 @@ class RSSConfig:
     temperature: float = 0.0
     db_path: str = "rss_v3.db"
     log_to_console: bool = True
+    llm_timeout: int = 30  # §3.7.5: LLM call timeout in seconds, configurable by T-0
     # External advisor names that must never enter canon or LLM responses
     external_names: List[str] = field(default_factory=lambda: [
         "Claude", "ChatGPT", "Gemini", "Grok", "Copilot",

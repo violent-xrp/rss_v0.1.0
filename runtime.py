@@ -50,7 +50,10 @@ class Runtime:
 
         # Layer 4: RUNE + Execution
         self.meaning = MeaningLaw()
-        self.state_machine = ExecutionStateMachine()
+        # §3.1.3: Config-driven verb lists — single source of truth
+        self.state_machine = ExecutionStateMachine(
+            high_risk_verbs=self.config.high_risk_verbs,
+        )
 
         # Consent + Cadence
         self.oath = Oath()
@@ -238,34 +241,94 @@ class Runtime:
         self._log("HUB_ENTRY_ADDED", entry.id, f"Hub: {hub}, REDLINE: {redline}")
         return entry
 
+    def _validate_llm_response(self, response: str, task_id: str) -> str:
+        """Post-LLM response validation gate (§3.7.7).
+        Three checks before the response leaves the system:
+        1. External name filtering — flag advisor self-identification
+        2. REDLINE leak detection — scan for REDLINE content in output
+        3. Governance data suppression — strip internal artifacts
+        Returns cleaned response. Logs violations to TRACE."""
+        import re as _re
+        violations = []
+
+        # Check 1: External name filtering (§3.7.7)
+        for name in self.config.external_names:
+            if name.lower() in response.lower():
+                violations.append(f"EXTERNAL_NAME:{name}")
+                response = _re.sub(
+                    _re.escape(name), "[ADVISOR]", response, flags=_re.IGNORECASE
+                )
+
+        # Check 2: REDLINE leak detection (§3.7.7)
+        try:
+            for hub_name in ["WORK", "PERSONAL", "SYSTEM"]:
+                for entry in self.hubs.list_hub(hub_name):
+                    if entry.redline and len(entry.content) > 10:
+                        fingerprint = entry.content[:40].lower()
+                        if fingerprint in response.lower():
+                            violations.append(f"REDLINE_LEAK:{entry.id}")
+        except Exception:
+            pass  # Hub access failure shouldn't block response delivery
+
+        # Check 3: Governance data suppression (§3.7.7)
+        governance_patterns = [
+            "SCOPE_OK", "RUNE_OK", "RUNE_BLOCKED", "OATH_", "CYCLE_LIMITED",
+            "PAV_OK", "EXEC_OK", "REQUEST_COMPLETE", "SAFE_STOP",
+            "ScopeEnvelope", "TRACE_EVENT",
+        ]
+        for pattern in governance_patterns:
+            if pattern in response:
+                violations.append(f"GOVERNANCE_LEAK:{pattern}")
+                response = response.replace(pattern, "[REDACTED]")
+
+        if violations:
+            self._log("LLM_VALIDATION", task_id,
+                       f"Post-LLM gate flagged {len(violations)} issue(s): {', '.join(violations)}")
+
+        return response
+
     def process_request(self, text: str, use_llm: bool = False,
                         task_id: str = None, container_id: str = "GLOBAL",
                         scope_policy: dict = None) -> dict:
         """
-        Main governed pipeline. Every request flows through:
-        CONSTITUTION -> SCOPE -> RUNE -> EXECUTION -> OATH -> CYCLE -> PAV -> LLM -> TRACE
+        Main governed pipeline (Pact §3.3). Every request flows through:
+        SAFE_STOP → GENESIS → SCOPE → RUNE → EXECUTION → OATH → CYCLE → PAV → LLM → TRACE
+
+        Pipeline stage tracking (§3.3.4): every halt includes {stage, stage_name}.
+        Event codes follow taxonomy (§3.4.5): SEAT_ACTION format.
         """
         task_id = task_id or f"REQ-{datetime.now(UTC).timestamp()}"
 
+        # Stage tracking (§3.3.4)
+        STAGES = {
+            0: "SAFE_STOP", 1: "GENESIS", 2: "SCOPE", 3: "RUNE",
+            4: "EXECUTION", 5: "OATH", 6: "CYCLE", 7: "PAV", 8: "LLM", 9: "TRACE",
+        }
+        last_stage = -1  # No stage completed yet
+
         try:
-            # -- Step 0: Persistent Safe-Stop check (Pact §0.5) --
+            # -- Stage 0: Persistent Safe-Stop check (Pact §0.5) --
             ss = self.is_safe_stopped()
             if ss["active"]:
                 return {
                     "error": "SAFE_STOP_ACTIVE",
                     "reason": ss["reason"],
                     "timestamp": ss.get("timestamp"),
+                    "stage": 0, "stage_name": STAGES[0],
                 }
+            last_stage = 0
 
-            # -- Step 1: Constitution integrity check (blocking, Pact §0.2.1) --
+            # -- Stage 1: Constitution integrity check (blocking, Pact §0.2.1) --
             genesis = self.verify_genesis()
             if not genesis["verified"]:
                 return {
                     "error": "GENESIS_FAILURE",
                     "reason": genesis["reason"],
+                    "stage": 1, "stage_name": STAGES[1],
                 }
+            last_stage = 1
 
-            # -- Step 2: SCOPE — declare bounded envelope --
+            # -- Stage 2: SCOPE — declare bounded envelope --
             policy = scope_policy or {
                 "allowed_sources": ["WORK", "SYSTEM"],
                 "forbidden_sources": [],
@@ -278,8 +341,9 @@ class Runtime:
                 metadata_policy=CONTENT_ONLY,
             )
             self._log("SCOPE_OK", task_id, f"Envelope {envelope.token}")
+            last_stage = 2
 
-            # -- Step 3: RUNE — classify meaning --
+            # -- Stage 3: RUNE — classify meaning --
             term_status = self.meaning.classify(text)
             meaning = term_status.status
             self._log("RUNE_OK", task_id, f"{text} -> {meaning}")
@@ -291,14 +355,17 @@ class Runtime:
                     "error": "DISALLOWED_TERM",
                     "meaning": meaning,
                     "reason": term_status.reason,
+                    "stage": 3, "stage_name": STAGES[3],
                 }
+            last_stage = 3
 
-            # -- Step 4: EXECUTION — classify intent + risk --
+            # -- Stage 4: EXECUTION — classify intent + risk --
             intent = self.state_machine.classify_intent(text)
             classification = intent.classification
             self._log("EXEC_OK", task_id, f"Intent: {classification}")
+            last_stage = 4
 
-            # -- Step 5: OATH — consent check --
+            # -- Stage 5: OATH — consent check --
             consent = self.oath.check("EXECUTE", container_id)
             if consent != "AUTHORIZED":
                 self._log(f"OATH_{consent}", task_id, f"Consent: {consent}")
@@ -307,9 +374,11 @@ class Runtime:
                     "meaning": meaning,
                     "classification": classification,
                     "consent": consent,
+                    "stage": 5, "stage_name": STAGES[5],
                 }
+            last_stage = 5
 
-            # -- Step 6: CYCLE — rate limit --
+            # -- Stage 6: CYCLE — rate limit --
             rate = self.cycle.check_rate_limit(container_id)
             if rate["status"] == "RATE_LIMITED":
                 self._log("CYCLE_LIMITED", task_id, "Rate limited")
@@ -317,14 +386,17 @@ class Runtime:
                     "error": "RATE_LIMITED",
                     "meaning": meaning,
                     "classification": classification,
+                    "stage": 6, "stage_name": STAGES[6],
                 }
+            last_stage = 6
 
-            # -- Step 7: PAV — build sanitized view (REDLINE excluded) --
+            # -- Stage 7: PAV — build sanitized view (REDLINE excluded) --
             pav_view = self.pav.build(envelope, self.hubs)
             self._log("PAV_OK", task_id,
                        f"Entries: {len(pav_view.entries)}, REDLINE excluded: {pav_view.redline_excluded}")
+            last_stage = 7
 
-            # -- Step 8: LLM call (if requested) --
+            # -- Stage 8: LLM call (if requested) --
             llm_response = None
             if use_llm:
                 pav_text = "\n".join(
@@ -336,9 +408,12 @@ class Runtime:
                     for t in self.meaning.list_sealed()
                 )
                 llm_response = self.llm.call(pav_text, terms_text, text)
+                # Post-LLM response validation (§3.7.7)
+                llm_response = self._validate_llm_response(llm_response, task_id)
                 self._log("LLM_OK", task_id, f"LLM responded: {len(llm_response)} chars")
+            last_stage = 8
 
-            # -- Step 9: TRACE — final audit --
+            # -- Stage 9: TRACE — final audit --
             self._log("REQUEST_COMPLETE", task_id,
                        f"meaning={meaning} class={classification} llm={'yes' if use_llm else 'no'}")
 
@@ -358,17 +433,32 @@ class Runtime:
 
         except SafeStopTriggered as e:
             self.enter_safe_stop(str(e))
+            # §3.4.4: SAFE_STOP_INFLIGHT — record which stage was last completed
             try:
-                self._log("SAFE_STOP", task_id, str(e))
+                self._log("SAFE_STOP_INFLIGHT", task_id,
+                           f"Safe-Stop triggered mid-pipeline. Last completed stage: "
+                           f"{last_stage} ({STAGES.get(last_stage, 'NONE')}). Reason: {e}")
             except Exception:
-                pass  # Safe-Stop already persisted above; audit is best-effort here
-            return {"error": "SAFE_STOP", "reason": str(e)}
+                pass  # Safe-Stop already persisted; audit is best-effort here
+            return {
+                "error": "SAFE_STOP",
+                "reason": str(e),
+                "stage": last_stage + 1,
+                "stage_name": STAGES.get(last_stage + 1, "UNKNOWN"),
+                "last_completed_stage": last_stage,
+            }
         except Exception as e:
             try:
-                self._log("ERROR", task_id, str(e))
+                self._log("PIPELINE_ERROR", task_id,
+                           f"Error at stage {last_stage + 1} ({STAGES.get(last_stage + 1, 'UNKNOWN')}): {e}")
             except Exception:
                 pass  # If audit itself is broken, still return the error to caller
-            return {"error": "UNEXPECTED_ERROR", "reason": str(e)}
+            return {
+                "error": "UNEXPECTED_ERROR",
+                "reason": str(e),
+                "stage": last_stage + 1,
+                "stage_name": STAGES.get(last_stage + 1, "UNKNOWN"),
+            }
 
 
 def bootstrap(config=None, restore: bool = False) -> Runtime:

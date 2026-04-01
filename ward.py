@@ -26,6 +26,16 @@ class Ward:
     _pre_hooks: List[Callable] = field(default_factory=list)
     _post_hooks: List[Callable] = field(default_factory=list)
 
+    # §1.7 Hook enforcement: hooks cannot alter governance decisions.
+    PROTECTED_TASK_KEYS = frozenset({
+        "action", "consent", "classification", "scope_token",
+        "allowed_sources", "forbidden_sources", "t0_command", "review_complete",
+    })
+    PROTECTED_RESULT_KEYS = frozenset({
+        "error", "consent", "classification", "meaning", "sealed",
+        "chain_valid", "valid",
+    })
+
     def register_seat(self, seat: Any) -> None:
         name = getattr(seat, "name", None)
         if not name:
@@ -35,21 +45,27 @@ class Ward:
         self._seats[name] = seat
 
     def add_pre_hook(self, hook: Callable) -> None:
-        """Add a function called before every route: hook(seat_name, task) -> task or None."""
+        """Add a function called before every route. Must not alter protected keys (§1.7)."""
         self._pre_hooks.append(hook)
 
     def add_post_hook(self, hook: Callable) -> None:
-        """Add a function called after every route: hook(seat_name, task, result) -> result or None."""
+        """Add a function called after every route. Must not alter protected keys (§1.7)."""
         self._post_hooks.append(hook)
 
     def route(self, seat_name: str, task: dict) -> dict:
         if seat_name not in self._seats:
             raise WardError(f"Unknown seat: {seat_name}")
 
-        # Pre-hooks
+        # Pre-hooks (§1.7: enforce protected key immutability)
         for hook in self._pre_hooks:
             modified = hook(seat_name, task)
             if modified is not None:
+                for key in self.PROTECTED_TASK_KEYS:
+                    if key in task and key in modified and modified[key] != task[key]:
+                        raise WardError(
+                            f"Hook violated §1.7: attempted to alter protected key '{key}' "
+                            f"in task routed to {seat_name}"
+                        )
                 task = modified
 
         seat = self._seats[seat_name]
@@ -61,10 +77,16 @@ class Ward:
         if not isinstance(result, dict):
             raise WardError(f"Seat '{seat_name}' returned non-dict result: {type(result)}")
 
-        # Post-hooks
+        # Post-hooks (§1.7: enforce protected key immutability)
         for hook in self._post_hooks:
             modified = hook(seat_name, task, result)
             if modified is not None:
+                for key in self.PROTECTED_RESULT_KEYS:
+                    if key in result and key in modified and modified[key] != result[key]:
+                        raise WardError(
+                            f"Hook violated §1.7: attempted to alter protected key '{key}' "
+                            f"in result from {seat_name}"
+                        )
                 result = modified
 
         return result

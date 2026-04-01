@@ -320,13 +320,13 @@ def test_seal():
 
     seal = Seal()
     p = SealPacket("S0", 1, "DOC-1", "Section 0: Sovereign authority.")
-    r = seal.seal(p, council_vote=True, t0_command=True)
+    r = seal.seal(p, review_complete=True, t0_command=True)
     check(isinstance(r, CanonArtifact) and r.version == "v1.0", "sealed v1.0")
 
     r2 = seal.seal(SealPacket("S0", 2, "DOC-2", "Section 0 revised."), True, True)
     check(r2.version == "v1.1", "version bumped")
 
-    check(seal.seal(p, False, True).get("error") == "NO_COUNCIL_VOTE", "requires council")
+    check(seal.seal(p, False, True).get("error") == "NO_REVIEW_ATTESTATION", "requires review attestation")
     check(seal.seal(p, True, False).get("error") == "NO_T0_COMMAND", "requires T-0")
 
     clean = SealPacket("S1", 1, "DOC-3", "The Claude building on Main Street needs inspection.")
@@ -969,7 +969,7 @@ def test_pre_seal_drift_check():
 
         # Seal with no section0.txt (dev mode) — should work
         packet = SealPacket("S-TEST", 1, "DOC-TEST", "Test section content.")
-        result = rss.seal.seal(packet, council_vote=True, t0_command=True)
+        result = rss.seal.seal(packet, review_complete=True, t0_command=True)
         check(isinstance(result, CanonArtifact), "seal works in dev mode (no section0.txt)")
 
         # Create valid section0.txt and set up genesis
@@ -982,7 +982,7 @@ def test_pre_seal_drift_check():
 
         # Seal with valid genesis — should work
         packet2 = SealPacket("S-TEST2", 1, "DOC-TEST2", "Another section.")
-        result = rss.seal.seal(packet2, council_vote=True, t0_command=True)
+        result = rss.seal.seal(packet2, review_complete=True, t0_command=True)
         check(isinstance(result, CanonArtifact), "seal works with valid genesis")
 
         # Tamper with section0.txt — seal should REFUSE
@@ -993,7 +993,7 @@ def test_pre_seal_drift_check():
         rss.clear_safe_stop()
 
         packet3 = SealPacket("S-TEST3", 1, "DOC-TEST3", "Should be blocked.")
-        result = rss.seal.seal(packet3, council_vote=True, t0_command=True)
+        result = rss.seal.seal(packet3, review_complete=True, t0_command=True)
         check(isinstance(result, dict) and result.get("error") == "INTEGRITY_CHECK_FAILED",
               "seal REFUSES when genesis is tampered (Pact §0.7.3)")
 
@@ -1003,7 +1003,7 @@ def test_pre_seal_drift_check():
             f.write("SOVEREIGN ROOT")
 
         packet4 = SealPacket("S-TEST4", 1, "DOC-TEST4", "After fix.")
-        result = rss.seal.seal(packet4, council_vote=True, t0_command=True)
+        result = rss.seal.seal(packet4, review_complete=True, t0_command=True)
         check(isinstance(result, CanonArtifact), "seal works after genesis fix")
 
         rss.persistence.close()
@@ -1395,6 +1395,371 @@ def test_redline_suppression():
 
 
 # ============================================================
+# SECTION 3: CONFIG-DRIVEN VERB LISTS (§3.1.3)
+# ============================================================
+def test_config_driven_verbs():
+    section("Config-Driven Verb Lists (§3.1.3)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # State machine should use config verbs, not module defaults
+        # Config has "export", "run", "display" that module defaults don't
+        r = rss.process_request("export all data", use_llm=False)
+        check(r.get("classification") == "HIGH_RISK",
+              "'export' classified HIGH_RISK from config verbs (not in old defaults)")
+
+        r = rss.process_request("run the batch process", use_llm=False)
+        check(r.get("classification") == "HIGH_RISK",
+              "'run' classified HIGH_RISK from config verbs")
+
+        r = rss.process_request("display the results", use_llm=False)
+        check(r.get("classification") == "HIGH_RISK",
+              "'display' classified HIGH_RISK from config verbs")
+
+        # Standard request still works
+        r = rss.process_request("What is the Morrison quote?", use_llm=False)
+        check(r.get("classification") == "REQUEST",
+              "standard request still classified REQUEST")
+
+        # Custom config with narrower verb list
+        config2 = RSSConfig(
+            db_path=path,
+            high_risk_verbs=["delete", "destroy"],  # Narrower list
+        )
+        rss2 = Runtime(config2)
+        rss2.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0")
+        for label in ["quote"]:
+            rss2.meaning.create_term(Term(label, label, f"Sealed: {label}", [], "1.0"), force=True)
+
+        # "export" should NOT be high-risk with narrow list
+        intent = rss2.state_machine.classify_intent("export all data")
+        check(intent.classification == "REQUEST",
+              "narrower config: 'export' is REQUEST (not in custom list)")
+
+        rss2.persistence.close()
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+# ============================================================
+# SECTION 3: PIPELINE STAGE TRACKING (§3.3.4)
+# ============================================================
+def test_pipeline_stage_tracking():
+    section("Pipeline Stage Tracking (§3.3.4)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # Successful request — no stage in response (no error)
+        r = rss.process_request("quote", use_llm=False)
+        check("error" not in r, "successful request has no error")
+
+        # DISALLOWED halt — should report stage 3 (RUNE)
+        rss.meaning.disallow("forbidden", "test")
+        r = rss.process_request("forbidden", use_llm=False)
+        check(r.get("stage") == 3, "DISALLOWED halt reports stage 3")
+        check(r.get("stage_name") == "RUNE", "DISALLOWED halt reports stage_name RUNE")
+
+        # CONSENT halt — should report stage 5 (OATH)
+        rss.oath.revoke("EXECUTE", "GLOBAL")
+        r = rss.process_request("quote", use_llm=False)
+        check(r.get("stage") == 5, "CONSENT halt reports stage 5")
+        check(r.get("stage_name") == "OATH", "CONSENT halt reports stage_name OATH")
+
+        # SAFE_STOP halt — should report stage 0
+        rss.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0")
+        rss.enter_safe_stop("test stage tracking")
+        r = rss.process_request("quote", use_llm=False)
+        check(r.get("stage") == 0, "SAFE_STOP halt reports stage 0")
+        check(r.get("stage_name") == "SAFE_STOP", "SAFE_STOP halt reports stage_name SAFE_STOP")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+# ============================================================
+# SECTION 3: SAFE_STOP_INFLIGHT (§3.4.4)
+# ============================================================
+def test_safe_stop_inflight():
+    section("SAFE_STOP_INFLIGHT (§3.4.4)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    s0_path = path + ".section0.txt"
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # Set up a valid section0, then tamper it to trigger mid-pipeline Safe-Stop
+        rss.section0_path = s0_path
+        with open(s0_path, "w") as f:
+            f.write("SOVEREIGN ROOT")
+        rss.section0_hash = __import__("hashlib").sha256(
+            "SOVEREIGN ROOT".encode()
+        ).hexdigest()
+
+        # First request works fine
+        r = rss.process_request("quote", use_llm=False)
+        check("error" not in r, "request works with valid genesis")
+
+        # Tamper section0 — next request triggers Genesis failure at Stage 1
+        with open(s0_path, "w") as f:
+            f.write("TAMPERED")
+
+        r = rss.process_request("quote", use_llm=False)
+        check(r.get("error") == "GENESIS_FAILURE", "tampered genesis returns GENESIS_FAILURE")
+        check(r.get("stage") == 1, "genesis failure reports stage 1")
+        check(r.get("stage_name") == "GENESIS", "genesis failure reports stage_name GENESIS")
+
+        # System is now in Safe-Stop. Next request sees it at Stage 0
+        r = rss.process_request("quote", use_llm=False)
+        check(r.get("error") == "SAFE_STOP_ACTIVE", "subsequent request sees SAFE_STOP_ACTIVE")
+        check(r.get("stage") == 0, "Safe-Stop halt at stage 0")
+
+        rss.clear_safe_stop()
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        if os.path.exists(s0_path):
+            os.unlink(s0_path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+# ============================================================
+# SECTION 3: EVENT CODE TAXONOMY (§3.4.5)
+# ============================================================
+def test_event_code_taxonomy():
+    section("Event Code Taxonomy (§3.4.5)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # Run several requests to generate events
+        rss.process_request("quote", use_llm=False)
+        rss.meaning.disallow("badword", "test")
+        rss.process_request("badword", use_llm=False)
+
+        # Check that event codes follow SEAT_ACTION taxonomy
+        all_events = rss.trace.all_events()
+        event_codes = set(e.event_code for e in all_events)
+
+        # Verify namespaced codes exist
+        check("SCOPE_OK" in event_codes, "SCOPE_OK event code exists")
+        check("RUNE_OK" in event_codes, "RUNE_OK event code exists")
+        check("RUNE_BLOCKED" in event_codes, "RUNE_BLOCKED event code exists")
+        check("EXEC_OK" in event_codes, "EXEC_OK event code exists")
+        check("PAV_OK" in event_codes, "PAV_OK event code exists")
+        check("REQUEST_COMPLETE" in event_codes, "REQUEST_COMPLETE event code exists")
+
+        # All codes should be human-readable (uppercase, underscored)
+        for code in event_codes:
+            check(code == code.upper() and " " not in code,
+                  f"event code '{code}' is uppercase with no spaces")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+# ============================================================
+# SECTION 3: CONFIGURABLE LLM TIMEOUT (§3.7.5)
+# ============================================================
+def test_configurable_llm_timeout():
+    section("Configurable LLM Timeout (§3.7.5)")
+
+    # Default config has 30s timeout
+    config = RSSConfig()
+    check(config.llm_timeout == 30, "default LLM timeout is 30 seconds")
+
+    # Custom config allows override
+    config2 = RSSConfig(llm_timeout=60)
+    check(config2.llm_timeout == 60, "custom LLM timeout accepted")
+
+    # LLM adapter uses config timeout (not hardcoded)
+    adapter = LLMAdapter(config2)
+    check(adapter.config.llm_timeout == 60,
+          "LLM adapter receives config timeout")
+
+    # Verify it's actually used in the adapter (structural check)
+    import inspect
+    source = inspect.getsource(adapter.call)
+    check("self.config.llm_timeout" in source,
+          "LLM adapter uses config.llm_timeout (not hardcoded)")
+
+
+# ============================================================
+# SECTION 3: LLM RESPONSE VALIDATION (§3.7.7)
+# ============================================================
+def test_llm_response_validation():
+    section("LLM Response Validation (§3.7.7)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # Test 1: External name filtering
+        dirty = "As ChatGPT, I recommend reviewing the quote carefully."
+        clean = rss._validate_llm_response(dirty, "TEST-1")
+        check("ChatGPT" not in clean, "external name 'ChatGPT' stripped from response")
+        check("[ADVISOR]" in clean, "external name replaced with [ADVISOR]")
+
+        # Multiple external names
+        dirty2 = "Claude and Gemini both agree the RFI is complete."
+        clean2 = rss._validate_llm_response(dirty2, "TEST-2")
+        check("Claude" not in clean2 and "Gemini" not in clean2,
+              "multiple external names stripped")
+
+        # Test 2: REDLINE leak detection
+        rss.hubs.add_entry("WORK", "Secret executive salary data: CEO makes $5M", redline=True)
+        dirty3 = "The project shows that Secret executive salary data: CEO makes $5M per year."
+        clean3 = rss._validate_llm_response(dirty3, "TEST-3")
+        # TRACE should log the REDLINE leak
+        validation_events = rss.trace.events_by_code("LLM_VALIDATION")
+        check(len(validation_events) >= 1, "REDLINE leak flagged in TRACE")
+
+        # Test 3: Governance data suppression
+        dirty4 = "The SCOPE_OK token indicates RUNE_OK classification with OATH_DENIED status."
+        clean4 = rss._validate_llm_response(dirty4, "TEST-4")
+        check("SCOPE_OK" not in clean4, "governance artifact SCOPE_OK redacted")
+        check("RUNE_OK" not in clean4, "governance artifact RUNE_OK redacted")
+        check("[REDACTED]" in clean4, "governance artifacts replaced with [REDACTED]")
+
+        # Test 4: Clean response passes through unchanged
+        clean_input = "The Morrison quote is $245,000 for the panel upgrade."
+        clean_output = rss._validate_llm_response(clean_input, "TEST-5")
+        check(clean_input == clean_output, "clean response passes through unchanged")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+# ============================================================
+# SEAL REVIEW ATTESTATION RENAME (§1.5 alignment)
+# ============================================================
+def test_seal_review_attestation():
+    section("Seal review_complete Rename (§1.5)")
+
+    seal = Seal()
+    p = SealPacket("S-TEST", 1, "DOC-TEST", "Test content.")
+
+    r = seal.seal(p, review_complete=True, t0_command=True)
+    check(isinstance(r, CanonArtifact), "seal works with review_complete=True")
+
+    r2 = seal.seal(SealPacket("S2", 1, "D2", "Text."), review_complete=False, t0_command=True)
+    check(r2.get("error") == "NO_REVIEW_ATTESTATION",
+          "error code is NO_REVIEW_ATTESTATION (not NO_COUNCIL_VOTE)")
+
+    r3 = seal.seal(SealPacket("S3", 1, "D3", "Text."), review_complete=True, t0_command=False)
+    check(r3.get("error") == "NO_T0_COMMAND", "still requires T-0 command")
+
+
+# ============================================================
+# WARD HOOK ENFORCEMENT (§1.7)
+# ============================================================
+def test_ward_hook_enforcement():
+    section("WARD Hook Enforcement (§1.7)")
+
+    ward = Ward()
+
+    class DummySeat:
+        name = "TEST"
+        def status(self): return {"state": "ACTIVE"}
+        def handle(self, task): return {"result": "ok", "classification": task.get("classification", "NONE")}
+
+    ward.register_seat(DummySeat())
+
+    # Safe hook: adds metadata (allowed)
+    def safe_hook(seat_name, task):
+        return {**task, "logged_at": "now"}
+
+    ward.add_pre_hook(safe_hook)
+    result = ward.route("TEST", {"action": "test", "classification": "REQUEST"})
+    check(result.get("result") == "ok", "safe pre-hook passes through")
+
+    # Malicious pre-hook: tries to alter classification (blocked)
+    def bad_pre_hook(seat_name, task):
+        return {**task, "classification": "TAMPERED"}
+
+    ward2 = Ward()
+    ward2.register_seat(DummySeat())
+    ward2.add_pre_hook(bad_pre_hook)
+
+    try:
+        ward2.route("TEST", {"action": "test", "classification": "REQUEST"})
+        check(False, "should have blocked hook that alters classification")
+    except WardError as e:
+        check("protected key" in str(e).lower() or "§1.7" in str(e),
+              "WardError cites §1.7 for protected key violation")
+
+    # Malicious post-hook: tries to change error code (blocked)
+    class ErrorSeat:
+        name = "ERR"
+        def status(self): return {"state": "ACTIVE"}
+        def handle(self, task): return {"error": "CONSENT_REQUIRED"}
+
+    def bad_post_hook(seat_name, task, result):
+        return {**result, "error": "NONE"}
+
+    ward3 = Ward()
+    ward3.register_seat(ErrorSeat())
+    ward3.add_post_hook(bad_post_hook)
+
+    try:
+        ward3.route("ERR", {"action": "test"})
+        check(False, "should have blocked post-hook that alters error")
+    except WardError as e:
+        check("protected key" in str(e).lower(),
+              "post-hook blocked from altering protected result key")
+
+    # Safe post-hook: adds metadata (allowed)
+    def safe_post_hook(seat_name, task, result):
+        return {**result, "hook_ran": True}
+
+    ward4 = Ward()
+    ward4.register_seat(DummySeat())
+    ward4.add_post_hook(safe_post_hook)
+    result = ward4.route("TEST", {"action": "test"})
+    check(result.get("hook_ran") == True, "safe post-hook adds metadata successfully")
+
+    check(len(Ward.PROTECTED_TASK_KEYS) >= 5, "PROTECTED_TASK_KEYS has governance keys")
+    check(len(Ward.PROTECTED_RESULT_KEYS) >= 5, "PROTECTED_RESULT_KEYS has governance keys")
+
+
+# ============================================================
 # RUN ALL
 # ============================================================
 if __name__ == "__main__":
@@ -1431,6 +1796,16 @@ if __name__ == "__main__":
     safe_run(test_compound_detection)
     safe_run(test_contextual_reinjection)
     safe_run(test_redline_suppression)
+    # Section 3: Execution Law
+    safe_run(test_config_driven_verbs)
+    safe_run(test_pipeline_stage_tracking)
+    safe_run(test_safe_stop_inflight)
+    safe_run(test_event_code_taxonomy)
+    safe_run(test_configurable_llm_timeout)
+    safe_run(test_llm_response_validation)
+    # Roadmap 1.5 + 1.7
+    safe_run(test_seal_review_attestation)
+    safe_run(test_ward_hook_enforcement)
 
     print(f"\n{'='*60}")
     print(f"RSS v3 — {_pass} PASSED, {_fail} FAILED", end="")

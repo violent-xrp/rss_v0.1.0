@@ -68,7 +68,7 @@ class LLMAdapter:
                 data=data,
                 headers={"Content-Type": "application/json"},
             )
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=self.config.llm_timeout) as resp:
                 return json.loads(resp.read()).get("response", "")
         except Exception as e:
             return self._fallback(user_text, pav_text, error=str(e))

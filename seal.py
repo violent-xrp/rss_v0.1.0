@@ -53,9 +53,9 @@ class Seal:
         check_fn() -> dict with {verified: bool, reason: str}"""
         self._integrity_check = check_fn
 
-    def seal(self, packet: SealPacket, council_vote: bool, t0_command: bool):
-        if not council_vote:
-            return {"error": "NO_COUNCIL_VOTE"}
+    def seal(self, packet: SealPacket, review_complete: bool, t0_command: bool):
+        if not review_complete:
+            return {"error": "NO_REVIEW_ATTESTATION"}
         if not t0_command:
             return {"error": "NO_T0_COMMAND"}
         if not packet.section_id or not packet.doc_id:
@@ -127,7 +127,7 @@ class Seal:
                 doc_id=task["doc_id"],
                 draft_text=task["draft_text"],
             )
-            result = self.seal(packet, task.get("council_vote", False), task.get("t0_command", False))
+            result = self.seal(packet, task.get("review_complete", False), task.get("t0_command", False))
             if isinstance(result, dict):
                 return result
             return {
