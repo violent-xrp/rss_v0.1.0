@@ -67,7 +67,8 @@ class Persistence:
                 timestamp TEXT,
                 version INTEGER DEFAULT 1,
                 original_hub TEXT DEFAULT '',
-                purged INTEGER DEFAULT 0
+                purged INTEGER DEFAULT 0,
+                provenance TEXT DEFAULT '[]'
             )""",
             """CREATE TABLE IF NOT EXISTS sealed_terms (
                 term_id TEXT PRIMARY KEY,
@@ -120,6 +121,10 @@ class Persistence:
                 self.conn.execute(
                     "ALTER TABLE hub_entries ADD COLUMN purged INTEGER DEFAULT 0"
                 )
+            if "provenance" not in columns:
+                self.conn.execute(
+                    "ALTER TABLE hub_entries ADD COLUMN provenance TEXT DEFAULT '[]'"
+                )
 
     # -----------------------------------------------------
     # TRACE
@@ -169,7 +174,7 @@ class Persistence:
     def save_hub_entry(self, entry) -> None:
         with self._lock, self.conn:
             self.conn.execute(
-                "INSERT OR REPLACE INTO hub_entries VALUES(?,?,?,?,?,?,?,?)",
+                "INSERT OR REPLACE INTO hub_entries VALUES(?,?,?,?,?,?,?,?,?)",
                 (
                     entry.id,
                     entry.hub,
@@ -179,19 +184,26 @@ class Persistence:
                     getattr(entry, "version", 1),
                     getattr(entry, "original_hub", entry.hub),
                     int(getattr(entry, "purged", False)),
+                    json.dumps(getattr(entry, "provenance", [])),
                 ),
             )
 
     def load_hub_entries(self, hub: str) -> List[dict]:
         with self._lock:
             cur = self.conn.execute(
-                "SELECT id,hub,content,redline,timestamp,version,original_hub,purged "
+                "SELECT id,hub,content,redline,timestamp,version,original_hub,purged,provenance "
                 "FROM hub_entries WHERE hub=?",
                 (hub,),
             )
 
-            return [
-                {
+            results = []
+            for r in cur.fetchall():
+                prov_raw = r[8] if len(r) > 8 and r[8] else "[]"
+                try:
+                    prov = json.loads(prov_raw)
+                except (json.JSONDecodeError, TypeError):
+                    prov = []
+                results.append({
                     "id": r[0],
                     "hub": r[1],
                     "content": r[2],
@@ -200,9 +212,9 @@ class Persistence:
                     "version": r[5],
                     "original_hub": r[6] or r[1],
                     "purged": bool(r[7]) if r[7] is not None else False,
-                }
-                for r in cur.fetchall()
-            ]
+                    "provenance": prov,
+                })
+            return results
 
     # -----------------------------------------------------
     # TERMS

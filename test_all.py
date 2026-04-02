@@ -2116,6 +2116,148 @@ def test_s4_persistence_roundtrip():
                 os.unlink(path + suffix)
 
 
+def test_s4_hub_provenance():
+    """§4.3.4 — Hub provenance enforcement"""
+    section("S4: Hub Provenance (§4.3.4)")
+
+    hubs = HubTopology()
+
+    # Creation provenance
+    entry = hubs.add_entry("PERSONAL", "my note")
+    check(len(entry.provenance) == 1, "entry has creation provenance event")
+    check(entry.provenance[0]["action"] == "CREATED", "provenance action is CREATED")
+    check(entry.provenance[0]["hub"] == "PERSONAL", "provenance records creation hub")
+
+    # Archival adds provenance
+    hubs.archive_entry(entry.id)
+    archived = hubs.get_entry(entry.id)
+    check(len(archived.provenance) == 2, "archival adds provenance event (§4.3.4)")
+    check(archived.provenance[1]["action"] == "ARCHIVED", "provenance action is ARCHIVED")
+    check(archived.provenance[1]["from_hub"] == "PERSONAL", "archival provenance records source hub")
+    check(archived.provenance[1]["to_hub"] == "ARCHIVE", "archival provenance records target hub")
+
+    # Hard purge adds provenance
+    entry2 = hubs.add_entry("WORK", "credential abc")
+    hubs.hard_purge(entry2.id, reason="accidental")
+    purged = hubs.get_entry(entry2.id)
+    check(len(purged.provenance) == 2, "hard purge adds provenance event (§4.3.4)")
+    check(purged.provenance[1]["action"] == "HARD_PURGE", "provenance action is HARD_PURGE")
+    check(purged.provenance[1]["reason"] == "accidental", "purge provenance records reason")
+
+    # Declassification adds provenance
+    entry3 = hubs.add_entry("WORK", "was secret", redline=True)
+    hubs.declassify_redline(entry3.id)
+    declass = hubs.get_entry(entry3.id)
+    check(len(declass.provenance) == 2, "declassification adds provenance event (§4.3.4)")
+    check(declass.provenance[1]["action"] == "REDLINE_DECLASSIFIED",
+          "provenance action is REDLINE_DECLASSIFIED")
+
+    # Full chain: create → archive → verify chain length
+    entry4 = hubs.add_entry("WORK", "lifecycle test")
+    hubs.archive_entry(entry4.id)
+    check(len(hubs.get_entry(entry4.id).provenance) == 2,
+          "full lifecycle provenance chain intact (§4.3.4)")
+
+
+def test_s4_provenance_persistence():
+    """§4.3.4 — Provenance survives persistence round-trip"""
+    section("S4: Provenance Persistence (§4.3.4)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # Create, archive, persist
+        entry = rss.save_hub_entry("WORK", "project data")
+        rss.hubs.archive_entry(entry.id)
+        archived = rss.hubs.get_entry(entry.id)
+        rss.persistence.save_hub_entry(archived)
+
+        # Load from DB and check provenance
+        rows = rss.persistence.load_hub_entries("ARCHIVE")
+        match = [r for r in rows if r["id"] == entry.id]
+        check(len(match) == 1, "archived entry loaded from DB")
+        check(len(match[0]["provenance"]) == 2,
+              "provenance chain persisted to SQLite (§4.3.4)")
+        check(match[0]["provenance"][0]["action"] == "CREATED",
+              "CREATED event survives persistence")
+        check(match[0]["provenance"][1]["action"] == "ARCHIVED",
+              "ARCHIVED event survives persistence")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+def test_s4_pipeline_integration():
+    """Full pipeline integration with S4 features"""
+    section("S4: Pipeline Integration (end-to-end)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # Load data across hubs
+        rss.save_hub_entry("WORK", "Morrison quote for project Alpha")
+        rss.save_hub_entry("WORK", "Confidential bid price", redline=True)
+        rss.save_hub_entry("LEDGER", "Draft idea — new workflow")
+
+        # Standard pipeline — LEDGER excluded, REDLINE excluded
+        r = rss.process_request("quote", use_llm=False)
+        check("error" not in r, "standard pipeline succeeds with S4 features")
+        check(r["pav_entries"] == 1, "only non-REDLINE WORK entry in PAV (LEDGER excluded)")
+
+        # Verify PAV_OK TRACE includes contributing hubs
+        pav_events = rss.trace.events_by_code("PAV_OK")
+        check(len(pav_events) >= 1, "PAV_OK event logged")
+
+        # Pipeline with sovereign SCOPE — include PERSONAL
+        rss.save_hub_entry("PERSONAL", "personal note about Morrison")
+        r2 = rss.process_request("quote", use_llm=False,
+                                  scope_policy={
+                                      "allowed_sources": ["WORK", "PERSONAL"],
+                                      "sovereign": True,
+                                  })
+        check("error" not in r2, "sovereign pipeline succeeds")
+        check(r2["pav_entries"] == 2,
+              "sovereign SCOPE includes PERSONAL non-REDLINE entries")
+
+        # Pipeline with PERSONAL but NO sovereign — must fail at SCOPE
+        r3 = rss.process_request("quote", use_llm=False,
+                                  scope_policy={
+                                      "allowed_sources": ["WORK", "PERSONAL"],
+                                  })
+        check("error" in r3, "non-sovereign PERSONAL pipeline blocked (§4.2.3)")
+
+        # Pipeline with invalid hub name — must fail at SCOPE
+        r4 = rss.process_request("quote", use_llm=False,
+                                  scope_policy={
+                                      "allowed_sources": ["WORK", "FAKE"],
+                                  })
+        check("error" in r4, "invalid hub name blocked in pipeline (§4.5.3)")
+
+        # container_id flows through pipeline
+        r5 = rss.process_request("quote", use_llm=False,
+                                  container_id="MORRISON-001")
+        check("error" not in r5, "pipeline with custom container_id succeeds (§4.5.4)")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
 # ============================================================
 # RUN ALL
 # ============================================================
@@ -2175,6 +2317,9 @@ if __name__ == "__main__":
     safe_run(test_s4_redline_declassification)
     safe_run(test_s4_pav_hub_audit)
     safe_run(test_s4_persistence_roundtrip)
+    safe_run(test_s4_hub_provenance)
+    safe_run(test_s4_provenance_persistence)
+    safe_run(test_s4_pipeline_integration)
 
     print(f"\n{'='*60}")
     print(f"RSS v3 — {_pass} PASSED, {_fail} FAILED", end="")

@@ -204,6 +204,9 @@ class Runtime:
                     # §4.4.5 — restore purged flag
                     if entry_data.get("purged"):
                         e.purged = True
+                    # §4.3.4 — restore provenance
+                    if entry_data.get("provenance"):
+                        e.provenance = entry_data["provenance"]
                     restored["hub_entries"] += 1
 
         # Count restored trace events
