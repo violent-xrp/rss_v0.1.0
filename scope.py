@@ -1,28 +1,38 @@
 """
 RSS v3 — Layer 2: SCOPE
 Declares and enforces bounded envelopes for every task.
+
+§4.5.7: Envelopes are immutable once declared — tuples, not lists.
+§4.5.3: allowed_sources and forbidden_sources validated against VALID_HUBS.
+§4.5.4: container_id field binds envelope to a specific tenant.
+§4.2.3: PERSONAL hub requires explicit sovereign construction.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, UTC
-from typing import Dict, List, Optional
+from typing import Dict, Optional, Tuple
 from uuid import uuid4
+
+from hub_topology import VALID_HUBS
 
 
 class ScopeError(Exception):
     """Raised when scope operations fail."""
 
 
-@dataclass
+@dataclass(frozen=True)
 class ScopeEnvelope:
+    """Immutable SCOPE envelope (§4.5.7). All collection fields are tuples."""
     token: str
     task_id: str
-    allowed_sources: List[str]
-    forbidden_sources: List[str]
+    allowed_sources: Tuple[str, ...]
+    forbidden_sources: Tuple[str, ...]
     redline_handling: str
     metadata_policy: str
+    container_id: str = "GLOBAL"          # §4.5.4
     expiration: Optional[datetime] = None
+    sovereign: bool = False               # §4.2.3 — True when T-0 explicitly constructed
 
 
 @dataclass
@@ -32,26 +42,47 @@ class Scope:
     def declare(
         self,
         task_id: str,
-        allowed_sources: List[str],
-        forbidden_sources: List[str],
+        allowed_sources,
+        forbidden_sources,
         redline_handling: str,
         metadata_policy: str,
         expiration: Optional[datetime] = None,
+        container_id: str = "GLOBAL",
+        sovereign: bool = False,
     ) -> ScopeEnvelope:
         if not task_id:
             raise ScopeError("task_id must not be empty.")
         if not allowed_sources:
             raise ScopeError("allowed_sources must not be empty.")
 
+        # §4.5.3 — validate hub names
+        allowed = tuple(allowed_sources)
+        forbidden = tuple(forbidden_sources)
+        for name in allowed:
+            if name not in VALID_HUBS:
+                raise ScopeError(f"Invalid hub name in allowed_sources: '{name}' (§4.5.3)")
+        for name in forbidden:
+            if name not in VALID_HUBS:
+                raise ScopeError(f"Invalid hub name in forbidden_sources: '{name}' (§4.5.3)")
+
+        # §4.2.3 — PERSONAL requires sovereign construction
+        if "PERSONAL" in allowed and not sovereign:
+            raise ScopeError(
+                "PERSONAL hub requires explicit sovereign construction (§4.2.3). "
+                "Set sovereign=True to include PERSONAL."
+            )
+
         token = f"SCOPE-{uuid4().hex[:8]}"
         envelope = ScopeEnvelope(
             token=token,
             task_id=task_id,
-            allowed_sources=allowed_sources,
-            forbidden_sources=forbidden_sources,
+            allowed_sources=allowed,
+            forbidden_sources=forbidden,
             redline_handling=redline_handling,
             metadata_policy=metadata_policy,
+            container_id=container_id,
             expiration=expiration,
+            sovereign=sovereign,
         )
         self._envelopes[token] = envelope
         return envelope

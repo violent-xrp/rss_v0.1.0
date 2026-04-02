@@ -19,7 +19,7 @@ from ward import Ward, WardError
 from scope import Scope, ScopeError
 
 # Layer 3
-from hub_topology import HubTopology, HubError, HubEntry
+from hub_topology import HubTopology, HubError, HubEntry, VALID_HUBS, PURGE_SENTINEL
 from pav import PAVBuilder, CONTENT_ONLY, CONTENT_HUB, FULL_CONTEXT
 
 # Layer 4
@@ -219,7 +219,8 @@ def test_pav():
     hubs.add_entry("PERSONAL", "non-secret")
 
     scope = Scope()
-    env = scope.declare("T1", ["WORK", "PERSONAL"], [], "EXCLUDE", CONTENT_ONLY)
+    env = scope.declare("T1", ["WORK", "PERSONAL"], [], "EXCLUDE", CONTENT_ONLY,
+                        sovereign=True)  # §4.2.3 — PERSONAL requires sovereign
 
     pav = PAVBuilder().build(env, hubs)
     check(pav.redline_excluded == 1, "REDLINE excluded")
@@ -1760,6 +1761,362 @@ def test_ward_hook_enforcement():
 
 
 # ============================================================
+# SECTION 4: HUB TOPOLOGY & DATA GOVERNANCE
+# ============================================================
+
+def test_s4_personal_scope_guard():
+    """§4.2.3 — PERSONAL hub default SCOPE guard"""
+    section("S4: PERSONAL Hub SCOPE Guard (§4.2.3)")
+
+    scope = Scope()
+
+    # Default envelope (no sovereign) must reject PERSONAL
+    try:
+        scope.declare("T1", ["WORK", "PERSONAL"], [], "EXCLUDE", "CONTENT_ONLY")
+        check(False, "should reject PERSONAL without sovereign=True")
+    except ScopeError as e:
+        check("sovereign" in str(e).lower() or "§4.2.3" in str(e),
+              "rejects PERSONAL in non-sovereign envelope (§4.2.3)")
+
+    # Sovereign envelope allows PERSONAL
+    env = scope.declare("T2", ["WORK", "PERSONAL"], [], "EXCLUDE", "CONTENT_ONLY",
+                        sovereign=True)
+    check("PERSONAL" in env.allowed_sources, "sovereign envelope allows PERSONAL")
+    check(env.sovereign is True, "sovereign flag set on envelope")
+
+    # Default without PERSONAL is fine
+    env2 = scope.declare("T3", ["WORK", "SYSTEM"], [], "EXCLUDE", "CONTENT_ONLY")
+    check("PERSONAL" not in env2.allowed_sources, "default envelope excludes PERSONAL")
+    check(env2.sovereign is False, "non-sovereign by default")
+
+
+def test_s4_scope_immutability():
+    """§4.5.7 — SCOPE envelope immutability"""
+    section("S4: SCOPE Envelope Immutability (§4.5.7)")
+
+    scope = Scope()
+    env = scope.declare("T1", ["WORK", "SYSTEM"], [], "EXCLUDE", "CONTENT_ONLY")
+
+    # allowed_sources is a tuple, not a list
+    check(isinstance(env.allowed_sources, tuple), "allowed_sources is tuple (§4.5.7)")
+    check(isinstance(env.forbidden_sources, tuple), "forbidden_sources is tuple (§4.5.7)")
+
+    # Attempting to modify should raise
+    try:
+        env.allowed_sources = ("WORK", "PERSONAL")
+        check(False, "should not allow attribute assignment on frozen dataclass")
+    except (AttributeError, FrozenInstanceError if 'FrozenInstanceError' in dir() else AttributeError):
+        check(True, "frozen dataclass rejects field mutation (§4.5.7)")
+
+    # Tuples don't support append
+    try:
+        env.allowed_sources.append("PERSONAL")
+        check(False, "should not allow append on tuple")
+    except AttributeError:
+        check(True, "tuple has no append — mid-pipeline mutation prevented (§4.5.7)")
+
+
+def test_s4_scope_hub_validation():
+    """§4.5.3 — SCOPE hub name validation"""
+    section("S4: SCOPE Hub Name Validation (§4.5.3)")
+
+    scope = Scope()
+
+    # Invalid hub in allowed_sources
+    try:
+        scope.declare("T1", ["WORK", "FAKE_HUB"], [], "EXCLUDE", "CONTENT_ONLY")
+        check(False, "should reject invalid hub name")
+    except ScopeError as e:
+        check("FAKE_HUB" in str(e), "rejects invalid hub in allowed_sources (§4.5.3)")
+
+    # Invalid hub in forbidden_sources
+    try:
+        scope.declare("T2", ["WORK"], ["NOT_A_HUB"], "EXCLUDE", "CONTENT_ONLY")
+        check(False, "should reject invalid forbidden hub")
+    except ScopeError as e:
+        check("NOT_A_HUB" in str(e), "rejects invalid hub in forbidden_sources (§4.5.3)")
+
+    # Valid hubs still work
+    env = scope.declare("T3", ["WORK", "SYSTEM"], ["ARCHIVE"], "EXCLUDE", "CONTENT_ONLY")
+    check(env.token.startswith("SCOPE-"), "valid hubs accepted (§4.5.3)")
+
+
+def test_s4_scope_container_id():
+    """§4.5.4 — SCOPE container_id field"""
+    section("S4: SCOPE container_id Field (§4.5.4)")
+
+    scope = Scope()
+
+    # Default container_id is GLOBAL
+    env = scope.declare("T1", ["WORK"], [], "EXCLUDE", "CONTENT_ONLY")
+    check(env.container_id == "GLOBAL", "default container_id is GLOBAL (§4.5.4)")
+
+    # Custom container_id
+    env2 = scope.declare("T2", ["WORK"], [], "EXCLUDE", "CONTENT_ONLY",
+                         container_id="MORRISON-001")
+    check(env2.container_id == "MORRISON-001", "custom container_id set (§4.5.4)")
+
+
+def test_s4_archival_original_hub():
+    """§4.4.3 — Archival original_hub preservation"""
+    section("S4: Archival original_hub Preservation (§4.4.3)")
+
+    hubs = HubTopology()
+
+    # Create entries in different hubs
+    p = hubs.add_entry("PERSONAL", "my private note")
+    w = hubs.add_entry("WORK", "project data")
+
+    check(p.original_hub == "PERSONAL", "original_hub set at creation (§4.4.3)")
+    check(w.original_hub == "WORK", "WORK original_hub set at creation")
+
+    # Archive the PERSONAL entry
+    hubs.archive_entry(p.id)
+    archived = hubs.get_entry(p.id)
+    check(archived.hub == "ARCHIVE", "hub changed to ARCHIVE")
+    check(archived.original_hub == "PERSONAL", "original_hub preserved as PERSONAL (§4.4.3)")
+
+    # Archive the WORK entry
+    hubs.archive_entry(w.id)
+    archived_w = hubs.get_entry(w.id)
+    check(archived_w.hub == "ARCHIVE", "WORK entry hub changed to ARCHIVE")
+    check(archived_w.original_hub == "WORK", "WORK original_hub preserved (§4.4.3)")
+
+
+def test_s4_hard_purge():
+    """§4.4.5 — Sovereign Hard Purge"""
+    section("S4: Sovereign Hard Purge (§4.4.5)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # Create entry and purge it
+        entry = rss.save_hub_entry("WORK", "Secret credential: sk-12345")
+        entry_id = entry.id
+        rss.hard_purge(entry_id, reason="Accidental credential storage")
+
+        # Verify content destroyed
+        purged = rss.hubs.get_entry(entry_id)
+        check(purged.content == PURGE_SENTINEL, "content overwritten with purge sentinel (§4.4.5)")
+        check(purged.purged is True, "purged flag set (§4.4.5)")
+        check(purged.redline is True, "purged entry treated as REDLINE (§4.4.5)")
+
+        # Metadata preserved
+        check(purged.id == entry_id, "ID preserved after purge")
+        check(purged.original_hub == "WORK", "original_hub preserved after purge")
+
+        # PAV excludes purged entries
+        scope = Scope()
+        env = scope.declare("T-PURGE", ["WORK"], [], "EXCLUDE", "CONTENT_ONLY")
+        pav_view = PAVBuilder().build(env, rss.hubs)
+        purge_in_pav = any(PURGE_SENTINEL in e.get("content", "") for e in pav_view.entries)
+        check(not purge_in_pav, "purged entry excluded from PAV (§4.4.5)")
+
+        # TRACE has HARD_PURGE event
+        purge_events = rss.trace.events_by_code("HARD_PURGE")
+        check(len(purge_events) >= 1, "TRACE has HARD_PURGE event (§4.4.5)")
+
+        # Cannot update purged entry
+        try:
+            rss.hubs.update_entry(entry_id, "new content")
+            check(False, "should reject update on purged entry")
+        except HubError:
+            check(True, "purged entry cannot be updated (§4.4.5)")
+
+        # Cannot double-purge
+        try:
+            rss.hubs.hard_purge(entry_id)
+            check(False, "should reject double purge")
+        except HubError:
+            check(True, "already-purged entry cannot be purged again (§4.4.5)")
+
+        # Persisted correctly
+        rows = rss.persistence.load_hub_entries("WORK")
+        purged_rows = [r for r in rows if r["id"] == entry_id]
+        check(len(purged_rows) == 1 and purged_rows[0]["purged"] is True,
+              "purge persisted to SQLite (§4.4.5)")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+def test_s4_governed_search():
+    """§4.5.2 — Cross-hub search governance"""
+    section("S4: Cross-Hub Search Governance (§4.5.2)")
+
+    hubs = HubTopology()
+    hubs.add_entry("WORK", "Morrison project quote")
+    hubs.add_entry("PERSONAL", "Morrison personal note")
+    hubs.add_entry("SYSTEM", "Morrison system config")
+    hubs.add_entry("LEDGER", "Morrison design idea")
+
+    # Governed search with SCOPE restriction — PERSONAL excluded by default
+    results = hubs.governed_search("Morrison", ["WORK", "SYSTEM"])
+    hub_names = [r.hub for r in results]
+    check("PERSONAL" not in hub_names, "PERSONAL excluded from governed search (§4.5.2)")
+    check(len(results) == 2, "only WORK and SYSTEM results returned")
+
+    # Governed search with PERSONAL explicit
+    results2 = hubs.governed_search("Morrison", ["WORK", "PERSONAL"],
+                                     include_personal=True)
+    check(len(results2) == 2, "PERSONAL included when explicitly requested (§4.5.2)")
+
+    # PERSONAL in allowed but include_personal=False — still excluded
+    results3 = hubs.governed_search("Morrison", ["WORK", "PERSONAL"],
+                                     include_personal=False)
+    check(len(results3) == 1, "PERSONAL excluded even if in allowed_sources without flag (§4.5.2)")
+
+    # Hubs not in allowed_sources are not searched
+    results4 = hubs.governed_search("Morrison", ["WORK"])
+    check(len(results4) == 1 and results4[0].hub == "WORK",
+          "only allowed hubs searched (§4.5.2)")
+
+
+def test_s4_ledger_pav_exclusion():
+    """§4.6.7 — LEDGER mechanical PAV exclusion"""
+    section("S4: LEDGER PAV Exclusion (§4.6.7)")
+
+    hubs = HubTopology()
+    hubs.add_entry("WORK", "real project data")
+    hubs.add_entry("LEDGER", "draft idea — not canon")
+
+    scope = Scope()
+
+    # LEDGER in allowed_sources but excluded from standard PAV
+    env = scope.declare("T1", ["WORK", "LEDGER"], [], "EXCLUDE", "CONTENT_ONLY")
+    pav = PAVBuilder().build(env, hubs)
+    check(len(pav.entries) == 1, "LEDGER excluded from standard PAV (§4.6.7)")
+    check(pav.entries[0]["content"] == "real project data",
+          "only WORK data in standard PAV")
+
+    # Brainstorming flag surfaces LEDGER
+    pav2 = PAVBuilder().build(env, hubs, brainstorming=True)
+    check(len(pav2.entries) == 2, "LEDGER included when brainstorming=True (§4.6.7)")
+    contents = [e["content"] for e in pav2.entries]
+    check("draft idea — not canon" in contents, "LEDGER content visible in brainstorming PAV")
+
+
+def test_s4_redline_declassification():
+    """§4.7.4 — REDLINE declassification"""
+    section("S4: REDLINE Declassification (§4.7.4)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # Create REDLINE entry
+        entry = rss.save_hub_entry("WORK", "Confidential pricing", redline=True)
+        entry_id = entry.id
+
+        # PAV excludes it
+        scope = Scope()
+        env = scope.declare("T1", ["WORK"], [], "EXCLUDE", "CONTENT_ONLY")
+        pav1 = PAVBuilder().build(env, rss.hubs)
+        check(pav1.redline_excluded >= 1, "REDLINE entry excluded from PAV")
+
+        # Declassify
+        rss.declassify_redline(entry_id, reason="Pricing now public")
+
+        # PAV now includes it
+        env2 = scope.declare("T2", ["WORK"], [], "EXCLUDE", "CONTENT_ONLY")
+        pav2 = PAVBuilder().build(env2, rss.hubs)
+        contents = [e["content"] for e in pav2.entries]
+        check("Confidential pricing" in contents,
+              "declassified entry now in PAV (§4.7.4)")
+
+        # TRACE has declassification event
+        declass_events = rss.trace.events_by_code("REDLINE_DECLASSIFIED")
+        check(len(declass_events) >= 1, "TRACE has REDLINE_DECLASSIFIED event (§4.7.4)")
+
+        # Cannot declassify non-REDLINE
+        try:
+            rss.hubs.declassify_redline(entry_id)
+            check(False, "should reject declassify on non-REDLINE entry")
+        except HubError:
+            check(True, "rejects declassify on already-declassified entry")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+def test_s4_pav_hub_audit():
+    """§4.6.6 — PAV hub-level audit (contributing hub list)"""
+    section("S4: PAV Hub-Level Audit (§4.6.6)")
+
+    hubs = HubTopology()
+    hubs.add_entry("WORK", "project data")
+    hubs.add_entry("SYSTEM", "config data")
+
+    scope = Scope()
+    env = scope.declare("T1", ["WORK", "SYSTEM"], [], "EXCLUDE", "CONTENT_ONLY")
+    pav = PAVBuilder().build(env, hubs)
+
+    check(hasattr(pav, 'contributing_hubs'), "PAV has contributing_hubs field (§4.6.6)")
+    check("WORK" in pav.contributing_hubs, "WORK listed as contributing hub")
+    check("SYSTEM" in pav.contributing_hubs, "SYSTEM listed as contributing hub")
+
+    # Empty hub doesn't contribute
+    env2 = scope.declare("T2", ["WORK", "SYSTEM", "ARCHIVE"], [], "EXCLUDE", "CONTENT_ONLY")
+    pav2 = PAVBuilder().build(env2, hubs)
+    check("ARCHIVE" not in pav2.contributing_hubs,
+          "empty hub not in contributing_hubs (§4.6.6)")
+
+
+def test_s4_persistence_roundtrip():
+    """§4.4.3, §4.4.5 — original_hub and purged survive persistence"""
+    section("S4: Persistence Round-Trip (original_hub, purged)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # Create, archive, check persistence
+        entry = rss.save_hub_entry("PERSONAL", "my note")
+        rss.hubs.archive_entry(entry.id)
+        archived = rss.hubs.get_entry(entry.id)
+        rss.persistence.save_hub_entry(archived)
+
+        rows = rss.persistence.load_hub_entries("ARCHIVE")
+        match = [r for r in rows if r["id"] == entry.id]
+        check(len(match) == 1, "archived entry found in DB")
+        check(match[0]["original_hub"] == "PERSONAL",
+              "original_hub=PERSONAL persisted to SQLite (§4.4.3)")
+
+        # Hard purge persistence
+        entry2 = rss.save_hub_entry("WORK", "credential: abc123")
+        rss.hard_purge(entry2.id, reason="test")
+        rows2 = rss.persistence.load_hub_entries("WORK")
+        match2 = [r for r in rows2 if r["id"] == entry2.id]
+        check(len(match2) == 1 and match2[0]["purged"] is True,
+              "purged flag persisted to SQLite (§4.4.5)")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+# ============================================================
 # RUN ALL
 # ============================================================
 if __name__ == "__main__":
@@ -1806,6 +2163,18 @@ if __name__ == "__main__":
     # Roadmap 1.5 + 1.7
     safe_run(test_seal_review_attestation)
     safe_run(test_ward_hook_enforcement)
+    # Section 4: Hub Topology & Data Governance
+    safe_run(test_s4_personal_scope_guard)
+    safe_run(test_s4_scope_immutability)
+    safe_run(test_s4_scope_hub_validation)
+    safe_run(test_s4_scope_container_id)
+    safe_run(test_s4_archival_original_hub)
+    safe_run(test_s4_hard_purge)
+    safe_run(test_s4_governed_search)
+    safe_run(test_s4_ledger_pav_exclusion)
+    safe_run(test_s4_redline_declassification)
+    safe_run(test_s4_pav_hub_audit)
+    safe_run(test_s4_persistence_roundtrip)
 
     print(f"\n{'='*60}")
     print(f"RSS v3 — {_pass} PASSED, {_fail} FAILED", end="")

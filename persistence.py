@@ -2,6 +2,9 @@
 RSS v3 — Persistence Layer (Production Hardened)
 SQLite backend. TRACE, hubs, terms, and consent survive restarts.
 Thread-safe + WAL-enabled version.
+
+§4.4.3: hub_entries includes original_hub column.
+§4.4.5: hub_entries includes purged column.
 """
 
 from __future__ import annotations
@@ -30,6 +33,7 @@ class Persistence:
 
         self._configure_db()
         self._create_tables()
+        self._migrate_hub_entries()
 
     # -----------------------------------------------------
     # DB Configuration (Production Safety)
@@ -61,7 +65,9 @@ class Persistence:
                 content TEXT,
                 redline INTEGER,
                 timestamp TEXT,
-                version INTEGER DEFAULT 1
+                version INTEGER DEFAULT 1,
+                original_hub TEXT DEFAULT '',
+                purged INTEGER DEFAULT 0
             )""",
             """CREATE TABLE IF NOT EXISTS sealed_terms (
                 term_id TEXT PRIMARY KEY,
@@ -100,6 +106,20 @@ class Persistence:
         with self._lock, self.conn:
             for stmt in stmts:
                 self.conn.execute(stmt)
+
+    def _migrate_hub_entries(self) -> None:
+        """Add original_hub and purged columns if upgrading from older schema."""
+        with self._lock:
+            cur = self.conn.execute("PRAGMA table_info(hub_entries)")
+            columns = {row[1] for row in cur.fetchall()}
+            if "original_hub" not in columns:
+                self.conn.execute(
+                    "ALTER TABLE hub_entries ADD COLUMN original_hub TEXT DEFAULT ''"
+                )
+            if "purged" not in columns:
+                self.conn.execute(
+                    "ALTER TABLE hub_entries ADD COLUMN purged INTEGER DEFAULT 0"
+                )
 
     # -----------------------------------------------------
     # TRACE
@@ -144,12 +164,12 @@ class Persistence:
             ]
 
     # -----------------------------------------------------
-    # HUBS
+    # HUBS (§4.4.3 original_hub, §4.4.5 purged)
     # -----------------------------------------------------
     def save_hub_entry(self, entry) -> None:
         with self._lock, self.conn:
             self.conn.execute(
-                "INSERT OR REPLACE INTO hub_entries VALUES(?,?,?,?,?,?)",
+                "INSERT OR REPLACE INTO hub_entries VALUES(?,?,?,?,?,?,?,?)",
                 (
                     entry.id,
                     entry.hub,
@@ -157,13 +177,15 @@ class Persistence:
                     int(entry.redline),
                     entry.timestamp.isoformat(),
                     getattr(entry, "version", 1),
+                    getattr(entry, "original_hub", entry.hub),
+                    int(getattr(entry, "purged", False)),
                 ),
             )
 
     def load_hub_entries(self, hub: str) -> List[dict]:
         with self._lock:
             cur = self.conn.execute(
-                "SELECT id,hub,content,redline,timestamp,version "
+                "SELECT id,hub,content,redline,timestamp,version,original_hub,purged "
                 "FROM hub_entries WHERE hub=?",
                 (hub,),
             )
@@ -176,6 +198,8 @@ class Persistence:
                     "redline": bool(r[3]),
                     "timestamp": r[4],
                     "version": r[5],
+                    "original_hub": r[6] or r[1],
+                    "purged": bool(r[7]) if r[7] is not None else False,
                 }
                 for r in cur.fetchall()
             ]

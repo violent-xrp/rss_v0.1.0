@@ -198,6 +198,12 @@ class Runtime:
                         entry_data["content"],
                         redline=entry_data["redline"],
                     )
+                    # §4.4.3 — restore original_hub
+                    if entry_data.get("original_hub"):
+                        e.original_hub = entry_data["original_hub"]
+                    # §4.4.5 — restore purged flag
+                    if entry_data.get("purged"):
+                        e.purged = True
                     restored["hub_entries"] += 1
 
         # Count restored trace events
@@ -239,6 +245,23 @@ class Runtime:
         entry = self.hubs.add_entry(hub, content, redline)
         self.persistence.save_hub_entry(entry)
         self._log("HUB_ENTRY_ADDED", entry.id, f"Hub: {hub}, REDLINE: {redline}")
+        return entry
+
+    def hard_purge(self, entry_id: str, reason: str = ""):
+        """§4.4.5 — Sovereign Hard Purge. Destroys content, preserves metadata.
+        Irreversible. TRACE logs HARD_PURGE event. Persists purge to SQLite."""
+        entry = self.hubs.hard_purge(entry_id, reason)
+        self.persistence.save_hub_entry(entry)
+        self._log("HARD_PURGE", entry_id,
+                   f"Hard purge: original_hub={entry.original_hub}, reason={reason}")
+        return entry
+
+    def declassify_redline(self, entry_id: str, reason: str = ""):
+        """§4.7.4 — Remove REDLINE flag. TRACE logs declassification."""
+        entry = self.hubs.declassify_redline(entry_id)
+        self.persistence.save_hub_entry(entry)
+        self._log("REDLINE_DECLASSIFIED", entry_id,
+                   f"Declassified: hub={entry.hub}, reason={reason}")
         return entry
 
     def _validate_llm_response(self, response: str, task_id: str) -> str:
@@ -339,6 +362,8 @@ class Runtime:
                 forbidden_sources=policy.get("forbidden_sources", []),
                 redline_handling="EXCLUDE",
                 metadata_policy=CONTENT_ONLY,
+                container_id=container_id,                    # §4.5.4
+                sovereign=policy.get("sovereign", False),     # §4.2.3
             )
             self._log("SCOPE_OK", task_id, f"Envelope {envelope.token}")
             last_stage = 2
@@ -393,7 +418,8 @@ class Runtime:
             # -- Stage 7: PAV — build sanitized view (REDLINE excluded) --
             pav_view = self.pav.build(envelope, self.hubs)
             self._log("PAV_OK", task_id,
-                       f"Entries: {len(pav_view.entries)}, REDLINE excluded: {pav_view.redline_excluded}")
+                       f"Entries: {len(pav_view.entries)}, REDLINE excluded: {pav_view.redline_excluded}, "
+                       f"Contributing hubs: {pav_view.contributing_hubs}")
             last_stage = 7
 
             # -- Stage 8: LLM call (if requested) --
