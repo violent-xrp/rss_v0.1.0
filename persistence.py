@@ -99,9 +99,31 @@ class Persistence:
                 value TEXT,
                 updated_at TEXT
             )""",
+            # §5.2.1 — Container persistence
+            """CREATE TABLE IF NOT EXISTS containers (
+                container_id TEXT PRIMARY KEY,
+                profile TEXT,
+                state TEXT,
+                created_at TEXT,
+                lifecycle_log TEXT DEFAULT '[]'
+            )""",
+            """CREATE TABLE IF NOT EXISTS container_hub_entries (
+                container_id TEXT,
+                id TEXT,
+                hub TEXT,
+                content TEXT,
+                redline INTEGER,
+                timestamp TEXT,
+                version INTEGER DEFAULT 1,
+                original_hub TEXT DEFAULT '',
+                purged INTEGER DEFAULT 0,
+                provenance TEXT DEFAULT '[]',
+                PRIMARY KEY (container_id, id)
+            )""",
             "CREATE INDEX IF NOT EXISTS idx_trace_code ON trace_events(event_code)",
             "CREATE INDEX IF NOT EXISTS idx_trace_artifact ON trace_events(artifact_id)",
             "CREATE INDEX IF NOT EXISTS idx_hub_hub ON hub_entries(hub)",
+            "CREATE INDEX IF NOT EXISTS idx_container_hub ON container_hub_entries(container_id, hub)",
         ]
 
         with self._lock, self.conn:
@@ -196,6 +218,97 @@ class Persistence:
                 (hub,),
             )
 
+            results = []
+            for r in cur.fetchall():
+                prov_raw = r[8] if len(r) > 8 and r[8] else "[]"
+                try:
+                    prov = json.loads(prov_raw)
+                except (json.JSONDecodeError, TypeError):
+                    prov = []
+                results.append({
+                    "id": r[0],
+                    "hub": r[1],
+                    "content": r[2],
+                    "redline": bool(r[3]),
+                    "timestamp": r[4],
+                    "version": r[5],
+                    "original_hub": r[6] or r[1],
+                    "purged": bool(r[7]) if r[7] is not None else False,
+                    "provenance": prov,
+                })
+            return results
+
+    # -----------------------------------------------------
+    # CONTAINERS (§5.2.1 — survive restart)
+    # -----------------------------------------------------
+    def save_container(self, container) -> None:
+        """Save container metadata (profile, state, lifecycle) to SQLite."""
+        with self._lock, self.conn:
+            self.conn.execute(
+                "INSERT OR REPLACE INTO containers VALUES(?,?,?,?,?)",
+                (
+                    container.container_id,
+                    json.dumps(container.profile.to_dict()),
+                    container.state,
+                    container.created_at.isoformat(),
+                    json.dumps(getattr(container, "lifecycle_log", [])),
+                ),
+            )
+
+    def load_containers(self) -> List[dict]:
+        """Load all container metadata from SQLite."""
+        with self._lock:
+            cur = self.conn.execute(
+                "SELECT container_id, profile, state, created_at, lifecycle_log "
+                "FROM containers"
+            )
+            results = []
+            for r in cur.fetchall():
+                try:
+                    profile = json.loads(r[1])
+                except (json.JSONDecodeError, TypeError):
+                    profile = {}
+                try:
+                    lifecycle_log = json.loads(r[4]) if r[4] else []
+                except (json.JSONDecodeError, TypeError):
+                    lifecycle_log = []
+                results.append({
+                    "container_id": r[0],
+                    "profile": profile,
+                    "state": r[2],
+                    "created_at": r[3],
+                    "lifecycle_log": lifecycle_log,
+                })
+            return results
+
+    def save_container_hub_entry(self, container_id: str, entry) -> None:
+        """Save a hub entry belonging to a specific container."""
+        with self._lock, self.conn:
+            self.conn.execute(
+                "INSERT OR REPLACE INTO container_hub_entries "
+                "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                (
+                    container_id,
+                    entry.id,
+                    entry.hub,
+                    entry.content,
+                    int(entry.redline),
+                    entry.timestamp.isoformat(),
+                    getattr(entry, "version", 1),
+                    getattr(entry, "original_hub", entry.hub),
+                    int(getattr(entry, "purged", False)),
+                    json.dumps(getattr(entry, "provenance", [])),
+                ),
+            )
+
+    def load_container_hub_entries(self, container_id: str, hub: str) -> List[dict]:
+        """Load hub entries for a specific container and hub."""
+        with self._lock:
+            cur = self.conn.execute(
+                "SELECT id,hub,content,redline,timestamp,version,original_hub,purged,provenance "
+                "FROM container_hub_entries WHERE container_id=? AND hub=?",
+                (container_id, hub),
+            )
             results = []
             for r in cur.fetchall():
                 prov_raw = r[8] if len(r) > 8 and r[8] else "[]"

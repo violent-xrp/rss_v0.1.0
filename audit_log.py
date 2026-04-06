@@ -80,6 +80,11 @@ class AuditLog:
         """Filter events by event_code."""
         return [e for e in self._events if e.event_code == event_code]
 
+    def events_by_container(self, container_id: str) -> List[TraceEvent]:
+        """§5.8.3 — Filter events by container_id prefix in artifact_id.
+        Returns all events whose artifact_id starts with the container_id."""
+        return [e for e in self._events if e.artifact_id.startswith(container_id)]
+
     def last_event(self) -> Optional[TraceEvent]:
         return self._events[-1] if self._events else None
 
