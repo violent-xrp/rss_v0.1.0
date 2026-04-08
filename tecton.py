@@ -1,3 +1,23 @@
+# ==============================================================================
+# RSS v3 Kernel Runtime
+# Module: S5 — Tenant Containers (TECTON) (Layer 7)
+# Copyright (c) 2025-2026 Christian Robert Rose
+#
+# DUAL-LICENSE NOTICE:
+# This software is released under a Dual-License model.
+#
+# 1. GNU General Public License v3.0 (GPLv3)
+#    You may use, distribute, and modify this code under the terms of the GPLv3.
+#    If you modify or distribute this software, or integrate it into your own
+#    project, your entire project must also be open-sourced under the GPLv3.
+#
+# 2. Commercial / Contractor License Exception
+#    If you wish to use this software in a closed-source, proprietary, or
+#    commercial environment without adhering to the GPLv3 open-source
+#    requirements, you must obtain a separate Contractor License from the author.
+#
+# Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
+# ==============================================================================
 """
 RSS v3 — Layer 7: TECTON (Tenant Containers)
 Isolated execution domains with sigil-anchored routing.
@@ -79,6 +99,10 @@ class ContainerProfile:
     advisors_enabled: tuple = ("APEX", "VECTOR", "HALCYON")
     scope_policy: dict = field(default_factory=lambda: {
         "allowed_sources": ("WORK", "SYSTEM"),
+        # Defense-in-depth (§4.2.3 + §5.9.2): PERSONAL is already rejected by the
+        # sovereign=False guard in scope.py declare(). Listing it in forbidden_sources
+        # is intentionally redundant — if the sovereign guard is ever weakened or
+        # bypassed, this second barrier still blocks PERSONAL exposure.
         "forbidden_sources": ("PERSONAL",),
     })
 
@@ -473,7 +497,8 @@ class Tecton:
             for hub_name in VALID_HUBS:
                 entries = persistence.load_container_hub_entries(cid, hub_name)
                 for ed in entries:
-                    e = hubs.add_entry(hub_name, ed["content"], redline=ed["redline"])
+                    e = hubs.add_entry(hub_name, ed["content"], redline=ed["redline"],
+                                       entry_id=ed["id"])  # F-2: preserve original ID
                     if ed.get("original_hub"):
                         e.original_hub = ed["original_hub"]
                     if ed.get("purged"):

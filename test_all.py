@@ -1,3 +1,23 @@
+# ==============================================================================
+# RSS v3 Kernel Runtime
+# Module: RSS v3 Comprehensive Test Suite
+# Copyright (c) 2025-2026 Christian Robert Rose
+#
+# DUAL-LICENSE NOTICE:
+# This software is released under a Dual-License model.
+#
+# 1. GNU General Public License v3.0 (GPLv3)
+#    You may use, distribute, and modify this code under the terms of the GPLv3.
+#    If you modify or distribute this software, or integrate it into your own
+#    project, your entire project must also be open-sourced under the GPLv3.
+#
+# 2. Commercial / Contractor License Exception
+#    If you wish to use this software in a closed-source, proprietary, or
+#    commercial environment without adhering to the GPLv3 open-source
+#    requirements, you must obtain a separate Contractor License from the author.
+#
+# Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
+# ==============================================================================
 """
 RSS v3 — Comprehensive Test Suite
 All modules, all layers, all integration points.
@@ -38,7 +58,7 @@ from cycle import Cycle
 from config import RSSConfig, RSS_VERSION
 from persistence import Persistence
 from llm_adapter import LLMAdapter
-from trace_export import export_trace_json, export_trace_text
+from trace_export import export_trace_json, export_trace_text, EVENT_CODES, categorize_event, build_event_summary
 
 # Layer 6
 from runtime import Runtime, bootstrap, DEFAULT_TERMS
@@ -2833,6 +2853,212 @@ def test_s5_consent_scoping():
 
 
 # ============================================================
+# PRE-S6 FIXES: ID STABILITY & EVENT REGISTRY
+# ============================================================
+
+def test_f2_entry_id_stability():
+    """F-2: Entry IDs survive persistence round-trip"""
+    section("F-2: Entry ID Stability Across Restart")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        # Session 1: create entries, save, record IDs
+        config = RSSConfig(db_path=path)
+        rss1 = bootstrap(config)
+        e1 = rss1.save_hub_entry("WORK", "Morrison quote $245K")
+        e2 = rss1.save_hub_entry("PERSONAL", "Salary notes", redline=True)
+        saved_id_1 = e1.id
+        saved_id_2 = e2.id
+        check(saved_id_1.startswith("ENTRY-"), "entry ID generated correctly")
+        rss1.persistence.close()
+
+        # Session 2: restore from DB, verify same IDs
+        config2 = RSSConfig(db_path=path)
+        rss2 = bootstrap(config2, restore=True)
+        work_entries = rss2.hubs.list_hub("WORK")
+        personal_entries = rss2.hubs.list_hub("PERSONAL")
+
+        work_ids = [e.id for e in work_entries]
+        personal_ids = [e.id for e in personal_entries]
+
+        check(saved_id_1 in work_ids,
+              f"WORK entry ID '{saved_id_1}' preserved across restart (F-2)")
+        check(saved_id_2 in personal_ids,
+              f"PERSONAL entry ID '{saved_id_2}' preserved across restart (F-2)")
+
+        # Verify we can look up by the original ID
+        found = rss2.hubs.get_entry(saved_id_1)
+        check(found.content == "Morrison quote $245K",
+              "entry content matches after ID-stable restore")
+        check(found.id == saved_id_1,
+              "get_entry returns exact same ID object")
+
+        rss2.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+def test_f2_container_entry_id_stability():
+    """F-2: Container hub entry IDs survive persistence round-trip"""
+    section("F-2: Container Entry ID Stability")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+        tecton = Tecton()
+
+        c = tecton.create_container("Morrison", "T-0")
+        tecton.activate_container(c.container_id)
+        entry = tecton.add_container_entry(c.container_id, "WORK", "Quote $100K")
+        saved_id = entry.id
+        saved_cid = c.container_id
+
+        # Save and restore
+        tecton.save_to(rss.persistence)
+        tecton2 = Tecton()
+        tecton2.restore_from(rss.persistence)
+
+        c2 = tecton2.get_container(saved_cid)
+        restored_entries = c2.hubs.list_hub("WORK")
+        restored_ids = [e.id for e in restored_entries]
+
+        check(saved_id in restored_ids,
+              f"container entry ID '{saved_id}' preserved across restore (F-2)")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+def test_f4_event_code_registry():
+    """F-4: EVENT_CODES registry covers all known codes"""
+    section("F-4: Event Code Registry")
+
+    # Core pipeline codes must be in registry
+    core_codes = [
+        "SCOPE_OK", "RUNE_OK", "RUNE_BLOCKED", "EXEC_OK", "PAV_OK",
+        "REQUEST_COMPLETE", "LLM_OK", "LLM_VALIDATION", "PIPELINE_ERROR",
+    ]
+    for code in core_codes:
+        check(code in EVENT_CODES, f"'{code}' in EVENT_CODES registry")
+
+    # S4 codes
+    s4_codes = ["HUB_ENTRY_ADDED", "HARD_PURGE", "REDLINE_DECLASSIFIED"]
+    for code in s4_codes:
+        check(code in EVENT_CODES, f"S4 code '{code}' in registry")
+
+    # S5 codes
+    s5_codes = [
+        "CONTAINER_CREATED", "CONTAINER_ACTIVATED", "CONTAINER_SUSPENDED",
+        "CONTAINER_REACTIVATED", "CONTAINER_ARCHIVED", "CONTAINER_DESTROYED",
+        "CONTAINER_CONFIGURED", "PROFILE_MUTATED",
+    ]
+    for code in s5_codes:
+        check(code in EVENT_CODES, f"S5 code '{code}' in registry")
+
+    # S0 codes
+    s0_codes = ["GENESIS_VERIFIED", "SAFE_STOP_ENTERED", "SAFE_STOP_CLEARED"]
+    for code in s0_codes:
+        check(code in EVENT_CODES, f"S0 code '{code}' in registry")
+
+    # Every registered code has section, category, desc
+    for code, info in EVENT_CODES.items():
+        check("section" in info and "category" in info and "desc" in info,
+              f"'{code}' has section/category/desc")
+
+
+def test_f4_event_categorization():
+    """F-4: categorize_event and build_event_summary work correctly"""
+    section("F-4: Event Categorization & Summary")
+
+    # Known code categorizes correctly
+    info = categorize_event("HARD_PURGE")
+    check(info["section"] == "S4", "HARD_PURGE is section S4")
+    check(info["category"] == "DATA_GOV", "HARD_PURGE category is DATA_GOV")
+
+    info2 = categorize_event("CONTAINER_REACTIVATED")
+    check(info2["section"] == "S5", "CONTAINER_REACTIVATED is section S5")
+
+    # Dynamic container request code
+    info3 = categorize_event("CONTAINER_REQUEST_RUNE")
+    check(info3["category"] == "CONTAINER", "dynamic CONTAINER_REQUEST_RUNE categorized")
+
+    # Unknown code
+    info4 = categorize_event("TOTALLY_FAKE_CODE")
+    check(info4["category"] == "UNKNOWN", "unknown code returns UNKNOWN category")
+
+    # build_event_summary works on real trace
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+        rss.process_request("quote", use_llm=False)
+        rss.save_hub_entry("WORK", "test data")
+
+        summary = build_event_summary(rss.trace.all_events())
+        check(summary["total"] > 0, "summary has events")
+        check("PIPELINE" in summary["by_category"], "summary has PIPELINE category")
+        check(isinstance(summary["by_section"], dict), "summary has by_section breakdown")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+def test_f4_export_includes_summary():
+    """F-4: JSON export includes event_summary and per-event category"""
+    section("F-4: Export Includes Event Summary")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    json_path = path + ".trace.json"
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+        rss.process_request("quote", use_llm=False)
+        rss.save_hub_entry("WORK", "data")
+
+        export_trace_json(rss.trace, json_path)
+
+        with open(json_path, "r") as f:
+            data = json.load(f)
+
+        check("event_summary" in data, "JSON export has event_summary (F-4)")
+        check("by_category" in data["event_summary"], "event_summary has by_category")
+        check("by_section" in data["event_summary"], "event_summary has by_section")
+
+        # Per-event records have category
+        first_event = data["events"][0]
+        check("category" in first_event, "individual events have category field")
+        check("section" in first_event, "individual events have section field")
+
+        rss.persistence.close()
+    finally:
+        for p in [path, json_path]:
+            if os.path.exists(p):
+                os.unlink(p)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+# ============================================================
 # RUN ALL
 # ============================================================
 if __name__ == "__main__":
@@ -2909,6 +3135,12 @@ if __name__ == "__main__":
     safe_run(test_s5_s4_rules_in_containers)
     safe_run(test_s5_valid_transitions_table)
     safe_run(test_s5_consent_scoping)
+    # Pre-S6 Fixes
+    safe_run(test_f2_entry_id_stability)
+    safe_run(test_f2_container_entry_id_stability)
+    safe_run(test_f4_event_code_registry)
+    safe_run(test_f4_event_categorization)
+    safe_run(test_f4_export_includes_summary)
 
     print(f"\n{'='*60}")
     print(f"RSS v3 — {_pass} PASSED, {_fail} FAILED", end="")

@@ -1,3 +1,23 @@
+# ==============================================================================
+# RSS v3 Kernel Runtime
+# Module: S4 — Hub Topology & Data Governance (Layer 3)
+# Copyright (c) 2025-2026 Christian Robert Rose
+#
+# DUAL-LICENSE NOTICE:
+# This software is released under a Dual-License model.
+#
+# 1. GNU General Public License v3.0 (GPLv3)
+#    You may use, distribute, and modify this code under the terms of the GPLv3.
+#    If you modify or distribute this software, or integrate it into your own
+#    project, your entire project must also be open-sourced under the GPLv3.
+#
+# 2. Commercial / Contractor License Exception
+#    If you wish to use this software in a closed-source, proprietary, or
+#    commercial environment without adhering to the GPLv3 open-source
+#    requirements, you must obtain a separate Contractor License from the author.
+#
+# Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
+# ==============================================================================
 """
 RSS v3 — Layer 3: Hub Topology
 Five-hub architecture with REDLINE privacy boundaries.
@@ -46,12 +66,16 @@ class HubTopology:
         h: [] for h in VALID_HUBS
     })
 
-    def add_entry(self, hub: str, content: str, redline: bool = False) -> HubEntry:
+    def add_entry(self, hub: str, content: str, redline: bool = False,
+                  entry_id: str = "") -> HubEntry:
+        """Add entry to hub. If entry_id is provided (e.g. during restore),
+        use it instead of generating a new one. This preserves ID stability
+        across persistence round-trips."""
         if hub not in self._hubs:
             raise HubError(f"Unknown hub: {hub}")
         now = datetime.now(UTC)
         entry = HubEntry(
-            id=f"ENTRY-{uuid4().hex[:8]}",
+            id=entry_id or f"ENTRY-{uuid4().hex[:8]}",
             hub=hub,
             content=content,
             redline=redline,

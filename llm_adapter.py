@@ -1,3 +1,23 @@
+# ==============================================================================
+# RSS v3 Kernel Runtime
+# Module: LLM Adapter (External Advisor Interface)
+# Copyright (c) 2025-2026 Christian Robert Rose
+#
+# DUAL-LICENSE NOTICE:
+# This software is released under a Dual-License model.
+#
+# 1. GNU General Public License v3.0 (GPLv3)
+#    You may use, distribute, and modify this code under the terms of the GPLv3.
+#    If you modify or distribute this software, or integrate it into your own
+#    project, your entire project must also be open-sourced under the GPLv3.
+#
+# 2. Commercial / Contractor License Exception
+#    If you wish to use this software in a closed-source, proprietary, or
+#    commercial environment without adhering to the GPLv3 open-source
+#    requirements, you must obtain a separate Contractor License from the author.
+#
+# Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
+# ==============================================================================
 """
 RSS v3 — LLM Adapter
 Wraps LLM calls with RSS governance injection. Graceful fallback.
