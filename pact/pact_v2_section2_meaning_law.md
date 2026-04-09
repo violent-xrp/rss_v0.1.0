@@ -1,3 +1,19 @@
+<!--
+================================================================================
+THE PACT — Rose Sigil Systems v2.0
+Copyright (c) 2025-2026 Christian Robert Rose (T-0 Sovereign)
+
+Licensed under Creative Commons Attribution-NoDerivatives 4.0 International
+(CC BY-ND 4.0). You may share this document with attribution, but you may not
+distribute modified versions. See /pact/LICENSE.md for full terms.
+
+https://creativecommons.org/licenses/by-nd/4.0/
+
+The Pact is the constitutional source of Rose Sigil Systems. Only T-0 may
+amend it (§0.1.1, §0.10). The code enforces what The Pact declares.
+================================================================================
+-->
+
 THE PACT v2.0 — SECTION 2: MEANING LAW
  Document ID: RSS-Pact-v2.0-S2
  Status: PRE-SEAL (R-3)
@@ -200,4 +216,18 @@ REDLINE count suppression
 pav.py, runtime.py
 4 tests (suppressed from response, logged to TRACE only)
 
+
+---
+
+## License
+
+This section is part of **The Pact v2.0**, the constitutional document of Rose Sigil Systems.
+
+**Copyright © 2025-2026 Christian Robert Rose (T-0 Sovereign).**
+
+Licensed under [Creative Commons Attribution-NoDerivatives 4.0 International (CC BY-ND 4.0)](https://creativecommons.org/licenses/by-nd/4.0/).
+
+You are free to **share** this document (copy and redistribute in any medium or format) and to **quote** passages with attribution. You may **not** distribute modified versions. See `/pact/LICENSE.md` for full terms.
+
+Amendments to The Pact flow only through T-0 (§0.1.1, §0.10). Each version is published as a new work under this license.
 

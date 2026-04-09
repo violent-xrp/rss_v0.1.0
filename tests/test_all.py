@@ -24,11 +24,17 @@ All modules, all layers, all integration points.
 Updated: March 3, 2026 — added persistence round-trip + TRACE export tests
 """
 import os
+import sys
 import json
 import sqlite3
 import tempfile
 import traceback
 from datetime import datetime, timedelta, UTC
+
+# Path shim: add ../src to sys.path so the 21 modules resolve when running
+# `python tests/test_all.py` directly from the repo root. conftest.py does
+# the same thing automatically under pytest; this line makes direct runs work too.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 # Layer 1
 from constitution import compute_hash, verify_integrity, safe_stop, SafeStopTriggered, ConstitutionError

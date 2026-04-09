@@ -1,3 +1,19 @@
+<!--
+================================================================================
+THE PACT — Rose Sigil Systems v2.0
+Copyright (c) 2025-2026 Christian Robert Rose (T-0 Sovereign)
+
+Licensed under Creative Commons Attribution-NoDerivatives 4.0 International
+(CC BY-ND 4.0). You may share this document with attribution, but you may not
+distribute modified versions. See /pact/LICENSE.md for full terms.
+
+https://creativecommons.org/licenses/by-nd/4.0/
+
+The Pact is the constitutional source of Rose Sigil Systems. Only T-0 may
+amend it (§0.1.1, §0.10). The code enforces what The Pact declares.
+================================================================================
+-->
+
 THE PACT v2.0 — SECTION 1: THE EIGHT SEATS
  Document ID: RSS-Pact-v2.0-S1
  Status: PRE-SEAL (R-4)
@@ -299,3 +315,19 @@ Adding a new seat requires a Section 0 amendment by T-0 (§0.3.3, §0.10). The n
 A seat's Python module may be refactored, optimized, or rewritten without amending the Pact, provided that: the authority type and boundaries defined in this section are preserved, the standard interface contract is maintained, all existing tests continue to pass, and TRACE records the upgrade event. Changing a seat's authority type or expanding its allowed operations requires a Pact amendment.
 1.11.3 Subsystem Distinction
 Not everything in the pipeline is a seat. The execution state machine, PAV builder, hub topology, and LLM adapter are Tier 2 subsystems (§0.4.1). They serve seats but possess no constitutional authority. They may be added, modified, or replaced by T-0 without amending Section 0 or Section 1, provided they remain within Tier 2 constraints.
+
+
+---
+
+## License
+
+This section is part of **The Pact v2.0**, the constitutional document of Rose Sigil Systems.
+
+**Copyright © 2025-2026 Christian Robert Rose (T-0 Sovereign).**
+
+Licensed under [Creative Commons Attribution-NoDerivatives 4.0 International (CC BY-ND 4.0)](https://creativecommons.org/licenses/by-nd/4.0/).
+
+You are free to **share** this document (copy and redistribute in any medium or format) and to **quote** passages with attribution. You may **not** distribute modified versions. See `/pact/LICENSE.md` for full terms.
+
+Amendments to The Pact flow only through T-0 (§0.1.1, §0.10). Each version is published as a new work under this license.
+

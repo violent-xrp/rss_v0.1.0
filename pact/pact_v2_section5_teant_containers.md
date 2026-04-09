@@ -1,3 +1,19 @@
+<!--
+================================================================================
+THE PACT — Rose Sigil Systems v2.0
+Copyright (c) 2025-2026 Christian Robert Rose (T-0 Sovereign)
+
+Licensed under Creative Commons Attribution-NoDerivatives 4.0 International
+(CC BY-ND 4.0). You may share this document with attribution, but you may not
+distribute modified versions. See /pact/LICENSE.md for full terms.
+
+https://creativecommons.org/licenses/by-nd/4.0/
+
+The Pact is the constitutional source of Rose Sigil Systems. Only T-0 may
+amend it (§0.1.1, §0.10). The code enforces what The Pact declares.
+================================================================================
+-->
+
 THE PACT v2.0 — SECTION 5: TENANT CONTAINERS
  Document ID: RSS-Pact-v2.0-S5
  Status: PRE-SEAL (R-4)
@@ -250,3 +266,19 @@ Signed container lifecycle events, signed tenant export receipts, tenant-verifia
 Can archived containers be queried read-only? Can archived containers produce PAVs? How does archive differ from suspension-plus-read-only? Currently, ARCHIVED blocks all requests identically to SUSPENDED. Future iterations may define read-only archive access.
 5.12.7 Per-Container Semantic Extensions
 If tenant-specific terminology is ever needed (e.g., "quote" means something different for an HVAC company vs an electrical company), the system would need container-local RUNE extensions that coexist with global sealed terms. This is a significant architectural change and a deliberate ERA-3 non-goal (§5.1.4).
+
+
+---
+
+## License
+
+This section is part of **The Pact v2.0**, the constitutional document of Rose Sigil Systems.
+
+**Copyright © 2025-2026 Christian Robert Rose (T-0 Sovereign).**
+
+Licensed under [Creative Commons Attribution-NoDerivatives 4.0 International (CC BY-ND 4.0)](https://creativecommons.org/licenses/by-nd/4.0/).
+
+You are free to **share** this document (copy and redistribute in any medium or format) and to **quote** passages with attribution. You may **not** distribute modified versions. See `/pact/LICENSE.md` for full terms.
+
+Amendments to The Pact flow only through T-0 (§0.1.1, §0.10). Each version is published as a new work under this license.
+
