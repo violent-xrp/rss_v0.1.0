@@ -1,21 +1,30 @@
 # ==============================================================================
 # RSS v3 Kernel Runtime
-# Module: Test Path Shim
+# Module: <file-specific — leave this alone>
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
-# This file makes the 21 modules in /src/ importable when running tests from
-# /tests/. It is loaded automatically by Python (when using pytest) and also
-# explicitly by test_all.py.
+# DUAL-LICENSE NOTICE:
+# This software is released under a Dual-License model.
 #
-# Licensed under the same terms as the rest of the RSS v3 codebase
-# (GPLv3 + Commercial / Contractor License Exception).
-# Contact: rose.systems@outlook.com
+# 1. GNU Affero General Public License v3.0 (AGPLv3)
+#    You may use, distribute, and modify this code under the terms of the AGPLv3.
+#    If you modify or distribute this software, or integrate it into your own
+#    project, your entire project must also be open-sourced under the AGPLv3.
+#    Network use is distribution: if you run a modified version of this software
+#    on a server and allow users to interact with it remotely, you must make the
+#    complete corresponding source code available to those users under AGPLv3.
+#
+# 2. Commercial / Contractor License Exception
+#    If you wish to use this software in a closed-source, proprietary, or
+#    commercial environment (including SaaS or network-accessible deployments)
+#    without adhering to the AGPLv3 open-source requirements, you must obtain
+#    a separate Contractor License from the author.
+#
+# Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
-import sys
-import os
+iimport sys
+from pathlib import Path
 
-# Add the sibling /src/ directory to the front of sys.path so that
-# `from constitution import ...` and all other module imports resolve.
-_SRC = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
-if _SRC not in sys.path:
-    sys.path.insert(0, _SRC)
+SRC = (Path(__file__).resolve().parent.parent / "src").resolve()
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
