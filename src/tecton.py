@@ -43,6 +43,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from datetime import datetime, UTC
+from types import MappingProxyType
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
@@ -82,33 +83,118 @@ VALID_TRANSITIONS = {
 }
 
 
-@dataclass
-class ContainerPermissions:
-    """§5.4.1 — Container permission model."""
-    can_draft: bool = True
-    can_request_seal: bool = True
-    can_call_advisors: bool = True
-    can_access_system_hub: bool = False
-    risk_tier: str = "STANDARD"
-    max_requests_per_minute: int = 10
+class _Lockable:
+    """§5.3.3 — Base class for objects that become structurally immutable
+    once a container transitions to ACTIVE. Phase C-NEW-1.
+
+    Subclasses use this instead of @dataclass because the lock semantics
+    require overriding __setattr__, which dataclass doesn't cleanly support
+    on every field. The class still behaves like a dataclass for __init__
+    and to_dict/from_dict, it just has explicit accessors.
+
+    Locking is enforced via __setattr__ check against self._locked. Direct
+    attempts to set fields after locking raise TectonError. The sanctioned
+    mutation path is via Tecton.mutate_active_profile() which temporarily
+    unlocks, applies the change, re-locks, and emits PROFILE_MUTATED.
+    """
+
+    _locked: bool = False
+
+    def __setattr__(self, key: str, value: Any) -> None:
+        # Allow setting _locked itself (used by lock/unlock)
+        # Allow normal attribute setting when not yet locked
+        if getattr(self, "_locked", False) and key != "_locked":
+            raise TectonError(
+                f"§5.3.3 — Cannot mutate '{key}' on a locked profile. "
+                f"Use Tecton.mutate_active_profile() for sanctioned changes."
+            )
+        object.__setattr__(self, key, value)
+
+    def _lock(self) -> None:
+        """Freeze the object. Subsequent attribute writes will raise."""
+        object.__setattr__(self, "_locked", True)
+
+    def _unlock(self) -> None:
+        """Temporarily thaw the object. Used by mutate_active_profile()."""
+        object.__setattr__(self, "_locked", False)
 
 
-@dataclass
-class ContainerProfile:
-    """§5.3.1 — Container profile structure.
-    §5.3.2 — Default scope policy uses tuples per §4.5.7."""
-    label: str
-    owner: str
-    permissions: ContainerPermissions
-    advisors_enabled: tuple = ("APEX", "VECTOR", "HALCYON")
-    scope_policy: dict = field(default_factory=lambda: {
+class ContainerPermissions(_Lockable):
+    """§5.4.1 — Container permission model. Lockable (§5.3.3)."""
+
+    def __init__(
+        self,
+        can_draft: bool = True,
+        can_request_seal: bool = True,
+        can_call_advisors: bool = True,
+        can_access_system_hub: bool = False,
+        risk_tier: str = "STANDARD",
+        max_requests_per_minute: int = 10,
+    ):
+        self.can_draft = can_draft
+        self.can_request_seal = can_request_seal
+        self.can_call_advisors = can_call_advisors
+        self.can_access_system_hub = can_access_system_hub
+        self.risk_tier = risk_tier
+        self.max_requests_per_minute = max_requests_per_minute
+
+
+def _default_scope_policy() -> dict:
+    return {
         "allowed_sources": ("WORK", "SYSTEM"),
         # Defense-in-depth (§4.2.3 + §5.9.2): PERSONAL is already rejected by the
         # sovereign=False guard in scope.py declare(). Listing it in forbidden_sources
         # is intentionally redundant — if the sovereign guard is ever weakened or
         # bypassed, this second barrier still blocks PERSONAL exposure.
         "forbidden_sources": ("PERSONAL",),
-    })
+    }
+
+
+class ContainerProfile(_Lockable):
+    """§5.3.1 — Container profile structure.
+    §5.3.2 — Default scope policy uses tuples per §4.5.7.
+    §5.3.3 — Lockable: frozen once container transitions to ACTIVE.
+
+    The scope_policy dict is wrapped in MappingProxyType when locked so that
+    in-place mutations like `profile.scope_policy['allowed_sources'] = ...`
+    raise TypeError instead of silently bypassing the lock.
+    """
+
+    def __init__(
+        self,
+        label: str,
+        owner: str,
+        permissions: ContainerPermissions,
+        advisors_enabled: tuple = ("APEX", "VECTOR", "HALCYON"),
+        scope_policy: Optional[dict] = None,
+    ):
+        self.label = label
+        self.owner = owner
+        self.permissions = permissions
+        self.advisors_enabled = advisors_enabled
+        self.scope_policy = scope_policy if scope_policy is not None else _default_scope_policy()
+
+    def _lock(self) -> None:
+        """§5.3.3 — Lock the profile AND its nested scope_policy dict.
+        Wraps scope_policy in MappingProxyType so in-place writes raise.
+        Also locks the nested ContainerPermissions object."""
+        # Wrap scope_policy in a read-only proxy so ['key'] = value raises TypeError
+        if not isinstance(self.scope_policy, MappingProxyType):
+            object.__setattr__(self, "scope_policy", MappingProxyType(dict(self.scope_policy)))
+        # Lock the nested permissions object
+        if isinstance(self.permissions, _Lockable):
+            self.permissions._lock()
+        # Lock self
+        super()._lock()
+
+    def _unlock(self) -> None:
+        """§5.3.3 — Unlock for sanctioned mutation via Tecton.mutate_active_profile().
+        Unwraps MappingProxyType back to a plain dict and thaws nested permissions."""
+        super()._unlock()
+        if isinstance(self.permissions, _Lockable):
+            self.permissions._unlock()
+        if isinstance(self.scope_policy, MappingProxyType):
+            object.__setattr__(self, "scope_policy", dict(self.scope_policy))
 
     def to_dict(self) -> dict:
         """Serialize for persistence."""
@@ -258,10 +344,14 @@ class Tecton:
         return c
 
     def activate_container(self, cid: str) -> TenantContainer:
-        """§5.2.4 — Activate. Only CREATED/CONFIGURED → ACTIVE."""
+        """§5.2.4 — Activate. Only CREATED/CONFIGURED → ACTIVE.
+        §5.3.3 — Profile becomes STRUCTURALLY IMMUTABLE on activation.
+        Attempts to mutate fields directly after this point raise TectonError."""
         c = self._get(cid)
         self._assert_transition(c, "ACTIVE")
         c.state = "ACTIVE"
+        # §5.3.3 — Lock the profile. Post-lock mutation requires mutate_active_profile().
+        c.profile._lock()
         c.lifecycle_log.append({
             "action": "ACTIVATED",
             "timestamp": datetime.now(UTC).isoformat(),
@@ -271,7 +361,8 @@ class Tecton:
         return c
 
     def suspend_container(self, cid: str) -> TenantContainer:
-        """§5.2.2 — Suspend. ACTIVE → SUSPENDED. Reversible."""
+        """§5.2.2 — Suspend. ACTIVE → SUSPENDED. Reversible.
+        Profile remains locked while suspended — reactivation does not require re-sealing."""
         c = self._get(cid)
         self._assert_transition(c, "SUSPENDED")
         c.state = "SUSPENDED"
@@ -285,13 +376,17 @@ class Tecton:
 
     def reactivate_container(self, cid: str) -> TenantContainer:
         """§5.2.2 — Reactivate. SUSPENDED → ACTIVE.
-        Verifies profile valid, logs reactivation, consent grants intact."""
+        Verifies profile valid, logs reactivation, consent grants intact.
+        §5.3.3 — Profile stays locked (was locked on original activation)."""
         c = self._get(cid)
         self._assert_transition(c, "ACTIVE")
         # Profile validation — ensure hubs exist and label non-empty
         if not c.profile.label:
             raise TectonError(f"Cannot reactivate: invalid profile (empty label)")
         c.state = "ACTIVE"
+        # Defensive: ensure lock is set (it should already be, but this is idempotent)
+        if not getattr(c.profile, "_locked", False):
+            c.profile._lock()
         c.lifecycle_log.append({
             "action": "REACTIVATED",
             "timestamp": datetime.now(UTC).isoformat(),
@@ -331,7 +426,12 @@ class Tecton:
                                permissions: Optional[ContainerPermissions] = None,
                                reason: str = "") -> TenantContainer:
         """§5.3.3 — Explicit T-0 mutation of ACTIVE profile. Requires reason.
-        Produces PROFILE_MUTATED TRACE event with old and new values."""
+        Produces PROFILE_MUTATED TRACE event with old and new values.
+
+        Phase C-NEW-1: The profile is locked during ACTIVE state. This method
+        is the ONLY sanctioned mutation path: it temporarily unlocks, applies
+        the change, re-locks, and emits the audit event. Direct attribute
+        writes on a locked profile raise TectonError."""
         c = self._get(cid)
         if c.state != "ACTIVE":
             raise TectonError(f"mutate_active_profile only applies to ACTIVE containers (got {c.state})")
@@ -341,18 +441,25 @@ class Tecton:
         old_values = {}
         new_values = {}
 
-        if scope_policy is not None:
-            old_values["scope_policy"] = c.profile.scope_policy
-            c.profile.scope_policy = {
-                "allowed_sources": tuple(scope_policy.get("allowed_sources", ())),
-                "forbidden_sources": tuple(scope_policy.get("forbidden_sources", ())),
-            }
-            new_values["scope_policy"] = c.profile.scope_policy
+        # §5.3.3 — Temporarily unlock for the sanctioned mutation. The unlock
+        # also unwraps MappingProxyType on scope_policy so assignment works.
+        c.profile._unlock()
+        try:
+            if scope_policy is not None:
+                old_values["scope_policy"] = dict(c.profile.scope_policy)
+                c.profile.scope_policy = {
+                    "allowed_sources": tuple(scope_policy.get("allowed_sources", ())),
+                    "forbidden_sources": tuple(scope_policy.get("forbidden_sources", ())),
+                }
+                new_values["scope_policy"] = dict(c.profile.scope_policy)
 
-        if permissions is not None:
-            old_values["permissions"] = str(c.profile.permissions)
-            c.profile.permissions = permissions
-            new_values["permissions"] = str(permissions)
+            if permissions is not None:
+                old_values["permissions"] = str(c.profile.permissions.__dict__)
+                c.profile.permissions = permissions
+                new_values["permissions"] = str(permissions.__dict__)
+        finally:
+            # Re-lock, even if mutation raised
+            c.profile._lock()
 
         c.lifecycle_log.append({
             "action": "PROFILE_MUTATED",
@@ -414,9 +521,12 @@ class Tecton:
         task_id = f"{request.container_id}:{sigil_name}:{uuid4().hex[:6]}"
 
         # §5.6.5 — Use container scope policy, convert tuples to lists for pipeline
+        # §C-NEW-3 — Inject max_requests_per_minute into the policy dict so
+        # runtime Stage 6 can apply the container-specific rate limit.
         scope_policy = {
             "allowed_sources": list(c.profile.scope_policy.get("allowed_sources", ("WORK", "SYSTEM"))),
             "forbidden_sources": list(c.profile.scope_policy.get("forbidden_sources", ("PERSONAL",))),
+            "max_requests_per_minute": perms.max_requests_per_minute,
         }
 
         # Determine if LLM call is requested AND permitted

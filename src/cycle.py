@@ -59,12 +59,23 @@ class Cycle:
             if domain not in self._domains:
                 self._domains[domain] = CycleRecord(domain=domain, max_per_minute=max_per_minute)
 
-    def check_rate_limit(self, domain: str) -> dict:
-        """Check rate limit for a domain; enforce max_per_minute."""
+    def check_rate_limit(self, domain: str, max_per_minute: int = None) -> dict:
+        """Check rate limit for a domain; enforce max_per_minute.
+
+        §C-NEW-3 — Optional `max_per_minute` argument lets callers pass a
+        container-specific limit from ContainerPermissions. If provided, the
+        domain's max is updated to this value before the check. This lets
+        per-container limits from TECTON override the default 10/min without
+        requiring a separate CYCLE instance per container."""
         self.register_domain(domain)
         record = self._domains[domain]
 
         with record.lock:  # lock per domain for concurrency safety
+            # Update the registered max if the caller provided one. This lets
+            # container-scoped limits take effect without creating a new domain.
+            if max_per_minute is not None and max_per_minute > 0:
+                record.max_per_minute = max_per_minute
+
             now = datetime.now(UTC)
             # Remove timestamps older than 60 seconds
             record.timestamps = [
@@ -80,7 +91,8 @@ class Cycle:
                 }
 
             record.timestamps.append(now)
-            return {"status": "OK", "domain": domain, "count": len(record.timestamps)}
+            return {"status": "OK", "domain": domain, "count": len(record.timestamps),
+                    "max": record.max_per_minute}
 
     def complexity_meter(self) -> dict:
         """Return current complexity metrics for all domains."""

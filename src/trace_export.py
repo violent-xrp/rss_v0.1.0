@@ -41,6 +41,58 @@ from audit_log import AuditLog, TraceEvent
 from persistence import Persistence
 
 
+# ── §6.10.6 — Phase C G-8: REDLINE export sanitization ──
+# Exports must not leak REDLINE entry IDs. Live exports pass a HubTopology
+# (optional) from which the sanitizer builds the set of REDLINE entry IDs.
+# Cold exports query the persistence layer directly.
+
+REDLINE_REDACTED = "[REDLINE-REDACTED]"
+
+
+def _collect_redline_ids_from_hubs(hub_topology) -> set:
+    """§6.10.6 — Walk all five hubs, collect entry IDs flagged REDLINE."""
+    if hub_topology is None:
+        return set()
+    redline_ids = set()
+    try:
+        for hub_name in ["WORK", "PERSONAL", "SYSTEM", "ARCHIVE", "LEDGER"]:
+            for entry in hub_topology.list_hub(hub_name):
+                if getattr(entry, "redline", False):
+                    redline_ids.add(entry.id)
+    except Exception:
+        pass  # Best-effort; sanitizer falls back to no redaction
+    return redline_ids
+
+
+def _collect_redline_ids_from_db(persistence) -> set:
+    """§6.10.6 — Cold path: read REDLINE entry IDs directly from SQLite.
+    Used by export_from_db when no live HubTopology is available."""
+    redline_ids = set()
+    try:
+        with persistence._lock:
+            cur = persistence.conn.execute(
+                "SELECT id FROM hub_entries WHERE redline=1"
+            )
+            for row in cur.fetchall():
+                redline_ids.add(row[0])
+    except Exception:
+        pass
+    return redline_ids
+
+
+def _sanitize_artifact_id(artifact_id: str, redline_ids: set) -> str:
+    """§6.10.6 — Replace any REDLINE entry ID appearing in artifact_id
+    with a redaction marker. Substring match — an artifact_id like
+    'TASK-abc|ENTRY-redline01' has the ENTRY-redline01 portion redacted."""
+    if not redline_ids or not artifact_id:
+        return artifact_id
+    sanitized = artifact_id
+    for rid in redline_ids:
+        if rid and rid in sanitized:
+            sanitized = sanitized.replace(rid, REDLINE_REDACTED)
+    return sanitized
+
+
 # ── Complete Event Code Registry (S0–S5) ──
 # Every event code emitted by the runtime, organized by source section.
 # This is the canonical reference for TRACE report formatting.
@@ -91,6 +143,12 @@ EVENT_CODES: Dict[str, Dict[str, str]] = {
     "CONTAINER_ARCHIVED":    {"section": "S5", "category": "CONTAINER", "desc": "Container archived"},
     "CONTAINER_DESTROYED":   {"section": "S5", "category": "CONTAINER", "desc": "Container destroyed (data preserved)"},
     "PROFILE_MUTATED":       {"section": "S5", "category": "CONTAINER", "desc": "ACTIVE container profile mutated by T-0 (§5.3.3)"},
+
+    # S6: Persistence & Audit
+    "SCHEMA_MIGRATED":       {"section": "S6", "category": "PERSISTENCE", "desc": "Schema migration executed (§6.8.3)"},
+    "SCHEMA_VERSION_SET":    {"section": "S6", "category": "PERSISTENCE", "desc": "Schema version recorded in system_state (§6.7.3)"},
+    "BOOT_CHAIN_VERIFIED":   {"section": "S6", "category": "PERSISTENCE", "desc": "Boot-time TRACE chain verification passed (§6.3.5)"},
+    "BOOT_CHAIN_BROKEN":     {"section": "S6", "category": "PERSISTENCE", "desc": "Boot-time TRACE chain verification failed (§6.11.3)"},
 }
 
 # Dynamic container request codes follow the pattern CONTAINER_REQUEST_{SEAT}
@@ -133,16 +191,22 @@ def build_event_summary(events: List[TraceEvent]) -> dict:
     }
 
 
-def export_trace_json(trace: AuditLog, path: str, container_id: Optional[str] = None) -> int:
+def export_trace_json(trace: AuditLog, path: str, container_id: Optional[str] = None,
+                       hub_topology=None) -> int:
     """
     Export TRACE events to a JSON file.
-    Optionally filter by container_id (matches artifact_id field).
+    Optionally filter by container_id via prefix match on artifact_id (§5.8.3).
     Includes event_summary with category breakdown.
     Returns number of events exported.
     """
     events = trace.all_events()
     if container_id:
-        events = [e for e in events if container_id in (e.artifact_id or "")]
+        # §5.8.3 — Prefix match (startswith). Unified across audit_log.events_by_container,
+        # trace_export, and trace_verify in Phase A.1.
+        events = [e for e in events if (e.artifact_id or "").startswith(container_id)]
+
+    # §6.10.6 — Collect REDLINE entry IDs for sanitization
+    redline_ids = _collect_redline_ids_from_hubs(hub_topology)
 
     records = []
     for e in events:
@@ -153,7 +217,7 @@ def export_trace_json(trace: AuditLog, path: str, container_id: Optional[str] = 
             "category": info["category"],
             "section": info["section"],
             "authority": e.authority,
-            "artifact_id": e.artifact_id,
+            "artifact_id": _sanitize_artifact_id(e.artifact_id, redline_ids),
             "content_hash": e.content_hash,
             "byte_length": e.byte_length,
             "parent_hash": e.parent_hash,
@@ -164,6 +228,7 @@ def export_trace_json(trace: AuditLog, path: str, container_id: Optional[str] = 
         "event_count": len(records),
         "chain_valid": trace.verify_chain(),
         "filter": container_id or "ALL",
+        "redline_sanitized": len(redline_ids) > 0,
         "event_summary": build_event_summary(events),
         "events": records,
     }
@@ -174,14 +239,19 @@ def export_trace_json(trace: AuditLog, path: str, container_id: Optional[str] = 
     return len(records)
 
 
-def export_trace_text(trace: AuditLog, path: str, container_id: Optional[str] = None) -> int:
+def export_trace_text(trace: AuditLog, path: str, container_id: Optional[str] = None,
+                       hub_topology=None) -> int:
     """
     Export TRACE events to a human-readable text file.
     Format suitable for printing or emailing to auditors.
+    §5.8.3 — Container filter uses prefix match (unified in Phase A.1).
     """
     events = trace.all_events()
     if container_id:
-        events = [e for e in events if container_id in (e.artifact_id or "")]
+        events = [e for e in events if (e.artifact_id or "").startswith(container_id)]
+
+    # §6.10.6 — REDLINE sanitization
+    redline_ids = _collect_redline_ids_from_hubs(hub_topology)
 
     summary = build_event_summary(events)
 
@@ -191,6 +261,8 @@ def export_trace_text(trace: AuditLog, path: str, container_id: Optional[str] = 
     lines.append(f"Exported: {datetime.now(UTC).isoformat()}")
     lines.append(f"Events:   {len(events)}")
     lines.append(f"Chain:    {'VALID' if trace.verify_chain() else 'BROKEN'}")
+    if redline_ids:
+        lines.append(f"REDLINE:  {len(redline_ids)} entry ID(s) sanitized")
     if container_id:
         lines.append(f"Filter:   {container_id}")
     lines.append("")
@@ -207,7 +279,7 @@ def export_trace_text(trace: AuditLog, path: str, container_id: Optional[str] = 
         lines.append(f"[{i+1}] {e.event_code} [{info['category']}]")
         lines.append(f"    Time:     {e.timestamp.isoformat()}")
         lines.append(f"    Auth:     {e.authority}")
-        lines.append(f"    Artifact: {e.artifact_id}")
+        lines.append(f"    Artifact: {_sanitize_artifact_id(e.artifact_id, redline_ids)}")
         lines.append(f"    Hash:     {e.content_hash[:16]}...")
         lines.append(f"    Size:     {e.byte_length} bytes")
         if e.parent_hash:
@@ -228,8 +300,23 @@ def export_from_db(persistence: Persistence, path: str, fmt: str = "json") -> in
     """
     Export persisted TRACE events directly from SQLite.
     Useful for cold exports without booting the full runtime.
+
+    §6.10.3 — Every export records chain validity at export time.
+    Phase A.1: Added chain_valid to the cold export path, which previously
+    omitted it despite the Pact requiring every export to report chain status.
     """
     events = persistence.load_all_trace()
+
+    # §6.10.3 — Verify chain across the loaded events. Cold path cannot call
+    # AuditLog.verify_chain(), so we inline the same check here.
+    chain_valid = True
+    for i in range(1, len(events)):
+        if events[i].parent_hash != events[i - 1].content_hash:
+            chain_valid = False
+            break
+
+    # §6.10.6 — Cold REDLINE sanitization: query persistence for REDLINE IDs
+    redline_ids = _collect_redline_ids_from_db(persistence)
 
     if fmt == "json":
         records = []
@@ -241,7 +328,7 @@ def export_from_db(persistence: Persistence, path: str, fmt: str = "json") -> in
                 "category": info["category"],
                 "section": info["section"],
                 "authority": e.authority,
-                "artifact_id": e.artifact_id,
+                "artifact_id": _sanitize_artifact_id(e.artifact_id, redline_ids),
                 "content_hash": e.content_hash,
                 "byte_length": e.byte_length,
                 "parent_hash": e.parent_hash,
@@ -250,7 +337,9 @@ def export_from_db(persistence: Persistence, path: str, fmt: str = "json") -> in
         output = {
             "export_time": datetime.now(UTC).isoformat(),
             "event_count": len(records),
+            "chain_valid": chain_valid,
             "source": "SQLite",
+            "redline_sanitized": len(redline_ids) > 0,
             "event_summary": build_event_summary(events),
             "events": records,
         }
@@ -261,10 +350,14 @@ def export_from_db(persistence: Persistence, path: str, fmt: str = "json") -> in
         lines = []
         lines.append(f"RSS v3 TRACE — {len(events)} events from SQLite")
         lines.append(f"Exported: {datetime.now(UTC).isoformat()}")
+        lines.append(f"Chain:    {'VALID' if chain_valid else 'BROKEN'}")
+        if redline_ids:
+            lines.append(f"REDLINE:  {len(redline_ids)} entry ID(s) sanitized")
         lines.append("")
         for i, e in enumerate(events):
             info = categorize_event(e.event_code)
-            lines.append(f"[{i+1}] {e.event_code} [{info['category']}] | {e.authority} | {e.artifact_id} | {e.timestamp.isoformat()}")
+            safe_aid = _sanitize_artifact_id(e.artifact_id, redline_ids)
+            lines.append(f"[{i+1}] {e.event_code} [{info['category']}] | {e.authority} | {safe_aid} | {e.timestamp.isoformat()}")
         with open(path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
 

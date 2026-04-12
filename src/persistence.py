@@ -29,6 +29,9 @@ Thread-safe + WAL-enabled version.
 
 §4.4.3: hub_entries includes original_hub column.
 §4.4.5: hub_entries includes purged column.
+§6.7.3: system_state tracks SCHEMA_VERSION.
+§6.8.2: _migrate_hub_entries() adds columns idempotently.
+§6.8.3: save_trace_event() is used by migrations to emit SCHEMA_MIGRATED.
 """
 
 from __future__ import annotations
@@ -37,9 +40,16 @@ import json
 import sqlite3
 import threading
 from datetime import datetime, UTC
-from typing import List
+from typing import List, Optional
 
 from audit_log import TraceEvent
+
+# §6.7.3 — Current persistence schema version.
+# Bump this whenever a migration lands in _migrate_hub_entries() or elsewhere.
+# On bootstrap, a mismatch between stored version and this constant triggers
+# migration + a SCHEMA_MIGRATED TRACE event (emitted by Runtime, not Persistence,
+# because Persistence is constructed before Runtime has a TRACE log).
+CURRENT_SCHEMA_VERSION = 1
 
 
 class Persistence:
@@ -54,6 +64,13 @@ class Persistence:
         )
 
         self._lock = threading.RLock()
+
+        # Track whether a migration occurred during this init — Runtime reads this
+        # after construction to emit the SCHEMA_MIGRATED event. Migrations cannot
+        # emit TRACE events themselves because TRACE is wired up in Runtime, not
+        # Persistence, and Persistence is constructed first.
+        self.migration_occurred: bool = False
+        self.migration_details: list = []
 
         self._configure_db()
         self._create_tables()
@@ -155,7 +172,11 @@ class Persistence:
                 self.conn.execute(stmt)
 
     def _migrate_hub_entries(self) -> None:
-        """Add original_hub and purged columns if upgrading from older schema."""
+        """Add original_hub and purged columns if upgrading from older schema.
+        §6.8.2 — Idempotent column-addition migration.
+        §6.8.3 — Records what changed in self.migration_details so Runtime
+        can emit a SCHEMA_MIGRATED TRACE event after construction."""
+        changes: list = []
         with self._lock:
             cur = self.conn.execute("PRAGMA table_info(hub_entries)")
             columns = {row[1] for row in cur.fetchall()}
@@ -163,14 +184,47 @@ class Persistence:
                 self.conn.execute(
                     "ALTER TABLE hub_entries ADD COLUMN original_hub TEXT DEFAULT ''"
                 )
+                changes.append("hub_entries.original_hub")
             if "purged" not in columns:
                 self.conn.execute(
                     "ALTER TABLE hub_entries ADD COLUMN purged INTEGER DEFAULT 0"
                 )
+                changes.append("hub_entries.purged")
             if "provenance" not in columns:
                 self.conn.execute(
                     "ALTER TABLE hub_entries ADD COLUMN provenance TEXT DEFAULT '[]'"
                 )
+                changes.append("hub_entries.provenance")
+
+        if changes:
+            self.migration_occurred = True
+            self.migration_details = changes
+
+    # -----------------------------------------------------
+    # Schema Version (§6.7.3)
+    # -----------------------------------------------------
+    def get_schema_version(self) -> Optional[int]:
+        """Return the stored schema version, or None if never set."""
+        with self._lock:
+            cur = self.conn.execute(
+                "SELECT value FROM system_state WHERE key='SCHEMA_VERSION'"
+            )
+            row = cur.fetchone()
+            if row is None:
+                return None
+            try:
+                return int(row[0])
+            except (TypeError, ValueError):
+                return None
+
+    def set_schema_version(self, version: int) -> None:
+        """Record the schema version in system_state."""
+        ts = datetime.now(UTC).isoformat()
+        with self._lock, self.conn:
+            self.conn.execute(
+                "INSERT OR REPLACE INTO system_state VALUES(?,?,?)",
+                ("SCHEMA_VERSION", str(version), ts),
+            )
 
     # -----------------------------------------------------
     # TRACE

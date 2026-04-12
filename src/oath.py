@@ -30,7 +30,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, UTC
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional
 
 
 class OathError(Exception):
@@ -52,12 +52,21 @@ class ConsentRecord:
 class Oath:
     name: str = "OATH"
     _consents: Dict[str, ConsentRecord] = field(default_factory=dict)
+    # §6.9.2 — Optional persistence callback. Runtime sets this after
+    # constructing OATH so new consent grants are durably saved.
+    # Signature: callback(key: str, record: ConsentRecord) -> None
+    _persist_callback: Optional[Callable] = None
 
     def _key(self, action_class: str, container_id: str) -> str:
         return f"{container_id}:{action_class}"
 
+    def set_persistence_callback(self, callback) -> None:
+        """§6.9.2 — Wire persistence so every authorize() durably saves."""
+        self._persist_callback = callback
+
     def authorize(self, action_class: str, scope: str, duration: str,
-                  requester: str, container_id: str = "GLOBAL") -> dict:
+                  requester: str, container_id: str = "GLOBAL",
+                  _persist: bool = True) -> dict:
         if not action_class:
             raise OathError("action_class must not be empty.")
         if not requester:
@@ -72,7 +81,21 @@ class Oath:
             granted_at=datetime.now(UTC),
             duration=duration,
         )
-        self._consents[self._key(action_class, container_id)] = record
+        key = self._key(action_class, container_id)
+        self._consents[key] = record
+
+        # §6.9.2 — Durable consent: persist on grant.
+        # _persist=False during restore_from_db() to avoid re-writing what we
+        # just loaded.
+        if _persist and self._persist_callback is not None:
+            try:
+                self._persist_callback(key, record)
+            except Exception:
+                # Durability failure at persistence layer should not block
+                # the authorization itself. Runtime write-ahead discipline
+                # covers TRACE separately.
+                pass
+
         return {"authorized": True, "action_class": action_class, "container_id": container_id}
 
     def revoke(self, action_class: str, container_id: str = "GLOBAL") -> dict:
@@ -80,6 +103,12 @@ class Oath:
         if key not in self._consents:
             return {"revoked": False, "reason": f"No consent found for: {action_class}"}
         self._consents[key].status = "REVOKED"
+        # §6.9.2 — Persist the status change so revocation survives restart.
+        if self._persist_callback is not None:
+            try:
+                self._persist_callback(key, self._consents[key])
+            except Exception:
+                pass
         return {"revoked": True, "action_class": action_class}
 
     def check(self, action_class: str, container_id: str = "GLOBAL") -> str:

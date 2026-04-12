@@ -52,3 +52,18 @@ class RSSConfig:
     standard_verbs: List[str] = field(default_factory=lambda: [
         "draft", "review", "list", "read", "check", "view", "query", "get",
     ])
+
+    # §6.6.4 — Phase C G-5: Strict event code validation.
+    # When False (default, backward compatible): unknown codes are accepted
+    # at emission time but surfaced in export event_summary.unknown_codes.
+    # When True: record_event() rejects unregistered codes by raising
+    # AuditLogError, forcing registry discipline. Recommended for production.
+    strict_event_codes: bool = False
+
+    # §6.4.4 — Phase C G-7: Persistent audit failure threshold.
+    # Number of consecutive _log() write failures that will trigger
+    # persistent Safe-Stop. A single failure aborts the operation; N
+    # consecutive failures indicates the persistence layer is broken and
+    # the system must halt rather than continue accepting requests that
+    # will keep failing.
+    audit_failure_threshold: int = 3

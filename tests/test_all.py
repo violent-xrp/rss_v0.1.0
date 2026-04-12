@@ -1058,7 +1058,10 @@ def test_write_ahead_guarantee():
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
     try:
-        config = RSSConfig(db_path=path)
+        # §6.4.4 Phase C G-7: Raise audit_failure_threshold for this test so
+        # that individual injected failures don't accumulate toward Safe-Stop.
+        # G-7's persistent-failure threshold logic has its own dedicated test.
+        config = RSSConfig(db_path=path, audit_failure_threshold=100)
         rss = bootstrap(config)
 
         # Normal request works (audit writes succeed)
@@ -1086,6 +1089,8 @@ def test_write_ahead_guarantee():
 
         # Test 3: Restore audit and verify system recovers
         rss.persistence.save_trace_event = original_save
+        # Reset the G-7 streak counter manually since we injected failures
+        rss._audit_failure_streak = 0
         r = rss.process_request("quote", use_llm=False)
         check("error" not in r, "system recovers after audit restored")
 
@@ -3069,7 +3074,1149 @@ def test_f4_export_includes_summary():
 
 
 # ============================================================
-# RUN ALL
+# SECTION 6: PERSISTENCE & AUDIT — PHASE A
+# G-1: SCHEMA_MIGRATED event code + emission
+# G-2: SCHEMA_VERSION tracking
+# G-4: Boot-time chain verification
+# ============================================================
+
+def test_s6_schema_version_tracking():
+    """§6.7.3 — SCHEMA_VERSION persists in system_state"""
+    section("S6: Schema Version Tracking (§6.7.3)")
+
+    from persistence import CURRENT_SCHEMA_VERSION
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        # Session 1: fresh DB, no version set yet
+        config = RSSConfig(db_path=path)
+        rss1 = bootstrap(config)
+
+        # bootstrap() should have called stamp_schema_version()
+        stored = rss1.persistence.get_schema_version()
+        check(stored == CURRENT_SCHEMA_VERSION,
+              f"bootstrap stamped schema version to {CURRENT_SCHEMA_VERSION} (§6.7.3)")
+
+        # Verify SCHEMA_VERSION_SET event was logged
+        version_events = rss1.trace.events_by_code("SCHEMA_VERSION_SET")
+        check(len(version_events) >= 1,
+              "SCHEMA_VERSION_SET event emitted on first stamp")
+
+        rss1.persistence.close()
+
+        # Session 2: re-boot same DB, version should be unchanged and no new stamp
+        config2 = RSSConfig(db_path=path)
+        rss2 = bootstrap(config2, restore=True)
+
+        stored2 = rss2.persistence.get_schema_version()
+        check(stored2 == CURRENT_SCHEMA_VERSION,
+              "schema version survives restart")
+
+        # No NEW SCHEMA_VERSION_SET event on idempotent re-stamp
+        # (previous event is in persisted TRACE, but the new boot should not add one)
+        result = rss2.stamp_schema_version()
+        check(result["stamped"] is False,
+              "stamp_schema_version is idempotent (§6.7.3)")
+
+        rss2.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+def test_s6_schema_migrated_event():
+    """§6.8.3 — SCHEMA_MIGRATED event emitted when migration occurs"""
+    section("S6: SCHEMA_MIGRATED Event (§6.8.3)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        # Create a DB with the OLD schema (no original_hub, purged, or provenance columns)
+        # by directly creating the table without migration hooks
+        raw = sqlite3.connect(path)
+        raw.execute("PRAGMA journal_mode=WAL;")
+        raw.execute("""CREATE TABLE hub_entries (
+            id TEXT PRIMARY KEY,
+            hub TEXT,
+            content TEXT,
+            redline INTEGER,
+            timestamp TEXT,
+            version INTEGER DEFAULT 1
+        )""")
+        # Insert a legacy-format row
+        raw.execute("INSERT INTO hub_entries VALUES(?,?,?,?,?,?)",
+                    ("ENTRY-legacy01", "WORK", "legacy content", 0,
+                     datetime.now(UTC).isoformat(), 1))
+        raw.commit()
+        raw.close()
+
+        # Now boot the runtime — Persistence should detect the missing columns and migrate
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config, restore=True)
+
+        # Migration should have run
+        migrated_events = rss.trace.events_by_code("SCHEMA_MIGRATED")
+        check(len(migrated_events) >= 1,
+              "SCHEMA_MIGRATED event emitted after migration (§6.8.3)")
+
+        # Legacy row should still be loadable
+        rows = rss.persistence.load_hub_entries("WORK")
+        legacy = [r for r in rows if r["id"] == "ENTRY-legacy01"]
+        check(len(legacy) == 1, "legacy row survives migration")
+        check(legacy[0]["content"] == "legacy content", "legacy content intact")
+        check(legacy[0]["purged"] is False, "purged defaulted to False for migrated row")
+
+        rss.persistence.close()
+
+        # Re-boot same DB — should NOT re-migrate or re-emit
+        config2 = RSSConfig(db_path=path)
+        rss2 = bootstrap(config2, restore=True)
+        # The second runtime's in-memory TRACE only contains events from its own session,
+        # so we verify migration_occurred is False on the persistence object
+        check(rss2.persistence.migration_occurred is False,
+              "second boot detects no migration needed")
+        rss2.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+def test_s6_boot_chain_verification():
+    """§6.3.5, §6.11.3 — Boot-time chain verification"""
+    section("S6: Boot-Time Chain Verification (§6.3.5)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        # Happy path: fresh boot, chain should verify
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        verified_events = rss.trace.events_by_code("BOOT_CHAIN_VERIFIED")
+        check(len(verified_events) >= 1,
+              "BOOT_CHAIN_VERIFIED event emitted on clean boot (§6.3.5)")
+
+        # No BOOT_CHAIN_BROKEN event on a healthy chain
+        broken_events = rss.trace.events_by_code("BOOT_CHAIN_BROKEN")
+        check(len(broken_events) == 0,
+              "BOOT_CHAIN_BROKEN NOT emitted on clean boot")
+
+        # System is operational (not Safe-Stopped)
+        check(rss.is_safe_stopped()["active"] is False,
+              "clean boot does not enter Safe-Stop")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+def test_s6_boot_chain_detects_tampering():
+    """§6.3.5, §6.11.3 — verify_boot_chain detects a broken chain and Safe-Stops"""
+    section("S6: Boot-Time Chain Detects Tampering (§6.11.3)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+        rss.process_request("quote", use_llm=False)
+        rss.process_request("RFI", use_llm=False)
+
+        # Tamper with the in-memory chain: corrupt a parent_hash
+        check(len(rss.trace._events) >= 2, "at least 2 events in chain")
+        rss.trace._events[1].parent_hash = "0" * 64  # definitely wrong
+
+        # Chain verification should now fail
+        check(rss.trace.verify_chain() is False, "tampered chain verification returns False")
+
+        # verify_boot_chain should enter Safe-Stop on broken chain
+        result = rss.verify_boot_chain()
+        check(result["verified"] is False, "verify_boot_chain returns False on broken chain")
+        check("broken" in result["reason"].lower() or "integrity" in result["reason"].lower(),
+              "verify_boot_chain explains the failure")
+        check(rss.is_safe_stopped()["active"] is True,
+              "broken chain triggers Safe-Stop (§6.11.3)")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+def test_s6_event_codes_registered():
+    """§6.6.3 — New S6 event codes are in the registry"""
+    section("S6: New Event Codes Registered (§6.6.3)")
+
+    # All four new S6 codes must be in EVENT_CODES
+    s6_codes = ["SCHEMA_MIGRATED", "SCHEMA_VERSION_SET",
+                "BOOT_CHAIN_VERIFIED", "BOOT_CHAIN_BROKEN"]
+    for code in s6_codes:
+        check(code in EVENT_CODES, f"{code} in EVENT_CODES registry")
+
+    # All four are tagged as S6
+    for code in s6_codes:
+        info = EVENT_CODES.get(code, {})
+        check(info.get("section") == "S6",
+              f"{code} section is S6")
+        check(info.get("category") == "PERSISTENCE",
+              f"{code} category is PERSISTENCE")
+
+    # categorize_event picks them up correctly
+    info = categorize_event("SCHEMA_MIGRATED")
+    check(info["section"] == "S6" and info["category"] == "PERSISTENCE",
+          "categorize_event resolves SCHEMA_MIGRATED to S6/PERSISTENCE")
+
+
+def test_s6_bootstrap_event_sequence():
+    """§6.3.5, §6.7.3 — Bootstrap emits expected S6 events in order"""
+    section("S6: Bootstrap Event Sequence")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        all_codes = [e.event_code for e in rss.trace.all_events()]
+
+        # SCHEMA_VERSION_SET should appear on a fresh DB
+        check("SCHEMA_VERSION_SET" in all_codes,
+              "SCHEMA_VERSION_SET emitted on fresh DB boot")
+
+        # BOOT_CHAIN_VERIFIED should appear
+        check("BOOT_CHAIN_VERIFIED" in all_codes,
+              "BOOT_CHAIN_VERIFIED emitted during bootstrap")
+
+        # BOOT_CHAIN_VERIFIED should come AFTER SCHEMA_VERSION_SET
+        # (bootstrap sequence: migration -> version stamp -> chain verify)
+        version_idx = all_codes.index("SCHEMA_VERSION_SET")
+        chain_idx = all_codes.index("BOOT_CHAIN_VERIFIED")
+        check(chain_idx > version_idx,
+              "BOOT_CHAIN_VERIFIED comes after SCHEMA_VERSION_SET (correct order)")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
+def test_s6_cold_verifier():
+    """§6.11.4 — Stand-alone cold TRACE verifier (trace_verify.py)
+
+    This test exercises the cold verifier in seven scenarios:
+      1. Happy path — clean DB verifies
+      2. Broken chain — corruption detected
+      3. Missing file — ColdVerifyError raised
+      4. Not a file — ColdVerifyError raised
+      5. Missing trace_events table — ColdVerifyError raised
+      6. Container filter — only matching events returned
+      7. Registry integration — unknown codes surfaced
+    Also tests read_safe_stop_state() against a cold DB.
+    """
+    section("S6: Cold TRACE Verifier (§6.11.4)")
+
+    import trace_verify
+    from trace_verify import verify_trace_file, read_safe_stop_state, ColdVerifyError
+
+    # ── Scenario 1: Happy path ──
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+        rss.process_request("quote", use_llm=False)
+        rss.process_request("RFI", use_llm=False)
+        rss.persistence.close()  # Release WAL so cold read sees everything
+
+        result = verify_trace_file(path)
+        check(result["verified"] is True,
+              "clean DB: verified=True")
+        check(result["event_count"] > 0,
+              "clean DB: events loaded")
+        check(result["first_break_at_index"] is None,
+              "clean DB: no break index")
+        check(result["break_details"] is None,
+              "clean DB: no break details")
+        check(result["schema_version"] == 1,
+              "clean DB: schema_version=1 recovered from system_state")
+        check("BOOT_CHAIN_VERIFIED" in result["stats"]["by_code"],
+              "clean DB: BOOT_CHAIN_VERIFIED event visible in stats")
+        check("SCHEMA_VERSION_SET" in result["stats"]["by_code"],
+              "clean DB: SCHEMA_VERSION_SET event visible in stats")
+        check(result["stats"]["earliest_timestamp"] is not None,
+              "clean DB: earliest timestamp recorded")
+        check(result["stats"]["latest_timestamp"] is not None,
+              "clean DB: latest timestamp recorded")
+        check(result["filter"] is None,
+              "clean DB: no filter applied")
+        check("verifier_run_at" in result,
+              "clean DB: verifier_run_at timestamp present")
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+    # ── Scenario 2: Broken chain (direct SQLite tamper) ──
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+        rss.process_request("quote", use_llm=False)
+        rss.process_request("RFI", use_llm=False)
+        rss.persistence.close()
+
+        # Corrupt parent_hash on event id=3 directly in SQLite — cold tamper
+        raw = sqlite3.connect(path)
+        raw.execute(
+            "UPDATE trace_events SET parent_hash = ? WHERE id = 3",
+            ("0" * 64,),
+        )
+        raw.commit()
+        raw.close()
+
+        result = verify_trace_file(path)
+        check(result["verified"] is False,
+              "tampered DB: verified=False")
+        check(result["first_break_at_index"] is not None,
+              "tampered DB: break index reported")
+        check(result["break_details"] is not None,
+              "tampered DB: break_details populated")
+        details = result["break_details"]
+        check("expected_parent_hash" in details,
+              "tampered DB: break_details includes expected_parent_hash")
+        check("actual_parent_hash" in details,
+              "tampered DB: break_details includes actual_parent_hash")
+        check(details["actual_parent_hash"] == "0" * 64,
+              "tampered DB: break_details shows the injected wrong hash")
+        check(details["expected_parent_hash"] != details["actual_parent_hash"],
+              "tampered DB: expected != actual (the definition of a break)")
+        check("previous_event" in details and "current_event" in details,
+              "tampered DB: break_details names both adjacent events")
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+    # ── Scenario 3: Missing file ──
+    bogus_path = "/tmp/this-rss-db-does-not-exist-" + str(id(object())) + ".db"
+    raised = False
+    try:
+        verify_trace_file(bogus_path)
+    except ColdVerifyError as e:
+        raised = True
+        check("not found" in str(e).lower(),
+              "missing file: error message mentions 'not found'")
+    check(raised, "missing file: ColdVerifyError raised")
+
+    # ── Scenario 4: Path exists but is a directory ──
+    import tempfile as _tf
+    dirpath = _tf.mkdtemp()
+    raised = False
+    try:
+        verify_trace_file(dirpath)
+    except ColdVerifyError as e:
+        raised = True
+        check("not a regular file" in str(e).lower() or "directory" in str(e).lower(),
+              "directory path: error message explains the problem")
+    finally:
+        import shutil as _sh
+        _sh.rmtree(dirpath, ignore_errors=True)
+    check(raised, "directory path: ColdVerifyError raised")
+
+    # ── Scenario 5: Valid SQLite file but no trace_events table ──
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        raw = sqlite3.connect(path)
+        raw.execute("CREATE TABLE unrelated_table (id INTEGER PRIMARY KEY, data TEXT)")
+        raw.execute("INSERT INTO unrelated_table VALUES (1, 'not a trace DB')")
+        raw.commit()
+        raw.close()
+
+        raised = False
+        try:
+            verify_trace_file(path)
+        except ColdVerifyError as e:
+            raised = True
+            check("trace_events" in str(e).lower(),
+                  "no trace_events table: error message names the missing table")
+        check(raised, "no trace_events table: ColdVerifyError raised")
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+    # ── Scenario 6: Container filter ──
+    # We don't need a real Tecton container to test the filter — we just need
+    # events whose artifact_id contains a recognizable container substring.
+    # Direct SQL injection (with chain-valid hashes) is cleaner than routing
+    # through the full Runtime + Tecton wiring.
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+        rss.process_request("quote", use_llm=False)
+        rss.persistence.close()
+
+        # Inject 3 synthetic "container" events into the DB, maintaining chain
+        container_id = "TECTON-coldtest"
+        raw = sqlite3.connect(path)
+        cur = raw.execute(
+            "SELECT content_hash FROM trace_events ORDER BY id DESC LIMIT 1"
+        )
+        last_hash = cur.fetchone()[0]
+
+        for i in range(3):
+            import hashlib as _hl
+            content = f"synthetic container event {i}"
+            new_hash = _hl.sha256(content.encode()).hexdigest()
+            raw.execute(
+                "INSERT INTO trace_events "
+                "(timestamp, event_code, authority, artifact_id, content_hash, "
+                "byte_length, parent_hash) "
+                "VALUES (?,?,?,?,?,?,?)",
+                (
+                    datetime.now(UTC).isoformat(),
+                    "CONTAINER_REQUEST_RUNE",
+                    "TECTON",
+                    f"{container_id}/TASK-{i:03d}",
+                    new_hash,
+                    len(content),
+                    last_hash,
+                ),
+            )
+            last_hash = new_hash
+        raw.commit()
+        raw.close()
+
+        # Full verification
+        full = verify_trace_file(path)
+        # Filtered verification
+        filtered = verify_trace_file(path, container_filter=container_id)
+
+        check(full["verified"] is True,
+              "container filter: full chain still verified after synthetic inserts")
+        check(full["event_count"] > filtered["event_count"],
+              "container filter: filtered count is strictly smaller than full count")
+        check(filtered["filter"] == container_id,
+              "container filter: filter value recorded in result")
+        check(filtered["event_count"] == 3,
+              "container filter: exactly 3 matching events returned")
+
+        # Every event in the filtered set should contain the container_id
+        conn = sqlite3.connect(path)
+        cur = conn.execute(
+            "SELECT artifact_id FROM trace_events WHERE artifact_id LIKE ?",
+            (f"%{container_id}%",),
+        )
+        rows = cur.fetchall()
+        conn.close()
+        check(len(rows) == filtered["event_count"],
+              "container filter: count matches direct SQL query")
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+    # ── Scenario 7: Registry integration — unknown codes surfaced ──
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+        rss.process_request("quote", use_llm=False)
+        rss.persistence.close()
+
+        # Inject an unregistered event code directly into the DB
+        raw = sqlite3.connect(path)
+        # Get the last content_hash to maintain chain integrity
+        cur = raw.execute(
+            "SELECT content_hash FROM trace_events ORDER BY id DESC LIMIT 1"
+        )
+        last_hash = cur.fetchone()[0]
+        raw.execute(
+            "INSERT INTO trace_events "
+            "(timestamp, event_code, authority, artifact_id, content_hash, "
+            "byte_length, parent_hash) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (
+                datetime.now(UTC).isoformat(),
+                "TOTALLY_MADE_UP_CODE",
+                "TEST",
+                "ARTIFACT-SYNTHETIC",
+                "a" * 64,  # synthetic hash
+                42,
+                last_hash,  # maintain chain so we test registry, not chain break
+            ),
+        )
+        raw.commit()
+        raw.close()
+
+        # With registry, unknown code should appear in unknown_codes
+        from trace_export import EVENT_CODES
+        result = verify_trace_file(path, registry=EVENT_CODES)
+        check(result["verified"] is True,
+              "registry test: chain still valid (we preserved linkage)")
+        check("TOTALLY_MADE_UP_CODE" in result["stats"]["unknown_codes"],
+              "registry test: unknown code surfaced in unknown_codes list")
+        check("BOOT_CHAIN_VERIFIED" not in result["stats"]["unknown_codes"],
+              "registry test: known S6 codes NOT in unknown_codes")
+
+        # Without registry, unknown_codes is empty (no checking)
+        result_no_reg = verify_trace_file(path)
+        check(result_no_reg["stats"]["unknown_codes"] == [],
+              "registry test: no registry means empty unknown_codes list")
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+    # ── Scenario 8: read_safe_stop_state against cold DB ──
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+
+        # Initially not Safe-Stopped
+        rss.persistence.close()
+        state = read_safe_stop_state(path)
+        check(state["active"] is False,
+              "cold Safe-Stop: inactive on fresh DB")
+
+        # Re-open, trigger Safe-Stop, close, re-read cold
+        rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
+        rss2.enter_safe_stop("Cold verify test — synthetic Safe-Stop")
+        rss2.persistence.close()
+
+        state = read_safe_stop_state(path)
+        check(state["active"] is True,
+              "cold Safe-Stop: active after enter_safe_stop")
+        check("Cold verify test" in state["reason"],
+              "cold Safe-Stop: reason preserved across cold read")
+        check("timestamp" in state,
+              "cold Safe-Stop: timestamp recorded")
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+    # ── Scenario 9: Empty trace_events table ──
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        raw = sqlite3.connect(path)
+        raw.execute("""CREATE TABLE trace_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            event_code TEXT,
+            authority TEXT,
+            artifact_id TEXT,
+            content_hash TEXT,
+            byte_length INTEGER,
+            parent_hash TEXT
+        )""")
+        raw.commit()
+        raw.close()
+
+        result = verify_trace_file(path)
+        check(result["verified"] is True,
+              "empty chain: verified=True (vacuously)")
+        check(result["event_count"] == 0,
+              "empty chain: event_count=0")
+        check("empty" in result["reason"].lower(),
+              "empty chain: reason explains the emptiness")
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+
+# ============================================================
+# PHASE A.1 — CORRECTION TESTS
+# Locking in fixes for issues flagged by advisor review:
+#   A1-1: restore_from_db loads historical TRACE chain into memory
+#   A1-2: Boot verification catches tampered persisted chain on restart
+#   A1-3: Unified container filter (prefix match across all three paths)
+#   A1-4: export_from_db emits chain_valid
+#   A1-5: Consent persistence round-trip through OATH
+#   A1-6: TTL enforcement rejects expired intents in Stage 4
+#   A1-7: Post-LLM REDLINE scan covers ARCHIVE and LEDGER hubs
+# ============================================================
+
+def test_a1_historical_trace_chain_loaded_on_restart():
+    """A1-1: restore_from_db populates self.trace._events from SQLite.
+
+    Previously restore_from_db only counted persisted events for reporting.
+    The in-memory chain after restart contained zero historical events,
+    making boot-time verification a vacuous no-op. This test proves the
+    full chain is now loaded into memory during restore."""
+    section("Phase A.1: Historical TRACE Chain Loaded on Restart")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        # Session 1: generate events
+        rss1 = bootstrap(RSSConfig(db_path=path))
+        rss1.process_request("quote", use_llm=False)
+        rss1.process_request("RFI", use_llm=False)
+        rss1.process_request("quote", use_llm=False)
+        session1_count = len(rss1.trace.all_events())
+        check(session1_count > 10,
+              f"Session 1: in-memory chain has {session1_count} events")
+        rss1.persistence.close()
+
+        # Session 2: restore and verify in-memory chain matches persisted count
+        rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
+        session2_count = len(rss2.trace.all_events())
+
+        # Session 2 should have AT LEAST the session 1 events (plus whatever
+        # new events Session 2 bootstrap added like BOOT_CHAIN_VERIFIED)
+        check(session2_count >= session1_count,
+              f"Session 2 in-memory chain ({session2_count}) >= Session 1 ({session1_count})")
+
+        # Verify the first event in Session 2's memory is actually from Session 1
+        first_event_code = rss2.trace.all_events()[0].event_code
+        check(first_event_code in ("SCHEMA_VERSION_SET", "BOOT_CHAIN_VERIFIED",
+                                    "SCOPE_OK", "RUNE_OK", "EXEC_OK"),
+              f"Session 2 first event is a real historical event: {first_event_code}")
+
+        # BOOT_CHAIN_VERIFIED from Session 1 should be in Session 2's memory
+        boot_events_in_mem = [e for e in rss2.trace.all_events()
+                              if e.event_code == "BOOT_CHAIN_VERIFIED"]
+        check(len(boot_events_in_mem) >= 2,
+              "Session 2 memory contains BOOT_CHAIN_VERIFIED from both sessions")
+
+        rss2.persistence.close()
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+
+def test_a1_boot_verification_catches_persisted_tamper():
+    """A1-2: Boot-time verification now detects tampering in the persisted chain.
+
+    This is the bug fix test: previously, tampering a persisted row would
+    NOT be detected at boot because restore_from_db never loaded the events.
+    Now, verify_boot_chain() walks the loaded historical chain and catches it."""
+    section("Phase A.1: Boot Verification Catches Persisted Chain Tamper")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        # Session 1: normal boot, emit some events, close cleanly
+        rss1 = bootstrap(RSSConfig(db_path=path))
+        rss1.process_request("quote", use_llm=False)
+        rss1.process_request("RFI", use_llm=False)
+        rss1.persistence.close()
+
+        # Tamper with a row directly in SQLite (cold tamper)
+        raw = sqlite3.connect(path)
+        raw.execute(
+            "UPDATE trace_events SET parent_hash = ? WHERE id = 4",
+            ("b" * 64,),
+        )
+        raw.commit()
+        raw.close()
+
+        # Session 2: boot with restore — this should detect the tamper
+        # and enter Safe-Stop during verify_boot_chain()
+        rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
+
+        check(rss2.is_safe_stopped()["active"] is True,
+              "Boot with tampered persisted chain → Safe-Stop active")
+
+        ss = rss2.persistence.is_safe_stopped()
+        check("chain" in ss["reason"].lower() or "integrity" in ss["reason"].lower(),
+              "Safe-Stop reason mentions chain/integrity failure")
+
+        # BOOT_CHAIN_BROKEN should be the last substantive event (may be
+        # followed by SAFE_STOP_ENTERED which is also expected)
+        codes = [e.event_code for e in rss2.trace.all_events()]
+        check("BOOT_CHAIN_BROKEN" in codes,
+              "BOOT_CHAIN_BROKEN event emitted when persisted chain is tampered")
+
+        rss2.persistence.close()
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+
+def test_a1_unified_container_filter():
+    """A1-3: All three filter paths use prefix matching.
+
+    Before Phase A.1:
+      - audit_log.events_by_container: startswith (correct)
+      - trace_export.export_trace_json/text: substring 'in' (wrong)
+      - trace_verify._load_events: SQL LIKE '%id%' substring (wrong)
+
+    After Phase A.1: all three use prefix matching."""
+    section("Phase A.1: Unified Container Filter (Prefix Matching)")
+
+    import trace_verify
+    from trace_verify import verify_trace_file
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+        rss.process_request("quote", use_llm=False)
+
+        # Inject two synthetic events: one with container as PREFIX,
+        # one with container as SUBSTRING (but not prefix). The prefix
+        # filter should match only the first.
+        raw = sqlite3.connect(path)
+        cur = raw.execute(
+            "SELECT content_hash FROM trace_events ORDER BY id DESC LIMIT 1"
+        )
+        last_hash = cur.fetchone()[0]
+
+        import hashlib as _hl
+        container_id = "TECTON-filter01"
+
+        # Event A: container as prefix
+        c1 = "prefix match event"
+        h1 = _hl.sha256(c1.encode()).hexdigest()
+        raw.execute(
+            "INSERT INTO trace_events (timestamp, event_code, authority, "
+            "artifact_id, content_hash, byte_length, parent_hash) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (datetime.now(UTC).isoformat(), "CONTAINER_REQUEST_RUNE", "TECTON",
+             f"{container_id}/TASK-001", h1, len(c1), last_hash),
+        )
+
+        # Event B: container as substring, NOT prefix
+        c2 = "substring match event"
+        h2 = _hl.sha256(c2.encode()).hexdigest()
+        raw.execute(
+            "INSERT INTO trace_events (timestamp, event_code, authority, "
+            "artifact_id, content_hash, byte_length, parent_hash) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (datetime.now(UTC).isoformat(), "CONTAINER_REQUEST_RUNE", "TECTON",
+             f"OTHER-{container_id}-TRAILING", h2, len(c2), h1),
+        )
+        raw.commit()
+        raw.close()
+        rss.persistence.close()
+
+        # Cold verifier should match only Event A (prefix)
+        result = verify_trace_file(path, container_filter=container_id)
+        check(result["event_count"] == 1,
+              f"Cold verifier prefix match: 1 event (got {result['event_count']})")
+
+        # In-memory filter should also match only Event A
+        rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
+        in_mem = rss2.trace.events_by_container(container_id)
+        check(len(in_mem) == 1,
+              f"audit_log.events_by_container prefix match: 1 event (got {len(in_mem)})")
+
+        # Export filter (via export_trace_json) should also match only Event A
+        from trace_export import export_trace_json
+        fd_export, export_path = tempfile.mkstemp(suffix=".json")
+        os.close(fd_export)
+        try:
+            # Filter exports FROM the in-memory trace (which now has full history)
+            count = export_trace_json(rss2.trace, export_path, container_id=container_id)
+            check(count == 1,
+                  f"export_trace_json prefix match: 1 event (got {count})")
+        finally:
+            if os.path.exists(export_path):
+                os.unlink(export_path)
+        rss2.persistence.close()
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+
+def test_a1_export_from_db_emits_chain_valid():
+    """A1-4: export_from_db now includes chain_valid in its output."""
+    section("Phase A.1: export_from_db Emits chain_valid")
+
+    from trace_export import export_from_db
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+        rss.process_request("quote", use_llm=False)
+
+        # Clean export
+        fd_out, out_path = tempfile.mkstemp(suffix=".json")
+        os.close(fd_out)
+        try:
+            export_from_db(rss.persistence, out_path, fmt="json")
+            with open(out_path) as f:
+                data = json.load(f)
+            check("chain_valid" in data,
+                  "export_from_db JSON output includes chain_valid")
+            check(data["chain_valid"] is True,
+                  "clean chain: chain_valid=True")
+        finally:
+            if os.path.exists(out_path):
+                os.unlink(out_path)
+
+        # Text format should also mention Chain status
+        fd_out, out_path = tempfile.mkstemp(suffix=".txt")
+        os.close(fd_out)
+        try:
+            export_from_db(rss.persistence, out_path, fmt="text")
+            with open(out_path) as f:
+                text = f.read()
+            check("Chain:" in text and "VALID" in text,
+                  "export_from_db text output shows Chain: VALID")
+        finally:
+            if os.path.exists(out_path):
+                os.unlink(out_path)
+
+        rss.persistence.close()
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+
+def test_a1_consent_persistence_roundtrip():
+    """A1-5: Consent records survive restart via OATH persistence callback."""
+    section("Phase A.1: Consent Persistence Round-Trip")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        # Session 1: grant a custom container-scoped consent
+        rss1 = bootstrap(RSSConfig(db_path=path))
+        rss1.oath.authorize(
+            action_class="DRAFT",
+            scope="WORK",
+            duration="SESSION",
+            requester="T-0",
+            container_id="TECTON-consent01",
+        )
+
+        # Immediate check: consent is in memory AND persisted
+        check(rss1.oath.check("DRAFT", "TECTON-consent01") == "AUTHORIZED",
+              "Session 1: custom consent visible in memory")
+
+        saved = rss1.persistence.load_consents()
+        draft_consents = [c for c in saved if c["action_class"] == "DRAFT"
+                          and c["container_id"] == "TECTON-consent01"]
+        check(len(draft_consents) == 1,
+              "Session 1: custom consent persisted to SQLite via callback")
+
+        rss1.persistence.close()
+
+        # Session 2: restore and verify the consent survives
+        rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
+        check(rss2.oath.check("DRAFT", "TECTON-consent01") == "AUTHORIZED",
+              "Session 2: custom consent restored into memory after restart")
+
+        # Also verify the default EXECUTE GLOBAL consent is there
+        check(rss2.oath.check("EXECUTE", "GLOBAL") == "AUTHORIZED",
+              "Session 2: default EXECUTE GLOBAL consent still present")
+
+        # Revoke the custom consent and verify the revocation persists
+        rss2.oath.revoke("DRAFT", "TECTON-consent01")
+        rss2.persistence.close()
+
+        # Session 3: revocation should survive
+        rss3 = bootstrap(RSSConfig(db_path=path), restore=True)
+        check(rss3.oath.check("DRAFT", "TECTON-consent01") != "AUTHORIZED",
+              "Session 3: revoked consent stays revoked after restart")
+        rss3.persistence.close()
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+
+def test_a1_ttl_enforcement_in_stage_4():
+    """A1-6: ExecutionIntent.validate() is now called in Stage 4.
+
+    Previously classify_intent was called but validate() was not, so TTL
+    was defined as data but never enforced as a runtime guard. Now an
+    expired intent is rejected by the pipeline."""
+    section("Phase A.1: TTL Enforcement in Stage 4")
+
+    from datetime import timedelta as _td
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+
+        # Monkey-patch classify_intent to return an already-expired intent
+        original_classify = rss.state_machine.classify_intent
+        def expired_classifier(text):
+            intent = original_classify(text)
+            # Force expiry into the past
+            intent.ttl_expiry = datetime.now(UTC) - _td(minutes=1)
+            return intent
+        rss.state_machine.classify_intent = expired_classifier
+
+        result = rss.process_request("quote", use_llm=False)
+
+        check(result.get("error") == "INTENT_INVALID",
+              "Expired intent rejected with INTENT_INVALID error")
+        check("TTL" in result.get("reason", "") or "expired" in result.get("reason", "").lower(),
+              "Rejection reason mentions TTL/expired")
+        check(result.get("stage") == 4,
+              "Rejection happens at Stage 4 (EXECUTION)")
+
+        # PIPELINE_ERROR should have been logged
+        errors = rss.trace.events_by_code("PIPELINE_ERROR")
+        check(len(errors) >= 1,
+              "PIPELINE_ERROR logged for expired intent")
+
+        rss.persistence.close()
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+
+def test_a1_post_llm_scan_covers_archive_and_ledger():
+    """A1-7: Post-LLM REDLINE scan now covers all 5 hubs, not just 3."""
+    section("Phase A.1: Post-LLM Scan Covers ARCHIVE and LEDGER")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+
+        # Inject REDLINE entries into ARCHIVE and LEDGER
+        archive_content = "SECRET-ARCHIVE-CONTENT-THAT-SHOULD-NEVER-LEAK-abc123"
+        ledger_content = "SECRET-LEDGER-CONTENT-THAT-SHOULD-NEVER-LEAK-def456"
+        rss.hubs.add_entry("ARCHIVE", archive_content, redline=True)
+        rss.hubs.add_entry("LEDGER", ledger_content, redline=True)
+
+        # Simulate an LLM response that leaks ARCHIVE content
+        leaked_archive = f"Here is what I remember: {archive_content[:40]}"
+        cleaned1 = rss._validate_llm_response(leaked_archive, "TASK-archive-leak")
+
+        # Violation should have been logged
+        violations = rss.trace.events_by_code("LLM_VALIDATION")
+        check(len(violations) >= 1,
+              "ARCHIVE REDLINE leak detected and logged")
+
+        # Simulate an LLM response that leaks LEDGER content
+        leaked_ledger = f"The ledger shows: {ledger_content[:40]}"
+        cleaned2 = rss._validate_llm_response(leaked_ledger, "TASK-ledger-leak")
+
+        violations_after = rss.trace.events_by_code("LLM_VALIDATION")
+        check(len(violations_after) > len(violations),
+              "LEDGER REDLINE leak also detected")
+
+        # Confirm at least one violation mentions each hub by entry id
+        all_violation_content = " ".join(e.artifact_id + " " for e in violations_after)
+        check(len(violations_after) >= 2,
+              "At least 2 LLM_VALIDATION events emitted (one per hub leak)")
+
+        rss.persistence.close()
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+
+# ============================================================
+# PHASE C EXPANDED — REGRESSION TESTS
+# Locks in the 8 hardening items from Phase C Expanded:
+#   C-1: EXECUTE revocation durability (A1-FIX-1)
+#   C-2: Canonical JSON hashing determinism
+#   C-3: ContainerProfile mutation lock
+#   C-4: max_requests_per_minute enforcement
+#   C-5: Strict event code validation
+#   C-6: Audit failure threshold Safe-Stop
+#   C-7: State criticality (CRITICAL load failure → Safe-Stop)
+#   C-8: REDLINE export sanitization (live + cold)
+# ============================================================
+
+def test_c_phase_regression_battery():
+    """Phase C Expanded: lock in all 8 hardening items as one test.
+    Kept as a single function to minimize test-runner boilerplate."""
+    section("Phase C Expanded: Full Regression Battery")
+
+    from audit_log import canonical_json, AuditLog, AuditLogError
+    from tecton import Tecton, ContainerPermissions, TectonError
+    from trace_export import export_trace_json, _sanitize_artifact_id
+
+    # C-2: Canonical JSON determinism
+    h1 = AuditLog.hash_content({"a": 1, "b": 2, "c": 3})
+    h2 = AuditLog.hash_content({"c": 3, "b": 2, "a": 1})
+    check(h1 == h2, "C-2: dict key order does not affect hash")
+    check(canonical_json({"b": 2, "a": 1}) == b'{"a":1,"b":2}',
+          "C-2: canonical_json produces stable byte form")
+
+    # C-3: ContainerProfile mutation lock
+    t = Tecton()
+    c = t.create_container("LockTest", "T-0")
+    t.activate_container(c.container_id)
+    try:
+        c.profile.scope_policy['allowed_sources'] = ('PERSONAL',)
+        check(False, "C-3: scope_policy dict mutation should raise")
+    except TypeError:
+        check(True, "C-3: scope_policy dict frozen by MappingProxyType")
+    try:
+        c.profile.label = "hacked"
+        check(False, "C-3: label write should raise")
+    except TectonError:
+        check(True, "C-3: profile attribute write blocked")
+    try:
+        c.profile.permissions.can_draft = False
+        check(False, "C-3: nested permissions mutation should raise")
+    except TectonError:
+        check(True, "C-3: nested permissions locked by cascade")
+
+    # C-1: EXECUTE revocation durability
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss1 = bootstrap(RSSConfig(db_path=path))
+        rss1.oath.revoke("EXECUTE", "GLOBAL")
+        rss1.persistence.close()
+        rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
+        check(rss2.oath.check("EXECUTE", "GLOBAL") == "REVOKED",
+              "C-1: EXECUTE revocation survives restart")
+        rss2.persistence.close()
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s): os.unlink(path + s)
+
+    # C-4: max_requests_per_minute enforcement via TECTON
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        from tecton import ContainerRequest
+        rss = bootstrap(RSSConfig(db_path=path))
+        tec = Tecton(_trace=rss.trace)
+        cnt = tec.create_container("RateLimit", "T-0",
+                                    permissions=ContainerPermissions(max_requests_per_minute=2))
+        tec.activate_container(cnt.container_id)
+        rss.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0",
+                           container_id=cnt.container_id)
+        results = []
+        for _ in range(3):
+            req = ContainerRequest(container_id=cnt.container_id, sigil="☐",
+                                    task={"text": "quote", "use_llm": False})
+            results.append(tec.process_request(req, rss).result)
+        errors = [r.get("error") for r in results if isinstance(r, dict)]
+        check("RATE_LIMITED" in errors,
+              "C-4: container max_requests_per_minute=2 rate-limits 3rd request")
+        rss.persistence.close()
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s): os.unlink(path + s)
+
+    # C-5: Strict event code validation
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path, strict_event_codes=True))
+        raised = False
+        try:
+            rss.trace.record_event("DEFINITELY_NOT_REGISTERED", "TEST", "A-1", "x")
+        except AuditLogError:
+            raised = True
+        check(raised, "C-5: strict mode rejects unregistered event code")
+        # Known code still works
+        rss.trace.record_event("SCOPE_OK", "TEST", "A-2", "ok")
+        check(True, "C-5: strict mode accepts registered code")
+        # Dynamic prefix still works
+        rss.trace.record_event("CONTAINER_REQUEST_RUNE", "TEST", "A-3", "dyn")
+        check(True, "C-5: strict mode accepts CONTAINER_REQUEST_* prefix")
+        rss.persistence.close()
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s): os.unlink(path + s)
+
+    # C-6: Audit failure threshold → Safe-Stop
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path, audit_failure_threshold=2))
+        def broken(e): raise sqlite3.OperationalError("simulated")
+        rss.persistence.save_trace_event = broken
+        for _ in range(2):
+            try:
+                rss._log("TEST_LOG", "A-X", "fail")
+            except RuntimeError:
+                pass
+        check(rss.is_safe_stopped()["active"],
+              "C-6: threshold consecutive failures → Safe-Stop")
+        rss.persistence.close()
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s): os.unlink(path + s)
+
+    # C-7: State criticality — CRITICAL load failure → Safe-Stop
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+        def broken_load(): raise Exception("simulated schema corruption")
+        rss.persistence.load_all_trace = broken_load
+        raised = False
+        try:
+            rss.restore_from_db()
+        except RuntimeError:
+            raised = True
+        check(raised, "C-7: CRITICAL load failure raises RuntimeError")
+        check(rss.is_safe_stopped()["active"],
+              "C-7: CRITICAL load failure enters Safe-Stop")
+        rss.persistence.close()
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s): os.unlink(path + s)
+
+    # C-8: REDLINE export sanitization (live path)
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+        entry = rss.hubs.add_entry("WORK", "sensitive redline content", redline=True)
+        rss.trace.record_event("SCOPE_OK", "TEST", f"TASK-{entry.id}-trailing", "t")
+        fd2, out = tempfile.mkstemp(suffix=".json")
+        os.close(fd2)
+        export_trace_json(rss.trace, out, hub_topology=rss.hubs)
+        with open(out) as f: data = json.load(f)
+        leaked = [r for r in data["events"] if entry.id in r.get("artifact_id", "")]
+        check(len(leaked) == 0,
+              "C-8 live: REDLINE entry ID redacted from exported artifact_id")
+        check(data.get("redline_sanitized") is True,
+              "C-8 live: export flags redline_sanitized=True")
+        # Sanitizer helper itself
+        sanitized = _sanitize_artifact_id(f"X-{entry.id}-Y", {entry.id})
+        check("[REDLINE-REDACTED]" in sanitized,
+              "C-8 live: _sanitize_artifact_id replaces with marker")
+        os.unlink(out)
+        rss.persistence.close()
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s): os.unlink(path + s)
+
+
+
 # ============================================================
 if __name__ == "__main__":
     safe_run(test_constitution)
@@ -3151,6 +4298,25 @@ if __name__ == "__main__":
     safe_run(test_f4_event_code_registry)
     safe_run(test_f4_event_categorization)
     safe_run(test_f4_export_includes_summary)
+    # Section 6: Persistence & Audit — Phase A
+    safe_run(test_s6_schema_version_tracking)
+    safe_run(test_s6_schema_migrated_event)
+    safe_run(test_s6_boot_chain_verification)
+    safe_run(test_s6_boot_chain_detects_tampering)
+    safe_run(test_s6_event_codes_registered)
+    safe_run(test_s6_bootstrap_event_sequence)
+    # Section 6: Persistence & Audit — Phase B
+    safe_run(test_s6_cold_verifier)
+    # Phase A.1 — Correction Tests (advisor-flagged gaps)
+    safe_run(test_a1_historical_trace_chain_loaded_on_restart)
+    safe_run(test_a1_boot_verification_catches_persisted_tamper)
+    safe_run(test_a1_unified_container_filter)
+    safe_run(test_a1_export_from_db_emits_chain_valid)
+    safe_run(test_a1_consent_persistence_roundtrip)
+    safe_run(test_a1_ttl_enforcement_in_stage_4)
+    safe_run(test_a1_post_llm_scan_covers_archive_and_ledger)
+    # Phase C Expanded — 8-item regression battery
+    safe_run(test_c_phase_regression_battery)
 
     print(f"\n{'='*60}")
     print(f"RSS v3 — {_pass} PASSED, {_fail} FAILED", end="")

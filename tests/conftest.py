@@ -1,6 +1,6 @@
 # ==============================================================================
 # RSS v3 Kernel Runtime
-# Module: <file-specific — leave this alone>
+# Module: Test Path Shim
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
 # DUAL-LICENSE NOTICE:
@@ -22,9 +22,19 @@
 #
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
-iimport sys
+"""
+RSS v3 — pytest path shim.
+
+This file makes the 21 modules in /src/ importable when tests are run from
+/tests/. It is loaded automatically by pytest. test_all.py also sets up its
+own sys.path shim explicitly so it works under direct `python tests/test_all.py`
+invocation (where conftest.py is NOT auto-loaded).
+"""
+import sys
 from pathlib import Path
 
-SRC = (Path(__file__).resolve().parent.parent / "src").resolve()
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+# Add the sibling /src/ directory to the front of sys.path so that
+# `from constitution import ...` and all other module imports resolve.
+_SRC = (Path(__file__).resolve().parent.parent / "src").resolve()
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
