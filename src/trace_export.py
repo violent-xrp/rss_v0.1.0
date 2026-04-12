@@ -127,6 +127,9 @@ EVENT_CODES: Dict[str, Dict[str, str]] = {
     "OATH_AUTHORIZED":       {"section": "S3", "category": "CONSENT",  "desc": "Consent check passed"},
     "OATH_DENIED":           {"section": "S3", "category": "CONSENT",  "desc": "Consent check denied"},
     "OATH_REVOKED":          {"section": "S3", "category": "CONSENT",  "desc": "Consent revoked"},
+    "OATH_PERSISTENCE_FAILURE": {"section": "S3", "category": "CONSENT", "desc": "Consent durability write failed (§D-6)"},
+    "INGRESS_REJECTED":      {"section": "S5", "category": "CONTAINER", "desc": "Non-GLOBAL ingress without TECTON sentinel (§D-1)"},
+    "SCOPE_REJECTED":        {"section": "S4", "category": "SCOPE", "desc": "Scope declare rejected by validation or permission"},
     "CYCLE_LIMITED":         {"section": "S3", "category": "CADENCE",  "desc": "Rate limit triggered"},
 
     # S4: Hub Topology & Data Governance

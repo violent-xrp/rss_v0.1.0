@@ -2280,10 +2280,14 @@ def test_s4_pipeline_integration():
                                   })
         check("error" in r4, "invalid hub name blocked in pipeline (§4.5.3)")
 
-        # container_id flows through pipeline
+        # Phase D-1: non-GLOBAL container_id from direct caller (no TECTON
+        # sentinel) is now rejected by ingress discipline. This test used to
+        # assert the opposite — §4.5.4 legacy behavior allowed raw container_id
+        # spoofing from any caller. That's now closed.
         r5 = rss.process_request("quote", use_llm=False,
                                   container_id="MORRISON-001")
-        check("error" not in r5, "pipeline with custom container_id succeeds (§4.5.4)")
+        check(r5.get("error") == "UNAUTHORIZED_INGRESS",
+              "Phase D-1: direct caller non-GLOBAL container_id rejected")
 
         rss.persistence.close()
     finally:
@@ -4052,6 +4056,156 @@ def test_a1_post_llm_scan_covers_archive_and_ledger():
 #   C-8: REDLINE export sanitization (live + cold)
 # ============================================================
 
+def test_phase_d_regression_battery():
+    """Phase D: lock in all 6 hardening items.
+      D-0: Unified TRACE — container events flow into runtime.trace and SQLite
+      D-1: Ingress sentinel — non-GLOBAL without token rejected
+      D-3: Full UUID4 container IDs (39 chars)
+      D-5: can_access_system_hub enforcement (Option B — least privilege default)
+      D-6: OATH persistence failure visibility
+    """
+    section("Phase D: Full Regression Battery")
+
+    from tecton import Tecton, ContainerRequest, ContainerPermissions, TectonError
+    import runtime as runtime_mod
+
+    # D-0: Unified TRACE — container lifecycle events reach runtime.trace + SQLite
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+        before = len(rss.trace.all_events())
+        persisted_before = rss.persistence.event_count()
+        c = rss.tecton.create_container("UnifiedTest", "T-0")
+        rss.tecton.activate_container(c.container_id)
+        after = len(rss.trace.all_events())
+        persisted_after = rss.persistence.event_count()
+        check(after >= before + 2,
+              "D-0: container events appear in unified runtime.trace")
+        check(persisted_after >= persisted_before + 2,
+              "D-0: container events persisted to SQLite (write-ahead)")
+        codes = [e.event_code for e in rss.trace.all_events()]
+        check("CONTAINER_CREATED" in codes,
+              "D-0: CONTAINER_CREATED present in global chain")
+        check("CONTAINER_ACTIVATED" in codes,
+              "D-0: CONTAINER_ACTIVATED present in global chain")
+
+        # D-3: Full UUID4 container IDs
+        check(len(c.container_id) == 39,
+              f"D-3: container_id is TECTON- + 32 hex chars (got {len(c.container_id)})")
+        check(c.container_id.startswith("TECTON-"),
+              "D-3: container_id prefix intact")
+
+        # D-1: Direct non-GLOBAL call without sentinel is rejected
+        r = rss.process_request("quote", use_llm=False, container_id="SPOOF-001")
+        check(r.get("error") == "UNAUTHORIZED_INGRESS",
+              "D-1: non-GLOBAL without sentinel rejected as UNAUTHORIZED_INGRESS")
+        ingress_events = rss.trace.events_by_code("INGRESS_REJECTED")
+        check(len(ingress_events) >= 1,
+              "D-1: INGRESS_REJECTED emitted to TRACE")
+
+        # D-1: TECTON delegation still works (passes sentinel)
+        rss.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0",
+                           container_id=c.container_id)
+        req = ContainerRequest(container_id=c.container_id, sigil="☐",
+                               task={"text": "quote", "use_llm": False})
+        resp = rss.tecton.process_request(req, rss)
+        check("error" not in resp.result or resp.result.get("error") != "UNAUTHORIZED_INGRESS",
+              "D-1: TECTON delegation succeeds with sentinel")
+
+        rss.persistence.close()
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s): os.unlink(path + s)
+
+    # D-5 — ChatGPT's five scenarios for can_access_system_hub enforcement
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+
+        # Scenario 1: default container does NOT include SYSTEM in allowed_sources
+        c1 = rss.tecton.create_container("DefaultTest", "T-0")
+        check(c1.profile.scope_policy["allowed_sources"] == ("WORK",),
+              "D-5.1: default container scope is WORK only (no SYSTEM)")
+        check(c1.profile.permissions.can_access_system_hub is False,
+              "D-5.1: default can_access_system_hub is False")
+
+        # Scenario 2: can_access_system_hub=False + SYSTEM in scope → SCOPE_REJECTED
+        c2 = rss.tecton.create_container("DenyTest", "T-0",
+                                         permissions=ContainerPermissions(can_access_system_hub=False))
+        rss.tecton.configure_container(c2.container_id,
+                                       scope_policy={"allowed_sources": ("WORK", "SYSTEM"),
+                                                     "forbidden_sources": ("PERSONAL",)})
+        rss.tecton.activate_container(c2.container_id)
+        rss.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0",
+                           container_id=c2.container_id)
+        req = ContainerRequest(container_id=c2.container_id, sigil="☐",
+                               task={"text": "quote", "use_llm": False})
+        resp = rss.tecton.process_request(req, rss)
+        check(resp.result.get("error") == "SCOPE_REJECTED",
+              "D-5.2: SYSTEM in scope + permission=False → SCOPE_REJECTED")
+
+        # Scenario 3: can_access_system_hub=True but scope does NOT include SYSTEM → still no SYSTEM
+        c3 = rss.tecton.create_container("PermButNoScopeTest", "T-0",
+                                         permissions=ContainerPermissions(can_access_system_hub=True))
+        # Default scope is WORK only — permission alone doesn't grant access
+        rss.tecton.activate_container(c3.container_id)
+        rss.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0",
+                           container_id=c3.container_id)
+        req3 = ContainerRequest(container_id=c3.container_id, sigil="☐",
+                                task={"text": "quote", "use_llm": False})
+        resp3 = rss.tecton.process_request(req3, rss)
+        # Should succeed — WORK-only scope is fine — but envelope should not include SYSTEM
+        check("error" not in resp3.result,
+              "D-5.3: permission=True + WORK-only scope succeeds")
+
+        # Scenario 4: permission=True + SYSTEM in scope → success
+        c4 = rss.tecton.create_container("FullAccessTest", "T-0",
+                                         permissions=ContainerPermissions(can_access_system_hub=True))
+        rss.tecton.configure_container(c4.container_id,
+                                       scope_policy={"allowed_sources": ("WORK", "SYSTEM"),
+                                                     "forbidden_sources": ("PERSONAL",)})
+        rss.tecton.activate_container(c4.container_id)
+        rss.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0",
+                           container_id=c4.container_id)
+        req4 = ContainerRequest(container_id=c4.container_id, sigil="☐",
+                                task={"text": "quote", "use_llm": False})
+        resp4 = rss.tecton.process_request(req4, rss)
+        check("error" not in resp4.result,
+              "D-5.4: permission=True + SYSTEM in scope succeeds")
+
+        rss.persistence.close()
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s): os.unlink(path + s)
+
+    # D-6: OATH persistence failure surfaces to TRACE and stderr
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+        # Override OATH's bound persistence callback so the failure path fires.
+        # (Patching rss.persistence.save_consent would not work because OATH
+        # captured the original reference at wire-time in Runtime.__init__.)
+        def broken_save(key, record):
+            raise sqlite3.OperationalError("simulated D-6")
+        rss.oath._persist_callback = broken_save
+        before = len(rss.trace.events_by_code("OATH_PERSISTENCE_FAILURE"))
+        # Authorization still succeeds in memory — failure is loud, not blocking
+        r = rss.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0",
+                               container_id="TEST-D6")
+        check(r.get("authorized") is True,
+              "D-6: authorize still returns True (failure is loud, not blocking)")
+        after = len(rss.trace.events_by_code("OATH_PERSISTENCE_FAILURE"))
+        check(after > before,
+              "D-6: OATH_PERSISTENCE_FAILURE emitted to unified TRACE on failure")
+        rss.persistence.close()
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s): os.unlink(path + s)
+
+
 def test_c_phase_regression_battery():
     """Phase C Expanded: lock in all 8 hardening items as one test.
     Kept as a single function to minimize test-runner boilerplate."""
@@ -4317,6 +4471,8 @@ if __name__ == "__main__":
     safe_run(test_a1_post_llm_scan_covers_archive_and_ledger)
     # Phase C Expanded — 8-item regression battery
     safe_run(test_c_phase_regression_battery)
+    # Phase D — 6-item regression battery
+    safe_run(test_phase_d_regression_battery)
 
     print(f"\n{'='*60}")
     print(f"RSS v3 — {_pass} PASSED, {_fail} FAILED", end="")

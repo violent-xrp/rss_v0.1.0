@@ -140,8 +140,15 @@ class ContainerPermissions(_Lockable):
 
 
 def _default_scope_policy() -> dict:
+    """Phase D-5 (Option B): Least-privilege default. Tenant containers see
+    WORK only by default. SYSTEM is an opt-in administrative surface that
+    requires BOTH:
+      (1) ContainerPermissions.can_access_system_hub=True, AND
+      (2) Explicit 'SYSTEM' in scope_policy['allowed_sources']
+    This removes the internal contradiction where a default profile
+    included SYSTEM in scope but denied it by permission."""
     return {
-        "allowed_sources": ("WORK", "SYSTEM"),
+        "allowed_sources": ("WORK",),
         # Defense-in-depth (§4.2.3 + §5.9.2): PERSONAL is already rejected by the
         # sovereign=False guard in scope.py declare(). Listing it in forbidden_sources
         # is intentionally redundant — if the sovereign guard is ever weakened or
@@ -235,7 +242,7 @@ class ContainerProfile(_Lockable):
             permissions=perms,
             advisors_enabled=tuple(d.get("advisors_enabled", ("APEX", "VECTOR", "HALCYON"))),
             scope_policy={
-                "allowed_sources": tuple(sp.get("allowed_sources", ("WORK", "SYSTEM"))),
+                "allowed_sources": tuple(sp.get("allowed_sources", ("WORK",))),
                 "forbidden_sources": tuple(sp.get("forbidden_sources", ("PERSONAL",))),
             },
         )
@@ -283,9 +290,38 @@ class ContainerResponse:
 
 @dataclass
 class Tecton:
-    """§5.0.2 — Tier 2 subsystem. Zero constitutional authority."""
+    """§5.0.2 — Tier 2 subsystem. Zero constitutional authority.
+
+    Phase D-0: TRACE unification. Tecton no longer maintains an independent
+    event log by default. When a Runtime is attached via `attach_runtime()`,
+    all container lifecycle and request events are routed through
+    `runtime._log()`, which gives them the Write-Ahead Guarantee (§0.8.3),
+    includes them in boot-time chain verification (§6.3.5), persists them
+    to SQLite, and makes them visible to the cold verifier and all export
+    paths. The local `_trace` field remains as a fallback for unit tests
+    that exercise Tecton in isolation without a runtime."""
     _containers: Dict[str, TenantContainer] = field(default_factory=dict)
-    _trace: AuditLog = field(default_factory=AuditLog)
+    _trace: AuditLog = field(default_factory=AuditLog)  # fallback only
+    _runtime: Optional[Any] = None  # set by attach_runtime()
+
+    def attach_runtime(self, runtime) -> None:
+        """Phase D-0: Route all Tecton events through the runtime's unified
+        TRACE. Called by Runtime.__init__ after construction so container
+        events participate in the global chain."""
+        self._runtime = runtime
+
+    def _emit(self, code: str, cid: str, content: str) -> None:
+        """§5.8.3 / Phase D-0 — Unified event emission. If a runtime is
+        attached, route through runtime._log() so the event:
+          - is persisted to SQLite (§6.4 write-ahead)
+          - is included in boot-time chain verification (§6.3.5)
+          - is visible to export and cold verification
+          - counts against audit failure threshold (§6.4.4 G-7)
+        Otherwise fall back to the local log (unit-test mode only)."""
+        if self._runtime is not None:
+            self._runtime._log(code, cid, content)
+        else:
+            self._trace.record_event(code, "TECTON", cid, content)
 
     # ── Container Lifecycle (§5.2) ──
 
@@ -297,7 +333,10 @@ class Tecton:
         if not owner:
             raise TectonError("Container owner must not be empty.")
 
-        cid = f"TECTON-{uuid4().hex[:8]}"
+        # Phase D-3: Full UUID4 for collision resistance at scale (§6.9.6).
+        # Previously used .hex[:8] (32 bits) which birthday-collided at ~65K
+        # containers. Full hex is 122 bits of entropy — effectively uncollidable.
+        cid = f"TECTON-{uuid4().hex}"
         profile = ContainerProfile(label=label, owner=owner,
                                    permissions=permissions or ContainerPermissions())
         now = datetime.now(UTC)
@@ -312,8 +351,8 @@ class Tecton:
         )
         self._containers[cid] = container
 
-        self._trace.record_event("CONTAINER_CREATED", "TECTON", cid,
-                                 f"Container '{label}' created for {owner}")
+        self._emit("CONTAINER_CREATED", cid,
+                   f"Container '{label}' created for {owner}")
         return container
 
     def configure_container(self, cid: str, advisors: Optional[tuple] = None,
@@ -331,7 +370,7 @@ class Tecton:
         if scope_policy is not None:
             # §5.3.2 — normalize to tuples per §4.5.7
             c.profile.scope_policy = {
-                "allowed_sources": tuple(scope_policy.get("allowed_sources", ("WORK", "SYSTEM"))),
+                "allowed_sources": tuple(scope_policy.get("allowed_sources", ("WORK",))),
                 "forbidden_sources": tuple(scope_policy.get("forbidden_sources", ("PERSONAL",))),
             }
         c.state = "CONFIGURED"
@@ -339,7 +378,7 @@ class Tecton:
             "action": "CONFIGURED",
             "timestamp": datetime.now(UTC).isoformat(),
         })
-        self._trace.record_event("CONTAINER_CONFIGURED", "TECTON", cid,
+        self._emit("CONTAINER_CONFIGURED", cid,
                                  f"Container '{c.profile.label}' configured")
         return c
 
@@ -356,7 +395,7 @@ class Tecton:
             "action": "ACTIVATED",
             "timestamp": datetime.now(UTC).isoformat(),
         })
-        self._trace.record_event("CONTAINER_ACTIVATED", "TECTON", cid,
+        self._emit("CONTAINER_ACTIVATED", cid,
                                  f"Container '{c.profile.label}' activated")
         return c
 
@@ -370,7 +409,7 @@ class Tecton:
             "action": "SUSPENDED",
             "timestamp": datetime.now(UTC).isoformat(),
         })
-        self._trace.record_event("CONTAINER_SUSPENDED", "TECTON", cid,
+        self._emit("CONTAINER_SUSPENDED", cid,
                                  f"Container '{c.profile.label}' suspended")
         return c
 
@@ -391,7 +430,7 @@ class Tecton:
             "action": "REACTIVATED",
             "timestamp": datetime.now(UTC).isoformat(),
         })
-        self._trace.record_event("CONTAINER_REACTIVATED", "TECTON", cid,
+        self._emit("CONTAINER_REACTIVATED", cid,
                                  f"Container '{c.profile.label}' reactivated from SUSPENDED")
         return c
 
@@ -404,7 +443,7 @@ class Tecton:
             "action": "ARCHIVED",
             "timestamp": datetime.now(UTC).isoformat(),
         })
-        self._trace.record_event("CONTAINER_ARCHIVED", "TECTON", cid,
+        self._emit("CONTAINER_ARCHIVED", cid,
                                  f"Container '{c.profile.label}' archived")
         return c
 
@@ -418,7 +457,7 @@ class Tecton:
             "action": "DESTROYED",
             "timestamp": datetime.now(UTC).isoformat(),
         })
-        self._trace.record_event("CONTAINER_DESTROYED", "TECTON", cid,
+        self._emit("CONTAINER_DESTROYED", cid,
                                  f"Container '{c.profile.label}' destroyed. Data preserved for audit.")
         return {"destroyed": True, "container_id": cid, "data_preserved": True}
 
@@ -466,7 +505,7 @@ class Tecton:
             "timestamp": datetime.now(UTC).isoformat(),
             "reason": reason,
         })
-        self._trace.record_event("PROFILE_MUTATED", "TECTON", cid,
+        self._emit("PROFILE_MUTATED", cid,
                                  f"ACTIVE profile mutated: reason={reason}, "
                                  f"changed={list(new_values.keys())}")
         return c
@@ -521,12 +560,16 @@ class Tecton:
         task_id = f"{request.container_id}:{sigil_name}:{uuid4().hex[:6]}"
 
         # §5.6.5 — Use container scope policy, convert tuples to lists for pipeline
+        # §5.6.5 — Use container scope policy, convert tuples to lists for pipeline
         # §C-NEW-3 — Inject max_requests_per_minute into the policy dict so
         # runtime Stage 6 can apply the container-specific rate limit.
+        # Phase D-5 — Inject can_access_system_hub so SCOPE Stage 2 can enforce
+        # the SYSTEM hub permission gate.
         scope_policy = {
-            "allowed_sources": list(c.profile.scope_policy.get("allowed_sources", ("WORK", "SYSTEM"))),
+            "allowed_sources": list(c.profile.scope_policy.get("allowed_sources", ("WORK",))),
             "forbidden_sources": list(c.profile.scope_policy.get("forbidden_sources", ("PERSONAL",))),
             "max_requests_per_minute": perms.max_requests_per_minute,
+            "can_access_system_hub": perms.can_access_system_hub,
         }
 
         # Determine if LLM call is requested AND permitted
@@ -542,17 +585,23 @@ class Tecton:
         runtime.hubs = c.hubs
 
         try:
+            # Phase D-1: Import and pass the TECTON ingress sentinel so the
+            # runtime accepts this non-GLOBAL container_id. The sentinel is
+            # module-private to runtime.py; only this call site (and runtime
+            # itself) can reference it.
+            from runtime import _TECTON_INGRESS_TOKEN
             result = runtime.process_request(
                 task_text, task_id=task_id,
                 container_id=request.container_id,
                 scope_policy=scope_policy,
                 use_llm=use_llm,
+                _ingress_token=_TECTON_INGRESS_TOKEN,
             )
         finally:
             # §5.6.2 — Always restore global hubs
             runtime.hubs = original_hubs
 
-        self._trace.record_event(f"CONTAINER_REQUEST_{sigil_name}", "TECTON", task_id,
+        self._emit(f"CONTAINER_REQUEST_{sigil_name}", task_id,
                                  f"Container '{c.profile.label}' invoked {sigil_name}")
 
         return ContainerResponse(
@@ -578,8 +627,11 @@ class Tecton:
 
     def events_by_container(self, container_id: str) -> list:
         """§5.8.3 — Filter TRACE events by container_id prefix.
-        Returns events whose artifact_id starts with the container_id."""
-        return [e for e in self._trace.all_events()
+        Phase D-0: Queries the unified runtime TRACE when attached, otherwise
+        falls back to the local log. Returns events whose artifact_id starts
+        with the container_id."""
+        source = self._runtime.trace if self._runtime is not None else self._trace
+        return [e for e in source.all_events()
                 if e.artifact_id.startswith(container_id)]
 
     # ── Persistence (§5.2.1) ──

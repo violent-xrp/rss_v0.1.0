@@ -57,12 +57,25 @@ class Oath:
     # Signature: callback(key: str, record: ConsentRecord) -> None
     _persist_callback: Optional[Callable] = None
 
+    # Phase D-6: failure callback for consent persistence write failures.
+    # Invoked when _persist_callback raises. Runtime wires this to emit
+    # OATH_PERSISTENCE_FAILURE into the unified TRACE chain, surfacing the
+    # failure loudly instead of swallowing it.
+    # Signature: callback(action_class: str, container_id: str, exc: Exception)
+    _failure_callback: Optional[Callable] = None
+
     def _key(self, action_class: str, container_id: str) -> str:
         return f"{container_id}:{action_class}"
 
     def set_persistence_callback(self, callback) -> None:
         """§6.9.2 — Wire persistence so every authorize() durably saves."""
         self._persist_callback = callback
+
+    def set_failure_callback(self, callback) -> None:
+        """Phase D-6 — Wire consent persistence failure notification.
+        Called when a persistence write raises; gives runtime a chance
+        to emit OATH_PERSISTENCE_FAILURE into the audit chain."""
+        self._failure_callback = callback
 
     def authorize(self, action_class: str, scope: str, duration: str,
                   requester: str, container_id: str = "GLOBAL",
@@ -90,11 +103,23 @@ class Oath:
         if _persist and self._persist_callback is not None:
             try:
                 self._persist_callback(key, record)
-            except Exception:
-                # Durability failure at persistence layer should not block
-                # the authorization itself. Runtime write-ahead discipline
-                # covers TRACE separately.
-                pass
+            except Exception as exc:
+                # Phase D-6: Surface consent persistence failures loudly.
+                # The authorization itself still stands in-memory (runtime
+                # write-ahead for TRACE is separate from consent durability),
+                # but the failure is now visible to auditors via the unified
+                # TRACE chain and to operators via stderr.
+                import sys as _sys
+                print(
+                    f"[OATH WARN §D-6] Consent persistence failed for "
+                    f"{action_class}/{container_id}: {exc}",
+                    file=_sys.stderr,
+                )
+                if self._failure_callback is not None:
+                    try:
+                        self._failure_callback(action_class, container_id, exc)
+                    except Exception:
+                        pass  # Don't cascade failures
 
         return {"authorized": True, "action_class": action_class, "container_id": container_id}
 
@@ -107,8 +132,22 @@ class Oath:
         if self._persist_callback is not None:
             try:
                 self._persist_callback(key, self._consents[key])
-            except Exception:
-                pass
+            except Exception as exc:
+                # Phase D-6: Surface revocation persistence failures loudly.
+                # A revocation that only lives in memory but not on disk is
+                # a real integrity problem — it's exactly the A1-FIX-1 bug
+                # we fixed, but arriving through a different path.
+                import sys as _sys
+                print(
+                    f"[OATH WARN §D-6] Revocation persistence failed for "
+                    f"{action_class}/{container_id}: {exc}",
+                    file=_sys.stderr,
+                )
+                if self._failure_callback is not None:
+                    try:
+                        self._failure_callback(action_class, container_id, exc)
+                    except Exception:
+                        pass
         return {"revoked": True, "action_class": action_class}
 
     def check(self, action_class: str, container_id: str = "GLOBAL") -> str:

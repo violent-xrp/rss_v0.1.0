@@ -73,6 +73,7 @@ class Scope:
         expiration: Optional[datetime] = None,
         container_id: str = "GLOBAL",
         sovereign: bool = False,
+        can_access_system_hub: bool = True,
     ) -> ScopeEnvelope:
         if not task_id:
             raise ScopeError("task_id must not be empty.")
@@ -94,6 +95,18 @@ class Scope:
             raise ScopeError(
                 "PERSONAL hub requires explicit sovereign construction (§4.2.3). "
                 "Set sovereign=True to include PERSONAL."
+            )
+
+        # Phase D-5 — SYSTEM hub requires can_access_system_hub=True.
+        # This moves the container permission from decorative-only to
+        # mechanically enforced. Containers that declare can_access_system_hub=False
+        # cannot pull SYSTEM entries into their PAV view, regardless of what
+        # their scope_policy says. risk_tier remains decorative until a
+        # dedicated decision point lands in Phase 2 (§5.4.1).
+        if "SYSTEM" in allowed and not can_access_system_hub:
+            raise ScopeError(
+                "SYSTEM hub access denied by container permission (§5.4.1, Phase D-5). "
+                "Set can_access_system_hub=True on the container profile to permit."
             )
 
         token = f"SCOPE-{uuid4().hex[:8]}"

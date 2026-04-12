@@ -7,7 +7,7 @@
 
 ## A. What RSS Does Today
 
-These are concrete runtime behaviors currently proven by code and tests (487 tests, 21 modules).
+These are concrete runtime behaviors currently proven by code and tests (**627 tests, 21 modules** — up from 487 after Phase C Expanded and Phase D hardening).
 
 ### Constitutional Foundation
 
@@ -109,6 +109,25 @@ EVENT_CODES registry covers 30+ codes across S0-S5 with section attribution, cat
 - Seal packets with review attestation
 - Pre-seal drift check (§0.7.3) — verifies Genesis integrity before sealing
 
+### Phase C Expanded — Hardening Items (delivered, tested)
+
+- **A1-FIX-1** — Global EXECUTE revocation durability: REVOKED records survive restart; default auto-authorize never overwrites prior REVOKED status (§6.9.2)
+- **C-NEW-1** — ContainerProfile mutation lock: profile becomes structurally immutable on ACTIVATION via `_Lockable` + `MappingProxyType`; sanctioned mutation only via `mutate_active_profile()` (§5.3.3)
+- **C-NEW-2** — Canonical JSON hashing: deterministic byte encoding regardless of dict key ordering (§6.3.3)
+- **C-NEW-3** — Container rate limiting: `max_requests_per_minute` flows TECTON → runtime → CYCLE, mechanically enforced per-container
+- **G-5** — Strict event code validation: unregistered codes rejected in strict mode; dynamic `CONTAINER_REQUEST_*` prefix allowed (§6.6.4)
+- **G-6** — State criticality classification: CRITICAL load failures → Safe-Stop; NON_CRITICAL warn and continue; empty tables are never errors (§6.9.7)
+- **G-7** — Audit failure threshold: consecutive write failures → persistent Safe-Stop (§6.4.4)
+- **G-8** — REDLINE export sanitization: live (via hub_topology) and cold (via SQL) paths both redact REDLINE entry IDs from exports (§6.10.6)
+
+### Phase D — Ingress and Unification Hardening (delivered, tested)
+
+- **D-0 Unified TRACE** — Container lifecycle/request events flow into the runtime's single global TRACE chain, not a side-car log. Container events now get write-ahead persistence, boot-chain verification, export coverage, cold verifier visibility, and audit-failure-threshold accounting. Closes a "green but wrong" hazard where the earlier suite was protecting a split-TRACE architecture. (§5.8.3)
+- **D-1 Ingress sentinel token** — `runtime._TECTON_INGRESS_TOKEN` is the sole proof-of-origin for non-GLOBAL `container_id` at `Runtime.process_request()`. Direct callers get `UNAUTHORIZED_INGRESS` + `INGRESS_REJECTED` TRACE event. **Architectural discipline, not cryptographic auth** — see deferred items below. (§5.1.6)
+- **D-3 Full UUID4 container IDs** — `TECTON-{uuid4().hex}` (122 bits, uncollidable) replaces 8-char prefix. (§6.9.6)
+- **D-5 SYSTEM hub permission enforcement (least-privilege default)** — Default `scope_policy.allowed_sources=("WORK",)` and `can_access_system_hub=False`. SYSTEM access requires BOTH the permission flag AND explicit `"SYSTEM"` in `allowed_sources`. `risk_tier` remains a Phase 2 future capability. (§5.4.1)
+- **D-6 OATH persistence failure visibility** — `authorize()`/`revoke()` surface persistence failures to stderr AND emit `OATH_PERSISTENCE_FAILURE` into the unified TRACE chain. Loud-failure semantics, not full write-ahead. (§6.9.2)
+
 ---
 
 ## B. What RSS Is Designed to Do Later
@@ -171,3 +190,15 @@ These are capabilities people may assume based on the architecture or language, 
 - **Enterprise-ready security** — No secrets management, no authn/authz model, no key handling, no incident taxonomy, no compliance certification.
 - **Multi-tenant isolation under concurrency** — Container isolation is real at the hub layer but relies on global hub swap (F-5, a known concurrency bomb). This is safe for single-threaded MVP use only.
 - **Distributed deployment** — Everything runs in a single process. Distributed Safe-Stop, distributed TECTON, and multi-node CYCLE are all future work.
+
+### Explicitly Deferred After Phase D (honest limitations)
+
+These are items considered and intentionally **not** included in Phase D. Each is documented so future audits don't mistake "deferred" for "missed."
+
+- **D-2 per-event TRACE nonce (rainbow-table hardening)** — Deferred to Phase E crypto hardening alongside §6.12.4 external signing. Rationale: `content_hash` hashes the audit log *description* of an event, not the raw REDLINE payload. An attacker with SQLite file access already owns the database; rainbow tables add little. REDLINE export sanitization (G-8) already blocks the export-leak vector. When Phase E adds per-event signing, nonces fold in naturally. Pre-§6.12.5 events will remain hashed without nonce — this is an accepted honest limitation.
+- **Real caller/container authentication** — D-1 closes the architectural discipline gap via a module-private sentinel token. This is **not** cryptographic auth. A malicious caller with Python import access can still spoof. Real caller authentication is a **Phase E deployment-layer concern** (network API wrapper, TLS, OAuth/JWT, API keys). RSS v3 is a single-process kernel; identity enforcement happens at the edge, not at the runtime boundary.
+- **Container restore not in default boot path** — TECTON has `save_to()`/`restore_from()` methods and containers can round-trip through SQLite. However, the default `bootstrap()` does **not** automatically restore containers — callers must explicitly invoke TECTON restore after bootstrap. Making runtime own TECTON's restore lifecycle is a bigger refactor scheduled for Phase E alongside unified state lifecycle management.
+- **Async hub-swap (§5.1.6)** — The global hub-swap pattern in `Tecton.process_request` (`runtime.hubs = c.hubs` in try/finally) is inherently single-threaded. Concurrent requests to different containers would race on the `runtime.hubs` attribute. The architectural replacement is `contextvars`-bound per-request hub topology, scheduled for Phase E.
+- **SQLite single-writer constraint** — Persistence uses a single SQLite file with WAL mode. Multiple concurrent writers would serialize at the SQLite lock. Acceptable for single-process MVP; distributed persistence is a Phase F concern.
+- **OATH full write-ahead semantics** — D-6 makes consent persistence failures loud and auditable, but authorize/revoke still return success even when the durable write fails. For truly durable consent semantics (where authorize() blocks until the write succeeds, or fails the operation entirely), see Phase E write-ahead hardening.
+- **`ContainerPermissions.risk_tier`** — Present in the dataclass and serialized through persistence, but not yet mechanically enforced at any decision point. Scheduled for Phase 2 alongside a dedicated risk-scoring policy layer. Explicitly decorative until then.

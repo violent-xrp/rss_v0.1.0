@@ -36,7 +36,7 @@ from constitution import verify_integrity, SafeStopTriggered
 from config import RSSConfig
 from audit_log import AuditLog
 from ward import Ward
-from scope import Scope
+from scope import Scope, ScopeError
 from hub_topology import HubTopology
 from pav import PAVBuilder, CONTENT_ONLY
 from meaning_law import MeaningLaw, Term
@@ -53,6 +53,20 @@ from llm_adapter import LLMAdapter
 DEFAULT_TERMS = [
     "quote", "RFI", "purchase order", "NCR", "submittal", "change order"
 ]
+
+
+# Phase D-1 — Ingress identity binding. This sentinel is the sole proof-of-origin
+# for non-GLOBAL container_id values reaching Runtime.process_request(). TECTON
+# imports it directly; nothing else should. A caller that passes a non-GLOBAL
+# container_id WITHOUT this sentinel receives UNAUTHORIZED_INGRESS and the
+# request is rejected before any pipeline stage executes.
+#
+# Honest scope statement: this is architectural discipline, not cryptographic
+# auth. A malicious caller with import access can still spoof. Real caller
+# authentication is a Phase E deployment-layer concern (network API wrapper,
+# TLS, OAuth, etc.). RSS v3 is a single-process kernel; enforcement happens
+# at the edge, not at the runtime boundary.
+_TECTON_INGRESS_TOKEN = object()
 
 
 class Runtime:
@@ -101,9 +115,30 @@ class Runtime:
         self.persistence = Persistence(self.config.db_path)
         self.llm = LLMAdapter(self.config)
 
+        # Phase D-0 — Unified TRACE: construct TECTON here and attach this
+        # runtime so container lifecycle/request events flow through
+        # self._log() instead of a side AuditLog. This gives container events
+        # write-ahead persistence (§0.8.3), boot-chain verification (§6.3.5),
+        # export visibility, and cold verifier coverage.
+        from tecton import Tecton
+        self.tecton = Tecton()
+        self.tecton.attach_runtime(self)
+
         # §6.9.2 — Wire OATH consent persistence. Every authorize() / revoke()
         # now durably saves through this callback.
         self.oath.set_persistence_callback(self.persistence.save_consent)
+
+        # Phase D-6 — Wire OATH failure callback so consent persistence
+        # failures are emitted into the unified TRACE chain as auditable
+        # events instead of being silently swallowed.
+        def _oath_failure_handler(action_class, container_id, exc):
+            try:
+                self._log("OATH_PERSISTENCE_FAILURE",
+                          f"{container_id}:{action_class}",
+                          f"Consent persistence failed: {type(exc).__name__}: {exc}")
+            except Exception:
+                pass  # Last-resort: don't let audit failure loop
+        self.oath.set_failure_callback(_oath_failure_handler)
 
         # Wire pre-seal drift check (Pact §0.7.3)
         self.seal.set_integrity_check(self.verify_genesis)
@@ -613,15 +648,33 @@ class Runtime:
 
     def process_request(self, text: str, use_llm: bool = False,
                         task_id: str = None, container_id: str = "GLOBAL",
-                        scope_policy: dict = None) -> dict:
+                        scope_policy: dict = None,
+                        _ingress_token=None) -> dict:
         """
         Main governed pipeline (Pact §3.3). Every request flows through:
         SAFE_STOP → GENESIS → SCOPE → RUNE → EXECUTION → OATH → CYCLE → PAV → LLM → TRACE
 
         Pipeline stage tracking (§3.3.4): every halt includes {stage, stage_name}.
         Event codes follow taxonomy (§3.4.5): SEAT_ACTION format.
+
+        Phase D-1 ingress discipline: non-GLOBAL container_id values require
+        the TECTON ingress sentinel token. Direct callers using container_id=
+        "GLOBAL" (main.py, demo_llm.py, all existing tests) are unaffected.
+        Only TECTON holds the token and passes it through when delegating
+        container-scoped work. Callers attempting to spoof a container_id
+        without the sentinel get UNAUTHORIZED_INGRESS before any stage runs.
         """
         task_id = task_id or f"REQ-{datetime.now(UTC).timestamp()}"
+
+        # Phase D-1 — Ingress discipline gate (§5.1.6)
+        if container_id != "GLOBAL" and _ingress_token is not _TECTON_INGRESS_TOKEN:
+            self._log("INGRESS_REJECTED", task_id,
+                      f"Non-GLOBAL container_id '{container_id}' without TECTON sentinel")
+            return {
+                "error": "UNAUTHORIZED_INGRESS",
+                "reason": "Non-GLOBAL container_id requires TECTON ingress (§5.1.6, Phase D-1)",
+                "container_id": container_id,
+            }
 
         # Stage tracking (§3.3.4)
         STAGES = {
@@ -657,15 +710,29 @@ class Runtime:
                 "allowed_sources": ["WORK", "SYSTEM"],
                 "forbidden_sources": [],
             }
-            envelope = self.scope.declare(
-                task_id=task_id,
-                allowed_sources=policy.get("allowed_sources", ["WORK", "SYSTEM"]),
-                forbidden_sources=policy.get("forbidden_sources", []),
-                redline_handling="EXCLUDE",
-                metadata_policy=CONTENT_ONLY,
-                container_id=container_id,                    # §4.5.4
-                sovereign=policy.get("sovereign", False),     # §4.2.3
-            )
+            try:
+                envelope = self.scope.declare(
+                    task_id=task_id,
+                    allowed_sources=policy.get("allowed_sources", ["WORK", "SYSTEM"]),
+                    forbidden_sources=policy.get("forbidden_sources", []),
+                    redline_handling="EXCLUDE",
+                    metadata_policy=CONTENT_ONLY,
+                    container_id=container_id,                    # §4.5.4
+                    sovereign=policy.get("sovereign", False),     # §4.2.3
+                    # Phase D-5 — SYSTEM hub permission gate. TECTON injects
+                    # this from c.profile.permissions.can_access_system_hub.
+                    # Default True preserves GLOBAL/non-container behavior.
+                    can_access_system_hub=policy.get("can_access_system_hub", True),
+                )
+            except ScopeError as se:
+                # Permission or validation error — return as a clean stage-2 halt
+                # instead of propagating to the outer UNEXPECTED_ERROR handler.
+                self._log("SCOPE_REJECTED", task_id, str(se))
+                return {
+                    "error": "SCOPE_REJECTED",
+                    "reason": str(se),
+                    "stage": 2, "stage_name": STAGES[2],
+                }
             self._log("SCOPE_OK", task_id, f"Envelope {envelope.token}")
             last_stage = 2
 
