@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: SCRIBE — Drafting Authority (Layer 5)
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — Layer 5: SCRIBE (Drafting Engine)
+RSS v0.1.0 — Layer 5: SCRIBE (Drafting Engine)
 Drafts → Candidates → ready for SEAL. With proper diff.
 """
 from __future__ import annotations

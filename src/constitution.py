@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: Constitutional Primitives & Safe-Stop (Layer 1)
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — Layer 1: Constitution
+RSS v0.1.0 — Layer 1: Constitution
 SHA-256 integrity verification, Safe-Stop, structured invariant checks.
 """
 from __future__ import annotations

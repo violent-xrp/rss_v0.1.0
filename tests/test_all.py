@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: Comprehensive Test Suite
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — Comprehensive Test Suite
+RSS v0.1.0 — Comprehensive Test Suite
 All modules, all layers, all integration points.
 Updated: March 3, 2026 — added persistence round-trip + TRACE export tests
 """
@@ -851,10 +851,10 @@ def test_runtime():
         check(r["meaning"] == "SEALED" and r["classification"] == "REQUEST", "'RFI' -> SEALED")
 
         r = rss.process_request("purchase order", use_llm=False)
-        check(r["meaning"] == "SEALED", "new v3 term 'purchase order' works")
+        check(r["meaning"] == "SEALED", "new v0.1.0 term 'purchase order' works")
 
         r = rss.process_request("NCR", use_llm=False)
-        check(r["meaning"] == "SEALED", "new v3 term 'NCR' works")
+        check(r["meaning"] == "SEALED", "new v0.1.0 term 'NCR' works")
 
         # Consent revoke
         rss.oath.revoke("EXECUTE")
@@ -4695,7 +4695,7 @@ if __name__ == "__main__":
     safe_run(test_phase_e5_contextvar_isolation)
 
     print(f"\n{'='*60}")
-    print(f"RSS v3 — {_pass} PASSED, {_fail} FAILED", end="")
+    print(f"RSS v0.1.0 — {_pass} PASSED, {_fail} FAILED", end="")
     if _errors > 0:
         print(f", {_errors} ERRORS")
     else:

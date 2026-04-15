@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: S2 — Meaning Law (RUNE) (Layer 4)
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — Layer 4: RUNE (Meaning Law)
+RSS v0.1.0 — Layer 4: RUNE (Meaning Law)
 TERM_ID registry, binding classification, synonym pointers, anti-retroactivity.
 
 Pact v2.0 §2 compliance:

@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: S3 — Governed Runtime Pipeline (Layer 6)
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — Runtime (Layer 6)
+RSS v0.1.0 — Runtime (Layer 6)
 Unified pipeline: SCOPE → RUNE → OATH → CYCLE → PAV → LLM → TRACE
 Every request flows through the full governance stack.
 Persistence round-trip: saves AND loads state on restart.
@@ -64,7 +64,7 @@ DEFAULT_TERMS = [
 # Honest scope statement: this is architectural discipline, not cryptographic
 # auth. A malicious caller with import access can still spoof. Real caller
 # authentication is a Phase E deployment-layer concern (network API wrapper,
-# TLS, OAuth, etc.). RSS v3 is a single-process kernel; enforcement happens
+# TLS, OAuth, etc.). RSS v0.1.0 is a single-process kernel; enforcement happens
 # at the edge, not at the runtime boundary.
 _TECTON_INGRESS_TOKEN = object()
 

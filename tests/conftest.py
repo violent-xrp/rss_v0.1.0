@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: Test Path Shim
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — pytest path shim.
+RSS v0.1.0 — pytest path shim.
 
 This file makes the 21 modules in /src/ importable when tests are run from
 /tests/. It is loaded automatically by pytest. test_all.py also sets up its

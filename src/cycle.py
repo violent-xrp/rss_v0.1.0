@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: CYCLE — Cadence & Rate Limiting
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — CYCLE (Cadence Law)
+RSS v0.1.0 — CYCLE (Cadence Law)
 Thread-safe version with rate limiting per domain, container-aware.
 Prevents runaway loops while supporting multi-threaded or concurrent runtime.
 """

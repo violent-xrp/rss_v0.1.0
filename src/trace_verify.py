@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: S6 — Cold TRACE Verifier (stand-alone, zero runtime deps)
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — Stand-alone Cold TRACE Verifier (§6.11.4)
+RSS v0.1.0 — Stand-alone Cold TRACE Verifier (§6.11.4)
 
 This module verifies the integrity of a persisted TRACE chain WITHOUT booting
 the full RSS runtime. It is deliberately self-contained: it imports only the
@@ -53,7 +53,7 @@ What this verifier proves:
   - Optional: event codes appear in a provided registry (--registry flag)
 
 What this verifier does NOT prove:
-  - That the hashes were computed from any specific original payload (ERA-3
+  - That the hashes were computed from any specific original payload (v0.1.0
     exports don't include raw payloads, only hashes — see §6.3.6)
   - That the database itself wasn't replaced wholesale between audits
     (external signing / timestamp anchoring is Phase 6 — see §6.12.4)
@@ -63,7 +63,7 @@ Usage:
   As a library:
 
     from trace_verify import verify_trace_file
-    result = verify_trace_file("rss_v3.db")
+    result = verify_trace_file("rss.db")
     if result["verified"]:
         print("Chain intact.")
     else:
@@ -71,10 +71,10 @@ Usage:
 
   As a CLI:
 
-    python trace_verify.py rss_v3.db
-    python trace_verify.py rss_v3.db --json
-    python trace_verify.py rss_v3.db --container TECTON-abc12345
-    python trace_verify.py rss_v3.db --stats
+    python trace_verify.py rss.db
+    python trace_verify.py rss.db --json
+    python trace_verify.py rss.db --container TECTON-abc12345
+    python trace_verify.py rss.db --stats
 """
 
 from __future__ import annotations
@@ -399,7 +399,7 @@ def _format_human_report(result: Dict[str, Any]) -> str:
     """Human-readable report suitable for terminal output or a text file."""
     lines = []
     lines.append("=" * 70)
-    lines.append("RSS v3 — COLD TRACE VERIFICATION REPORT")
+    lines.append("RSS v0.1.0 — COLD TRACE VERIFICATION REPORT")
     lines.append("=" * 70)
     lines.append(f"Database:       {result['db_path']}")
     lines.append(f"Verified at:    {result['verifier_run_at']}")
@@ -451,13 +451,13 @@ def _format_human_report(result: Dict[str, Any]) -> str:
 def _main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="trace_verify",
-        description="Stand-alone cold TRACE verifier for RSS v3 (§6.11.4). "
+        description="Stand-alone cold TRACE verifier for RSS v0.1.0 (§6.11.4). "
                     "Verifies chain integrity of a SQLite database without "
                     "booting the runtime.",
     )
     parser.add_argument(
         "db_path",
-        help="Path to the RSS v3 SQLite database file (e.g., rss_v3.db)",
+        help="Path to the RSS v0.1.0 SQLite database file (e.g., rss.db)",
     )
     parser.add_argument(
         "--container",

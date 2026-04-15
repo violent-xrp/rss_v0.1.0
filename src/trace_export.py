@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: TRACE Export — JSON & Text Audit Reports
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — TRACE Export
+RSS v0.1.0 — TRACE Export
 Export audit trail to JSON or plain text for auditors, compliance, debugging.
 Reads from both in-memory AuditLog and persisted SQLite.
 
@@ -260,7 +260,7 @@ def export_trace_text(trace: AuditLog, path: str, container_id: Optional[str] = 
 
     lines = []
     lines.append("=" * 70)
-    lines.append("RSS v3 — TRACE AUDIT EXPORT")
+    lines.append("RSS v0.1.0 — TRACE AUDIT EXPORT")
     lines.append(f"Exported: {datetime.now(UTC).isoformat()}")
     lines.append(f"Events:   {len(events)}")
     lines.append(f"Chain:    {'VALID' if trace.verify_chain() else 'BROKEN'}")
@@ -351,7 +351,7 @@ def export_from_db(persistence: Persistence, path: str, fmt: str = "json") -> in
             json.dump(output, f, indent=2)
     else:
         lines = []
-        lines.append(f"RSS v3 TRACE — {len(events)} events from SQLite")
+        lines.append(f"RSS v0.1.0 TRACE — {len(events)} events from SQLite")
         lines.append(f"Exported: {datetime.now(UTC).isoformat()}")
         lines.append(f"Chain:    {'VALID' if chain_valid else 'BROKEN'}")
         if redline_ids:

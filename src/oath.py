@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: OATH — Consent Law
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — OATH (Consent Law)
+RSS v0.1.0 — OATH (Consent Law)
 Silence means prohibition. Container-aware authorization.
 """
 from __future__ import annotations

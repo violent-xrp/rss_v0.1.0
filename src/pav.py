@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: S4 — Prepared Advisory View Builder (Layer 3)
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — Layer 3: PAV (Prepared Advisory View)
+RSS v0.1.0 — Layer 3: PAV (Prepared Advisory View)
 Sanitized views for external advisors. REDLINE always excluded.
 
 §4.6.7: LEDGER mechanically excluded unless brainstorming=True.

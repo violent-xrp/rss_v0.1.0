@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: LLM Adapter (External Advisor Interface)
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — LLM Adapter
+RSS v0.1.0 — LLM Adapter
 Wraps LLM calls with RSS governance injection. Graceful fallback.
 """
 from __future__ import annotations

@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: LLM Demonstration Harness
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — LLM Demo
+RSS v0.1.0 — LLM Demo
 Real governed AI calls with construction project data.
 """
 from runtime import bootstrap
@@ -39,7 +39,7 @@ def run():
     rss.save_hub_entry("PERSONAL", "Salary negotiation notes: asking for 15 percent raise next quarter", redline=True)
 
     print("=" * 60)
-    print("RSS v3 — Governed LLM Demo")
+    print("RSS v0.1.0 — Governed LLM Demo")
     print("=" * 60)
     print(f"WORK entries loaded: {rss.hubs.hub_stats()['WORK']}")
     print(f"PERSONAL entries (REDLINE): {rss.hubs.hub_stats()['PERSONAL']}")

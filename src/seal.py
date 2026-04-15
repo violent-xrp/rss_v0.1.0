@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: SEAL — Canonization Authority (Layer 5)
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — Layer 5: SEAL (Canonization Engine)
+RSS v0.1.0 — Layer 5: SEAL (Canonization Engine)
 Seals drafts into canon. Verifies authority, checks for external names.
 """
 from __future__ import annotations

@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: Persistence Layer (SQLite + WAL)
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — Persistence Layer (Production Hardened)
+RSS v0.1.0 — Persistence Layer (Production Hardened)
 SQLite backend. TRACE, hubs, terms, and consent survive restarts.
 Thread-safe + WAL-enabled version.
 

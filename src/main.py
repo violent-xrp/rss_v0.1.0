@@ -1,6 +1,6 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
-# Module: RSS v3 Entry Point
+# RSS v0.1.0 Kernel Runtime
+# Module: RSS v0.1.0 Entry Point
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
 # DUAL-LICENSE NOTICE:
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — CLI Entry Point
+RSS v0.1.0 — CLI Entry Point
 Usage:
   python main.py test              Run test suite
   python main.py demo              Interactive governed AI chat
@@ -54,8 +54,8 @@ def run_tests(rss):
         ("delete everything", False, "Unknown phrase — passes through"),
         ("foobar baz",        False, "Unknown phrase"),
         ("submittal",         True,  "SEALED term"),
-        ("purchase order",    True,  "New v3 term"),
-        ("NCR",               True,  "New v3 term"),
+        ("purchase order",    True,  "New v0.1.0 term"),
+        ("NCR",               True,  "New v0.1.0 term"),
     ]
 
     passed = 0

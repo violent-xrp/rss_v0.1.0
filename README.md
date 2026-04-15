@@ -1,18 +1,3 @@
-This is much closer. The strongest change now is mostly **tone and precision**, not architecture.
-
-My recommendation: keep the structure, but rewrite **“Why This Exists”** and **“Origin”** so they sound calmer, more authoritative, and less defensive.
-
-I’d also tighten a few lines for launch:
-
-* change **“7 constitutional sections”** unless S7 is actually present and public
-* fix **Christain → Christian**
-* keep the repo path as `rss_v3` until you actually rename it
-* say **AGPLv3 + Commercial / Contractor License Exception**
-* change **“real deletion”** to **payload destruction with metadata retained**
-* change **“context-bound hub injection”** to **context-bound isolation via ContextVar**
-
-Here is the version I’d use.
-
 ---
 
 # Rose Sigil Systems — RSS v0.1.0
@@ -65,11 +50,9 @@ The goal is not to make AI sound safer. The goal is to make governed behavior me
 
 ### Install
 
-```bash
-git clone https://github.com/ChristianRoseWorx/rss_v3.git
-cd rss_v3
+git clone https://github.com/violent-xrp/rss_v0.1.0.git
+cd rss_v0.1.0
 pip install -r requirements.txt
-```
 
 ### Run Tests
 

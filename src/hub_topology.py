@@ -1,5 +1,5 @@
 # ==============================================================================
-# RSS v3 Kernel Runtime
+# RSS v0.1.0 Kernel Runtime
 # Module: S4 — Hub Topology & Data Governance (Layer 3)
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
@@ -23,7 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
-RSS v3 — Layer 3: Hub Topology
+RSS v0.1.0 — Layer 3: Hub Topology
 Five-hub architecture with REDLINE privacy boundaries.
 
 §4.4.3: original_hub preserved on archival.
