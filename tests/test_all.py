@@ -1,6 +1,6 @@
 # ==============================================================================
 # RSS v3 Kernel Runtime
-# Module: <file-specific — leave this alone>
+# Module: Comprehensive Test Suite
 # Copyright (c) 2025-2026 Christian Robert Rose
 #
 # DUAL-LICENSE NOTICE:
@@ -4056,6 +4056,210 @@ def test_a1_post_llm_scan_covers_archive_and_ledger():
 #   C-8: REDLINE export sanitization (live + cold)
 # ============================================================
 
+def test_phase_e5_contextvar_isolation():
+    """Phase E-5: Context-bound hub isolation via ContextVar.
+
+    These are thread-level isolation tests. They prove that `contextvars`
+    correctly isolates the ACTIVE_HUBS binding across concurrent threads —
+    which is also how async tasks get isolated when RSS eventually runs
+    behind FastAPI/ASGI. They do NOT prove full async-streaming safety,
+    which requires Phase F integration (asyncio.to_thread context copy,
+    generator-yield context discipline, etc.). Label honestly."""
+    section("Phase E-5: ContextVar Hub Isolation (thread-level)")
+
+    import threading
+    from runtime import ACTIVE_HUBS
+    from hub_topology import HubTopology
+
+    # E-5.1 — Two threads, isolated topologies, no cross-bleed
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+
+        # Two distinct HubTopology instances, each with a unique sentinel entry
+        topo_a = HubTopology()
+        topo_a.add_entry("WORK", "tenant-A-marker")
+        topo_b = HubTopology()
+        topo_b.add_entry("WORK", "tenant-B-marker")
+
+        # Each thread binds its own topology, sleeps (forcing interleaving),
+        # then reads back. If ContextVar isolation works, each thread sees
+        # ONLY its own marker.
+        results = {}
+        barrier = threading.Barrier(2)
+        def worker(name, topo):
+            tok = ACTIVE_HUBS.set(topo)
+            try:
+                barrier.wait()  # ensure both threads hold their ContextVar simultaneously
+                import time; time.sleep(0.01)  # force scheduler interleaving
+                seen = [e.content for e in rss.hubs.list_hub("WORK")]
+                results[name] = seen
+            finally:
+                ACTIVE_HUBS.reset(tok)
+
+        t1 = threading.Thread(target=worker, args=("A", topo_a))
+        t2 = threading.Thread(target=worker, args=("B", topo_b))
+        t1.start(); t2.start()
+        t1.join(); t2.join()
+
+        check(results.get("A") == ["tenant-A-marker"],
+              "E-5.1: Thread A sees only tenant-A-marker (no bleed from B)")
+        check(results.get("B") == ["tenant-B-marker"],
+              "E-5.1: Thread B sees only tenant-B-marker (no bleed from A)")
+
+        # E-5.2 — Main thread still sees global after workers complete
+        check(rss.hubs is rss._global_hubs,
+              "E-5.2: main thread rss.hubs falls back to _global_hubs "
+              "after worker threads exit")
+
+        rss.persistence.close()
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s): os.unlink(path + s)
+
+    # E-5.3 — Reset discipline: exception mid-request still restores context
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+        baseline = rss._global_hubs  # capture the global topology identity
+        alt = HubTopology()
+        raised = False
+        try:
+            tok = ACTIVE_HUBS.set(alt)
+            try:
+                assert rss.hubs is alt
+                raise RuntimeError("simulated mid-pipeline failure")
+            finally:
+                ACTIVE_HUBS.reset(tok)
+        except RuntimeError:
+            raised = True
+        check(raised, "E-5.3: exception propagated through the guarded block")
+        check(rss.hubs is baseline,
+              "E-5.3: global context restored even when exception raised")
+
+        # E-5.4 — Direct attribute assignment to rss.hubs is mechanically blocked
+        # (no setter on the property; the hazard is architecturally impossible,
+        # not merely discouraged by convention).
+        blocked = False
+        try:
+            rss.hubs = HubTopology()
+        except AttributeError:
+            blocked = True
+        check(blocked, "E-5.4: direct rss.hubs = X raises AttributeError "
+                       "(getter-only property mechanically prevents the hazard)")
+
+        rss.persistence.close()
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s): os.unlink(path + s)
+
+
+def test_phase_e_regression_battery():
+    """Phase E: lock in OATH write-ahead, production mode, demo cleanup, and
+    container restore-in-default-boot. Each item gets explicit assertions
+    that prove the new contract holds.
+      E-1: Production mode profile lockdown
+      E-2: Demo harness uses governed save_hub_entry path
+      E-3: Container restore in default boot path
+      E-4: OATH true write-ahead (Option B) — already covered by D-6 test update
+    """
+    section("Phase E: Regression Battery")
+
+    from tecton import ContainerRequest
+
+    # E-1: production_mode flips strict postures
+    cfg = RSSConfig(db_path=":memory:", production_mode=True)
+    check(cfg.strict_event_codes is True,
+          "E-1: production_mode forces strict_event_codes=True")
+    check(cfg.audit_failure_threshold == 1,
+          "E-1: production_mode forces audit_failure_threshold=1")
+    check(cfg.log_to_console is False,
+          "E-1: production_mode forces log_to_console=False")
+    check(cfg.require_genesis_file is True,
+          "E-1: production_mode forces require_genesis_file=True")
+
+    # E-1: production mode without Genesis file Safe-Stops on verify
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path, production_mode=True))
+        # Genesis file likely doesn't exist in test env — verify_genesis
+        # should refuse (or pass if it happens to exist; either way no crash)
+        result = rss.verify_genesis()
+        # In production mode, missing Genesis file must NOT silently pass
+        if not os.path.exists(rss.section0_path):
+            check(result.get("verified") is False,
+                  "E-1: production mode rejects missing Genesis (no dev pass)")
+            check("§E-1" in result.get("reason", ""),
+                  "E-1: refusal reason cites §E-1")
+        rss.persistence.close()
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s): os.unlink(path + s)
+
+    # E-2: Demo harness uses governed save_hub_entry path (no direct add_entry)
+    with open(os.path.join(os.path.dirname(__file__), "demo_llm.py")) as f:
+        demo_src = f.read()
+    check("rss.hubs.add_entry(" not in demo_src,
+          "E-2: demo_llm.py no longer uses bypass rss.hubs.add_entry()")
+    check("rss.save_hub_entry(" in demo_src,
+          "E-2: demo_llm.py uses governed rss.save_hub_entry() path")
+
+    # E-3: Container restore is part of default boot path
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        # Session 1: create + activate + save container
+        rss1 = bootstrap(RSSConfig(db_path=path))
+        c = rss1.tecton.create_container("E3Restore", "T-0")
+        rss1.tecton.activate_container(c.container_id)
+        target_cid = c.container_id
+        rss1.tecton.save_to(rss1.persistence)
+        rss1.persistence.close()
+
+        # Session 2: bootstrap with restore=True — container must reappear
+        # WITHOUT requiring explicit tecton.restore_from() call
+        rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
+        check(target_cid in rss2.tecton._containers,
+              "E-3: container restored automatically by default bootstrap")
+        if target_cid in rss2.tecton._containers:
+            check(rss2.tecton._containers[target_cid].state == "ACTIVE",
+                  "E-3: container state preserved across restart")
+        rss2.persistence.close()
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s): os.unlink(path + s)
+
+    # E-4: OATH revoke also write-ahead (authorize already covered above)
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+        # Set up an authorized consent first (with working persistence)
+        rss.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0", container_id="E4-RT")
+        check(rss.oath.check("EXECUTE", "E4-RT") == "AUTHORIZED",
+              "E-4: setup grant succeeded")
+
+        # Now break persistence and try to revoke
+        def broken(key, record):
+            raise sqlite3.OperationalError("simulated E-4 revoke")
+        rss.oath._persist_callback = broken
+
+        r = rss.oath.revoke("EXECUTE", container_id="E4-RT")
+        check(r.get("revoked") is False,
+              "E-4: revoke REFUSED when persistence fails")
+        check(r.get("error") == "PERSISTENCE_FAILURE",
+              "E-4: revoke refusal carries PERSISTENCE_FAILURE error")
+        check(rss.oath.check("EXECUTE", "E4-RT") == "AUTHORIZED",
+              "E-4: prior AUTHORIZED status preserved (no inverse split-brain)")
+        rss.persistence.close()
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s): os.unlink(path + s)
+
+
 def test_phase_d_regression_battery():
     """Phase D: lock in all 6 hardening items.
       D-0: Unified TRACE — container events flow into runtime.trace and SQLite
@@ -4180,26 +4384,38 @@ def test_phase_d_regression_battery():
         for s in ["", "-wal", "-shm"]:
             if os.path.exists(path + s): os.unlink(path + s)
 
-    # D-6: OATH persistence failure surfaces to TRACE and stderr
+    # D-6 + E-4 Option B: OATH true write-ahead.
+    # D-6 added loud failure visibility (kept). E-4 strengthens semantics:
+    # persistence failure now REFUSES the grant rather than installing a
+    # ghost in-memory authorization. RSS does not grant authority it cannot
+    # durably remember. (§6.9.2, §0.8.3)
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
     try:
         rss = bootstrap(RSSConfig(db_path=path))
         # Override OATH's bound persistence callback so the failure path fires.
-        # (Patching rss.persistence.save_consent would not work because OATH
-        # captured the original reference at wire-time in Runtime.__init__.)
         def broken_save(key, record):
-            raise sqlite3.OperationalError("simulated D-6")
+            raise sqlite3.OperationalError("simulated D-6/E-4")
         rss.oath._persist_callback = broken_save
         before = len(rss.trace.events_by_code("OATH_PERSISTENCE_FAILURE"))
-        # Authorization still succeeds in memory — failure is loud, not blocking
+        before_consents = len(rss.oath._consents)
+
+        # E-4 Option B: authorize returns explicit refusal on persistence failure
         r = rss.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0",
-                               container_id="TEST-D6")
-        check(r.get("authorized") is True,
-              "D-6: authorize still returns True (failure is loud, not blocking)")
+                               container_id="TEST-D6-E4")
+        check(r.get("authorized") is False,
+              "E-4: authorize REFUSES grant when persistence fails")
+        check(r.get("error") == "PERSISTENCE_FAILURE",
+              "E-4: refusal carries explicit PERSISTENCE_FAILURE error code")
+
+        # E-4 Option B: in-memory state must NOT contain the failed grant
+        check(len(rss.oath._consents) == before_consents,
+              "E-4: failed authorize does NOT install in-memory consent (no ghost auth)")
+
+        # D-6 visibility preserved
         after = len(rss.trace.events_by_code("OATH_PERSISTENCE_FAILURE"))
         check(after > before,
-              "D-6: OATH_PERSISTENCE_FAILURE emitted to unified TRACE on failure")
+              "D-6: OATH_PERSISTENCE_FAILURE still emitted to unified TRACE")
         rss.persistence.close()
     finally:
         for s in ["", "-wal", "-shm"]:
@@ -4473,6 +4689,10 @@ if __name__ == "__main__":
     safe_run(test_c_phase_regression_battery)
     # Phase D — 6-item regression battery
     safe_run(test_phase_d_regression_battery)
+    # Phase E — write-ahead, prod mode, demo cleanup, container restore
+    safe_run(test_phase_e_regression_battery)
+    # Phase E-5 — ContextVar hub isolation (thread-level)
+    safe_run(test_phase_e5_contextvar_isolation)
 
     print(f"\n{'='*60}")
     print(f"RSS v3 — {_pass} PASSED, {_fail} FAILED", end="")

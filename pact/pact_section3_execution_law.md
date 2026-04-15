@@ -1,23 +1,16 @@
 <!--
 ================================================================================
-THE PACT — Rose Sigil Systems v2.0
+THE PACT — Rose Sigil Systems v0.1.0
 Copyright (c) 2025-2026 Christian Robert Rose (T-0 Sovereign)
 
 Licensed under Creative Commons Attribution-NoDerivatives 4.0 International
 (CC BY-ND 4.0). You may share this document with attribution, but you may not
 distribute modified versions. See /pact/LICENSE.md for full terms.
-
-https://creativecommons.org/licenses/by-nd/4.0/
-
-The Pact is the constitutional source of Rose Sigil Systems. Only T-0 may
-amend it (§0.1.1, §0.10). The code enforces what The Pact declares.
 ================================================================================
 -->
 
-THE PACT v2.0 — SECTION 3: EXECUTION LAW
- Document ID: RSS-Pact-v2.0-S3
- Status: PRE-SEAL (R-3)
- Era: ERA-3 (Code-Verified)
+THE PACT — SECTION 3: EXECUTION LAW
+
  Dependency: Section 0 (Root Physics), Section 1 (The Eight Seats), Section 2 (Meaning Law)
  Forward References: Section 4 (Hub Topology & Data Governance), Section 5 (Tenant Containers), Section 6 (Persistence & Audit)
  Primary Modules: state_machine.py, runtime.py, llm_adapter.py, config.py
@@ -36,7 +29,7 @@ The execution state machine and the runtime pipeline are Tier 2 subsystems (§0.
 The execution state machine classifies every request into an intent class that determines its risk tier, validation requirements, and time-to-live. Classification is verb-based: the presence of specific verbs in the request text determines the class.
 3.1.2 Intent Classes
 Every request is classified into exactly one of three intent classes:
-REQUEST — Standard operational query. No high-risk or constitutional verbs detected. This is the vast majority of runtime traffic: "What is the Morrison quote?", "List all RFIs", "Show project data."
+REQUEST — Standard operational query. No high-risk or constitutional verbs detected. This is the vast majority of runtime traffic: "What is the Morrison quote?", "List all RFIs", "Show the contract summary." These examples use construction terminology; the classification logic is domain-agnostic.
 HIGH_RISK — Request contains verbs associated with destructive or irreversible actions. Requires elevated consent verification.
 CONSTITUTIONAL — Request contains verbs that touch Pact governance (seal, amend, rewrite, canonize). These requests interact with the constitutional layer itself.
 3.1.3 Verb Lists
@@ -189,7 +182,7 @@ Wire pre-seal drift check to SEAL (§0.7.3)
 Register 7 Council Seats with WARD (TRACE, SCOPE, RUNE, OATH, CYCLE, SCRIBE, SEAL)
 Auto-authorize EXECUTE for default WORK container via OATH
 Check persistent Safe-Stop — if active, print warning (system remains frozen)
-Register default sealed terms for the construction domain
+Register default sealed terms for the configured domain
 Optionally restore persisted state from SQLite (terms, synonyms, disallowed, hub entries, trace events)
 3.6.2 Safe-Stop on Boot
 If the system boots into a Safe-Stop condition (§0.5.5), it prints a warning and remains frozen. No requests can be processed. Only T-0 may clear Safe-Stop through the out-of-band interface (runtime.clear_safe_stop()).
@@ -198,7 +191,7 @@ Genesis verification occurs on every request (Stage 1), not just at boot. This m
 3.6.4 Restoration Integrity
 When restoring from SQLite, the bootstrap process checks for duplicates before re-registering terms, synonyms, hub entries, or disallowed terms. This prevents double-registration if default terms overlap with persisted state. Restoration order: sealed terms → synonyms → disallowed terms → hub entries → trace event count.
 3.6.5 Default Terms
-The bootstrap registers a set of default sealed terms for the construction domain (quote, RFI, purchase order, NCR, submittal, change order). These are operational defaults — T-0 may modify the default set via configuration. Default terms use generic definitions ("Sealed construction term: {label}") which should be replaced with precise definitions for production use.
+The bootstrap registers a set of default sealed terms from configuration. The v0.1.0 example set uses construction terms (quote, RFI, purchase order, NCR, submittal, change order), but any domain's terms may be configured. These are operational defaults — T-0 may modify the default set via configuration. Default terms use generic definitions ("Sealed construction term: {label}") which should be replaced with precise definitions for production use.
 
 3.7 Tier 3 Boundaries (LLM Governance)
 3.7.1 Constitutional Status
@@ -271,18 +264,15 @@ Tier 2 validation level
 —
 Reserved (future)
 
-
 ---
 
 ## License
 
-This section is part of **The Pact v2.0**, the constitutional document of Rose Sigil Systems.
+This section is part of **The Pact v0.1.0**, the constitutional document of Rose Sigil Systems.
 
 **Copyright © 2025-2026 Christian Robert Rose (T-0 Sovereign).**
 
-Licensed under [Creative Commons Attribution-NoDerivatives 4.0 International (CC BY-ND 4.0)](https://creativecommons.org/licenses/by-nd/4.0/).
+Licensed under **CC BY-ND 4.0**. You may share and quote with attribution. You may not distribute modified versions. See `/pact/LICENSE.md` for full terms.
 
-You are free to **share** this document (copy and redistribute in any medium or format) and to **quote** passages with attribution. You may **not** distribute modified versions. See `/pact/LICENSE.md` for full terms.
-
-Amendments to The Pact flow only through T-0 (§0.1.1, §0.10). Each version is published as a new work under this license.
+---
 

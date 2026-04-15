@@ -32,11 +32,11 @@ def run():
     rss = bootstrap()
 
     # Load project data
-    rss.hubs.add_entry("WORK", "Morrison Electrical panel upgrade quote: $245,000. Includes main switchgear replacement and 200A service panel.")
-    rss.hubs.add_entry("WORK", "Johnson HVAC RFI-042: Duct routing conflict in structural bay 4. Pending engineer response.")
-    rss.hubs.add_entry("WORK", "Daily log Feb 27: Concrete pour Building C complete. 12 workers on site.")
-    rss.hubs.add_entry("WORK", "Submittal SUB-018: Fire alarm panel specs sent to architect. Awaiting approval.")
-    rss.hubs.add_entry("PERSONAL", "Salary negotiation notes: asking for 15 percent raise next quarter", redline=True)
+    rss.save_hub_entry("WORK", "Morrison Electrical panel upgrade quote: $245,000. Includes main switchgear replacement and 200A service panel.")
+    rss.save_hub_entry("WORK", "Johnson HVAC RFI-042: Duct routing conflict in structural bay 4. Pending engineer response.")
+    rss.save_hub_entry("WORK", "Daily log Feb 27: Concrete pour Building C complete. 12 workers on site.")
+    rss.save_hub_entry("WORK", "Submittal SUB-018: Fire alarm panel specs sent to architect. Awaiting approval.")
+    rss.save_hub_entry("PERSONAL", "Salary negotiation notes: asking for 15 percent raise next quarter", redline=True)
 
     print("=" * 60)
     print("RSS v3 — Governed LLM Demo")

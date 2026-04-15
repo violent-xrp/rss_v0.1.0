@@ -80,6 +80,25 @@ class Oath:
     def authorize(self, action_class: str, scope: str, duration: str,
                   requester: str, container_id: str = "GLOBAL",
                   _persist: bool = True) -> dict:
+        """Phase E-4 (Option B) — True write-ahead consent semantics.
+
+        RSS does not grant authority it cannot durably remember.
+
+        Order of operations:
+          1. Build the record
+          2. Attempt durable persistence (if configured and _persist=True)
+          3. ONLY on persistence success: install record in self._consents
+          4. On persistence failure: leave self._consents untouched, emit
+             OATH_PERSISTENCE_FAILURE via failure callback, return structured
+             refusal {"authorized": False, "error": "PERSISTENCE_FAILURE"}
+
+        This eliminates the prior split-brain hazard where memory said
+        "authorized" but SQLite said the consent never existed. (§6.9.2,
+        §0.8.3 write-ahead, §0.9 OATH restrictive precedence)
+
+        Honest exception: when _persist=False (the restore_from_db rehydration
+        path), we install in-memory directly — the record was already durable
+        before this session and we're just rebuilding the cache."""
         if not action_class:
             raise OathError("action_class must not be empty.")
         if not requester:
@@ -95,51 +114,20 @@ class Oath:
             duration=duration,
         )
         key = self._key(action_class, container_id)
-        self._consents[key] = record
 
-        # §6.9.2 — Durable consent: persist on grant.
-        # _persist=False during restore_from_db() to avoid re-writing what we
-        # just loaded.
+        # Phase E-4: Persist BEFORE in-memory install. If persistence fails,
+        # the in-memory state remains untouched and we return a structured
+        # refusal — no ghost authorization.
         if _persist and self._persist_callback is not None:
             try:
                 self._persist_callback(key, record)
             except Exception as exc:
-                # Phase D-6: Surface consent persistence failures loudly.
-                # The authorization itself still stands in-memory (runtime
-                # write-ahead for TRACE is separate from consent durability),
-                # but the failure is now visible to auditors via the unified
-                # TRACE chain and to operators via stderr.
+                # Loud-failure visibility from D-6 is preserved; the only
+                # change in Phase E-4 is that we now also REFUSE the grant
+                # rather than installing it in memory.
                 import sys as _sys
                 print(
-                    f"[OATH WARN §D-6] Consent persistence failed for "
-                    f"{action_class}/{container_id}: {exc}",
-                    file=_sys.stderr,
-                )
-                if self._failure_callback is not None:
-                    try:
-                        self._failure_callback(action_class, container_id, exc)
-                    except Exception:
-                        pass  # Don't cascade failures
-
-        return {"authorized": True, "action_class": action_class, "container_id": container_id}
-
-    def revoke(self, action_class: str, container_id: str = "GLOBAL") -> dict:
-        key = self._key(action_class, container_id)
-        if key not in self._consents:
-            return {"revoked": False, "reason": f"No consent found for: {action_class}"}
-        self._consents[key].status = "REVOKED"
-        # §6.9.2 — Persist the status change so revocation survives restart.
-        if self._persist_callback is not None:
-            try:
-                self._persist_callback(key, self._consents[key])
-            except Exception as exc:
-                # Phase D-6: Surface revocation persistence failures loudly.
-                # A revocation that only lives in memory but not on disk is
-                # a real integrity problem — it's exactly the A1-FIX-1 bug
-                # we fixed, but arriving through a different path.
-                import sys as _sys
-                print(
-                    f"[OATH WARN §D-6] Revocation persistence failed for "
+                    f"[OATH WARN §E-4] Consent grant REFUSED — persistence failed for "
                     f"{action_class}/{container_id}: {exc}",
                     file=_sys.stderr,
                 )
@@ -148,6 +136,76 @@ class Oath:
                         self._failure_callback(action_class, container_id, exc)
                     except Exception:
                         pass
+                return {
+                    "authorized": False,
+                    "error": "PERSISTENCE_FAILURE",
+                    "reason": f"Consent not granted: durable write failed ({type(exc).__name__})",
+                    "action_class": action_class,
+                    "container_id": container_id,
+                }
+
+        # Persistence succeeded (or was suppressed via _persist=False during
+        # restore). Install in memory now — the durable record is guaranteed
+        # to exist on disk, so the in-memory state matches.
+        self._consents[key] = record
+
+        return {"authorized": True, "action_class": action_class, "container_id": container_id}
+
+    def revoke(self, action_class: str, container_id: str = "GLOBAL") -> dict:
+        """Phase E-4 (Option B) — True write-ahead revocation semantics.
+
+        If the durable write fails, the prior consent status is preserved
+        in memory. RSS does not revoke authority it cannot durably remember
+        revoking — that would create the inverse split-brain (memory says
+        REVOKED but SQLite still says AUTHORIZED, restart restores access)."""
+        key = self._key(action_class, container_id)
+        if key not in self._consents:
+            return {"revoked": False, "reason": f"No consent found for: {action_class}"}
+
+        # Phase E-4: Stage the new state, persist, then commit on success.
+        prior_status = self._consents[key].status
+        if prior_status == "REVOKED":
+            # Idempotent — already revoked, nothing to write.
+            return {"revoked": True, "action_class": action_class,
+                    "note": "already revoked"}
+
+        # Build the would-be record without mutating in-memory yet.
+        staged_record = ConsentRecord(
+            action_class=self._consents[key].action_class,
+            scope=self._consents[key].scope,
+            requester=self._consents[key].requester,
+            status="REVOKED",
+            container_id=self._consents[key].container_id,
+            granted_at=self._consents[key].granted_at,
+            duration=self._consents[key].duration,
+        )
+
+        if self._persist_callback is not None:
+            try:
+                self._persist_callback(key, staged_record)
+            except Exception as exc:
+                # Refuse the revocation. In-memory state remains AUTHORIZED.
+                import sys as _sys
+                print(
+                    f"[OATH WARN §E-4] Revocation REFUSED — persistence failed for "
+                    f"{action_class}/{container_id}: {exc}",
+                    file=_sys.stderr,
+                )
+                if self._failure_callback is not None:
+                    try:
+                        self._failure_callback(action_class, container_id, exc)
+                    except Exception:
+                        pass
+                return {
+                    "revoked": False,
+                    "error": "PERSISTENCE_FAILURE",
+                    "reason": f"Revocation not applied: durable write failed ({type(exc).__name__})",
+                    "prior_status": prior_status,
+                    "action_class": action_class,
+                }
+
+        # Persistence succeeded — commit the status change in memory.
+        self._consents[key].status = "REVOKED"
         return {"revoked": True, "action_class": action_class}
 
     def check(self, action_class: str, container_id: str = "GLOBAL") -> str:

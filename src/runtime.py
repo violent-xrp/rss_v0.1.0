@@ -69,6 +69,42 @@ DEFAULT_TERMS = [
 _TECTON_INGRESS_TOKEN = object()
 
 
+# Phase E-5 — Context-bound hub isolation. Replaces the earlier global mutation
+# pattern (`runtime.hubs = c.hubs` in a try/finally) with a ContextVar that
+# binds the active HubTopology to the current execution stack.
+#
+# Why this matters: under the old global-mutation model, if two concurrent
+# requests ever crossed an `await` point or ran on the same event loop, the
+# second request's hub swap would silently overwrite the first. That race
+# cannot occur in today's synchronous single-threaded CLI/demo code — there
+# is no `await` anywhere in process_request. E-5 is preparation for Phase F
+# (FastAPI/ASGI) where concurrent requests become a real possibility.
+#
+# Scope of this pass:
+#   - ACTIVE_HUBS stores the per-call-stack HubTopology
+#   - Runtime.hubs becomes a @property that reads ACTIVE_HUBS.get() with a
+#     fallback to the runtime's private _global_hubs if no container is active
+#   - TECTON uses ACTIVE_HUBS.set(token) / ACTIVE_HUBS.reset(token) instead
+#     of mutating a global attribute
+#   - No test rewrites: rss.hubs.add_entry(...) etc. continue to work because
+#     the property transparently returns whichever topology is currently active
+#
+# Explicitly NOT in scope for this pass (per ChatGPT's narrow-first framing):
+#   - ACTIVE_CONTAINER_ID ContextVar (deferred to Phase F-0 API wrapper work)
+#   - Removing D-1 sentinel kwargs (unchanged; ContextVar supplements rather
+#     than replaces explicit kwarg threading)
+#   - Auto-prefixing artifact_id in audit_log (already handled by _log)
+#
+# Honest limitation: thread-boundary amnesia (Gemini's cascade hazard #1)
+# still applies. If any caller shunts work to asyncio.to_thread() without
+# explicitly copying context via contextvars.copy_context(), this ContextVar
+# will not follow across that boundary. There is no such pattern in RSS
+# today, but Phase F's FastAPI wrapper must preserve the context when
+# handing work to background workers. See TRUTH_REGISTER.md.
+from contextvars import ContextVar
+ACTIVE_HUBS: ContextVar = ContextVar("ACTIVE_HUBS", default=None)
+
+
 class Runtime:
     def __init__(self, config=None):
         self.config = config or RSSConfig()
@@ -93,7 +129,11 @@ class Runtime:
         self.scope = Scope()
 
         # Layer 3: Hubs + PAV
-        self.hubs = HubTopology()
+        # Phase E-5: Renamed from `self.hubs` to `self._global_hubs` so the
+        # public `hubs` name can be exposed as a @property that reads from
+        # the ACTIVE_HUBS ContextVar (container-active) with fallback to
+        # this global topology (no container active / GLOBAL context).
+        self._global_hubs = HubTopology()
         self.pav = PAVBuilder()
 
         # Layer 4: RUNE + Execution
@@ -171,6 +211,25 @@ class Runtime:
         # Safe-Stop because the persistence layer is no longer trustworthy.
         self._audit_failure_streak: int = 0
 
+    @property
+    def hubs(self):
+        """Phase E-5 — Context-bound hub access.
+
+        Reads the ACTIVE_HUBS ContextVar first. If no container is active
+        on the current call stack (the ContextVar holds None), returns the
+        runtime's private global topology. This preserves the existing
+        `rss.hubs.add_entry(...)` API exactly while mechanically preventing
+        cross-container state bleed when concurrent requests arrive.
+
+        Intentionally getter-only: there is no setter because direct
+        assignment (`runtime.hubs = something`) was the exact hazard we
+        removed. Callers that need to change the active topology must go
+        through `ACTIVE_HUBS.set()` / `ACTIVE_HUBS.reset()` with proper
+        token discipline — and the only legitimate caller for that is
+        TECTON, which does so inside its container delegation flow."""
+        active = ACTIVE_HUBS.get()
+        return active if active is not None else self._global_hubs
+
     def _lookup_persisted_consent(self, action_class: str, container_id: str):
         """Check if a consent record for (action_class, container_id) exists in
         persistence. Returns the dict row if found, None otherwise."""
@@ -181,14 +240,34 @@ class Runtime:
         return None
 
     def _ensure_default_execute_consent(self) -> None:
-        """Phase A.2 — Conditional default EXECUTE auto-authorize.
+        """Phase A.2 + E-4 — Conditional default EXECUTE auto-authorize.
         Called from bootstrap() after restore_from_db() (if any). Creates the
         default GLOBAL:EXECUTE consent ONLY if no record exists in persistence.
-        Respects any prior REVOKED status."""
+        Respects any prior REVOKED status.
+
+        Phase E-4: Default consent creation now respects write-ahead semantics.
+        If the durable write fails on a fresh database, bootstrap enters
+        persistent Safe-Stop rather than proceeding with a ghost authorization.
+        A system that cannot durably remember its baseline consent is not
+        constitutionally sound and must halt."""
         existing = self._lookup_persisted_consent("EXECUTE", "GLOBAL")
         if existing is None:
             # Fresh database — create the default
-            self.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0")
+            result = self.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0")
+            if not result.get("authorized"):
+                # E-4: persistence failure during default creation is fatal.
+                # We cannot proceed with a system whose baseline consent is
+                # not durable — that's exactly the split-brain Phase E-4 closes.
+                reason = (
+                    f"§E-4: Default EXECUTE consent creation failed on fresh "
+                    f"database: {result.get('reason', 'persistence failure')}. "
+                    f"Cannot proceed without durable baseline consent."
+                )
+                try:
+                    self.enter_safe_stop(reason)
+                except Exception:
+                    pass
+                raise RuntimeError(reason)
             return
         # A record exists. Rehydrate in memory if not already there.
         key = self.oath._key("EXECUTE", "GLOBAL")
@@ -230,6 +309,17 @@ class Runtime:
         """
         import os
         if not os.path.exists(self.section0_path):
+            # Phase E-1: Production mode rejects the dev-mode pass. A
+            # production deployment that cannot prove its constitutional
+            # foundation must Safe-Stop rather than silently bypass.
+            if getattr(self.config, "require_genesis_file", False):
+                reason = (
+                    f"§E-1: Genesis file required in production mode but "
+                    f"'{self.section0_path}' is missing. Cannot proceed without "
+                    f"verifiable constitutional foundation."
+                )
+                self.enter_safe_stop(reason)
+                return {"verified": False, "reason": reason}
             return {"verified": True, "reason": "Section 0 file not present (dev mode)"}
 
         try:
@@ -541,6 +631,20 @@ class Runtime:
                 restored["consents"] += 1
             except Exception:
                 pass  # Skip duplicates or malformed records silently
+
+        # Phase E-3 — Container restore is now part of default boot path.
+        # Previously TECTON.restore_from() had to be called explicitly by the
+        # caller after bootstrap, which meant containers silently disappeared
+        # on restart for any harness that didn't know to invoke it. Now the
+        # runtime owns the full state lifecycle: containers are CRITICAL
+        # state per §6.9.7 (G-6 classification) and a restore failure halts
+        # boot the same way trace_events / consents failures do.
+        try:
+            container_count = self.tecton.restore_from(self.persistence)
+            restored["containers"] = container_count
+        except Exception as e:
+            self._handle_restore_failure("containers", e)
+            restored["containers"] = 0
 
         return restored
 

@@ -580,16 +580,18 @@ class Tecton:
                 "reason": "Advisory calls not permitted (§5.4.1: can_call_advisors=False)",
             })
 
-        # §5.6.1 — Hub injection with §5.6.2 try/finally safety
-        original_hubs = runtime.hubs
-        runtime.hubs = c.hubs
+        # Phase E-5 — Context-bound hub isolation.
+        # Previously: runtime.hubs = c.hubs (global mutation, unsafe under async)
+        # Now: ACTIVE_HUBS.set(c.hubs) binds the container's hubs to the
+        # current execution stack only. Concurrent requests on different
+        # stacks each see their own bound topology. The returned token is
+        # used to precisely reverse the change in the finally block — not a
+        # blind restore of whatever the prior value was, which matters if
+        # nested delegation ever gets added.
+        from runtime import ACTIVE_HUBS, _TECTON_INGRESS_TOKEN
+        _hub_token = ACTIVE_HUBS.set(c.hubs)
 
         try:
-            # Phase D-1: Import and pass the TECTON ingress sentinel so the
-            # runtime accepts this non-GLOBAL container_id. The sentinel is
-            # module-private to runtime.py; only this call site (and runtime
-            # itself) can reference it.
-            from runtime import _TECTON_INGRESS_TOKEN
             result = runtime.process_request(
                 task_text, task_id=task_id,
                 container_id=request.container_id,
@@ -598,8 +600,11 @@ class Tecton:
                 _ingress_token=_TECTON_INGRESS_TOKEN,
             )
         finally:
-            # §5.6.2 — Always restore global hubs
-            runtime.hubs = original_hubs
+            # §5.6.2 — Always restore prior context via the token. Using
+            # reset(token) rather than set(None) is the idiomatic contextvars
+            # pattern and correctly unwinds nested container calls if/when
+            # they exist.
+            ACTIVE_HUBS.reset(_hub_token)
 
         self._emit(f"CONTAINER_REQUEST_{sigil_name}", task_id,
                                  f"Container '{c.profile.label}' invoked {sigil_name}")

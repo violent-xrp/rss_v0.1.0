@@ -1,6 +1,6 @@
 # The Pact — License
 
-**The Pact (Sections 0–7) of Rose Sigil Systems v2.0**  
+**The Pact (Sections 0–7) of Rose Sigil Systems v0.1.0**  
 **Author:** Christian Robert Rose (T-0 Sovereign)  
 **License:** Creative Commons Attribution-NoDerivatives 4.0 International (CC BY-ND 4.0)
 
@@ -62,15 +62,15 @@ For permissions beyond the scope of this license, contact the T-0 Sovereign.
 
 ## Relationship to the Code License
 
-The Rose Sigil Systems codebase (Python modules) is licensed separately under GPLv3 + Commercial dual license. The code and The Pact are two different assets with two different licenses:
+The Rose Sigil Systems codebase (Python modules) is licensed separately under AGPLv3 + Commercial / Contractor License Exception. The code and The Pact are two different assets with two different licenses:
 
 | Asset | License |
 |---|---|
-| Python code (21 modules) | GPLv3 + Commercial |
+| Python code (22 modules) | AGPLv3 + Commercial / Contractor License Exception |
 | The Pact (Sections 0–7) | CC BY-ND 4.0 |
-| Governance docs (Roadmap, Truth Register, Claim Discipline) | CC BY 4.0 |
+| Governance/support docs (Roadmap, Truth Register, Claim Discipline) | See repository-designated documentation terms |
 
-The code may be modified and redistributed under GPLv3 terms. The Pact may not. This split is intentional: the engine is collaborative; the constitution is sovereign.
+The code may be modified and redistributed under AGPLv3 terms, subject to the separate commercial exception path. The Pact may not be redistributed in modified form. This split is intentional: the engine is collaborative; the constitution is sovereign.
 
 ---
 

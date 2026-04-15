@@ -67,3 +67,25 @@ class RSSConfig:
     # the system must halt rather than continue accepting requests that
     # will keep failing.
     audit_failure_threshold: int = 3
+
+    # Phase E-1 — Production mode profile (one-line lockdown for prod/demo).
+    # When True, this single switch tightens several runtime postures without
+    # requiring T-0 to remember every individual config flag:
+    #   - strict_event_codes forced True (unregistered codes raise)
+    #   - audit_failure_threshold forced to 1 (any write failure → Safe-Stop)
+    #   - log_to_console forced False (operational quiet)
+    #   - require_genesis_file forced True (Genesis dev-mode pass disabled)
+    production_mode: bool = False
+
+    # Phase E-1 — Genesis file enforcement.
+    # When True, bootstrap requires section0.txt to exist and verify; when
+    # False (default), missing Genesis file passes in dev mode.
+    require_genesis_file: bool = False
+
+    def __post_init__(self):
+        """Phase E-1 — Apply production_mode lockdown if engaged."""
+        if self.production_mode:
+            self.strict_event_codes = True
+            self.audit_failure_threshold = 1
+            self.log_to_console = False
+            self.require_genesis_file = True
