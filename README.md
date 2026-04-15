@@ -1,5 +1,3 @@
----
-
 # Rose Sigil Systems — RSS v0.1.0
 
 **An AI That Waits.**
