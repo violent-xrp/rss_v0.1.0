@@ -18,7 +18,7 @@ Governs how RSS is described — internally, publicly, and to potential users. C
 
 ## SAFE DEFAULT POSITIONING
 
-> RSS is a **domain-agnostic, zero-trust AI governance kernel** — an honest alpha/MVP that enforces scoped data access, bounded advisory exposure, consent checks, hash-chained auditing with cold verification, context-bound tenant isolation, and pre-model governance through a constitutional middleware architecture. It ships with a construction-domain example, but the kernel is not construction-bound.
+> RSS is a **domain-agnostic, application-layer zero-trust AI governance kernel** — an honest alpha/MVP that enforces scoped data access, bounded advisory exposure, consent checks, hash-chained auditing with cold verification, context-bound tenant isolation, and pre-model governance through a constitutional middleware architecture. It ships with a construction-domain example, but the kernel is not construction-bound.
 
 ---
 
@@ -67,8 +67,7 @@ Governs how RSS is described — internally, publicly, and to potential users. C
 
 ## LANGUAGE DISCIPLINE
 
-| Instead of | Say |
-|---|---|
+
 | Immutable audit chain | Hash-chained audit log with cold verification |
 | Finished trust platform | Zero-trust governance kernel (honest alpha/MVP) |
 | Fully hardened multi-tenant | Context-bound tenant isolation (thread-level proven) |
@@ -79,11 +78,8 @@ Governs how RSS is described — internally, publicly, and to potential users. C
 | Data integration platform | Governance kernel with governed data-entry interface |
 
 ### Rules
-- Never present roadmap items as present-state guarantees
-- Prefer “supported by the current 649-test green suite” over “guaranteed”
 - Distinguish thread-level isolation from full async safety
 - Distinguish chain-consistency verification from full external recomputation
-- Frame the public release as honest alpha/MVP
 - Always note that construction is the example, not the constitutional limit
 - Do not describe a Pact section as sealed unless it is actually sealed
 - Do not invent licenses for support documents that are not explicitly marked in the repo
@@ -117,7 +113,7 @@ Governs how RSS is described — internally, publicly, and to potential users. C
 
 | Asset | License |
 |---|---|
-| Python code (22 modules) | AGPLv3 + Commercial / Contractor License Exception |
+| Python code (20 modules) | AGPLv3 + Commercial / Contractor License Exception |
 | The Pact (Sections 0–7) | CC BY-ND 4.0 |
 | Support / governance docs | Use the repository-designated documentation terms; do not assume a broader grant unless explicitly marked |
 
@@ -136,4 +132,4 @@ Before any public outreach:
 
 ---
 
-*RSS v0.1.0 — strong prototype, green test baseline, honest boundaries.*
+*RSS v0.1.0 — 104 test functions. 790 assertions. 20 kernel modules. Zero regressions.*

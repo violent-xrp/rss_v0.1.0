@@ -1,14 +1,14 @@
 # RSS v0.1.0 — Truth Register
 
 **Release:** v0.1.0  
-**State:** 649 tests / 0 failures / 22 modules / code hardening through Phase E complete / S0–S6 under v0.1.0 constitutional scrub / S7 pending  
-**Rule:** Before any public write-up, README, deck, or outreach — check this register first. Do not market roadmap items as present reality.
+**State:** 104 test functions 790 assertions/ 0 failures / 20 modules 
+**Rule:** 
 
 ---
 
 ## About RSS
 
-Rose Sigil Systems is a **domain-agnostic, zero-trust AI governance kernel**. It enforces scoped data access, bounded advisory exposure, consent checks, hash-chained auditing with cold verification, context-bound tenant isolation, and pre-model governance through a constitutional middleware architecture.
+Rose Sigil Systems is a **domain-agnostic, application-layer zero-trust AI governance kernel**. It enforces scoped data access, bounded advisory exposure, consent checks, hash-chained auditing with cold verification, context-bound tenant isolation, and pre-model governance through a constitutional middleware architecture.
 
 RSS ships with a construction-domain example for illustration. The governance architecture is not tied to construction. Terms, hubs, and containers may be configured for legal, finance, healthcare, logistics, or any workflow where AI must be governed before it acts.
 
@@ -98,10 +98,7 @@ Concrete runtime behaviors proven by code and the current green test suite.
 ## B. What RSS Is Designed to Do Next
 
 ### Immediate release track
-- Finish v0.1.0 constitutional scrub across S0–S6
-- Draft S7
-- Finish package consistency before public push
-- Remove stale runtime-facing `v3` language from tests, demos, CLI output, and comments that matter publicly
+
 
 ### Phase F — async / interface readiness
 - Async-safe write architecture for audit persistence
@@ -174,7 +171,6 @@ The current green suite visibly exercises:
 - thread-level context-bound isolation
 - unified TRACE capture for container events
 
-This is strong proof for an honest alpha/MVP kernel. It is not a license to overclaim what remains future.
 
 ---
 
@@ -182,4 +178,4 @@ This is strong proof for an honest alpha/MVP kernel. It is not a license to over
 
 ---
 
-*RSS v0.1.0 — green 649-test baseline, honest alpha/MVP, domain-agnostic kernel.*
+*RSS v0.1.0 — green 104 test functions. 790 assertions., honest alpha/MVP, domain-agnostic, application-layer zero-trust AI governance kernel*

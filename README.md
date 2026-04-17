@@ -1,11 +1,11 @@
 # Rose Sigil Systems — RSS v0.1.0
 
 **An AI That Waits.**
-A domain-agnostic, zero-trust AI governance kernel.
+A domain-agnostic, application-layer zero-trust AI governance kernel
 
 RSS decides what an AI system is allowed to see, say, and do **before** the model runs, not after. Every request passes through a constitutional pipeline of typed seats, each with one job and no authority to do anyone else’s. Data is scoped. Consent is checked. The audit log is hash-chained and written before the model ever sees a prompt. If a rule is violated, the system halts rather than guesses.
 
-**649 tests. 22 modules. Zero regressions. Built solo.**
+**104 test functions. 790 assertions. 20 kernel modules. Zero regressions.**
 
 ---
 
@@ -58,7 +58,7 @@ pip install -r requirements.txt
 python test_all.py
 ```
 
-You should see a green **649 PASSED, 0 FAILED** baseline.
+You should see a green **104 test functions. 790 assertions.** baseline.
 
 ### Run the Demo
 
@@ -206,7 +206,7 @@ These documents exist to keep public claims aligned with proof.
 
 RSS uses a split-asset licensing model:
 
-* **Python code (22 modules)** — AGPLv3 + Commercial / Contractor License Exception
+* **Python code (20 modules)** — AGPLv3 + Commercial / Contractor License Exception
 * **The Pact** — CC BY-ND 4.0
 
 For commercial licensing inquiries: **[rose.systems@outlook.com](mailto:rose.systems@outlook.com)**

@@ -183,6 +183,10 @@ class Runtime:
         # Wire pre-seal drift check (Pact §0.7.3)
         self.seal.set_integrity_check(self.verify_genesis)
 
+        # S7: Wire SEAL trace callback so amendment ceremony events flow
+        # into the unified TRACE chain with write-ahead persistence.
+        self.seal.set_trace_callback(self._log)
+
         # Register Council Seats with WARD (Pact §0.3.1)
         # WARD itself is the router — 7 other seats register here.
         # TRACE is evidentiary; WARD routes to it but also calls it directly for audit.
@@ -285,7 +289,12 @@ class Runtime:
     # ── Safe-Stop (persistent, survives restart) ──
 
     def enter_safe_stop(self, reason: str):
-        """Enter persistent Safe-Stop. Only T-0 can clear. Pact §0.5"""
+        """Enter persistent Safe-Stop. Only T-0 can clear. Pact §0.5
+        Idempotent: if already Safe-Stopped, preserves the FIRST reason
+        (root cause) rather than overwriting with a subsequent one."""
+        existing = self.persistence.is_safe_stopped()
+        if existing.get("active"):
+            return  # Already stopped — preserve first reason
         self.persistence.enter_safe_stop(reason)
         self._log("SAFE_STOP_ENTERED", "SYSTEM", reason)
 

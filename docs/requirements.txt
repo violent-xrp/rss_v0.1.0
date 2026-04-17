@@ -1,0 +1,19 @@
+# RSS v0.1.0 — Python dependencies
+#
+# RSS uses only the Python 3.11+ standard library. No third-party
+# packages are required to install, run, or test the kernel.
+#
+# This file is intentionally empty of pinned dependencies. It exists
+# so `pip install -r requirements.txt` succeeds (as a no-op) and so
+# deployers have a single source of truth for runtime requirements.
+#
+# Optional external services (not Python packages):
+#   - Ollama (https://ollama.com) — enables live Tier 3 model calls.
+#     Installed separately as a local service. RSS communicates with
+#     it via stdlib urllib. If Ollama is not running, the LLM adapter
+#     returns a clearly-labeled [RSS FALLBACK] response and the rest
+#     of the pipeline still runs with full governance.
+#
+# Development / contributor extras (optional):
+#   - pytest, if you prefer `pytest -v` over `python tests/test_all.py`.
+#     Listed in requirements-dev.txt if that file is present.

@@ -130,6 +130,12 @@ EVENT_CODES: Dict[str, Dict[str, str]] = {
     "OATH_PERSISTENCE_FAILURE": {"section": "S3", "category": "CONSENT", "desc": "Consent durability write failed (§D-6)"},
     "INGRESS_REJECTED":      {"section": "S5", "category": "CONTAINER", "desc": "Non-GLOBAL ingress without TECTON sentinel (§D-1)"},
     "SCOPE_REJECTED":        {"section": "S4", "category": "SCOPE", "desc": "Scope declare rejected by validation or permission"},
+
+    # S7: Amendment & Evolution
+    "AMENDMENT_PROPOSED":    {"section": "S7", "category": "AMENDMENT", "desc": "Pact amendment proposed"},
+    "AMENDMENT_REVIEWED":    {"section": "S7", "category": "AMENDMENT", "desc": "Pact amendment reviewed"},
+    "AMENDMENT_REJECTED":    {"section": "S7", "category": "AMENDMENT", "desc": "Pact amendment rejected in review"},
+    "AMENDMENT_RATIFIED":    {"section": "S7", "category": "AMENDMENT", "desc": "Pact amendment ratified and sealed by T-0"},
     "CYCLE_LIMITED":         {"section": "S3", "category": "CADENCE",  "desc": "Rate limit triggered"},
 
     # S4: Hub Topology & Data Governance
