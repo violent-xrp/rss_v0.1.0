@@ -31,6 +31,22 @@ Five-hub architecture with REDLINE privacy boundaries.
 §4.5.2: governed_search respects SCOPE envelope boundaries.
 §4.7.4: REDLINE declassification with TRACE logging.
 §4.3.4: Hub provenance — transformation history survives all state transitions.
+
+§4.7.6 — REDLINE defaults (v0.1.0 pre-release hardening).
+Query surfaces that a naive caller might reach for are fail-closed against
+REDLINE:
+    search()           include_redline=False by default
+    governed_search()  include_redline=False by default (alongside
+                       the existing include_personal=False)
+
+Enumeration surfaces that governed consumers (PAV, persistence, TECTON,
+trace_export, CLI) rely on for complete state remain permissive by default:
+    list_hub()         returns REDLINE entries (callers apply their own policy)
+    get_entry()        returns the requested entry regardless of REDLINE
+
+The separation follows the principle that query surfaces implicitly filter,
+while enumeration surfaces deliver complete state to callers who are
+responsible for their own sanitization (PAVBuilder, export sanitization).
 """
 from __future__ import annotations
 
@@ -70,6 +86,8 @@ class HubTopology:
         h: [] for h in VALID_HUBS
     })
 
+    # ── Mutators ────────────────────────────────────────────────────────────
+
     def add_entry(self, hub: str, content: str, redline: bool = False,
                   entry_id: str = "") -> HubEntry:
         """Add entry to hub. If entry_id is provided (e.g. during restore),
@@ -95,6 +113,12 @@ class HubTopology:
         return entry
 
     def get_entry(self, entry_id: str) -> HubEntry:
+        """Retrieve an entry by ID.
+
+        NOTE: get_entry is an identity lookup, not a query surface. It
+        returns the requested entry whether or not it is REDLINE. Callers
+        that operate under governance (PAV, export, advisor-facing paths)
+        should consult entry.redline before exposing content."""
         for hub_entries in self._hubs.values():
             for entry in hub_entries:
                 if entry.id == entry_id:
@@ -111,39 +135,78 @@ class HubTopology:
         entry.timestamp = datetime.now(UTC)
         return entry
 
+    # ── Enumeration surfaces (permissive — governed consumers) ─────────────
+
     def list_hub(self, hub: str) -> List[HubEntry]:
+        """Enumerate entries in a hub. Returns ALL entries including REDLINE.
+
+        This is an enumeration surface consumed by governed callers
+        (PAVBuilder, persistence round-trip, TECTON container mirror,
+        trace_export sanitization, the CLI) that apply their own REDLINE
+        policy. For a query-style surface that defaults to excluding
+        REDLINE, use search() or governed_search().
+        """
         if hub not in self._hubs:
             raise HubError(f"Unknown hub: {hub}")
         return list(self._hubs[hub])
 
-    def search(self, keyword: str, hub: Optional[str] = None) -> List[HubEntry]:
-        """Search entries by keyword, optionally filtered to a hub."""
+    # ── Query surfaces (fail-closed on REDLINE — §4.7.6) ──────────────────
+
+    def search(self, keyword: str, hub: Optional[str] = None,
+               include_redline: bool = False) -> List[HubEntry]:
+        """Search entries by keyword, optionally filtered to a hub.
+
+        §4.7.6 — REDLINE entries are excluded by default. This closes the
+        naive-search leak where a caller writing ``rss.hubs.search(q)``
+        would otherwise receive REDLINE content matching the keyword.
+        Purged entries are always excluded.
+        """
         results = []
         hubs_to_search = [hub] if hub else list(self._hubs.keys())
+        needle = keyword.lower()
         for h in hubs_to_search:
             for entry in self._hubs.get(h, []):
-                if keyword.lower() in entry.content.lower():
+                if entry.purged:
+                    continue
+                if not include_redline and entry.redline:
+                    continue
+                if needle in entry.content.lower():
                     results.append(entry)
         return results
 
     def governed_search(self, keyword: str, allowed_sources: list,
-                        include_personal: bool = False) -> List[HubEntry]:
+                        include_personal: bool = False,
+                        include_redline: bool = False) -> List[HubEntry]:
         """§4.5.2 — Search respecting SCOPE boundaries.
-        PERSONAL excluded unless explicitly in allowed_sources AND include_personal=True.
-        Purged entries excluded."""
+
+        Defaults:
+          - PERSONAL is excluded unless include_personal=True (§4.2.3)
+          - REDLINE is excluded unless include_redline=True (§4.7.6)
+          - Purged entries are always excluded (§4.4.5)
+
+        The two opt-in flags are independent. include_personal=True opens
+        the PERSONAL hub but does not by itself surface REDLINE content
+        within it; that still requires include_redline=True. This lets an
+        operator sweep PERSONAL for non-sensitive entries without
+        surfacing flagged ones.
+        """
         results = []
+        needle = keyword.lower()
         for hub_name in allowed_sources:
             if hub_name not in self._hubs:
                 continue
-            # §4.2.3 — PERSONAL excluded from cross-hub search unless explicit
             if hub_name == "PERSONAL" and not include_personal:
                 continue
             for entry in self._hubs[hub_name]:
                 if entry.purged:
                     continue
-                if keyword.lower() in entry.content.lower():
+                if not include_redline and entry.redline:
+                    continue
+                if needle in entry.content.lower():
                     results.append(entry)
         return results
+
+    # ── State transitions ─────────────────────────────────────────────────
 
     def archive_entry(self, entry_id: str) -> None:
         """§4.4.3 — archive preserves original_hub. §4.3.4 — logs provenance."""
@@ -202,6 +265,17 @@ class HubTopology:
         })
         return entry
 
+    # ── Read-only summaries ────────────────────────────────────────────────
+
     def hub_stats(self) -> Dict[str, int]:
-        """Return entry count per hub."""
+        """Return entry count per hub. Counts include REDLINE entries — this
+        is a metadata surface, not a content surface."""
         return {h: len(entries) for h, entries in self._hubs.items()}
+
+    def hub_redline_stats(self) -> Dict[str, int]:
+        """Return REDLINE entry count per hub. Useful for administrative
+        visibility without exposing content."""
+        return {
+            h: sum(1 for e in entries if e.redline)
+            for h, entries in self._hubs.items()
+        }

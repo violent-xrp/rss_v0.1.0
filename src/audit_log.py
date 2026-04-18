@@ -30,6 +30,18 @@ Append-only, hash-chained event ledger.
 Callers may pass strings, bytes, or structured values (dict/list). Structured
 values are serialized via canonical_json (sorted keys, compact separators,
 UTF-8) before hashing to ensure cross-platform determinism.
+
+§6.3.6 — Full-envelope chain hashing (v0.1.0 pre-release hardening).
+Each event's content_hash is computed over a canonical envelope that includes
+timestamp, event_code, authority, artifact_id, the content payload, and the
+parent_hash. This makes every event's hash unique even when the free-text
+summary string repeats across rows, and makes any mutation — insertion,
+deletion, reordering, substitution — detectable at the chain-walk level.
+
+CHAIN_HASH_VERSION is a forward-compatibility marker. Any future change to
+the hash envelope MUST bump this constant, and the cold verifier and
+persistence layer MUST branch on it to preserve detectability of historical
+chains. Older chains without an explicit version are treated as v1.
 """
 from __future__ import annotations
 
@@ -38,6 +50,12 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime, UTC
 from typing import Any, List, Optional
+
+
+# §6.3.6 — Chain-hash algorithm version. Bumped on any envelope-shape change.
+# Current envelope (v1):
+#   {timestamp, event_code, authority, artifact_id, content, parent_hash}
+CHAIN_HASH_VERSION = 1
 
 
 def canonical_json(value: Any) -> bytes:
@@ -50,14 +68,28 @@ def canonical_json(value: Any) -> bytes:
       - Compact separators (no insignificant whitespace)
       - UTF-8 encoded bytes
       - ensure_ascii=False so non-ASCII content hashes consistently
+      - default=str falls back to string representation for unknown types
     """
     return json.dumps(
         value,
         sort_keys=True,
         separators=(",", ":"),
         ensure_ascii=False,
-        default=str,  # fall back to string representation for unknown types
+        default=str,
     ).encode("utf-8")
+
+
+def _normalize_content_for_hash(content: Any) -> Any:
+    """§6.3.6 — Normalize a content payload for inclusion in the hash envelope.
+    The raw byte length is tracked separately (TraceEvent.byte_length); this
+    helper produces a JSON-safe form for the canonical envelope.
+
+    - bytes/bytearray -> surrogate-escaped utf-8 string (round-trip safe)
+    - everything else -> passthrough (canonical_json handles str/dict/list/num)
+    """
+    if isinstance(content, (bytes, bytearray)):
+        return bytes(content).decode("utf-8", errors="surrogateescape")
+    return content
 
 
 class AuditLogError(Exception):
@@ -184,21 +216,25 @@ class AuditLog:
 
     @staticmethod
     def hash_content(content: Any) -> str:
-        """§6.3.3 — Hash a payload. Accepts str, bytes, or structured values.
-        Structured values (dict, list, etc.) are canonicalized via canonical_json
-        before hashing so two semantically-equal payloads always hash the same."""
+        """§6.3.3 — Hash a raw payload (content-only).
+        Accepts str, bytes, or structured values. Structured values are
+        canonicalized via canonical_json before hashing.
+
+        NOTE: This static helper hashes payload-only and is preserved for
+        callers that need payload fingerprinting independent of the chain
+        envelope. The chain itself uses the full-envelope hash computed in
+        record_event (§6.3.6)."""
         if isinstance(content, str):
             content_bytes = content.encode("utf-8")
         elif isinstance(content, (bytes, bytearray)):
             content_bytes = bytes(content)
         else:
-            # Structured payload — canonicalize
             content_bytes = canonical_json(content)
         return hashlib.sha256(content_bytes).hexdigest()
 
     @staticmethod
     def _to_bytes(content: Any) -> bytes:
-        """Convert any payload to its canonical byte form for hashing + length."""
+        """Convert any payload to its canonical byte form for byte_length accounting."""
         if isinstance(content, str):
             return content.encode("utf-8")
         if isinstance(content, (bytes, bytearray)):
@@ -213,21 +249,56 @@ class AuditLog:
         content: Any,
         parent_hash: Optional[str] = None,
     ) -> TraceEvent:
-        """Hash content, build TraceEvent, auto-chain to previous event, append, return.
-        §6.3.3 — `content` may be str, bytes, or any JSON-serializable value.
-        Structured values are canonicalized for deterministic hashing.
-        §6.6.4 — Event code is validated against the registry (if wired).
-        In strict mode, unknown codes raise AuditLogError BEFORE any hashing."""
-        self._validate_code(event_code)
-        content_bytes = self._to_bytes(content)
-        content_hash = hashlib.sha256(content_bytes).hexdigest()
+        """§6.3.3, §6.3.6 — Append a new event to the chain.
 
-        # Auto-chain: use last event's hash as parent if not provided
+        Hash envelope (v1) includes timestamp, event_code, authority,
+        artifact_id, content, and parent_hash. Every event therefore has a
+        unique content_hash even when the free-text summary repeats across
+        rows, so the chain walk detects insertion, deletion, reordering,
+        and substitution — not only direct hash-field edits.
+
+        Args:
+            event_code: Registered event code (§6.6.4).
+            authority: Seat or subsystem recording the event.
+            artifact_id: Unique identifier of the artifact this event
+                describes (e.g., ENTRY-abc123, AMEND-def456, request task_id).
+            content: Payload — str, bytes, or any JSON-serializable value.
+            parent_hash: If not provided, auto-linked to the previous
+                event's content_hash.
+
+        Returns:
+            The appended TraceEvent.
+
+        Raises:
+            AuditLogError: When the event_code is not registered (strict mode).
+        """
+        self._validate_code(event_code)
+
+        # byte_length tracks the raw payload size (semantics unchanged).
+        content_bytes = self._to_bytes(content)
+
+        # Auto-chain: use last event's hash as parent if not provided.
         if parent_hash is None and self._events:
             parent_hash = self._events[-1].content_hash
 
+        timestamp = datetime.now(UTC)
+
+        # §6.3.6 — Full-envelope hash. All fields that identify the event
+        # participate, so duplicate summary content cannot collide into the
+        # same hash, and any mutation breaks the downstream link check.
+        envelope = {
+            "v": CHAIN_HASH_VERSION,
+            "timestamp": timestamp.isoformat(),
+            "event_code": event_code,
+            "authority": authority,
+            "artifact_id": artifact_id,
+            "content": _normalize_content_for_hash(content),
+            "parent_hash": parent_hash or "",
+        }
+        content_hash = hashlib.sha256(canonical_json(envelope)).hexdigest()
+
         event = TraceEvent(
-            timestamp=datetime.now(UTC),
+            timestamp=timestamp,
             event_code=event_code,
             authority=authority,
             artifact_id=artifact_id,
@@ -239,7 +310,18 @@ class AuditLog:
         return event
 
     def verify_chain(self) -> bool:
-        """Verify the hash chain is intact. Returns True if valid."""
+        """Verify the in-memory hash chain is link-consistent.
+
+        Walks each event and checks that parent_hash equals the previous
+        event's content_hash. This catches insertion, deletion, reordering,
+        and substitution, subject to the §6.3.6 envelope covering all
+        identifying fields.
+
+        NOTE: This check cannot detect coordinated rewrites performed with
+        full knowledge of the hash algorithm (see THREAT_MODEL §2.7) and
+        cannot detect truncation of the chain's tail. External anchoring
+        is the Phase H remediation.
+        """
         for i in range(1, len(self._events)):
             if self._events[i].parent_hash != self._events[i - 1].content_hash:
                 return False

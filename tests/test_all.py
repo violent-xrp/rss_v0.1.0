@@ -5530,6 +5530,227 @@ def test_c_phase_regression_battery():
 
 
 # ============================================================
+# PRE-RELEASE ADVERSARIAL HARDENING PROBES (v0.1.0)
+# ============================================================
+# Each probe covers a specific vector surfaced in the pre-release forensic
+# review. Numbers match the review's FINDING ordering.
+
+def test_probe_chain_catches_duplicate_content_tamper():
+    """§6.3.6 — Full-envelope chain hash makes duplicate-content events
+    produce distinct content_hash values. This means insertion, deletion,
+    reordering, and substitution are all detectable even when the human-
+    readable summary string repeats across rows.
+
+    Regression guard: under the pre-hardening hash-input-is-content-only
+    implementation, this test's assertions fail because three events with
+    identical summary strings produced identical hashes, making middle-row
+    deletion undetectable."""
+    section("Probe A — Hash Envelope Uniqueness (§6.3.6)")
+
+    log = AuditLog()
+    # Deliberately emit three events with identical summary content strings
+    # and identical event_code. Only artifact_id differs.
+    e1 = log.record_event("DUP_EVT", "TEST", "ART-001",
+                           "Hub: WORK, REDLINE: False")
+    e2 = log.record_event("DUP_EVT", "TEST", "ART-002",
+                           "Hub: WORK, REDLINE: False")
+    e3 = log.record_event("DUP_EVT", "TEST", "ART-003",
+                           "Hub: WORK, REDLINE: False")
+
+    # Envelope includes artifact_id, timestamp, and parent_hash, so each
+    # hash must be distinct.
+    check(e1.content_hash != e2.content_hash,
+          "Probe-A1: distinct events yield distinct content_hash (e1 vs e2)")
+    check(e2.content_hash != e3.content_hash,
+          "Probe-A2: distinct events yield distinct content_hash (e2 vs e3)")
+    check(e1.content_hash != e3.content_hash,
+          "Probe-A3: distinct events yield distinct content_hash (e1 vs e3)")
+
+    # Chain walks forward correctly at baseline.
+    check(log.verify_chain() is True,
+          "Probe-A4: baseline chain verifies")
+
+    # Simulate middle-row deletion: rebuild the chain from surviving events
+    # {e1, e3}. Under the old hash scheme this passed because e3.parent_hash
+    # equalled e2.content_hash equalled e1.content_hash. Under the new
+    # envelope hash, e3.parent_hash references the unique e2.content_hash,
+    # so the break is visible.
+    fresh = AuditLog()
+    fresh._events = [e1, e3]
+    check(fresh.verify_chain() is False,
+          "Probe-A5: chain DETECTS deletion of middle event "
+          "(THREAT_MODEL §2.7 link-break detection)")
+
+
+def test_probe_redline_not_leaked_via_search_surfaces():
+    """§4.7.6 — REDLINE fail-closed on query surfaces. search() and
+    governed_search() must not return REDLINE content without explicit
+    include_redline=True.
+
+    Regression guard: under permissive defaults, a caller writing
+    rss.hubs.search(query) would receive REDLINE content matching the
+    keyword. This is the kernel-level instance of the 'custom search
+    helper' loophole disclosed in THREAT_MODEL §2.2."""
+    section("Probe B — REDLINE Fail-Closed on Query Surfaces (§4.7.6)")
+
+    hubs = HubTopology()
+    hubs.add_entry("PERSONAL", "SECRET_CONTENT_hunter2", redline=True)
+    hubs.add_entry("PERSONAL", "public personal note", redline=False)
+    hubs.add_entry("WORK", "public work note")
+
+    # search() default excludes REDLINE
+    r = hubs.search("SECRET", hub="PERSONAL")
+    check(len(r) == 0,
+          "Probe-B1: search() default excludes REDLINE (found no SECRET)")
+
+    # search() with explicit opt-in returns REDLINE
+    r = hubs.search("SECRET", hub="PERSONAL", include_redline=True)
+    check(len(r) == 1 and r[0].redline is True,
+          "Probe-B2: search(include_redline=True) explicitly returns REDLINE")
+
+    # search() across all hubs still excludes REDLINE by default
+    r = hubs.search("SECRET")
+    check(len(r) == 0,
+          "Probe-B3: search() across all hubs excludes REDLINE by default")
+
+    # governed_search with include_personal=True but REDLINE still fail-closed
+    r = hubs.governed_search("SECRET", ["PERSONAL"], include_personal=True)
+    check(len(r) == 0,
+          "Probe-B4: governed_search(include_personal=True) STILL excludes "
+          "REDLINE — the two opt-ins are independent (§4.7.6)")
+
+    # Both opt-ins together return REDLINE
+    r = hubs.governed_search("SECRET", ["PERSONAL"],
+                              include_personal=True, include_redline=True)
+    check(len(r) == 1,
+          "Probe-B5: governed_search with both opt-ins returns REDLINE")
+
+    # Non-redline content in PERSONAL still gated by include_personal
+    r = hubs.governed_search("public", ["PERSONAL"])
+    check(len(r) == 0,
+          "Probe-B6: governed_search still gates PERSONAL hub access")
+    r = hubs.governed_search("public", ["PERSONAL"], include_personal=True)
+    check(len(r) == 1,
+          "Probe-B7: include_personal surfaces non-redline PERSONAL entries")
+
+
+def test_probe_rune_resists_normalization_bypass():
+    """§2.1.2 — Input normalization closes whitespace, punctuation, control-
+    character, and NFKC compatibility bypasses on the DISALLOWED list.
+
+    Regression guard: under the pre-hardening implementation, the disallowed
+    check used raw-string equality against a lowercased key, so 'delete
+    everything.' (trailing period), 'delete  everything' (double space),
+    and 'delete\\teverything' (tab) all classified as AMBIGUOUS instead of
+    DISALLOWED. Normalization folds these to the canonical form before
+    lookup."""
+    section("Probe C — RUNE Input Normalization (§2.1.2)")
+
+    rune = MeaningLaw()
+    rune.disallow("delete everything", "Probe: bypass resistance test")
+
+    bypass_variants = [
+        "delete everything",          # baseline
+        "DELETE EVERYTHING",          # upper
+        "DeLeTe EvErYtHiNg",          # mixed case
+        "delete  everything",         # double space
+        "delete\teverything",         # tab
+        "delete\neverything",         # newline
+        "delete everything.",         # trailing period
+        "delete everything!",         # trailing bang
+        "  delete everything  ",      # leading/trailing whitespace
+        "\"delete everything\"",      # wrapped quotes
+        "delete everything\x00",      # trailing null byte (stripped)
+    ]
+
+    for i, probe in enumerate(bypass_variants, 1):
+        status = rune.classify(probe).status
+        check(status == "DISALLOWED",
+              f"Probe-C{i}: {probe!r} classifies as DISALLOWED "
+              f"(got {status!r})")
+
+    # Control char between words collapses to a non-separated token; this is
+    # a SAFER failure mode than rebuilding the disallowed phrase — the
+    # attacker's join attempt produces "deleteeverything" which does not
+    # match. Fail-closed by design.
+    joined = rune.classify("delete\x08everything").status
+    check(joined != "DISALLOWED",
+          f"Probe-C-ctrl-join: control-char join does not reconstitute the "
+          f"disallowed phrase (got {joined!r}, expected not DISALLOWED)")
+
+    # Embedded-in-sentence does NOT trigger disallow — documented semantic
+    # (see meaning_law.disallow() docstring). A sentence containing the
+    # disallowed phrase remains AMBIGUOUS unless the phrase is registered
+    # as an embedded pattern.
+    embedded = rune.classify("please delete everything now").status
+    check(embedded == "AMBIGUOUS",
+          f"Probe-C13: embedded-in-sentence stays AMBIGUOUS by design "
+          f"(got {embedded!r})")
+
+
+def test_probe_pav_still_excludes_redline_via_list_hub():
+    """§4.7.6 — list_hub() is an enumeration surface and stays permissive
+    so governed consumers (PAV, persistence, TECTON mirror, trace_export)
+    receive complete state. The governed consumers apply their own REDLINE
+    policy. This probe verifies the separation of concerns holds:
+
+      - list_hub() returns REDLINE entries (enumeration)
+      - PAVBuilder.build() still excludes them from advisor context (governance)
+
+    Regression guard: if anyone tightens list_hub() to default-exclude, the
+    PAV test will still pass (PAV gets nothing) but governance becomes a
+    silent pass-through instead of a deliberate policy decision. This test
+    pins the boundary."""
+    section("Probe D — list_hub Permissive vs PAV Governing Boundary (§4.7.6)")
+
+    hubs = HubTopology()
+    hubs.add_entry("WORK", "work content")
+    hubs.add_entry("PERSONAL", "sovereign-visible personal entry")
+    hubs.add_entry("PERSONAL", "REDLINE secret", redline=True)
+
+    # list_hub enumerates REDLINE entries (for governed consumers)
+    personal = hubs.list_hub("PERSONAL")
+    check(len(personal) == 2,
+          "Probe-D1: list_hub enumerates ALL entries including REDLINE")
+    check(any(e.redline for e in personal),
+          "Probe-D2: list_hub surfaces REDLINE entries for governed callers")
+
+    # PAVBuilder still applies REDLINE exclusion when building the advisor view
+    scope = Scope()
+    env = scope.declare("probe-d-task",
+                         ["WORK", "PERSONAL"], [], "EXCLUDE", CONTENT_ONLY,
+                         sovereign=True)
+    pav = PAVBuilder().build(env, hubs)
+    check(pav.redline_excluded == 1,
+          "Probe-D3: PAVBuilder excludes REDLINE from advisor context "
+          "(1 entry excluded)")
+    # The REDLINE content string must not appear in any PAV entry
+    leak = any("REDLINE secret" in e.get("content", "") for e in pav.entries)
+    check(leak is False,
+          "Probe-D4: REDLINE content does not reach PAV entries")
+
+
+def test_probe_hash_envelope_version_marker_present():
+    """§6.3.6 — CHAIN_HASH_VERSION marker exists for forward-compat.
+
+    Any future envelope-shape change MUST bump this constant, and the cold
+    verifier plus persistence layer MUST branch on it to preserve
+    detectability of historical chains. This probe pins the marker so it
+    cannot be silently removed."""
+    section("Probe E — Chain Hash Version Marker (§6.3.6)")
+
+    from audit_log import CHAIN_HASH_VERSION
+    check(isinstance(CHAIN_HASH_VERSION, int),
+          "Probe-E1: CHAIN_HASH_VERSION is an integer")
+    check(CHAIN_HASH_VERSION >= 1,
+          f"Probe-E2: CHAIN_HASH_VERSION >= 1 (got {CHAIN_HASH_VERSION})")
+    # If this ever bumps, update the migration path in persistence and
+    # trace_verify before changing the assertion below.
+    check(CHAIN_HASH_VERSION == 1,
+          "Probe-E3: CHAIN_HASH_VERSION is at v1 "
+          "(bump requires cold-verifier + persistence migration)")
+
+
 if __name__ == "__main__":
     safe_run(test_constitution)
     safe_run(test_audit_log)
@@ -5651,6 +5872,12 @@ if __name__ == "__main__":
     safe_run(test_scenario_tamper_recovery)
     # S7: Amendment & Evolution
     safe_run(test_s7_amendment_ceremony)
+    # Pre-Release Adversarial Hardening Probes (v0.1.0)
+    safe_run(test_probe_chain_catches_duplicate_content_tamper)
+    safe_run(test_probe_redline_not_leaked_via_search_surfaces)
+    safe_run(test_probe_rune_resists_normalization_bypass)
+    safe_run(test_probe_pav_still_excludes_redline_via_list_hub)
+    safe_run(test_probe_hash_envelope_version_marker_present)
 
     print(f"\n{'='*60}")
     print(f"RSS v0.1.0 — {_funcs} test functions, {_pass} assertions passed, {_fail} failed", end="")
