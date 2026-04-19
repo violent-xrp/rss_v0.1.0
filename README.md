@@ -70,15 +70,57 @@ This loads a construction-domain example with sealed terms, tenant containers, a
 
 ### Programmatic Usage
 
+Successful request — sealed term recognized, routed through the full pipeline:
+
 ```python
 from runtime import bootstrap
 from config import RSSConfig
 
 rss = bootstrap(RSSConfig())
-
 result = rss.process_request("What is the current quote?")
-rss.save_hub_entry("WORK", "New project data goes here")
+# {
+#   "meaning": "SEALED",
+#   "classification": "REQUEST",
+#   "term_id": "quote",
+#   "task_id": "REQ-1776550257.984593",
+#   "pav_entries": 0
+# }
+```
 
+Failing closed — destructive intent blocked at RUNE (Stage 3):
+
+```python
+rss.meaning.disallow("delete everything", "Destructive intent blocked")
+result = rss.process_request("delete everything")
+# {
+#   "error": "DISALLOWED_TERM",
+#   "meaning": "DISALLOWED",
+#   "reason": "Destructive intent blocked",
+#   "stage": 3,
+#   "stage_name": "RUNE"
+# }
+```
+
+Failing closed — PERSONAL hub access blocked at SCOPE (Stage 2) without sovereign:
+
+```python
+result = rss.process_request(
+    "check personal data",
+    scope_policy={"allowed_sources": ["PERSONAL"], "sovereign": False},
+)
+# {
+#   "error": "SCOPE_REJECTED",
+#   "reason": "PERSONAL hub requires explicit sovereign construction (§4.2.3).",
+#   "stage": 2,
+#   "stage_name": "SCOPE"
+# }
+```
+
+Every halt carries the stage number and stage name. No partial execution. No silent continuation.
+
+### Tenant Containers
+
+```python
 from tecton import Tecton
 
 tecton = Tecton()
@@ -106,11 +148,36 @@ RSS is governed by eight typed seats. Each has exactly one authority type and ma
 
 ### Governed Pipeline
 
-Every request flows through the same governed path:
+### Governed Pipeline
 
-**Safe-Stop → Genesis → SCOPE → RUNE → Execution → OATH → CYCLE → PAV → LLM (optional) → TRACE**
+Every request flows through the same governed path. Each stage has one job and one authority. Any stage can halt the request; none can be skipped.
 
-If any stage fails, the pipeline halts. No partial execution. No silent continuation.
+```
+           ┌─────────────────────────────────────────────────────────┐
+           │                     REQUEST IN                          │
+           └────────────────────────────┬────────────────────────────┘
+                                        │
+                                        ▼
+  ┌────────────────────────────────────────────────────────────────────┐
+  │  Stage 0  SAFE-STOP    Is the system halted? ─────────► HALT       │
+  │  Stage 1  GENESIS      Constitution intact? ──────────► HALT       │
+  │  Stage 2  SCOPE        Data boundary declared ────────► REJECTED   │
+  │  Stage 3  RUNE         Meaning classified ────────────► DISALLOWED │
+  │  Stage 4  EXECUTION    Intent + TTL validated ────────► EXPIRED    │
+  │  Stage 5  OATH         Consent authorized? ───────────► DENIED     │
+  │  Stage 6  CYCLE        Rate within limits? ───────────► LIMITED    │
+  │  Stage 7  PAV          Advisory view sanitized        │            │
+  │  Stage 8  LLM          Model invoked (optional)       │            │
+  │  Stage 9  TRACE        Event recorded + chain sealed  │            │
+  └────────────────────────────────────────────────────────┼───────────┘
+                                                           │
+                                                           ▼
+           ┌─────────────────────────────────────────────────────────┐
+           │                    REQUEST COMPLETE                     │
+           └─────────────────────────────────────────────────────────┘
+```
+
+If any stage fails, the response carries `{error, reason, stage, stage_name}` and execution stops. The model does not run. The audit log is written before the model is invoked, not after.
 
 ### Data Model
 
