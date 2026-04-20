@@ -1,206 +1,137 @@
 # Rose Sigil Systems — RSS v0.1.0
 
-A domain-agnostic, application-layer zero-trust AI governance kernel.
+Rose Sigil Systems (RSS) is a **domain-agnostic, application-layer zero-trust AI governance kernel**. It decides what a system may see, say, and do **before** the model runs, not after. Every request flows through a constitutional pipeline of typed seats with bounded authority. Scope is declared. Meaning is classified. Consent is checked. Rate limits are enforced. A Prepared Advisory View is built. TRACE is written before the result is allowed to stand.
 
-RSS governs what an AI system is allowed to see, say, and do **before** the model runs. Requests are scoped before exposure, consent is checked before action, advisory views are bounded before model contact, and TRACE is written in the governed path rather than as an afterthought.
+**Current verified project-snapshot baseline:** **126 test functions / 956 assertions / 0 failures** via `python tests/test_all.py`.
 
-Current public baseline:
-- 111 test functions
-- 850 assertions
-- 0 failures
-- 20 `src/` modules
-- 85.3% coverage (`run_coverage.py`)
-- claim traceability generated at `docs/claim_matrix.md`
+## What RSS is
 
-RSS should be described as an **honest alpha/MVP**. The architecture is real. The deployment maturity is still limited.
+RSS v0.1.0 can honestly be presented as:
+- a domain-agnostic governance kernel
+- a constitutional middleware architecture with typed seat separation
+- a pre-model governance pipeline
+- a system with scoped data access, governed consent, hash-chained audit, cold verification, persistent Safe-Stop, and tenant isolation
+- an honest alpha/MVP
 
----
+RSS v0.1.0 should **not** be presented as:
+- a full deployment-layer zero-trust stack
+- cryptographically immutable end to end
+- fully async-safe across future wrappers/APIs
+- distributed or enterprise-complete
+- a polished end-user application
 
-## What RSS Is
+## Repository layout
 
-RSS v0.1.0 is:
-- a constitutional middleware architecture
-- a pre-model governance kernel
-- a typed-seat system with separated authority domains
-- a system with scoped data access and bounded advisory exposure
-- a system with consent checks, cadence checks, and hash-chained auditing
-- a system with persistent Safe-Stop behavior
-- a tenant-container runtime with context-bound isolation in the reference implementation
+Keep the repo organized around user intent:
 
-RSS is **domain-agnostic**. Construction, legal, finance, healthcare, and other domains are example deployment surfaces, not the kernel's built-in identity.
+- `README.md`, `ROADMAP.md`, `THREAT_MODEL.md`, `TRUTH_REGISTER.md`, `CLAIM_DISCIPLINE.md`, `CONTRIBUTING.md`, `CHANGELOG.md` — high-signal root docs
+- `pact/` — canonical constitutional text
+- `src/` — runtime and support modules
+- `tests/` — acceptance runner and test helpers
+- `examples/` — runnable demos and walkthroughs
+- `docs/` — supporting docs, indexes, demo/operator notes
 
----
+Recommended current homes:
+- `src/reference_pack.py`
+- `examples/demo_llm.py`
+- `examples/demo_suite.py`
+- `docs/demo/README.md`
+- `docs/demo/reference_pack.md`
 
-## What RSS Is Not
-
-RSS v0.1.0 is not yet:
-- fully async-safe across all deployment patterns
-- distributed
-- cryptographically immutable
-- externally anchored for non-repudiation
-- enterprise-complete
-- a connector platform
-- a finished trust platform
-
-RSS implements zero-trust principles at the **application / governance layer**. It does **not** yet implement a full deployment-layer zero-trust stack.
-
----
-
-## Quick Start
+## Quick start
 
 ### Requirements
 - Python 3.11+
 - SQLite (bundled with Python)
-- Ollama (optional, for live LLM integration)
+- Ollama optional for live LLM answers
 
 ### Install
-
 ```bash
 git clone https://github.com/violent-xrp/rss_v0.1.0.git
 cd rss_v0.1.0
 pip install -r requirements.txt
 ```
 
-### Run the test suite
-
-Pytest view:
-
-```bash
-pytest -q tests/test_all.py
-```
-
-Custom runner view:
-
+### Run the acceptance suite
 ```bash
 python tests/test_all.py
 ```
-
-Expected final line:
-
+Expected current final line:
 ```text
-RSS v0.1.0 — 111 test functions, 850 assertions passed, 0 failed
+RSS v0.1.0 — 126 test functions, 956 assertions passed, 0 failed
 ```
 
-### Run the CLI
-
+### Run the guided demo walkthrough
 ```bash
-python src/main.py status
-python src/main.py demo
+python examples/demo_suite.py
 ```
 
-### Run the example harness
-
+### Run the interactive governed demo
 ```bash
 python examples/demo_llm.py
 ```
 
-### Generate claim traceability
-
+### Use the CLI entry point
 ```bash
-python build_claim_matrix.py
+python src/main.py status
+python src/main.py demo
+python src/main.py demo-suite
 ```
 
-Generated output:
-- `docs/claim_matrix.md`
+## Architecture at a glance
 
----
+RSS is governed by eight typed seats:
+- **WARD** — route or halt
+- **SCOPE** — define bounded data access
+- **RUNE** — classify meaning under sealed law
+- **OATH** — authorize or deny action
+- **CYCLE** — limit cadence and runaway behavior
+- **SCRIBE** — drafting and revision staging
+- **SEAL** — canonization and amendment ceremony
+- **TRACE** — evidentiary record and verification
 
-## Architecture
+The practical request path is:
 
-### Constitutional seats
-- **WARD (⛉)** — permit / halt routing authority
-- **SCOPE (☐)** — boundary authority
-- **RUNE (ᚱ)** — interpretive authority
-- **OATH (⚖)** — consent authority
-- **CYCLE (∞)** — cadence / rate authority
-- **SCRIBE (✎)** — drafting authority
-- **SEAL (🜔)** — canonization / integrity authority
-- **TRACE (🔍)** — evidentiary authority
+**Genesis / Safe-Stop → SCOPE → RUNE → OATH → CYCLE → PAV → optional LLM → TRACE**
 
-### Governed pipeline
-1. Safe-Stop gate
-2. Genesis verification
-3. SCOPE envelope declaration
-4. RUNE classification
-5. Execution classification / TTL validation
-6. OATH consent check
-7. CYCLE rate-limit check
-8. PAV construction
-9. Optional LLM call
-10. TRACE completion record
+## What is implemented now
 
-Any stage may halt. None may be skipped.
+### Governance / runtime
+- Section 0 integrity verification and Safe-Stop
+- scoped envelopes with sovereign gating for PERSONAL
+- sealed-term registry, synonyms, disallowed terms, anti-trojan scanning, normalization hardening, and word-boundary classification
+- consent checks with write-ahead persistence semantics
+- rate limiting and container-aware cadence
+- tenant isolation via TECTON containers
+- hash-chained TRACE with cold verification and schema/version scaffolding
+- amendment ceremony support in SEAL
 
----
+### Hardening already landed
+- exact-boundary container TRACE filtering
+- REDLINE fail-closed query behavior and export sanitization
+- runner-truth hardening so the acceptance harness is the canonical verdict
+- config-driven term packs and config-driven default term definitions
+- deterministic offline fallback that summarizes governed data instead of echoing user input
+- shared reference pack and seeded demo world for examples/tests
+- ingress posture surfaced explicitly as architectural, not cryptographic
 
-## Zero-Trust Scope
+## Demo / operator posture
 
-RSS v0.1.0 applies zero-trust thinking to the governance path:
-- prompts are not trusted
-- requested data access is not trusted
-- model output is not trusted
-- execution is not trusted without policy checks
-- failure defaults to halt
+The demo and offline fallback are intentionally governed, not theatrical. The seeded demo world proves:
+- useful retrieval from governed data
+- REDLINE exclusion
+- tenant/container isolation
+- consent and Safe-Stop behavior
+- deterministic answers when no live LLM is available
 
-RSS v0.1.0 does **not** yet provide:
-- external cryptographic identity binding
-- hardware-backed audit immutability
-- distributed trust enforcement
-- production authentication and secret-management posture
-
-Those are future deployment-layer concerns, not current release claims.
-
----
-
-## Domain Posture
-
-The kernel should not describe itself as a construction assistant unless a deployer intentionally configures it that way.
-
-Construction remains a valid example deployment. It is not the constitutional limit of RSS.
-
----
-
-## Repository Layout
-
-```text
-src/        core kernel modules
-tests/      reference suite
-examples/   runnable example harnesses
-pact/       constitutional text
-docs/       generated / supporting documentation
-```
-
----
+See `docs/demo/README.md` and `docs/demo/reference_pack.md` for the current operator/demo surface.
 
 ## Licensing
 
-- **Python code:** AGPLv3 with commercial / contractor licensing path
-- **The Pact:** CC BY-ND 4.0
-- **Support documents:** repository-designated terms for each file
+This repo uses a split posture:
+- **Code:** AGPLv3, with the commercial/contractor exception language carried in-file where applicable
+- **Pact text and constitutional material:** keep the repository’s chosen licensing language explicit and separate from the code license
 
-Keep code-license language and Pact-license language separate.
+## Positioning rule
 
----
-
-## Public Positioning
-
-Safe wording:
-
-> RSS is a domain-agnostic, application-layer zero-trust AI governance kernel — an honest alpha/MVP that enforces scoped data access, bounded advisory exposure, consent checks, hash-chained auditing with cold verification, context-bound tenant isolation, and pre-model governance through a constitutional middleware architecture.
-
-Unsafe wording:
-- enterprise-ready
-- fully async-safe
-- cryptographically immutable
-- finished trust platform
-- construction-only kernel
-
----
-
-## See Also
-
-- `TRUTH_REGISTER.md`
-- `CLAIM_DISCIPLINE.md`
-- `THREAT_MODEL.md`
-- `ROADMAP.md`
-- `docs/claim_matrix.md`
+Build ambitiously. Describe conservatively. Prove aggressively.

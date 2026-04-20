@@ -2,103 +2,56 @@
 
 Release: **v0.1.0**
 
-State:
-- 111 test functions
-- 850 assertions
-- 0 failures
-- 20 `src/` modules
-- 85.3% coverage
-- 94 distinct Pact sections referenced across 111 claim tags
+## Current verified state
+- **126 test functions / 956 assertions / 0 failures** via `python tests/test_all.py`
+- **22 source modules in `src/`** in the current project snapshot
+- demo/reference-pack and governed offline fallback are implemented in the current code snapshot
 
-Rule:
-
-> If it is not listed here as a current claim, it is not a current claim.
+This file exists to answer one question clearly: **what can be claimed right now without exaggeration?**
 
 ---
 
-## Current Claims
+## Column A — claims that are true now
+RSS v0.1.0 currently implements:
+- Section 0 integrity verification and Safe-Stop behavior
+- typed seat separation across WARD, SCOPE, RUNE, OATH, CYCLE, SCRIBE, SEAL, and TRACE
+- governed runtime flow with scoped data access, meaning classification, consent checks, cadence enforcement, PAV construction, optional LLM, and hash-chained TRACE
+- persistent SQLite-backed state for TRACE, terms, consents, hubs, and containers
+- tenant isolation through TECTON containers
+- cold TRACE verification without booting the full runtime
+- amendment-ceremony support in SEAL
+- deterministic offline fallback that summarizes governed data instead of echoing raw user text
+- shared demo/reference data and seeded demo containers
 
-RSS v0.1.0 currently is:
-- a domain-agnostic, application-layer zero-trust AI governance kernel
-- a constitutional middleware architecture with typed seat authority separation
-- a pre-model governance pipeline
-- a system with scoped data access and bounded advisory exposure
-- a system with consent checks and cadence limits in the governed path
-- a system with hash-chained TRACE and stand-alone cold verification
-- a system with persistent Safe-Stop behavior
-- a tenant-container runtime with context-bound isolation in the reference implementation
-- an honest alpha/MVP
+## Column B — claims that are *not* true now
+RSS v0.1.0 does **not** yet implement:
+- deployment-layer cryptographic caller identity
+- external signing / timestamp anchoring / off-box non-repudiation
+- full distributed runtime guarantees
+- end-user polish equivalent to a production application
+- fully async-safe behavior across future wrappers/APIs
 
-### Current technical posture
-Implemented and proven in tested paths:
-- write-ahead audit discipline in governed paths
-- persistent consent state with refusal on durability failure
-- stage-tracked halts
-- word-boundary meaning enforcement
-- anti-trojan term-definition screening
-- container lifecycle enforcement
-- export sanitization for REDLINE-bearing references
-- production-mode lockdown switch in config
-- claim traceability generation at `docs/claim_matrix.md`
-
-### Current constitutional posture
-- Sections 0–7 exist in v0.1.0 form
-- S7 (Amendment & Evolution) exists in both Pact text and code
-- remaining S7 work is hardening and ceremony maturity, not section existence
+## Column C — boundaries and limitations that must be disclosed
+- the ingress boundary is architectural, not cryptographic
+- the offline fallback is deterministic and governed, but intentionally simple
+- meaning normalization is strong against whitespace/control-char/NFKC bypasses but not yet full confusables resistance
+- demo usefulness should not be sold as deployment maturity
+- public docs have historically drifted from the code baseline; ROADMAP is the working truth source until all docs are resynced
 
 ---
 
-## Current Limits
+## Evidence anchors
+The current code snapshot includes proof for:
+- stage-tracked halts and Safe-Stop persistence/recovery
+- word-boundary meaning enforcement and normalization hardening
+- anti-trojan term rejection
+- REDLINE fail-closed query behavior and export sanitization
+- container lifecycle enforcement and tenant isolation
+- OATH atomicity and persistence-failure handling
+- production-mode lockdown behavior
+- boot-chain verification and cold verification
+- thread-level context-bound isolation
+- unified TRACE capture for container events
+- pre-demo demo-world seeding and governed offline answers
 
-RSS v0.1.0 is **not** currently claimed to be:
-- fully async-safe in all deployment patterns
-- distributed
-- cryptographically immutable
-- externally anchored for non-repudiation
-- enterprise-complete
-- a connector platform
-- a finished trust platform
-
-### Zero-trust scope limit
-RSS v0.1.0 applies zero-trust principles at the **application / governance layer**.
-
-RSS v0.1.0 does **not** yet claim:
-- external cryptographic identity binding
-- hardware-backed audit immutability
-- full distributed / perimeter trust enforcement
-- production auth / secrets / compliance stack
-
----
-
-## Domain Posture
-
-Current truth:
-- the kernel is domain-agnostic
-- example term packs and example datasets are replaceable
-- construction may be shown as an example deployment
-- construction is not the kernel's built-in identity
-- the runtime should not describe itself as a construction assistant unless the deployer intentionally configures it that way
-
----
-
-## Language Discipline
-
-Safe:
-- domain-agnostic governance kernel
-- honest alpha/MVP
-- application-layer zero-trust posture
-- mechanically enforced in tested paths
-- context-bound isolation in the reference runtime
-
-Unsafe unless newly proven:
-- enterprise-grade
-- fully async-safe
-- cryptographically immutable
-- finished trust platform
-- construction-only kernel
-
----
-
-## Final Summary
-
-RSS v0.1.0 is a **real, domain-agnostic governance kernel with honest alpha/MVP posture**.
+If a statement is not supported by the current code and proof surface, it does not belong in public positioning.

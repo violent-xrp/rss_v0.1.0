@@ -2,50 +2,43 @@
 
 Release target: **v0.1.0**
 
-Current code state:
-- **126 test functions / 955 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **20 committed `src/` modules** on the live repo
-- `chain_hash_migrate.py` exists as a prepared support module and should live in `src/` when committed, which would bring the source-module count to **21**
+## Current code state
+- **126 test functions / 956 assertions / 0 failures** via the canonical acceptance runner: `python tests/test_all.py`
+- **22 source modules in `src/`** in the current project snapshot
 - claim traceability generated at `docs/claim_matrix.md`
 
-Current posture:
+## Current posture
 - public-alpha hardening has advanced materially beyond the earlier 111/850 baseline
-- the acceptance harness reports a single truthful verdict
-- the demo layer is no longer just a thin global seed plus echo fallback; it now has shared seeded data, seeded tenant worlds, and a deterministic governed walkthrough
-- several downstream docs still need sync; this roadmap remains the working source of truth until they are refreshed
+- the acceptance harness is the single source of pass/fail truth
+- the offline fallback and demo world are now governed and deterministic rather than raw echo/demo placeholders
+- the roadmap is the working source of truth while remaining docs are synchronized
 
-Operator environment note:
-- on the current Windows machine, `pytest` is **not installed / not on PATH**
-- the canonical local truth-run remains:
-  - `python tests\test_all.py`
-- optional parity check later:
-  - `python -m pytest -q tests\test_all.py`
-  - only after `pytest` is installed in the active Python environment
+## Operator environment note
+- on the current Windows machine, `pytest` is not installed / not on PATH
+- canonical local truth-run: `python tests\test_all.py`
+- optional parity check later: `python -m pytest -q tests\test_all.py`
 
 ---
 
-## Working Rules
+## Working rules
 - Build ambitiously. Describe conservatively. Prove aggressively.
 - Trust is earned by mechanism, not by language.
 - What is not proven is not promised.
 - One law, many domains.
 - One verdict, not two.
-- ROADMAP is the return point after each meaningful pass.
 
 ---
 
-## Current Release State
+## Current release state
 
 ### Safe claims now
 RSS v0.1.0 can be presented as:
 - a domain-agnostic, application-layer zero-trust governance kernel
 - a constitutional middleware architecture with typed seat authority separation
 - a pre-model governance pipeline
-- a system with scoped data access, bounded advisory exposure, and governed consent
-- a system with hash-chained TRACE and stand-alone cold verification
-- a system with persistent Safe-Stop
+- a system with scoped data access, bounded advisory exposure, governed consent, hash-chained audit, cold verification, persistent Safe-Stop, and tenant isolation
 - a system whose acceptance harness produces a truthful single summary verdict
-- an honest alpha/MVP with a growing governed demo surface
+- an honest alpha/MVP
 
 ### Unsafe claims now
 RSS v0.1.0 should not yet be described as:
@@ -54,127 +47,114 @@ RSS v0.1.0 should not yet be described as:
 - cryptographically immutable
 - enterprise-complete
 - a full deployment-layer zero-trust stack
-- a production-ready end-user application
-- a polished natural-feeling offline assistant experience
+- a polished end-user application
 
 ---
 
-## Acceptance Baseline History
-
-Track count changes here, not inside the test logic.
-If counts go down, the reason must be written here in plain language.
+## Acceptance baseline history
+Track count changes here, not inside the test logic. If counts go down, the reason must be written here in plain language.
 
 - **111 / 850 / 0** — earlier public-alpha baseline after initial hardening pass
 - **118 / 930 / 0** — stronger branch reached during deeper hardening + runner-truth work
-- **115 / 872 / 0** — lower-count project-folder snapshot reached after branch drift; not a claimed improvement
-- **119 / 897 / 0** — restored current branch after OATH / SEAL / trace_verify hardening
+- **115 / 872 / 0** — lower-count branch snapshot after drift; not a claimed improvement
+- **119 / 897 / 0** — OATH / SEAL / trace_verify hardening restored count growth
 - **121 / 909 / 0** — config-driven bootstrap term pack + cold export container REDLINE sanitization
-- **126 / 955 / 0** — current baseline after demo-prep hardening: seeded demo world, container demo packs, cold export REDLINE parity, and deterministic governed walkthrough support
+- **126 / 956 / 0** — current snapshot after pre-demo hardening, shared reference pack, governed offline fallback, extra verifier/export/ceremony proof, and demo-suite seeding
 
 ---
 
-## What Has Landed Since the Earlier Public Baseline
+## What has landed since the earlier public baseline
 
 ### Test / proof growth
 Completed:
-- constitution loader edge coverage
+- constitution loader edges
 - LLM adapter prompt / fallback / config-aware coverage
-- SCRIBE UAP / status / handler edge coverage
+- SCRIBE UAP / status / handler edges
 - cold TRACE verifier CLI / error-path / safe-stop coverage
 - extended OATH, SEAL, and TRACE export coverage
-- runner-truth hardening so failed `check(...)` conditions cannot silently coexist with a green-looking test invocation
-- execution word-boundary hardening coverage
-- config-driven bootstrap term-pack coverage
-- Genesis binding / offline fallback / shared reference-pack coverage
-- demo-world seed + tenant-isolation coverage
-- cold export coverage for container REDLINE IDs
+- runner-truth hardening so failed `check(...)` conditions cannot silently coexist with a green-looking invocation
+- additional pre-demo proof around corrupted `system_state`, malformed verifier JSON, mixed known/unknown registry reporting, cold Safe-Stop branches, summary integrity, live/cold export parity, multiple REDLINE IDs in one artifact string, and container/global mixed export cases
+- additional SEAL ceremony proof around repeated review after rejection, whitespace-only amendment inputs, mixed-case verdict normalization, ratification ordering, and idempotence
+- demo-world proof for shared reference-pack loading, seeded demo containers, idempotent loading, and governed offline answers from seeded data
 
 ### Hardening fixes landed
 Completed:
 - runtime bootstrap uses config-driven default term packs and config-driven definition prefixes
-- offline fallback no longer degrades to raw echo output; it deterministically summarizes governed data only
-- cold TRACE export sanitizes REDLINE IDs from both `hub_entries` and `container_hub_entries`
-- trace export text path and verifier container filter both use exact-boundary semantics
+- cold TRACE export sanitizes REDLINE IDs from `container_hub_entries`, not only global `hub_entries`
+- exact-boundary container filtering parity across TRACE export and cold verification
+- `trace_verify.py` separates schema-invalid from file-open error paths
+- `trace_verify.py` degrades safely when registry loading fails
 - OATH blank-container normalization and structured `handle()` error paths
-- SEAL amendment input normalization, explicit `ALREADY_RATIFIED`, and tighter rejection handling
-- trace_verify registry-load warning path hardened beyond ImportError-only handling
-- execution verb detection uses whole-word matching instead of naive substring matching
-- shared demo/reference data moved into one source-of-truth module
-- seeded tenant demo packs now prove container isolation and governed usefulness together
-- operator-visible ingress posture wording now makes the single-process trust gap explicit
-
-### Demo-prep work landed
-Completed:
-- `src/reference_pack.py` is the shared code home for demo/reference data
-- demo data is no longer duplicated across `main.py` and `examples/demo_llm.py`
-- seeded demo containers now cover multiple domains instead of a single thin global seed
-- a deterministic walkthrough entrypoint exists for scripted operator demos
+- SEAL amendment input normalization and explicit `ALREADY_RATIFIED` handling
+- execution verb classification uses whole-word matching rather than unsafe substring matches
+- boundary-aware artifact-id sanitization replaces naive substring replacement
+- offline fallback now summarizes governed data deterministically instead of echoing raw user input
+- reference/demo seed data is centralized in `src/reference_pack.py`
+- operator-visible ingress wording now states the architectural-not-cryptographic trust posture plainly
+- chain-hash migration scaffold exists as an explicit placeholder rather than silent debt
 
 ### Honesty / release-surface clarifications
 Completed:
-- clarified that the canonical acceptance run is the custom harness
-- clarified that `pytest` parity is optional tooling, not the sole source of truth
-- clarified source-module counting rule: **Python files in `src/` only**
-- clarified that demo usefulness is improving but still downstream of kernel integrity
+- canonical acceptance run is the custom harness
+- pytest parity is optional tooling, not the sole truth source
+- source-module counting rule is Python files in `src/`
+- roadmap is the living ledger and return point after each hardening pass
 
 ---
 
-## Open Work — Ordered by Return-on-Trust
+## Open work — ordered by return-on-trust
 
 ### 1. Keep the roadmap authoritative
 Priority: highest
 
-This file is the return point after every meaningful pass.
-
-After each pass:
+After each meaningful pass:
 - update the tested baseline
-- note what actually landed in code/tests
-- note newly exposed threat notes or trust gaps
-- note what downstream docs now owe sync
+- note what actually landed in code and tests
+- note any newly exposed threat-model caveats
+- note which downstream docs were synced and which are still owed
 
-### 2. Demo suite expansion
+### 2. Remaining release-surface sync
 Priority: high
 
-Build the richer scripted governed suite on top of the shared reference pack.
+Keep these aligned to the current code truth:
+- `README.md`
+- `TRUTH_REGISTER.md`
+- `CLAIM_DISCIPLINE.md`
+- `CONTRIBUTING.md`
+- `CHANGELOG.md`
+- `THREAT_MODEL.md`
+- demo/operator docs under `docs/demo/`
 
-Next demo work:
-- more fake WORK data with timeline continuity
-- more fake PERSONAL / REDLINE data with clearer “blocked but not broken” demonstrations
-- more container-specific scenario questions
-- deliberate cross-container confusion probes in the demo itself
-- visible Safe-Stop / recovery walkthrough in the demo flow
-- clearer operator-facing output for “answer came from governed global data” vs “answer came from container-scoped data”
+### 3. Demo / operator-experience hardening
+Priority: high
 
-### 3. Additional hardening depth
+Move RSS from “credible kernel + deterministic walkthrough” toward “credible kernel + convincing governed workflow.”
+
+Build out:
+- richer fake WORK data
+- richer fake PERSONAL / REDLINE data
+- multiple fake tenants / containers
+- realistic cross-domain packs (construction, legal, medical, finance)
+- governed question flows that demonstrate useful retrieval, REDLINE exclusion, consent denial/recovery, Safe-Stop entry/persistence/recovery, container isolation, and offline-LLM answer generation from scoped data
+
+### 4. Additional hardening depth
 Priority: high
 
 Next proof targets:
-- `trace_verify.py` corrupted `system_state` and malformed JSON/report edges
-- `trace_export.py` summary integrity under filters and live/cold parity checks
-- `seal.py` further ceremony edge density and history invariants
+- `trace_verify.py` deeper malformed-state and stats/report branches
+- `trace_export.py` summary integrity and live/cold parity edge density
+- `seal.py` amendment persistence / multi-review ceremony future branches
 - deployment-boundary assumptions around ingress identity and sovereign actions
-- Pact-bound Genesis file/path handling once the canonical artifact is finalized on the repo surface
+- replay / recovery / restart scenarios over longer chains
 
-### 4. Demo / repo organization cleanup
+### 5. Test-layout maintenance
 Priority: medium
 
-Recommended structure:
-- root: only repo-shaping docs (`README`, `ROADMAP`, `THREAT_MODEL`, `TRUTH_REGISTER`, `CLAIM_DISCIPLINE`, `CONTRIBUTING`, `CHANGELOG`)
-- `pact/`: constitutional text and canonical artifacts
-- `src/`: runtime + support modules, including `reference_pack.py`
-- `examples/`: runnable demo entrypoints (`demo_llm.py`, `demo_suite.py`)
-- `docs/`: generated/support docs
-- `docs/demo/`: demo/reference-pack explanation, walkthrough notes, screenshots later
-
-### 5. Test layout maintenance
-Priority: medium
-
-Keep a single top-level acceptance surface for now.
-Internal cleanup is still worthwhile:
-- helper factories for temp DB/runtime setup
-- fewer repeated cleanup blocks
-- grouped registration of late-pass tests
-- stale count comments removed when touched
+Keep `tests/test_all.py` as the top-level acceptance surface for now. Internal cleanup only:
+- shared fixture/helper factories
+- less repeated temp-db setup
+- grouped registration of major sections
+- preserve the custom summary line and direct-run usability
 
 ### 6. Deployment-wrapper hardening
 Priority: medium
@@ -184,7 +164,7 @@ Phase F remains focused on:
 - async wrapper discipline
 - context propagation guarantees across wrapper code
 - deployment-layer identity verification for sovereign actions
-- eliminating trust gaps between single-process assumptions and future wrapper/API surfaces
+- elimination of trust gaps between single-process assumptions and future wrapper/API surfaces
 
 ### 7. Scale / adversarial hardening
 Priority: medium
@@ -195,6 +175,7 @@ Phase G should focus on:
 - more exhaustive concurrency probes
 - explicit migration discipline for future `CHAIN_HASH_VERSION` bumps
 - longer-lived replay / recovery / restart scenarios
+- homoglyph/confusables resistance in meaning normalization
 
 ### 8. External trust anchoring
 Priority: lower
@@ -207,53 +188,31 @@ Phase H remains future work:
 
 ---
 
-## Threat Notes to Carry Forward
-
-These are not all fully absorbed into downstream docs yet, but they should remain visible here:
-
+## Threat notes to carry forward
+These may not all be fully absorbed into downstream docs yet, but they must remain visible here:
 - the ingress boundary is still architectural, not cryptographic
-- offline assistant usefulness still lags behind kernel integrity
-- wrapper / API maturity lags behind single-process kernel maturity
-- doc-surface drift is itself a trust risk and must be treated as such
+- offline assistant usefulness still trails kernel integrity
+- wrapper/API maturity still lags single-process kernel maturity
+- doc-surface drift is itself a trust risk
 - module-count language must stay tied to the `src/` rule only
-- demo quality should not outrun governance integrity
-- a stale public README can currently understate and misdescribe the real code state
+- demo quality must not outrun governance integrity
+- meaning normalization is strong against whitespace/control-char/NFKC bypasses but not yet full confusables-table protection
 
 ---
 
-## Future Watchlist / Scout Items
-
-Keep emerging ideas here before they become committed work:
-- Pact artifact signing / hash publication workflow
-- a dedicated `demo_status()` / operator narrative surface in CLI
-- container-scoped export walkthroughs in the demo suite
-- stronger confusables / homoglyph resistance in RUNE normalization
-- mixed historical `CHAIN_HASH_VERSION` verification once migration is real
+## Future watchlist / scout items
+Small section for issues or improvements worth tracking before they become active work:
+- Pact/Genesis path and hash should remain bound to the real Section 0 artifact, not demo placeholders
+- if the demo world grows substantially, consider a serialized seed format in `docs/demo/` or `examples/fixtures/`
+- if the test runner gets materially larger, add internal registries/helpers before considering a physical split
+- if a wrapper/API lands, promote ingress posture messaging into explicit operator warnings and deployment docs
 
 ---
 
-## Downstream Docs Still Owed Sync Later
+## Non-goals for this release
+Do not bend v0.1.0 into claims it cannot honestly support. The point is to be real, governable, provable, and increasingly demoable without lying about maturity.
 
-These should be updated after hardening/demo work when convenient, but ROADMAP stays current first:
-- `README.md`
-- `TRUTH_REGISTER.md`
-- `CLAIM_DISCIPLINE.md`
-- `CONTRIBUTING.md`
-- `CHANGELOG.md`
-- `THREAT_MODEL.md`
-- `docs/demo/README.md`
-- `docs/demo/reference_pack.md`
-
----
-
-## Non-Goals for This Release
-
-Do not bend v0.1.0 into claims it cannot honestly support. The point of the release is not to sound complete. The point is to be real, governable, provable, and increasingly demoable without lying about maturity.
-
----
-
-## Final Positioning Rule
-
+## Final positioning rule
 Present RSS v0.1.0 as:
 - real software
 - an honest alpha/MVP
