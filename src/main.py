@@ -27,6 +27,7 @@ RSS v0.1.0 — CLI Entry Point
 Usage:
   python main.py test              Run test suite
   python main.py demo              Interactive governed AI chat
+  python main.py demo-suite        Deterministic governed walkthrough
   python main.py status            Show system status
   python main.py add-term          Add a sealed term
   python main.py add-synonym       Add a synonym for a sealed term
@@ -41,7 +42,7 @@ from config import RSSConfig, RSS_VERSION
 from runtime import bootstrap
 from meaning_law import Term
 from trace_export import export_trace_json, export_trace_text, export_from_db
-from reference_pack import load_reference_pack
+from reference_pack import load_reference_pack, seed_demo_world, DEMO_CONTAINERS, DEMO_QUESTIONS
 
 
 def run_tests(rss):
@@ -103,6 +104,31 @@ def run_demo(rss):
         else:
             response = result.get("llm_response", "No response available.")
             print(f"RSS: {response}\n")
+
+
+def run_demo_suite(rss):
+    """Deterministic governed walkthrough."""
+    seeded = seed_demo_world(rss)
+    print(f"  Demo world: {seeded['global_inserted']} global rows, {seeded['created']} containers created, {seeded['entries_inserted']} container rows inserted")
+    print(f"  Ingress posture: {rss.ingress_posture_note()}")
+
+    print("\n  [Global workflow]")
+    for text in DEMO_QUESTIONS:
+        result = rss.process_request(text, use_llm=True)
+        answer = result.get("llm_response", result.get("error", "NO_RESPONSE"))
+        print(f"    Q: {text}")
+        print(f"    A: {answer}")
+
+    print("\n  [Container workflows]")
+    from tecton import ContainerRequest
+    for spec in DEMO_CONTAINERS:
+        cid = seeded["containers"][spec["label"]]
+        print(f"\n    Container: {spec['label']} ({cid})")
+        for text in spec["questions"]:
+            result = rss.tecton.process_request(ContainerRequest(cid, "ᚱ", {"text": text}), rss).result
+            answer = result.get("llm_response", result.get("error", "NO_RESPONSE"))
+            print(f"      Q: {text}")
+            print(f"      A: {answer}")
 
 
 def show_status(rss):
@@ -340,7 +366,7 @@ if __name__ == "__main__":
     extra_args = sys.argv[2:] if len(sys.argv) > 2 else []
 
     # Use restore=True for commands that need persisted state
-    restore = cmd in ("demo", "status", "list-terms", "list-hub", "add-term", "add-entry", "add-synonym", "remove-synonym", "disallow", "export-trace", "clear-safe-stop")
+    restore = cmd in ("demo", "demo-suite", "status", "list-terms", "list-hub", "add-term", "add-entry", "add-synonym", "remove-synonym", "disallow", "export-trace", "clear-safe-stop")
     rss = bootstrap(config, restore=restore)
 
     print(f"\n  RSS v{RSS_VERSION} booted — AI that waits.\n")
@@ -351,6 +377,8 @@ if __name__ == "__main__":
         sys.exit(0 if success else 1)
     elif cmd == "demo":
         run_demo(rss)
+    elif cmd == "demo-suite":
+        run_demo_suite(rss)
     elif cmd == "status":
         show_status(rss)
     elif cmd == "add-term":
@@ -379,6 +407,6 @@ if __name__ == "__main__":
             print("  System is not in Safe-Stop.")
     else:
         print(f"  Unknown command: {cmd}")
-        print("  Commands: test | demo | status | add-term | add-synonym | remove-synonym | disallow | add-entry | list-terms | list-hub | export-trace | clear-safe-stop")
+        print("  Commands: test | demo | demo-suite | status | add-term | add-synonym | remove-synonym | disallow | add-entry | list-terms | list-hub | export-trace | clear-safe-stop")
 
     rss.persistence.close()

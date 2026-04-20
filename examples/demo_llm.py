@@ -1,30 +1,11 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: LLM Demonstration Harness
-# Copyright (c) 2025-2026 Christian Robert Rose
-#
-# DUAL-LICENSE NOTICE:
-# This software is released under a Dual-License model.
-#
-# 1. GNU Affero General Public License v3.0 (AGPLv3)
-#    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
-#
-# 2. Commercial / Contractor License Exception
-#    If you wish to use this software in a closed-source, proprietary, or
-#    commercial environment (including SaaS or network-accessible deployments)
-#    without adhering to the AGPLv3 open-source requirements, you must obtain
-#    a separate Contractor License from the author.
-#
-# Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
-"""
-RSS v0.1.0 — LLM Demo
-Real governed AI calls with neutral reference data.
+"""RSS v0.1.0 — Governed demo walkthrough.
+
+Run with:
+  python examples/demo_llm.py
 """
 import os
 import sys
@@ -33,42 +14,65 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 from runtime import bootstrap
-from reference_pack import load_reference_pack
+from tecton import ContainerRequest
+from reference_pack import seed_demo_world, DEMO_CONTAINERS, DEMO_QUESTIONS
+
+
+def _print_answer(prefix: str, result: dict):
+    if "error" in result:
+        print(f"{prefix}[BLOCKED] {result['error']}")
+    else:
+        print(f"{prefix}{result.get('llm_response', 'No response')}")
+
 
 def run():
     rss = bootstrap()
+    seeded = seed_demo_world(rss)
 
-    inserted = load_reference_pack(rss)
-
-    print("=" * 60)
-    print("RSS v0.1.0 — Governed LLM Demo")
-    print("=" * 60)
-    print(f"WORK entries loaded: {rss.hubs.hub_stats()['WORK']}")
-    print(f"Reference pack inserted this run: {inserted}")
-    print(f"PERSONAL entries (REDLINE): {rss.hubs.hub_stats()['PERSONAL']}")
+    print("=" * 72)
+    print("RSS v0.1.0 — Governed Demo Walkthrough")
+    print("=" * 72)
+    print(f"Global pack inserted this run: {seeded['global_inserted']}")
+    print(f"Containers created this run: {seeded['created']}")
+    print(f"Container entries inserted: {seeded['entries_inserted']}")
     print(f"LLM available: {rss.llm.is_available()}")
-    print("=" * 60)
+    print(f"Ingress posture: {rss.ingress_posture_note()}")
+    print("=" * 72)
 
-    tests = [
-        "What is the current quote for?",
-        "Is there an open RFI?",
-        "What happened on the daily log?",
-        "What are my private notes?",
-        "What submittals are pending?",
-    ]
-
-    for question in tests:
-        print(f"\nQ: {question}")
+    print("
+[GLOBAL WORKFLOW]")
+    for question in DEMO_QUESTIONS:
+        print(f"Q: {question}")
         result = rss.process_request(question, use_llm=True)
-        if "error" in result:
-            print(f"A: [BLOCKED] {result['error']}")
-        else:
-            print(f"A: {result.get('llm_response', 'No response')}")
+        _print_answer("A: ", result)
+        print()
 
-    print(f"\n{'=' * 60}")
+    print("[CONTAINER WORKFLOWS]")
+    for spec in DEMO_CONTAINERS:
+        cid = seeded['containers'][spec['label']]
+        print(f"
+Container: {spec['label']} ({cid})")
+        for question in spec['questions']:
+            print(f"Q: {question}")
+            result = rss.tecton.process_request(
+                ContainerRequest(cid, "ᚱ", {"text": question}), rss
+            ).result
+            _print_answer("A: ", result)
+            print()
+
+    print("[ISOLATION CHECK]")
+    legal_cid = seeded['containers']['Northwind Legal']
+    result = rss.tecton.process_request(
+        ContainerRequest(legal_cid, "ᚱ", {"text": "What does the triage memo say?"}), rss
+    ).result
+    _print_answer("Northwind asking about Harbor Medical: ", result)
+
+    print(f"
+{'=' * 72}")
     print(f"TRACE events: {rss.persistence.event_count()}")
     print(f"Chain valid: {rss.trace.verify_chain()}")
     rss.persistence.close()
+
 
 if __name__ == "__main__":
     run()

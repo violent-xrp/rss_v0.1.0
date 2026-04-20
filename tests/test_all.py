@@ -81,7 +81,7 @@ from config import RSSConfig, RSS_VERSION
 from persistence import Persistence
 from llm_adapter import LLMAdapter
 from trace_export import export_trace_json, export_trace_text, export_from_db, EVENT_CODES, categorize_event, build_event_summary, _sanitize_artifact_id, REDLINE_REDACTED
-from reference_pack import load_reference_pack, REFERENCE_PACK
+from reference_pack import load_reference_pack, load_demo_containers, seed_demo_world, REFERENCE_PACK, DEMO_CONTAINERS
 
 # Layer 6
 from runtime import Runtime, bootstrap, DEFAULT_TERMS
@@ -5341,7 +5341,7 @@ def test_phase_e_regression_battery():
             demo_src = f.read()
         check("rss.hubs.add_entry(" not in demo_src,
               "E-2: demo_llm.py no longer uses bypass rss.hubs.add_entry()")
-        check(("rss.save_hub_entry(" in demo_src) or ("load_reference_pack(rss)" in demo_src),
+        check(("rss.save_hub_entry(" in demo_src) or ("load_reference_pack(rss)" in demo_src) or ("seed_demo_world(rss)" in demo_src),
               "E-2: demo_llm.py uses a governed shared-reference loading path")
 
     # E-3: Container restore is part of default boot path
@@ -6659,6 +6659,38 @@ def test_genesis_binding_and_offline_fallback():
             os.unlink(s0_path)
         _cleanup_db(path)
 
+
+def test_demo_world_seed_and_container_isolation():
+    """Demo hardening: shared demo world is idempotent and container-scoped."""
+    section("Demo World Seed + Isolation")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+        seeded = seed_demo_world(rss)
+        check(seeded["global_inserted"] == len(REFERENCE_PACK), "seed_demo_world inserts the global reference pack once")
+        check(len(seeded["containers"]) == len(DEMO_CONTAINERS), "seed_demo_world provisions every configured demo container")
+        seeded_again = seed_demo_world(rss)
+        check(seeded_again["global_inserted"] == 0, "seed_demo_world is idempotent on global data")
+        check(seeded_again["entries_inserted"] == 0, "seed_demo_world is idempotent on container data")
+
+        northwind_id = seeded["containers"]["Northwind Legal"]
+        harbor_id = seeded["containers"]["Harbor Medical"]
+        northwind_work = rss.tecton.get_container_hubs(northwind_id, "WORK")
+        harbor_work = rss.tecton.get_container_hubs(harbor_id, "WORK")
+        check(any("Deposition" in e.content for e in northwind_work), "Northwind demo container contains its legal work rows")
+        check(any("Triage memo" in e.content for e in harbor_work), "Harbor demo container contains its medical work rows")
+        check(not any("Triage memo" in e.content for e in northwind_work), "Northwind does not inherit Harbor work rows")
+
+        rss.llm.is_available = lambda: False
+        response = rss.process_request("What happened on the daily log?", use_llm=True).get("llm_response", "")
+        check("Daily log" in response or "daily log" in response.lower(), "offline governed fallback can answer from seeded global demo data")
+        rss.persistence.close()
+    finally:
+        _cleanup_db(path)
+
 if __name__ == "__main__":
     safe_run(test_constitution)
     safe_run(test_audit_log)
@@ -6803,6 +6835,7 @@ if __name__ == "__main__":
     safe_run(test_trace_export_additional_proof)
     safe_run(test_seal_ceremony_additional_proof)
     safe_run(test_genesis_binding_and_offline_fallback)
+    safe_run(test_demo_world_seed_and_container_isolation)
 
     print(f"\n{'='*60}")
     print(f"RSS v0.1.0 — {_funcs} test functions, {_pass} assertions passed, {_fail} failed", end="")
