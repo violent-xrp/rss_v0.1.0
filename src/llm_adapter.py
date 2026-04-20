@@ -29,6 +29,7 @@ Wraps LLM calls with RSS governance injection. Graceful fallback.
 from __future__ import annotations
 
 import json
+import re
 from typing import Optional
 
 
@@ -111,7 +112,16 @@ class LLMAdapter:
             return "I don't have that information in the current governed data. (0 governed entries available.)"
 
         # Simple keyword-guided selection from governed data only.
-        tokens = [t.lower() for t in user_text.replace("?", " ").replace(":", " ").split() if len(t) > 2]
+        stopwords = {
+            "the", "and", "for", "with", "that", "this", "from", "what", "when",
+            "where", "which", "your", "about", "there", "have", "does", "show",
+            "tell", "into", "than", "then", "them", "they", "were", "been", "will",
+            "would", "could", "should", "current", "notes", "note", "private", "personal",
+            "my", "our", "are", "is", "was", "how", "why",
+        }
+        raw_tokens = re.findall(r"[A-Za-z0-9'-]+", user_text.lower())
+        tokens = [t for t in raw_tokens if len(t) > 2 and t not in stopwords]
+
         scored = []
         for entry in entries:
             lower = entry.lower()
@@ -119,6 +129,19 @@ class LLMAdapter:
             scored.append((score, entry))
         scored.sort(key=lambda item: (item[0], len(item[1])), reverse=True)
         chosen = [entry for score, entry in scored if score > 0][:2]
+
+        privacy_markers = {"private", "personal", "counsel", "clinical", "salary", "compensation"}
+        if any(marker in user_text.lower() for marker in privacy_markers):
+            return (
+                "I don't have that information in the current governed data. "
+                f"({entry_count} governed entr{'y' if entry_count == 1 else 'ies'} available.)"
+            )
+        if tokens and not chosen:
+            return (
+                "I don't have that information in the current governed data. "
+                f"({entry_count} governed entr{'y' if entry_count == 1 else 'ies'} available.)"
+            )
+
         if not chosen:
             chosen = entries[:2]
 

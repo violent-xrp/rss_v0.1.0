@@ -20,24 +20,6 @@ RSS v0.1.0 should **not** be presented as:
 - distributed or enterprise-complete
 - a polished end-user application
 
-## Repository layout
-
-Keep the repo organized around user intent:
-
-- `README.md`, `ROADMAP.md`, `THREAT_MODEL.md`, `TRUTH_REGISTER.md`, `CLAIM_DISCIPLINE.md`, `CONTRIBUTING.md`, `CHANGELOG.md` — high-signal root docs
-- `pact/` — canonical constitutional text
-- `src/` — runtime and support modules
-- `tests/` — acceptance runner and test helpers
-- `examples/` — runnable demos and walkthroughs
-- `docs/` — supporting docs, indexes, demo/operator notes
-
-Recommended current homes:
-- `src/reference_pack.py`
-- `examples/demo_llm.py`
-- `examples/demo_suite.py`
-- `docs/demo/README.md`
-- `docs/demo/reference_pack.md`
-
 ## Quick start
 
 ### Requirements
@@ -123,8 +105,6 @@ The demo and offline fallback are intentionally governed, not theatrical. The se
 - tenant/container isolation
 - consent and Safe-Stop behavior
 - deterministic answers when no live LLM is available
-
-See `docs/demo/README.md` and `docs/demo/reference_pack.md` for the current operator/demo surface.
 
 ## Licensing
 

@@ -39,8 +39,7 @@ def run():
     print(f"Ingress posture: {rss.ingress_posture_note()}")
     print("=" * 72)
 
-    print("
-[GLOBAL WORKFLOW]")
+    print("\n[GLOBAL WORKFLOW]")
     for question in DEMO_QUESTIONS:
         print(f"Q: {question}")
         result = rss.process_request(question, use_llm=True)
@@ -50,12 +49,11 @@ def run():
     print("[CONTAINER WORKFLOWS]")
     for spec in DEMO_CONTAINERS:
         cid = seeded['containers'][spec['label']]
-        print(f"
-Container: {spec['label']} ({cid})")
+        print(f"\nContainer: {spec['label']} ({cid})")
         for question in spec['questions']:
             print(f"Q: {question}")
             result = rss.tecton.process_request(
-                ContainerRequest(cid, "ᚱ", {"text": question}), rss
+                ContainerRequest(cid, "ᚱ", {"text": question, "use_llm": True}), rss
             ).result
             _print_answer("A: ", result)
             print()
@@ -63,12 +61,11 @@ Container: {spec['label']} ({cid})")
     print("[ISOLATION CHECK]")
     legal_cid = seeded['containers']['Northwind Legal']
     result = rss.tecton.process_request(
-        ContainerRequest(legal_cid, "ᚱ", {"text": "What does the triage memo say?"}), rss
+        ContainerRequest(legal_cid, "ᚱ", {"text": "What does the triage memo say?", "use_llm": True}), rss
     ).result
     _print_answer("Northwind asking about Harbor Medical: ", result)
 
-    print(f"
-{'=' * 72}")
+    print(f"\n{'=' * 72}")
     print(f"TRACE events: {rss.persistence.event_count()}")
     print(f"Chain valid: {rss.trace.verify_chain()}")
     rss.persistence.close()
