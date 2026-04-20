@@ -1,7 +1,7 @@
 # RSS v0.1.0 — Roadmap
 
 **Release target:** v0.1.0
-**Current code state:** 109 test functions / 822 assertions / 0 failures / 20 src modules
+**Current code state:** 111 test functions / 850 assertions / 0 failures / 20 src modules
 **Current posture:** core hardening complete for public alpha/MVP; pre-public adversarial pass landed; final release-surface sync in progress
 
 > **Terminology note.** "Phase" denotes a body of engineering work (A → H). "Tier" is reserved for the user-access model — T-0 is the sovereign; future Tier 1, Tier 2, etc. describe access strata, not work strata.
@@ -47,11 +47,14 @@ Deployment-layer hardening is scheduled for Phase F through Phase H.
 ## CURRENT RELEASE STATE
 
 ### Code
-- 109 test functions / 822 assertions / 0 failures
-- 20 modules in `src/`
+- 111 test functions / 850 assertions / 0 failures
+- **85.3% coverage** across 20 kernel modules (2,307 statements, 340 missed; coverage run via `run_coverage.py`)
+- **94 distinct Pact sections** referenced across 111 claim tags; traceability generated at `docs/claim_matrix.md`
 - Core hardening through the pre-public adversarial pass is complete
 - Adversarial, scenario, domain-pack, and release-surface hardening are part of the green baseline
 - v0.1.0 chain-hash envelope (`CHAIN_HASH_VERSION = 1`) is live; migration path reserved
+- Container TRACE filter boundary-aware across all 4 implementations (§5.8.3 F-1)
+- Safe-Stop recovery ceremony locked as narrative regression guard (Probe G)
 
 ### Constitution
 - Sections 0–7 all exist in v0.1.0 form
@@ -181,10 +184,10 @@ Post-public hardening work, organized by priority. Each item is session-sized. I
 
 ### Priority A — finish within the first week of public release
 
-- [ ] **Container TRACE filter prefix-boundary fix.** `events_by_container` uses `artifact_id.startswith(container_id)`. Fix to an exact match on the `:` separator to close the theoretical prefix-collision hole. Three-line code change, one test to lock. (§5.8.3)
-- [ ] **Safe-Stop recovery ceremony test.** Narrative test: enter Safe-Stop → restart → prove blocked → T-0 clears → prove resumed → prove audit tells the whole story. Pieces are tested individually; the story isn't. (§0.5, §6.11.3)
-- [ ] **Claim-tag docstrings on every test function.** Add `# CLAIM: §x.y.z …` to each test. Grep-friendly; becomes the input to the Phase G claim-to-test matrix. (§CLAIM_DISCIPLINE)
-- [ ] **Coverage report.** Add `requirements-dev.txt` with `coverage`, one-line run script, cite the number in README. (§CLAIM_DISCIPLINE)
+- [x] **Container TRACE filter prefix-boundary fix.** All 4 filter implementations now require exact match on the `:` separator. Probe F locks the regression. — 04.19 session
+- [x] **Safe-Stop recovery ceremony test.** Probe G narrates the full operator-triggered flow across restart and verifies the audit trail and chain integrity through the entire ceremony. — 04.19 session
+- [x] **Claim-tag docstrings on every test function.** All 111 tests now carry a `# CLAIM: §x.y.z — description` tag. `build_claim_matrix.py` generates `docs/claim_matrix.md` mapping 94 distinct Pact sections to the tests that prove them. — 04.19 session
+- [x] **Coverage report.** `requirements-dev.txt` + `run_coverage.py` produce a coverage run. Current baseline: **85.3%** across the 20 kernel modules (2,307 statements, 340 missed). Module range: 53.2% (trace_verify defensive branches) to 100% (config, state_machine). — 04.19 session
 
 ### Priority B — finish within the first month
 
@@ -224,6 +227,9 @@ Each is one test function, ~30 minutes. Land them as Saturday-morning work:
 - [ ] `THREAT_MODEL.md` — add §2.7 clarification: duplicate-summary events no longer hash-collide under v1 envelope; link-break detection now covers insertion / deletion / reordering within the envelope's scope — 04.17 session
 - [ ] `CLAIM_DISCIPLINE.md` — update the "what RSS proves today" phrasing to match 109 / 822 baseline and the three new §-clauses — 04.17 session
 - [ ] `README.md` — pipeline diagram added, fail-closed examples added; confirm test-count and module-count copy matches elsewhere — 04.18 session
+- [ ] `TRUTH_REGISTER.md` / `THREAT_MODEL.md` — add §5.8.3 F-1 tightening: container TRACE filter now requires exact boundary match (equal to container_id or beginning with "container_id:") across all four implementations; closes theoretical prefix-collision hole; Probe F and Probe G added as regression guards — 04.19 session
+- [ ] `README.md` / `CLAIM_DISCIPLINE.md` / `TRUTH_REGISTER.md` — cite 85.3% coverage baseline across 20 kernel modules; link to `run_coverage.py` — 04.19 session
+- [ ] `README.md` / `CLAIM_DISCIPLINE.md` / `CONTRIBUTING.md` — cite `docs/claim_matrix.md` as authoritative Pact-to-test traceability; mention `build_claim_matrix.py` as the regeneration script; document the `# CLAIM:` tag protocol for future tests — 04.19 session
 - [ ] Pact §2.1.2 — text should describe input normalization as a Pact-level clause, not just a code behavior. Requires S7 ceremony. — pending
 - [ ] Pact §4.7.6 — text should describe REDLINE query-surface defaults as a Pact-level clause. Requires S7 ceremony. — pending
 - [ ] Pact §6.3.6 — text should describe full-envelope hashing as a Pact-level clause. Requires S7 ceremony. — pending
@@ -293,7 +299,11 @@ Each is one test function, ~30 minutes. Land them as Saturday-morning work:
 | Core kernel hardening through Phase E | complete |
 | 649-assertion historical baseline | complete |
 | 790-assertion historical baseline | complete |
-| 822-assertion current baseline | complete |
+| 822-assertion historical baseline | complete |
+| 850-assertion current baseline | complete |
+| Phase F-1 Priority A hardening | complete |
+| 85.3% kernel coverage baseline | complete |
+| 94-section claim matrix | complete |
 | v0.1.0 constitutional scrub (S0–S7) | complete |
 | Phase F-0 pre-public adversarial pass | complete |
 | Immediate Pre-Public Fixes | in progress |
@@ -312,6 +322,10 @@ Each is one test function, ~30 minutes. Land them as Saturday-morning work:
 - `THREAT_MODEL.md` — threat posture, in-scope / out-of-scope, residual risks
 - `TRUTH_REGISTER.md` — what RSS does, is designed to do, and does not yet do
 - `CLAIM_DISCIPLINE.md` — proof tiers, positioning language, claim rules
+- `docs/claim_matrix.md` — auto-generated Pact-section-to-test traceability
+- `build_claim_matrix.py` — regenerates `docs/claim_matrix.md` from `# CLAIM:` tags
+- `run_coverage.py` — runs the suite under coverage, reports by module
+- `requirements-dev.txt` — developer-only dependencies (coverage)
 - `LICENSE_pact.md` — Pact licensing (CC BY-ND 4.0)
 - `COMMERCIAL_LICENSE.md` — commercial licensing posture for the code
 - `AGPLv3.md` — full code license text

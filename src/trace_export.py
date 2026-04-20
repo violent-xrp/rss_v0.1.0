@@ -210,9 +210,19 @@ def export_trace_json(trace: AuditLog, path: str, container_id: Optional[str] = 
     """
     events = trace.all_events()
     if container_id:
-        # §5.8.3 — Prefix match (startswith). Unified across audit_log.events_by_container,
-        # trace_export, and trace_verify in Phase A.1.
-        events = [e for e in events if (e.artifact_id or "").startswith(container_id)]
+        # §5.8.3 — Exact-boundary match on the ":" separator in artifact_ids.
+        # Matches artifact_ids equal to container_id OR beginning with
+        # "{container_id}:". Phase F-1: tightened from naive startswith to
+        # close the prefix-collision hole (e.g., TECTON-abc124 no longer
+        # matches a filter on TECTON-abc123). Unified across
+        # audit_log.events_by_container, tecton.events_by_container, and
+        # trace_verify._load_events.
+        prefix = container_id + ":"
+        events = [
+            e for e in events
+            if (e.artifact_id or "") == container_id
+            or (e.artifact_id or "").startswith(prefix)
+        ]
 
     # §6.10.6 — Collect REDLINE entry IDs for sanitization
     redline_ids = _collect_redline_ids_from_hubs(hub_topology)

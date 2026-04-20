@@ -149,22 +149,34 @@ def _assert_trace_schema(conn: sqlite3.Connection) -> None:
 def _load_events(conn: sqlite3.Connection,
                  container_filter: Optional[str] = None) -> List[Dict[str, Any]]:
     """Load all trace events in insertion order (id ASC).
-    Optionally filter by container_id PREFIX in artifact_id (§5.8.3, §6.10.5).
+    Optionally filter by container_id in artifact_id (§5.8.3, §6.10.5).
 
     Phase A.1: Unified with audit_log.events_by_container and trace_export
-    to use prefix matching (startswith / LIKE 'id%'). Previously this was
-    substring matching, which caused inconsistent semantics across the
-    three filter implementations.
+    to use prefix matching. Previously this was substring matching, which
+    caused inconsistent semantics across the three filter implementations.
+
+    Phase F-1: Tightened to exact-boundary match on the ":" separator.
+    An artifact_id matches the filter if it equals container_id or begins
+    with "{container_id}:". Closes the prefix-collision hole where two
+    container_ids share a common prefix (e.g., TECTON-abc124 no longer
+    matches a filter on TECTON-abc123).
 
     Returns a list of dicts rather than a generator so the caller can count,
     verify, and iterate multiple times without re-querying."""
     try:
         if container_filter:
+            # Two SQL conditions, OR'd: exact match or prefix + ":"
+            # The LIKE pattern uses "%" only as a suffix, not as an embedded
+            # wildcard, so this remains a prefix-efficient query on indexed
+            # artifact_id columns.
+            like_prefix = f"{container_filter}:%"
             cur = conn.execute(
                 "SELECT id, timestamp, event_code, authority, artifact_id, "
                 "content_hash, byte_length, parent_hash "
-                "FROM trace_events WHERE artifact_id LIKE ? ORDER BY id ASC",
-                (f"{container_filter}%",),  # prefix, not substring
+                "FROM trace_events "
+                "WHERE artifact_id = ? OR artifact_id LIKE ? "
+                "ORDER BY id ASC",
+                (container_filter, like_prefix),
             )
         else:
             cur = conn.execute(

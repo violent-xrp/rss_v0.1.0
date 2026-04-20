@@ -207,9 +207,21 @@ class AuditLog:
         return [e for e in self._events if e.event_code == event_code]
 
     def events_by_container(self, container_id: str) -> List[TraceEvent]:
-        """§5.8.3 — Filter events by container_id prefix in artifact_id.
-        Returns all events whose artifact_id starts with the container_id."""
-        return [e for e in self._events if e.artifact_id.startswith(container_id)]
+        """§5.8.3 — Filter events by container_id in artifact_id.
+
+        Matches artifact_ids equal to container_id OR beginning with
+        "{container_id}:" (the documented separator in runtime/tecton task_ids).
+        This closes the theoretical prefix-collision hole where two
+        container_ids share a common prefix — e.g., an artifact_id belonging
+        to TECTON-abc124 would have matched a filter on TECTON-abc123 under
+        naive startswith. Exact boundary enforced via the ":" separator.
+        """
+        if not container_id:
+            return []
+        prefix = container_id + ":"
+        return [e for e in self._events
+                if e.artifact_id == container_id
+                or e.artifact_id.startswith(prefix)]
 
     def last_event(self) -> Optional[TraceEvent]:
         return self._events[-1] if self._events else None

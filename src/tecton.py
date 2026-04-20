@@ -631,13 +631,21 @@ class Tecton:
     # ── TRACE Filtering (§5.8.3) ──
 
     def events_by_container(self, container_id: str) -> list:
-        """§5.8.3 — Filter TRACE events by container_id prefix.
-        Phase D-0: Queries the unified runtime TRACE when attached, otherwise
-        falls back to the local log. Returns events whose artifact_id starts
-        with the container_id."""
+        """§5.8.3 — Filter TRACE events by container_id in artifact_id.
+
+        Phase D-0: queries the unified runtime TRACE when attached, otherwise
+        falls back to the local log. Phase F-1: exact-boundary match on the
+        ":" separator in artifact_ids closes the prefix-collision hole.
+        Matches artifact_ids equal to container_id OR beginning with
+        "{container_id}:".
+        """
+        if not container_id:
+            return []
         source = self._runtime.trace if self._runtime is not None else self._trace
+        prefix = container_id + ":"
         return [e for e in source.all_events()
-                if e.artifact_id.startswith(container_id)]
+                if e.artifact_id == container_id
+                or e.artifact_id.startswith(prefix)]
 
     # ── Persistence (§5.2.1) ──
 

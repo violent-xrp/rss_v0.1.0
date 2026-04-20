@@ -113,6 +113,7 @@ def safe_run(test_func):
 # LAYER 1: Constitution + TRACE
 # ============================================================
 def test_constitution():
+    # CLAIM: §0.2 — constitution hashing, verify_integrity, safe_stop
     section("Layer 1: Constitution")
 
     h = compute_hash("test")
@@ -136,6 +137,7 @@ def test_constitution():
 
 
 def test_audit_log():
+    # CLAIM: §6.3 — TRACE envelope, chain linkage, event filtering
     section("Layer 1: TRACE (Audit Log)")
 
     log = AuditLog()
@@ -164,6 +166,7 @@ def test_audit_log():
 # LAYER 2: WARD + SCOPE
 # ============================================================
 def test_ward():
+    # CLAIM: §1.2, §1.7 — WARD seat registration, routing, hooks
     section("Layer 2: WARD")
 
     ward = Ward()
@@ -193,6 +196,7 @@ def test_ward():
 
 
 def test_scope():
+    # CLAIM: §1.3, §4.5.3 — SCOPE envelope creation and boundary enforcement
     section("Layer 2: SCOPE")
 
     scope = Scope()
@@ -218,6 +222,7 @@ def test_scope():
 # LAYER 3: Hubs + PAV
 # ============================================================
 def test_hubs():
+    # CLAIM: §4.3 — HubTopology basics: add, update, list, search, remove
     section("Layer 3: Hub Topology")
 
     hubs = HubTopology()
@@ -244,6 +249,7 @@ def test_hubs():
 
 
 def test_pav():
+    # CLAIM: §4.2.3, §4.6 — PAV builder — sovereign guard, REDLINE exclusion
     section("Layer 3: PAV Builder")
 
     hubs = HubTopology()
@@ -269,6 +275,7 @@ def test_pav():
 # LAYER 4: Meaning + Execution
 # ============================================================
 def test_meaning_law():
+    # CLAIM: §2.1, §2.4 — RUNE term sealing, synonym binding, disallowed
     section("Layer 4: RUNE (Meaning Law)")
 
     rune = MeaningLaw()
@@ -302,6 +309,7 @@ def test_meaning_law():
 
 
 def test_state_machine():
+    # CLAIM: §3.2 — execution state transitions
     section("Layer 4: Execution Law")
 
     sm = ExecutionStateMachine()
@@ -329,6 +337,7 @@ def test_state_machine():
 # LAYER 5: SCRIBE + SEAL
 # ============================================================
 def test_scribe():
+    # CLAIM: §1.6 — SCRIBE drafting and versioning
     section("Layer 5: SCRIBE")
 
     scribe = Scribe()
@@ -350,6 +359,7 @@ def test_scribe():
 
 
 def test_seal():
+    # CLAIM: §1.8 — SEAL sovereign lock/verify
     section("Layer 5: SEAL")
 
     seal = Seal()
@@ -377,6 +387,7 @@ def test_seal():
 # OATH + CYCLE
 # ============================================================
 def test_oath():
+    # CLAIM: §1.4 — OATH consent grant, revoke, check
     section("OATH (Consent)")
 
     oath = Oath()
@@ -447,6 +458,7 @@ def test_oath():
 
 
 def test_cycle():
+    # CLAIM: §1.9 — CYCLE quantitative cadence enforcement
     section("CYCLE (Cadence)")
 
     cycle = Cycle()
@@ -463,6 +475,7 @@ def test_cycle():
 # PERSISTENCE (basic)
 # ============================================================
 def test_persistence():
+    # CLAIM: §6.2 — SQLite persistence basic round-trip
     section("Persistence (SQLite)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -497,6 +510,7 @@ def test_persistence():
 # PERSISTENCE ROUND-TRIP (save + restore)
 # ============================================================
 def test_persistence_roundtrip():
+    # CLAIM: §6.2, §6.5 — bootstrap→save→restore integrity
     section("Persistence Round-Trip")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -561,6 +575,7 @@ def test_persistence_roundtrip():
 # VOCABULARY MANAGEMENT (synonyms + disallowed round-trip)
 # ============================================================
 def test_vocabulary_management():
+    # CLAIM: §2.4, §2.4.4 — vocabulary add/update/remove persistence
     section("Vocabulary Management")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -635,6 +650,7 @@ def test_vocabulary_management():
 # TRACE EXPORT
 # ============================================================
 def test_trace_export():
+    # CLAIM: §0.5, §6.10 — TRACE export format and REDLINE sanitization
     section("TRACE Export")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -688,6 +704,7 @@ def test_trace_export():
 # PERSISTENT SAFE-STOP (Pact §0.5)
 # ============================================================
 def test_safe_stop_persistent():
+    # CLAIM: §0.5, §0.5.4, §0.5.2 — Safe-Stop persists across restart
     section("Persistent Safe-Stop (Pact §0.5)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -748,6 +765,7 @@ def test_safe_stop_persistent():
 # BLOCKING GENESIS VERIFICATION (Pact §0.2.1)
 # ============================================================
 def test_genesis_blocking():
+    # CLAIM: §0.2.1 — genesis tamper blocks boot; production_mode enforcement
     section("Blocking Genesis (Pact §0.2.1)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -814,6 +832,7 @@ def test_genesis_blocking():
 # LLM ADAPTER
 # ============================================================
 def test_llm():
+    # CLAIM: §3.7 — LLM adapter contract
     section("LLM Adapter")
 
     adapter = LLMAdapter(RSSConfig())
@@ -828,6 +847,7 @@ def test_llm():
 # LAYER 6: RUNTIME
 # ============================================================
 def test_runtime():
+    # CLAIM: §3.3 — runtime full pipeline happy path and halt semantics
     section("Layer 6: Runtime (full pipeline)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -883,6 +903,7 @@ def test_runtime():
 # LAYER 7: TECTON
 # ============================================================
 def test_tecton():
+    # CLAIM: §0.3, §5.1 — TECTON tenant container basics
     section("Layer 7: TECTON (Tenant Containers)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -947,6 +968,7 @@ def test_tecton():
 # TRACE AS WARD SEAT (Pact §0.3)
 # ============================================================
 def test_trace_seat():
+    # CLAIM: §0.3, §0.7.3 — TRACE as WARD-routed seat
     section("TRACE as WARD Seat (Pact §0.3)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -992,6 +1014,7 @@ def test_trace_seat():
 # PRE-SEAL DRIFT CHECK (Pact §0.7.3)
 # ============================================================
 def test_pre_seal_drift_check():
+    # CLAIM: §0.7.3, §0.8.3 — pre-seal drift guard
     section("Pre-Seal Drift Check (Pact §0.7.3)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -1055,6 +1078,7 @@ def test_pre_seal_drift_check():
 # WRITE-AHEAD GUARANTEE (Pact §0.8.3)
 # ============================================================
 def test_write_ahead_guarantee():
+    # CLAIM: §0.8.3, §6.4.4 — audit write-ahead guarantee
     section("Write-Ahead Guarantee (Pact §0.8.3)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -1109,6 +1133,7 @@ def test_write_ahead_guarantee():
 # SECTION 2: WORD-BOUNDARY MATCHING (§2.1.1)
 # ============================================================
 def test_word_boundary():
+    # CLAIM: §2.1.1 — word-boundary term matching
     section("Word-Boundary Matching (§2.1.1)")
 
     rune = MeaningLaw()
@@ -1150,6 +1175,7 @@ def test_word_boundary():
 # SECTION 2: CLASSIFICATION ORDER (§2.8.1)
 # ============================================================
 def test_classification_order():
+    # CLAIM: §2.8.1 — DISALLOWED takes precedence over SEALED
     section("Classification Order — Disallowed First (§2.8.1)")
 
     rune = MeaningLaw()
@@ -1175,6 +1201,7 @@ def test_classification_order():
 # SECTION 2: ANTI-TROJAN SCANNER (§2.3)
 # ============================================================
 def test_anti_trojan():
+    # CLAIM: §2.3, §2.3.3 — anti-trojan term-definition scanner
     section("Anti-Trojan Scanner (§2.3)")
 
     rune = MeaningLaw()
@@ -1218,6 +1245,7 @@ def test_anti_trojan():
 # SECTION 2: ANTI-TROJAN IN RUNTIME PIPELINE (§2.3 + §2.2)
 # ============================================================
 def test_anti_trojan_runtime():
+    # CLAIM: §2.3, §2.2 — anti-trojan in governed save path
     section("Anti-Trojan in Runtime (§2.3 + §2.2)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -1263,6 +1291,7 @@ def test_anti_trojan_runtime():
 # SECTION 2: SYNONYM REMOVAL (§2.4.4)
 # ============================================================
 def test_synonym_removal():
+    # CLAIM: §2.4.4 — synonym removal cleans memory and DB; no ghost
     section("Synonym Removal (§2.4.4)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -1318,6 +1347,7 @@ def test_synonym_removal():
 # SECTION 2: COMPOUND TERM DETECTION (§2.8.4)
 # ============================================================
 def test_compound_detection():
+    # CLAIM: §2.8.4 — compound term detection with word boundary
     section("Compound Term Detection (§2.8.4)")
 
     rune = MeaningLaw()
@@ -1356,6 +1386,7 @@ def test_compound_detection():
 # SECTION 2: CONTEXTUAL REINJECTION (§2.9)
 # ============================================================
 def test_contextual_reinjection():
+    # CLAIM: §2.9 — sealed term contextual reinjection format
     section("Contextual Reinjection (§2.9)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -1395,6 +1426,7 @@ def test_contextual_reinjection():
 # SECTION 2: REDLINE COUNT SUPPRESSION (§2.10.2)
 # ============================================================
 def test_redline_suppression():
+    # CLAIM: §2.10.2 — REDLINE count suppressed from response, logged to TRACE
     section("REDLINE Count Suppression (§2.10.2)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -1437,6 +1469,7 @@ def test_redline_suppression():
 # SECTION 3: CONFIG-DRIVEN VERB LISTS (§3.1.3)
 # ============================================================
 def test_config_driven_verbs():
+    # CLAIM: §3.1.3 — high-risk verbs driven by config, not hardcoded
     section("Config-Driven Verb Lists (§3.1.3)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -1493,6 +1526,7 @@ def test_config_driven_verbs():
 # SECTION 3: PIPELINE STAGE TRACKING (§3.3.4)
 # ============================================================
 def test_pipeline_stage_tracking():
+    # CLAIM: §3.3.4 — every halt carries stage number and stage_name
     section("Pipeline Stage Tracking (§3.3.4)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -1537,6 +1571,7 @@ def test_pipeline_stage_tracking():
 # SECTION 3: SAFE_STOP_INFLIGHT (§3.4.4)
 # ============================================================
 def test_safe_stop_inflight():
+    # CLAIM: §3.4.4 — SAFE_STOP_INFLIGHT halt semantics
     section("SAFE_STOP_INFLIGHT (§3.4.4)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -1588,6 +1623,7 @@ def test_safe_stop_inflight():
 # SECTION 3: EVENT CODE TAXONOMY (§3.4.5)
 # ============================================================
 def test_event_code_taxonomy():
+    # CLAIM: §3.4.5 — event code uppercase/no-space discipline
     section("Event Code Taxonomy (§3.4.5)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -1631,6 +1667,7 @@ def test_event_code_taxonomy():
 # SECTION 3: CONFIGURABLE LLM TIMEOUT (§3.7.5)
 # ============================================================
 def test_configurable_llm_timeout():
+    # CLAIM: §3.7.5 — LLM timeout configurable, not hardcoded
     section("Configurable LLM Timeout (§3.7.5)")
 
     # Default config has 30s timeout
@@ -1657,6 +1694,7 @@ def test_configurable_llm_timeout():
 # SECTION 3: LLM RESPONSE VALIDATION (§3.7.7)
 # ============================================================
 def test_llm_response_validation():
+    # CLAIM: §3.7.7 — post-LLM scan strips external names and governance artifacts
     section("LLM Response Validation (§3.7.7)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -1710,6 +1748,7 @@ def test_llm_response_validation():
 # SEAL REVIEW ATTESTATION RENAME (§1.5 alignment)
 # ============================================================
 def test_seal_review_attestation():
+    # CLAIM: §1.5 — review_complete attestation replaces council_vote
     section("Seal review_complete Rename (§1.5)")
 
     seal = Seal()
@@ -1730,6 +1769,7 @@ def test_seal_review_attestation():
 # WARD HOOK ENFORCEMENT (§1.7)
 # ============================================================
 def test_ward_hook_enforcement():
+    # CLAIM: §1.7 — WARD hooks cannot mutate protected governance keys
     section("WARD Hook Enforcement (§1.7)")
 
     ward = Ward()
@@ -1804,6 +1844,7 @@ def test_ward_hook_enforcement():
 
 def test_s4_personal_scope_guard():
     """§4.2.3 — PERSONAL hub default SCOPE guard"""
+    # CLAIM: §4.2.3 — PERSONAL hub requires sovereign=True
     section("S4: PERSONAL Hub SCOPE Guard (§4.2.3)")
 
     scope = Scope()
@@ -1830,6 +1871,7 @@ def test_s4_personal_scope_guard():
 
 def test_s4_scope_immutability():
     """§4.5.7 — SCOPE envelope immutability"""
+    # CLAIM: §4.5.7 — SCOPE envelope tuples; frozen dataclass
     section("S4: SCOPE Envelope Immutability (§4.5.7)")
 
     scope = Scope()
@@ -1856,6 +1898,7 @@ def test_s4_scope_immutability():
 
 def test_s4_scope_hub_validation():
     """§4.5.3 — SCOPE hub name validation"""
+    # CLAIM: §4.5.3 — hub name validation in allowed/forbidden
     section("S4: SCOPE Hub Name Validation (§4.5.3)")
 
     scope = Scope()
@@ -1881,6 +1924,7 @@ def test_s4_scope_hub_validation():
 
 def test_s4_scope_container_id():
     """§4.5.4 — SCOPE container_id field"""
+    # CLAIM: §4.5.4 — SCOPE envelope carries container_id (default GLOBAL)
     section("S4: SCOPE container_id Field (§4.5.4)")
 
     scope = Scope()
@@ -1897,6 +1941,7 @@ def test_s4_scope_container_id():
 
 def test_s4_archival_original_hub():
     """§4.4.3 — Archival original_hub preservation"""
+    # CLAIM: §4.4.3 — archive preserves original_hub
     section("S4: Archival original_hub Preservation (§4.4.3)")
 
     hubs = HubTopology()
@@ -1923,6 +1968,7 @@ def test_s4_archival_original_hub():
 
 def test_s4_hard_purge():
     """§4.4.5 — Sovereign Hard Purge"""
+    # CLAIM: §4.4.5 — sovereign hard purge: content overwrite, REDLINE flag, TRACE event
     section("S4: Sovereign Hard Purge (§4.4.5)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -1988,6 +2034,7 @@ def test_s4_hard_purge():
 
 def test_s4_governed_search():
     """§4.5.2 — Cross-hub search governance"""
+    # CLAIM: §4.5.2 — cross-hub governed search excludes PERSONAL without opt-in
     section("S4: Cross-Hub Search Governance (§4.5.2)")
 
     hubs = HubTopology()
@@ -2020,6 +2067,7 @@ def test_s4_governed_search():
 
 def test_s4_ledger_pav_exclusion():
     """§4.6.7 — LEDGER mechanical PAV exclusion"""
+    # CLAIM: §4.6.7 — LEDGER excluded from PAV unless brainstorming=True
     section("S4: LEDGER PAV Exclusion (§4.6.7)")
 
     hubs = HubTopology()
@@ -2044,6 +2092,7 @@ def test_s4_ledger_pav_exclusion():
 
 def test_s4_redline_declassification():
     """§4.7.4 — REDLINE declassification"""
+    # CLAIM: §4.7.4 — REDLINE declassification is single-shot with TRACE event
     section("S4: REDLINE Declassification (§4.7.4)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -2094,6 +2143,7 @@ def test_s4_redline_declassification():
 
 def test_s4_pav_hub_audit():
     """§4.6.6 — PAV hub-level audit (contributing hub list)"""
+    # CLAIM: §4.6.6 — PAV records contributing_hubs
     section("S4: PAV Hub-Level Audit (§4.6.6)")
 
     hubs = HubTopology()
@@ -2117,6 +2167,7 @@ def test_s4_pav_hub_audit():
 
 def test_s4_persistence_roundtrip():
     """§4.4.3, §4.4.5 — original_hub and purged survive persistence"""
+    # CLAIM: §4.4.3, §4.4.5 — original_hub and purged survive SQLite round-trip
     section("S4: Persistence Round-Trip (original_hub, purged)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -2156,6 +2207,7 @@ def test_s4_persistence_roundtrip():
 
 def test_s4_hub_provenance():
     """§4.3.4 — Hub provenance enforcement"""
+    # CLAIM: §4.3.4 — hub provenance chain: CREATED/ARCHIVED/PURGED/DECLASSIFIED
     section("S4: Hub Provenance (§4.3.4)")
 
     hubs = HubTopology()
@@ -2199,6 +2251,7 @@ def test_s4_hub_provenance():
 
 def test_s4_provenance_persistence():
     """§4.3.4 — Provenance survives persistence round-trip"""
+    # CLAIM: §4.3.4 — provenance chain survives restart
     section("S4: Provenance Persistence (§4.3.4)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -2235,6 +2288,7 @@ def test_s4_provenance_persistence():
 
 def test_s4_pipeline_integration():
     """Full pipeline integration with S4 features"""
+    # CLAIM: §4.2.3, §4.5.3, §4.5.4 — S4 features integrated in full pipeline
     section("S4: Pipeline Integration (end-to-end)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -2306,6 +2360,7 @@ def test_s4_pipeline_integration():
 
 def test_s5_sigil_alignment():
     """§5.5.2 — Canonical sigil registry matches §0.3.1"""
+    # CLAIM: §5.5.2, §0.3.1 — eight seat sigils and reverse resolution
     section("S5: Sigil Registry Alignment (§5.5.2)")
 
     check(len(SEAT_SIGILS) == 8, "8 seat sigils defined")
@@ -2329,6 +2384,7 @@ def test_s5_sigil_alignment():
 
 def test_s5_lifecycle_transitions():
     """§5.2.2 — Valid and invalid lifecycle transitions"""
+    # CLAIM: §5.2.2 — container lifecycle state transitions
     section("S5: Lifecycle Transitions (§5.2.2)")
 
     tecton = Tecton()
@@ -2385,6 +2441,7 @@ def test_s5_lifecycle_transitions():
 
 def test_s5_destroyed_inaccessibility():
     """§5.2.5 — Destroyed containers are operationally inaccessible"""
+    # CLAIM: §5.2.5 — DESTROYED is terminal; all access blocked
     section("S5: Destroyed Container Inaccessibility (§5.2.5)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -2433,6 +2490,7 @@ def test_s5_destroyed_inaccessibility():
 
 def test_s5_profile_immutability():
     """§5.3.3 — Profile immutability in ACTIVE state"""
+    # CLAIM: §5.3.3 — ACTIVE profile frozen; mutate_active_profile requires reason
     section("S5: Profile Immutability (§5.3.3)")
 
     tecton = Tecton()
@@ -2483,6 +2541,7 @@ def test_s5_profile_immutability():
 
 def test_s5_trace_filtering():
     """§5.8.3 — Container TRACE filtering by container_id"""
+    # CLAIM: §5.8.3 — container-scoped TRACE filtering
     section("S5: Container TRACE Filtering (§5.8.3)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -2537,6 +2596,7 @@ def test_s5_trace_filtering():
 
 def test_s5_lifecycle_logging():
     """§5.2.6 — Every lifecycle transition logged by TRACE"""
+    # CLAIM: §5.2.6 — all lifecycle transitions emit TRACE events
     section("S5: Lifecycle TRACE Logging (§5.2.6)")
 
     tecton = Tecton()
@@ -2562,6 +2622,7 @@ def test_s5_lifecycle_logging():
 
 def test_s5_lifecycle_provenance():
     """§5.2.7 — Container lifecycle provenance"""
+    # CLAIM: §5.2.7 — container keeps its own lifecycle_log
     section("S5: Lifecycle Provenance (§5.2.7)")
 
     tecton = Tecton()
@@ -2591,6 +2652,7 @@ def test_s5_lifecycle_provenance():
 
 def test_s5_scope_policy_tuples():
     """§5.3.2 — Container scope policy uses tuples per §4.5.7"""
+    # CLAIM: §5.3.2, §4.5.7 — container scope_policy tuples frozen
     section("S5: Scope Policy Tuples (§5.3.2)")
 
     tecton = Tecton()
@@ -2615,6 +2677,7 @@ def test_s5_scope_policy_tuples():
 
 def test_s5_can_call_advisors():
     """§5.4.1 — can_call_advisors permission enforcement"""
+    # CLAIM: §5.4.1 — can_call_advisors permission gates LLM invocation
     section("S5: can_call_advisors Permission (§5.4.1)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -2651,6 +2714,7 @@ def test_s5_can_call_advisors():
 
 def test_s5_container_persistence():
     """§5.2.1 — Container persistence survives restart"""
+    # CLAIM: §5.2.1 — containers persist and restore from SQLite
     section("S5: Container Persistence (§5.2.1)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -2708,6 +2772,7 @@ def test_s5_container_persistence():
 
 def test_s5_container_isolation():
     """§5.1.1 — Absolute data isolation between containers"""
+    # CLAIM: §5.1.1 — Morrison and Johnson containers cannot see each other's data
     section("S5: Container Data Isolation (§5.1.1)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -2763,6 +2828,7 @@ def test_s5_container_isolation():
 
 def test_s5_s4_rules_in_containers():
     """§5.9.1 — S4 data governance rules apply per container"""
+    # CLAIM: §5.9.1 — S4 governance (REDLINE, LEDGER, purge, provenance) applies inside containers
     section("S5: S4 Rules in Containers (§5.9.1)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -2809,6 +2875,7 @@ def test_s5_s4_rules_in_containers():
 
 def test_s5_valid_transitions_table():
     """§5.2.2 — Validate the transitions table is complete"""
+    # CLAIM: §5.2.2 — transition table structural sanity
     section("S5: Transitions Table (§5.2.2)")
 
     check("CREATED" in VALID_TRANSITIONS, "CREATED has transitions")
@@ -2829,6 +2896,7 @@ def test_s5_valid_transitions_table():
 
 def test_s5_consent_scoping():
     """§5.7.1 — Container-aware consent"""
+    # CLAIM: §5.7.1 — container-specific consent overrides global revocation
     section("S5: Consent Scoping (§5.7.1)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -2879,6 +2947,7 @@ def test_s5_consent_scoping():
 
 def test_f2_entry_id_stability():
     """F-2: Entry IDs survive persistence round-trip"""
+    # CLAIM: §4.3.5, §6.5 — entry IDs stable across restart (no re-generation)
     section("F-2: Entry ID Stability Across Restart")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -2926,6 +2995,7 @@ def test_f2_entry_id_stability():
 
 def test_f2_container_entry_id_stability():
     """F-2: Container hub entry IDs survive persistence round-trip"""
+    # CLAIM: §4.3.5, §5.2.1 — container entry IDs stable across restart
     section("F-2: Container Entry ID Stability")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -2964,6 +3034,7 @@ def test_f2_container_entry_id_stability():
 
 def test_f4_event_code_registry():
     """F-4: EVENT_CODES registry covers all known codes"""
+    # CLAIM: §6.6.3 — EVENT_CODES registry has section/category/desc for every code
     section("F-4: Event Code Registry")
 
     # Core pipeline codes must be in registry
@@ -3001,6 +3072,7 @@ def test_f4_event_code_registry():
 
 def test_f4_event_categorization():
     """F-4: categorize_event and build_event_summary work correctly"""
+    # CLAIM: §6.6.3 — categorize_event resolves known and unknown codes
     section("F-4: Event Categorization & Summary")
 
     # Known code categorizes correctly
@@ -3044,6 +3116,7 @@ def test_f4_event_categorization():
 
 def test_f4_export_includes_summary():
     """F-4: JSON export includes event_summary and per-event category"""
+    # CLAIM: §6.10, §6.6.3 — export includes event_summary with by_section/by_category
     section("F-4: Export Includes Event Summary")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -3088,6 +3161,7 @@ def test_f4_export_includes_summary():
 
 def test_s6_schema_version_tracking():
     """§6.7.3 — SCHEMA_VERSION persists in system_state"""
+    # CLAIM: §6.7.3 — schema version stamped and idempotent
     section("S6: Schema Version Tracking (§6.7.3)")
 
     from persistence import CURRENT_SCHEMA_VERSION
@@ -3136,6 +3210,7 @@ def test_s6_schema_version_tracking():
 
 def test_s6_schema_migrated_event():
     """§6.8.3 — SCHEMA_MIGRATED event emitted when migration occurs"""
+    # CLAIM: §6.8.3 — SCHEMA_MIGRATED event on legacy row migration
     section("S6: SCHEMA_MIGRATED Event (§6.8.3)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -3196,6 +3271,7 @@ def test_s6_schema_migrated_event():
 
 def test_s6_boot_chain_verification():
     """§6.3.5, §6.11.3 — Boot-time chain verification"""
+    # CLAIM: §6.3.5 — BOOT_CHAIN_VERIFIED emitted on clean boot
     section("S6: Boot-Time Chain Verification (§6.3.5)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -3229,6 +3305,7 @@ def test_s6_boot_chain_verification():
 
 def test_s6_boot_chain_detects_tampering():
     """§6.3.5, §6.11.3 — verify_boot_chain detects a broken chain and Safe-Stops"""
+    # CLAIM: §6.11.3 — tampered chain triggers Safe-Stop at boot
     section("S6: Boot-Time Chain Detects Tampering (§6.11.3)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -3265,6 +3342,7 @@ def test_s6_boot_chain_detects_tampering():
 
 def test_s6_event_codes_registered():
     """§6.6.3 — New S6 event codes are in the registry"""
+    # CLAIM: §6.6.3 — S6 event codes registered with section/category
     section("S6: New Event Codes Registered (§6.6.3)")
 
     # All four new S6 codes must be in EVENT_CODES
@@ -3289,6 +3367,7 @@ def test_s6_event_codes_registered():
 
 def test_s6_bootstrap_event_sequence():
     """§6.3.5, §6.7.3 — Bootstrap emits expected S6 events in order"""
+    # CLAIM: §6.3.5, §6.7.3 — bootstrap event ordering: SCHEMA_VERSION_SET then BOOT_CHAIN_VERIFIED
     section("S6: Bootstrap Event Sequence")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -3336,6 +3415,7 @@ def test_s6_cold_verifier():
       7. Registry integration — unknown codes surfaced
     Also tests read_safe_stop_state() against a cold DB.
     """
+    # CLAIM: §6.11.4 — cold trace verifier: clean, tampered, missing, empty cases + Safe-Stop + filter
     section("S6: Cold TRACE Verifier (§6.11.4)")
 
     import trace_verify
@@ -3504,7 +3584,7 @@ def test_s6_cold_verifier():
                     datetime.now(UTC).isoformat(),
                     "CONTAINER_REQUEST_RUNE",
                     "TECTON",
-                    f"{container_id}/TASK-{i:03d}",
+                    f"{container_id}:RUNE:task{i:03d}",
                     new_hash,
                     len(content),
                     last_hash,
@@ -3528,11 +3608,13 @@ def test_s6_cold_verifier():
         check(filtered["event_count"] == 3,
               "container filter: exactly 3 matching events returned")
 
-        # Every event in the filtered set should contain the container_id
+        # Every event in the filtered set should match the F-1 boundary
+        # semantics: exact match OR starts with "container_id:".
         conn = sqlite3.connect(path)
         cur = conn.execute(
-            "SELECT artifact_id FROM trace_events WHERE artifact_id LIKE ?",
-            (f"%{container_id}%",),
+            "SELECT artifact_id FROM trace_events "
+            "WHERE artifact_id = ? OR artifact_id LIKE ?",
+            (container_id, f"{container_id}:%"),
         )
         rows = cur.fetchall()
         conn.close()
@@ -3676,6 +3758,7 @@ def test_a1_historical_trace_chain_loaded_on_restart():
     The in-memory chain after restart contained zero historical events,
     making boot-time verification a vacuous no-op. This test proves the
     full chain is now loaded into memory during restore."""
+    # CLAIM: §6.5 — restart loads historical chain into memory
     section("Phase A.1: Historical TRACE Chain Loaded on Restart")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -3725,6 +3808,7 @@ def test_a1_boot_verification_catches_persisted_tamper():
     This is the bug fix test: previously, tampering a persisted row would
     NOT be detected at boot because restore_from_db never loaded the events.
     Now, verify_boot_chain() walks the loaded historical chain and catches it."""
+    # CLAIM: §6.3.5, §6.11.3 — persisted-chain tamper caught at boot
     section("Phase A.1: Boot Verification Catches Persisted Chain Tamper")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -3778,6 +3862,7 @@ def test_a1_unified_container_filter():
       - trace_verify._load_events: SQL LIKE '%id%' substring (wrong)
 
     After Phase A.1: all three use prefix matching."""
+    # CLAIM: §5.8.3 — container filter unified across audit_log, trace_export, trace_verify
     section("Phase A.1: Unified Container Filter (Prefix Matching)")
 
     import trace_verify
@@ -3801,7 +3886,11 @@ def test_a1_unified_container_filter():
         import hashlib as _hl
         container_id = "TECTON-filter01"
 
-        # Event A: container as prefix
+        # Event A: container as prefix with ":" separator (the documented
+        # runtime convention — see runtime.process_request and
+        # tecton.process_request where task_ids are built as
+        # "{container_id}:{sigil}:{hex}"). F-1 exact-boundary filter
+        # requires the ":" separator.
         c1 = "prefix match event"
         h1 = _hl.sha256(c1.encode()).hexdigest()
         raw.execute(
@@ -3809,10 +3898,11 @@ def test_a1_unified_container_filter():
             "artifact_id, content_hash, byte_length, parent_hash) "
             "VALUES (?,?,?,?,?,?,?)",
             (datetime.now(UTC).isoformat(), "CONTAINER_REQUEST_RUNE", "TECTON",
-             f"{container_id}/TASK-001", h1, len(c1), last_hash),
+             f"{container_id}:RUNE:task01", h1, len(c1), last_hash),
         )
 
-        # Event B: container as substring, NOT prefix
+        # Event B: container as substring, NOT prefix. Must NOT match the
+        # F-1 boundary-aware filter.
         c2 = "substring match event"
         h2 = _hl.sha256(c2.encode()).hexdigest()
         raw.execute(
@@ -3826,16 +3916,16 @@ def test_a1_unified_container_filter():
         raw.close()
         rss.persistence.close()
 
-        # Cold verifier should match only Event A (prefix)
+        # Cold verifier should match only Event A (exact boundary on ":")
         result = verify_trace_file(path, container_filter=container_id)
         check(result["event_count"] == 1,
-              f"Cold verifier prefix match: 1 event (got {result['event_count']})")
+              f"Cold verifier boundary match: 1 event (got {result['event_count']})")
 
         # In-memory filter should also match only Event A
         rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
         in_mem = rss2.trace.events_by_container(container_id)
         check(len(in_mem) == 1,
-              f"audit_log.events_by_container prefix match: 1 event (got {len(in_mem)})")
+              f"audit_log.events_by_container boundary match: 1 event (got {len(in_mem)})")
 
         # Export filter (via export_trace_json) should also match only Event A
         from trace_export import export_trace_json
@@ -3845,7 +3935,7 @@ def test_a1_unified_container_filter():
             # Filter exports FROM the in-memory trace (which now has full history)
             count = export_trace_json(rss2.trace, export_path, container_id=container_id)
             check(count == 1,
-                  f"export_trace_json prefix match: 1 event (got {count})")
+                  f"export_trace_json boundary match: 1 event (got {count})")
         finally:
             if os.path.exists(export_path):
                 os.unlink(export_path)
@@ -3858,6 +3948,7 @@ def test_a1_unified_container_filter():
 
 def test_a1_export_from_db_emits_chain_valid():
     """A1-4: export_from_db now includes chain_valid in its output."""
+    # CLAIM: §6.10 — export_from_db reports chain_valid in output
     section("Phase A.1: export_from_db Emits chain_valid")
 
     from trace_export import export_from_db
@@ -3905,6 +3996,7 @@ def test_a1_export_from_db_emits_chain_valid():
 
 def test_a1_consent_persistence_roundtrip():
     """A1-5: Consent records survive restart via OATH persistence callback."""
+    # CLAIM: §1.4, §6.5 — consent state persists and restores
     section("Phase A.1: Consent Persistence Round-Trip")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -3962,6 +4054,7 @@ def test_a1_ttl_enforcement_in_stage_4():
     Previously classify_intent was called but validate() was not, so TTL
     was defined as data but never enforced as a runtime guard. Now an
     expired intent is rejected by the pipeline."""
+    # CLAIM: §3.3.4 — expired intent rejected at Stage 4 with PIPELINE_ERROR
     section("Phase A.1: TTL Enforcement in Stage 4")
 
     from datetime import timedelta as _td
@@ -4003,6 +4096,7 @@ def test_a1_ttl_enforcement_in_stage_4():
 
 def test_a1_post_llm_scan_covers_archive_and_ledger():
     """A1-7: Post-LLM REDLINE scan now covers all 5 hubs, not just 3."""
+    # CLAIM: §3.7.7, §4.6 — post-LLM REDLINE scan covers ARCHIVE and LEDGER hubs
     section("Phase A.1: Post-LLM Scan Covers ARCHIVE and LEDGER")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -4060,6 +4154,7 @@ def test_a1_post_llm_scan_covers_archive_and_ledger():
 
 def test_adversarial_ingress():
     """Adversarial: attempt to bypass ingress discipline from every angle."""
+    # CLAIM: §5.1, §5.6 — spoofed/None/empty container_id handled; ingress sentinel required
     section("ADVERSARIAL: Ingress Bypass Attempts")
 
     from runtime import _TECTON_INGRESS_TOKEN, ACTIVE_HUBS
@@ -4125,6 +4220,7 @@ def test_adversarial_ingress():
 
 def test_adversarial_cross_container():
     """Adversarial: attempt cross-container data bleed from every angle."""
+    # CLAIM: §5.1.1 — no cross-container bleed across hub data, events, or threads
     section("ADVERSARIAL: Cross-Container Bleed Attempts")
 
     from tecton import ContainerRequest, ContainerPermissions
@@ -4214,6 +4310,7 @@ def test_adversarial_cross_container():
 
 def test_adversarial_scope_escalation():
     """Adversarial: attempt to escalate SCOPE or permissions."""
+    # CLAIM: §4.5.7, §5.3.3, §2.8.1 — scope mutation blocked at multiple layers
     section("ADVERSARIAL: Scope Mutation & Escalation")
 
     from tecton import ContainerPermissions, ContainerRequest, TectonError
@@ -4294,6 +4391,7 @@ def test_adversarial_scope_escalation():
 
 def test_adversarial_audit_tamper():
     """Adversarial: attempt to tamper with the audit chain."""
+    # CLAIM: §6.11 — cold verifier and boot verifier catch tamper modes
     section("ADVERSARIAL: Audit Tamper Simulations")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -4350,6 +4448,7 @@ def test_adversarial_audit_tamper():
 
 def test_adversarial_malformed_inputs():
     """Adversarial: malformed, extreme, and type-confused inputs."""
+    # CLAIM: §3.3 — pipeline survives 10K/empty/unicode/0/negative/50K malformed inputs
     section("ADVERSARIAL: Malformed & Extreme Inputs")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -4412,6 +4511,7 @@ def test_adversarial_malformed_inputs():
 
 def test_adversarial_policy_confusion():
     """Adversarial: contradictory or confusing policy states."""
+    # CLAIM: §5.7.1, §4.5, §E-1 — policy confusion: global vs container consent; forbidden wins at PAV; production-mode
     section("ADVERSARIAL: Policy Confusion")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -4467,6 +4567,7 @@ def test_adversarial_policy_confusion():
 
 def test_s7_amendment_ceremony():
     """S7: Amendment & Evolution — full ceremony flow and constraint enforcement."""
+    # CLAIM: §7.2, §7.3, §7.4 — S7 propose → review → ratify ceremony, S0 sovereign override, versioning
     section("S7: Amendment & Evolution Ceremony")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -4600,6 +4701,7 @@ def test_s7_amendment_ceremony():
 def test_domain_pack_equivalence():
     """Prove the kernel is domain-agnostic by running identical governance
     invariants across legal, medical, and financial term packs."""
+    # CLAIM: §2.1, §4.7 — governance domain-agnostic across legal/medical/finance
     section("DOMAIN-PACK: Agnostic Governance Equivalence")
 
     from meaning_law import Term
@@ -4680,6 +4782,7 @@ def test_domain_pack_equivalence():
 def test_exception_context_leak():
     """Gemini Addition #1: Crash mid-pipeline for Tenant A, then immediately
     fire Tenant B. Verify B doesn't wake up inside A's ghost context."""
+    # CLAIM: §5.1.1 — exception in tenant A does not leak context or data to tenant B
     section("ADVERSARIAL: Exception Context Leak (Panic Bleed)")
 
     from tecton import ContainerRequest, ContainerPermissions
@@ -4738,6 +4841,7 @@ def test_exception_context_leak():
 
 def test_idempotence_replay():
     """Replay/idempotence: repeated actions must not corrupt state."""
+    # CLAIM: §0.5, §6.11.4 — Safe-Stop/schema/declassify/revocation/verification are idempotent
     section("ADVERSARIAL: Idempotence & Replay")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -4812,6 +4916,7 @@ def test_instructional_override():
     """Gemini Addition #2: Feed the LLM a prompt demanding SCOPE bypass.
     Prove the semantic routing physically cannot access restricted hubs
     regardless of how aggressively the prompt demands it."""
+    # CLAIM: §4.2.3, §4.7.6 — jailbreak attempts cannot surface PERSONAL or REDLINE
     section("ADVERSARIAL: Instructional Override (Jailbreak)")
 
     from pav import PAVBuilder
@@ -4888,6 +4993,7 @@ def test_instructional_override():
 def test_scenario_high_liability_flow():
     """Scenario: Complete high-liability review flow end-to-end.
     Ingest → query → REDLINE boundary → consent check → audit → export → Safe-Stop → recovery."""
+    # CLAIM: §4.7, §1.4, §0.5 — high-liability review flow: REDLINE + revoke + resume + halt + recover
     section("SCENARIO: High-Liability Review Flow")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -4948,6 +5054,7 @@ def test_scenario_high_liability_flow():
 def test_scenario_tamper_recovery():
     """Scenario: Normal operation → persisted tamper → boot detection →
     Safe-Stop → T-0 recovery → resumed governance."""
+    # CLAIM: §6.11.3, §0.5 — tamper → boot detection → Safe-Stop → T-0 recovery → resumed governance
     section("SCENARIO: Tamper Detection & Recovery")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -5007,6 +5114,7 @@ def test_phase_e5_contextvar_isolation():
     behind FastAPI/ASGI. They do NOT prove full async-streaming safety,
     which requires Phase F integration (asyncio.to_thread context copy,
     generator-yield context discipline, etc.). Label honestly."""
+    # CLAIM: §5.1.1 — context-bound hub isolation via ContextVar, thread-level
     section("Phase E-5: ContextVar Hub Isolation (thread-level)")
 
     import threading
@@ -5107,6 +5215,7 @@ def test_phase_e_regression_battery():
       E-3: Container restore in default boot path
       E-4: OATH true write-ahead (Option B) — already covered by D-6 test update
     """
+    # CLAIM: §E-1, §E-3, §E-4 — production-mode, demo parity, auto-restore, OATH atomicity
     section("Phase E: Regression Battery")
 
     from tecton import ContainerRequest
@@ -5210,6 +5319,7 @@ def test_phase_d_regression_battery():
       D-5: can_access_system_hub enforcement (Option B — least privilege default)
       D-6: OATH persistence failure visibility
     """
+    # CLAIM: §5.6, §5.4.1, §6.9.2, §0.8.3 — UUID ingress, scope-on-permission, OATH persistence-failure visibility
     section("Phase D: Full Regression Battery")
 
     from tecton import Tecton, ContainerRequest, ContainerPermissions, TectonError
@@ -5367,6 +5477,7 @@ def test_phase_d_regression_battery():
 def test_c_phase_regression_battery():
     """Phase C Expanded: lock in all 8 hardening items as one test.
     Kept as a single function to minimize test-runner boilerplate."""
+    # CLAIM: §6.3.3, §5.3.3, §6.6.4, §0.5.4, §6.10.6 — canonical JSON, profile freezing, strict mode, threshold Safe-Stop, REDLINE sanitization
     section("Phase C Expanded: Full Regression Battery")
 
     from audit_log import canonical_json, AuditLog, AuditLogError
@@ -5545,6 +5656,7 @@ def test_probe_chain_catches_duplicate_content_tamper():
     implementation, this test's assertions fail because three events with
     identical summary strings produced identical hashes, making middle-row
     deletion undetectable."""
+    # CLAIM: §6.3.6, §2.7 — hash envelope uniqueness; chain detects middle-row deletion
     section("Probe A — Hash Envelope Uniqueness (§6.3.6)")
 
     log = AuditLog()
@@ -5591,6 +5703,7 @@ def test_probe_redline_not_leaked_via_search_surfaces():
     rss.hubs.search(query) would receive REDLINE content matching the
     keyword. This is the kernel-level instance of the 'custom search
     helper' loophole disclosed in THREAT_MODEL §2.2."""
+    # CLAIM: §4.7.6 — search() and governed_search() fail-closed on REDLINE
     section("Probe B — REDLINE Fail-Closed on Query Surfaces (§4.7.6)")
 
     hubs = HubTopology()
@@ -5644,6 +5757,7 @@ def test_probe_rune_resists_normalization_bypass():
     and 'delete\\teverything' (tab) all classified as AMBIGUOUS instead of
     DISALLOWED. Normalization folds these to the canonical form before
     lookup."""
+    # CLAIM: §2.1.2 — RUNE disallowed resists whitespace/punct/case/control/NFKC/null bypass
     section("Probe C — RUNE Input Normalization (§2.1.2)")
 
     rune = MeaningLaw()
@@ -5701,6 +5815,7 @@ def test_probe_pav_still_excludes_redline_via_list_hub():
     PAV test will still pass (PAV gets nothing) but governance becomes a
     silent pass-through instead of a deliberate policy decision. This test
     pins the boundary."""
+    # CLAIM: §4.7.6 — list_hub permissive for governed callers; PAV still excludes REDLINE
     section("Probe D — list_hub Permissive vs PAV Governing Boundary (§4.7.6)")
 
     hubs = HubTopology()
@@ -5737,6 +5852,7 @@ def test_probe_hash_envelope_version_marker_present():
     verifier plus persistence layer MUST branch on it to preserve
     detectability of historical chains. This probe pins the marker so it
     cannot be silently removed."""
+    # CLAIM: §6.3.6 — CHAIN_HASH_VERSION marker pinned at v1 for forward-compat
     section("Probe E — Chain Hash Version Marker (§6.3.6)")
 
     from audit_log import CHAIN_HASH_VERSION
@@ -5749,6 +5865,214 @@ def test_probe_hash_envelope_version_marker_present():
     check(CHAIN_HASH_VERSION == 1,
           "Probe-E3: CHAIN_HASH_VERSION is at v1 "
           "(bump requires cold-verifier + persistence migration)")
+
+
+def test_probe_container_filter_prefix_boundary():
+    """§5.8.3 — Container TRACE filter must use exact-boundary matching.
+
+    Closes the prefix-collision hole: two container_ids sharing a common
+    prefix (e.g., TECTON-abc123 and TECTON-abc1234) must not cross-pollute
+    each other's filtered event views. The runtime convention is that
+    artifact_ids for container-scoped events take the form
+    "{container_id}:{sigil}:{task_hex}". The filter must match on that
+    ':' boundary — equal to container_id or beginning with "container_id:".
+
+    Regression guard: under naive startswith(container_id), a filter on
+    'TECTON-abc123' would have falsely matched 'TECTON-abc1234:RUNE:...'
+    events. Under F-1 boundary-aware matching, it does not.
+    """
+    # CLAIM: §5.8.3 — container TRACE filter requires exact : boundary; prefix-collision hole closed
+    section("Probe F — Container Filter Prefix Boundary (§5.8.3)")
+
+    from audit_log import AuditLog, TraceEvent
+    from datetime import datetime, UTC
+
+    log = AuditLog()
+    # Two container_ids sharing the first 15 characters
+    cid_a = "TECTON-abc123fff"
+    cid_b = "TECTON-abc124fff"
+    # And a shorter prefix that is a strict prefix of cid_a (the collision case)
+    cid_short = "TECTON-abc123"
+
+    # Emit container-scoped events for A, B, and shorter
+    log.record_event("CONTAINER_REQUEST_RUNE", "TECTON",
+                     f"{cid_a}:RUNE:task01", "A one")
+    log.record_event("CONTAINER_REQUEST_RUNE", "TECTON",
+                     f"{cid_a}:RUNE:task02", "A two")
+    log.record_event("CONTAINER_REQUEST_RUNE", "TECTON",
+                     f"{cid_b}:RUNE:task01", "B one")
+    log.record_event("CONTAINER_REQUEST_RUNE", "TECTON",
+                     f"{cid_short}:RUNE:task01", "short one")
+
+    # Filter by full cid_a — should return exactly 2 events, both A
+    events_a = log.events_by_container(cid_a)
+    check(len(events_a) == 2,
+          f"Probe-F1: cid_a filter returns exactly 2 events "
+          f"(got {len(events_a)})")
+    check(all(e.artifact_id.startswith(cid_a + ":") for e in events_a),
+          "Probe-F2: all cid_a-filtered events actually belong to cid_a")
+
+    # Filter by cid_b — should return exactly 1 event, and it must be B's
+    events_b = log.events_by_container(cid_b)
+    check(len(events_b) == 1,
+          f"Probe-F3: cid_b filter returns exactly 1 event "
+          f"(got {len(events_b)})")
+    check(events_b[0].artifact_id.startswith(cid_b + ":"),
+          "Probe-F4: cid_b-filtered event belongs to cid_b, not cid_a")
+
+    # Filter by cid_short — should return exactly 1 event (the short one),
+    # NOT the cid_a or cid_b events even though cid_short is a prefix of
+    # both cid_a and cid_b.
+    events_short = log.events_by_container(cid_short)
+    check(len(events_short) == 1,
+          f"Probe-F5: cid_short filter returns exactly 1 event "
+          f"(got {len(events_short)}) — prefix-collision hole closed")
+    check(events_short[0].artifact_id == f"{cid_short}:RUNE:task01",
+          "Probe-F6: cid_short-filtered event is the actual short event, "
+          "not a cid_a or cid_b event that shares the prefix")
+
+    # Empty container_id filter returns empty list (not everything)
+    events_empty = log.events_by_container("")
+    check(events_empty == [],
+          f"Probe-F7: empty container_id returns empty list "
+          f"(got {len(events_empty)})")
+
+    # Exact-match-only case: artifact_id equal to container_id with no suffix
+    log.record_event("CONTAINER_REQUEST_RUNE", "TECTON", cid_short, "bare exact")
+    events_exact = log.events_by_container(cid_short)
+    check(events_exact[0].artifact_id != events_exact[1].artifact_id or
+          len(events_exact) == 2,
+          "Probe-F8b: two distinct events returned")
+
+
+def test_probe_safe_stop_recovery_ceremony():
+    """§0.5, §6.11.3 — Full operator-triggered Safe-Stop recovery ceremony.
+
+    This test narrates the complete lifecycle as one story rather than
+    testing individual pieces:
+        Session 1: normal operation → operator enters Safe-Stop → shutdown
+        Session 2: bootstrap with restore → Safe-Stop persists → requests
+                    blocked → T-0 clears → operation resumes
+        Audit: SAFE_STOP_ENTERED and SAFE_STOP_CLEARED both recorded to
+               unified TRACE with full context; chain remains valid through
+               the ceremony; no ghost state; reason is preserved across
+               restart.
+
+    The pieces are tested individually elsewhere. This locks the narrative:
+    that RSS can be halted, survive restart halted, be cleared by T-0, and
+    the audit log of the whole ceremony is coherent and durable.
+    """
+    # CLAIM: §0.5, §6.11.3 — full operator-triggered Safe-Stop recovery ceremony with audit durability
+    section("Probe G — Safe-Stop Recovery Ceremony (§0.5)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        # ── Act 1: Normal operation before halt ──
+        rss1 = bootstrap(RSSConfig(db_path=path))
+        rss1.save_hub_entry("WORK", "pre-halt operational entry")
+        r1 = rss1.process_request("quote", use_llm=False)
+        check("error" not in r1,
+              "Probe-G1: normal operation succeeds before Safe-Stop")
+
+        pre_halt_event_count = len(rss1.trace.all_events())
+        check(pre_halt_event_count > 0,
+              f"Probe-G2: pre-halt operations produced TRACE events "
+              f"(count={pre_halt_event_count})")
+
+        # ── Act 2: Operator initiates Safe-Stop ──
+        halt_reason = "Operator-initiated maintenance window — probe G"
+        rss1.enter_safe_stop(halt_reason)
+
+        ss_status_1 = rss1.is_safe_stopped()
+        check(ss_status_1["active"] is True,
+              "Probe-G3: Safe-Stop active after enter_safe_stop")
+        check(ss_status_1["reason"] == halt_reason,
+              "Probe-G4: reason preserved in Safe-Stop state")
+        check(ss_status_1.get("timestamp") is not None,
+              "Probe-G5: timestamp recorded for Safe-Stop entry")
+
+        # Requests immediately blocked
+        r_blocked_pre = rss1.process_request("quote", use_llm=False)
+        check(r_blocked_pre.get("error") == "SAFE_STOP_ACTIVE",
+              "Probe-G6: requests blocked in-flight after Safe-Stop entry")
+        check(r_blocked_pre.get("stage") == 0,
+              "Probe-G7: halt reported at Stage 0 (SAFE_STOP)")
+
+        # Chain still valid during halt
+        check(rss1.trace.verify_chain() is True,
+              "Probe-G8: hash chain remains valid during active Safe-Stop")
+
+        rss1.persistence.close()
+
+        # ── Act 3: Restart with restore ──
+        rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
+
+        ss_status_2 = rss2.is_safe_stopped()
+        check(ss_status_2["active"] is True,
+              "Probe-G9: Safe-Stop persists across restart (durability)")
+        check(ss_status_2["reason"] == halt_reason,
+              "Probe-G10: reason survives restart intact (no ghost state)")
+        check(ss_status_2.get("timestamp") == ss_status_1.get("timestamp"),
+              "Probe-G11: timestamp identical across restart")
+
+        # Requests still blocked after restart
+        r_blocked_post = rss2.process_request("quote", use_llm=False)
+        check(r_blocked_post.get("error") == "SAFE_STOP_ACTIVE",
+              "Probe-G12: requests remain blocked after restart")
+
+        # ── Act 4: T-0 clears Safe-Stop ──
+        rss2.clear_safe_stop()
+
+        ss_status_3 = rss2.is_safe_stopped()
+        check(ss_status_3["active"] is False,
+              "Probe-G13: T-0 clear_safe_stop() releases the halt")
+
+        # ── Act 5: Normal operation resumes ──
+        r_resumed = rss2.process_request("quote", use_llm=False)
+        check("error" not in r_resumed,
+              "Probe-G14: governed operation resumes after T-0 clears "
+              "(full pipeline runs again)")
+
+        # ── Act 6: Audit trail tells the whole story ──
+        all_codes = [e.event_code for e in rss2.trace.all_events()]
+
+        check("SAFE_STOP_ENTERED" in all_codes,
+              "Probe-G15: SAFE_STOP_ENTERED recorded in unified TRACE")
+        check("SAFE_STOP_CLEARED" in all_codes,
+              "Probe-G16: SAFE_STOP_CLEARED recorded in unified TRACE")
+
+        # Chronological ordering: the ENTERED event precedes the CLEARED event
+        entered_idx = all_codes.index("SAFE_STOP_ENTERED")
+        cleared_idx = all_codes.index("SAFE_STOP_CLEARED")
+        check(entered_idx < cleared_idx,
+              f"Probe-G17: SAFE_STOP_ENTERED (idx={entered_idx}) precedes "
+              f"SAFE_STOP_CLEARED (idx={cleared_idx}) in the chain")
+
+        # Post-clear events exist in the chain
+        post_cleared_codes = all_codes[cleared_idx + 1:]
+        check(any(c in post_cleared_codes for c in
+                  ("SCOPE_OK", "RUNE_OK", "REQUEST_COMPLETE")),
+              "Probe-G18: pipeline events appear after SAFE_STOP_CLEARED, "
+              "proving resumed governance is recorded")
+
+        # Chain still valid across the entire ceremony
+        check(rss2.trace.verify_chain() is True,
+              "Probe-G19: hash chain intact through entry → restart → "
+              "clear → resume (full ceremony durable)")
+
+        # Cold verifier agrees with in-memory state
+        rss2.persistence.close()
+        from trace_verify import verify_trace_file
+        cold_result = verify_trace_file(path)
+        check(cold_result["verified"] is True,
+              "Probe-G20: cold verifier confirms ceremony chain is intact "
+              "(external audit of the whole story)")
+
+    finally:
+        for s in ["", "-wal", "-shm"]:
+            if os.path.exists(path + s):
+                os.unlink(path + s)
 
 
 if __name__ == "__main__":
@@ -5878,6 +6202,8 @@ if __name__ == "__main__":
     safe_run(test_probe_rune_resists_normalization_bypass)
     safe_run(test_probe_pav_still_excludes_redline_via_list_hub)
     safe_run(test_probe_hash_envelope_version_marker_present)
+    safe_run(test_probe_container_filter_prefix_boundary)
+    safe_run(test_probe_safe_stop_recovery_ceremony)
 
     print(f"\n{'='*60}")
     print(f"RSS v0.1.0 — {_funcs} test functions, {_pass} assertions passed, {_fail} failed", end="")
