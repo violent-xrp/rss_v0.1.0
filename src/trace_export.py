@@ -34,6 +34,7 @@ JSON export produces event_summary with category breakdown.
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, UTC
 from typing import Dict, List, Optional
 
@@ -66,7 +67,13 @@ def _collect_redline_ids_from_hubs(hub_topology) -> set:
 
 def _collect_redline_ids_from_db(persistence) -> set:
     """§6.10.6 — Cold path: read REDLINE entry IDs directly from SQLite.
-    Used by export_from_db when no live HubTopology is available."""
+    Used by export_from_db when no live HubTopology is available.
+
+    Hardening: include BOTH global hub_entries and container_hub_entries so
+    exports cannot leak REDLINE IDs that originated inside tenant containers.
+    Older databases may not have container_hub_entries; that branch is best-
+    effort and silently skipped when the table is absent.
+    """
     redline_ids = set()
     try:
         with persistence._lock:
@@ -75,21 +82,34 @@ def _collect_redline_ids_from_db(persistence) -> set:
             )
             for row in cur.fetchall():
                 redline_ids.add(row[0])
+            try:
+                cur = persistence.conn.execute(
+                    "SELECT id FROM container_hub_entries WHERE redline=1"
+                )
+                for row in cur.fetchall():
+                    redline_ids.add(row[0])
+            except Exception:
+                pass
     except Exception:
         pass
     return redline_ids
 
 
 def _sanitize_artifact_id(artifact_id: str, redline_ids: set) -> str:
-    """§6.10.6 — Replace any REDLINE entry ID appearing in artifact_id
-    with a redaction marker. Substring match — an artifact_id like
-    'TASK-abc|ENTRY-redline01' has the ENTRY-redline01 portion redacted."""
+    """§6.10.6 — Replace REDLINE entry IDs only when they appear as tokens.
+
+    Hardening note: naive substring replacement can over-redact larger IDs that
+    merely contain a REDLINE ID as a substring. RSS artifact IDs are usually
+    joined with separators like ':', '|', ',', whitespace, brackets, or '='.
+    We therefore redact only when the REDLINE ID is bounded by start/end or a
+    non-token delimiter, preserving unrelated larger IDs.
+    """
     if not redline_ids or not artifact_id:
         return artifact_id
     sanitized = artifact_id
-    for rid in redline_ids:
-        if rid and rid in sanitized:
-            sanitized = sanitized.replace(rid, REDLINE_REDACTED)
+    for rid in sorted((r for r in redline_ids if r), key=len, reverse=True):
+        pattern = re.compile(rf'(?<![A-Za-z0-9]){re.escape(rid)}(?![A-Za-z0-9])')
+        sanitized = pattern.sub(REDLINE_REDACTED, sanitized)
     return sanitized
 
 
@@ -263,11 +283,18 @@ def export_trace_text(trace: AuditLog, path: str, container_id: Optional[str] = 
     """
     Export TRACE events to a human-readable text file.
     Format suitable for printing or emailing to auditors.
-    §5.8.3 — Container filter uses prefix match (unified in Phase A.1).
+    §5.8.3 — Container filter uses exact-boundary match on the ":" separator,
+    unified with export_trace_json(), audit_log.events_by_container(), and
+    trace_verify._load_events().
     """
     events = trace.all_events()
     if container_id:
-        events = [e for e in events if (e.artifact_id or "").startswith(container_id)]
+        prefix = container_id + ":"
+        events = [
+            e for e in events
+            if (e.artifact_id or "") == container_id
+            or (e.artifact_id or "").startswith(prefix)
+        ]
 
     # §6.10.6 — REDLINE sanitization
     redline_ids = _collect_redline_ids_from_hubs(hub_topology)

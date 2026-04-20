@@ -162,6 +162,9 @@ class Seal:
 
         Section 0 proposals require sovereign_override=True at proposal
         time — this is an early gate so reviewers know the gravity."""
+        section_id = (section_id or "").strip()
+        rationale = (rationale or "").strip()
+        proposed_text = (proposed_text or "").strip()
         if not section_id or not rationale or not proposed_text:
             return {"error": "INCOMPLETE_PROPOSAL",
                     "reason": "section_id, rationale, and proposed_text are all required"}
@@ -198,6 +201,8 @@ class Seal:
             return {"error": "INVALID_STATUS",
                     "reason": f"Proposal is '{proposal.status}', expected 'PROPOSED'"}
 
+        reviewer = (reviewer or "").strip()
+        verdict = (verdict or "").strip().upper()
         if verdict not in ("APPROVE", "REJECT"):
             return {"error": "INVALID_VERDICT",
                     "reason": "Verdict must be APPROVE or REJECT"}
@@ -236,6 +241,13 @@ class Seal:
             return {"error": "UNKNOWN_PROPOSAL", "proposal_id": proposal_id}
 
         proposal = self._proposals[proposal_id]
+        if proposal.status == "RATIFIED":
+            return {"error": "ALREADY_RATIFIED",
+                    "reason": "Proposal has already been ratified"}
+        if proposal.status == "REJECTED" or proposal.review_verdict == "REJECT":
+            return {"error": "NOT_APPROVED",
+                    "reason": "Cannot ratify a proposal that was rejected in review"}
+
         if proposal.status != "REVIEWED":
             return {"error": "NOT_REVIEWED",
                     "reason": f"Proposal must be REVIEWED before ratification (current: '{proposal.status}')"}

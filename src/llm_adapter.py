@@ -98,8 +98,38 @@ class LLMAdapter:
             return self._fallback(user_text, pav_text, error=str(e))
 
     def _fallback(self, user_text: str, pav_text: str, error: Optional[str] = None) -> str:
-        msg = "[RSS FALLBACK — No LLM available"
+        """Deterministic offline fallback.
+
+        This is intentionally *not* a pretend model response. It only summarizes
+        the governed PAV text that the runtime already prepared, cites how many
+        governed entries were consulted, and refuses to invent anything outside
+        that scoped data.
+        """
+        entries = [line.strip() for line in (pav_text or "").splitlines() if line.strip()]
+        entry_count = len(entries)
+        if entry_count == 0:
+            return "I don't have that information in the current governed data. (0 governed entries available.)"
+
+        # Simple keyword-guided selection from governed data only.
+        tokens = [t.lower() for t in user_text.replace("?", " ").replace(":", " ").split() if len(t) > 2]
+        scored = []
+        for entry in entries:
+            lower = entry.lower()
+            score = sum(1 for token in tokens if token in lower)
+            scored.append((score, entry))
+        scored.sort(key=lambda item: (item[0], len(item[1])), reverse=True)
+        chosen = [entry for score, entry in scored if score > 0][:2]
+        if not chosen:
+            chosen = entries[:2]
+
+        summary = " ".join(chosen)
+        # Keep the fallback bounded and source-tied.
+        if len(summary) > 320:
+            summary = summary[:317].rstrip() + "..."
+
+        note = f"Used {entry_count} governed entr{'y' if entry_count == 1 else 'ies'}."
         if error:
-            msg += f": {error}"
-        msg += f"] Echo: {user_text}"
-        return msg
+            note += f" Offline fallback engaged after adapter error: {error}."
+        else:
+            note += " Offline fallback engaged; response derived only from governed data."
+        return f"{summary} {note}"

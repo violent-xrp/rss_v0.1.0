@@ -33,21 +33,18 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 from runtime import bootstrap
+from reference_pack import load_reference_pack
 
 def run():
     rss = bootstrap()
 
-    # Load neutral reference data
-    rss.save_hub_entry("WORK", "Vendor quote Q-104: Hosted analytics renewal $24,500. Includes onboarding and support.")
-    rss.save_hub_entry("WORK", "RFI-042: Clarification requested on retention policy and audit export format. Pending legal response.")
-    rss.save_hub_entry("WORK", "Daily log Mar 12: Tenant onboarding checkpoint complete. 12 records migrated.")
-    rss.save_hub_entry("WORK", "Submittal SUB-018: Security questionnaire sent to vendor. Awaiting approval.")
-    rss.save_hub_entry("PERSONAL", "Private compensation note: target salary review next quarter", redline=True)
+    inserted = load_reference_pack(rss)
 
     print("=" * 60)
     print("RSS v0.1.0 — Governed LLM Demo")
     print("=" * 60)
     print(f"WORK entries loaded: {rss.hubs.hub_stats()['WORK']}")
+    print(f"Reference pack inserted this run: {inserted}")
     print(f"PERSONAL entries (REDLINE): {rss.hubs.hub_stats()['PERSONAL']}")
     print(f"LLM available: {rss.llm.is_available()}")
     print("=" * 60)

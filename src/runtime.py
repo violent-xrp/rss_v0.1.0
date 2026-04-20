@@ -49,11 +49,10 @@ from persistence import Persistence, CURRENT_SCHEMA_VERSION
 from llm_adapter import LLMAdapter
 
 
-# Reference sealed terms bundled with the stock config.
-# Deployments can override these via RSSConfig.default_terms.
-DEFAULT_TERMS = [
-    "quote", "RFI", "purchase order", "NCR", "submittal", "change order"
-]
+# Default sealed terms come from config. This constant remains as a backward-
+# compatible export for tests/CLI helpers, but bootstrap now reads from
+# runtime.config.default_terms as the single source of truth.
+DEFAULT_TERMS = RSSConfig().default_terms
 
 
 # Phase D-1 — Ingress identity binding. This sentinel is the sole proof-of-origin
@@ -111,8 +110,8 @@ class Runtime:
         self.config = config or RSSConfig()
 
         # Layer 1: Constitution + TRACE
-        self.section0_path = "section0.txt"
-        self.section0_hash = "149a20da14bea206192882633b3b211589f14916bb0dc1dcf36540203deec2e9"
+        self.section0_path = self.config.section0_path
+        self.section0_hash = self.config.section0_hash
         self.trace = AuditLog()
 
         # §6.6.4 — Phase C G-5: Wire the event code registry into TRACE so
@@ -308,6 +307,13 @@ class Runtime:
         """Check persistent Safe-Stop state."""
         return self.persistence.is_safe_stopped()
 
+    def ingress_posture_note(self) -> str:
+        """Human-readable statement of the current ingress trust model."""
+        return (
+            "Architectural single-process ingress binding only; "
+            "not cryptographic caller authentication."
+        )
+
     # ── Genesis Verification (blocking) ──
 
     def verify_genesis(self) -> dict:
@@ -336,12 +342,18 @@ class Runtime:
             with open(self.section0_path, "r", encoding="utf-8") as f:
                 section0_text = f.read()
             verify_integrity(section0_text, self.section0_hash)
-            self._log("GENESIS_VERIFIED", "SYSTEM", "Section 0 hash valid")
-            return {"verified": True, "reason": "Hash match"}
         except Exception as e:
             reason = f"Genesis verification failed: {e}"
             self.enter_safe_stop(reason)
             return {"verified": False, "reason": reason}
+
+        # A valid Genesis artifact should not be reclassified as a Genesis
+        # failure merely because TRACE logging is temporarily unavailable.
+        # If _log() fails here, let the write-ahead failure surface as an
+        # ordinary operational error to the caller instead of converting it
+        # into a constitutional mismatch.
+        self._log("GENESIS_VERIFIED", "SYSTEM", "Section 0 hash valid")
+        return {"verified": True, "reason": "Hash match"}
 
     # ── S6: Schema Version + Migration Events (§6.7.3, §6.8.3) ──
 
@@ -1011,18 +1023,29 @@ def bootstrap(config=None, restore: bool = False) -> Runtime:
         print(f"  *** System halted since {ss.get('timestamp', 'unknown')} ***")
         print(f"  *** Only T-0 can clear: runtime.clear_safe_stop() ***")
 
-    # Always register the configured reference terms.
-    default_terms = getattr(runtime.config, "default_terms", DEFAULT_TERMS) or []
-    definition_prefix = getattr(runtime.config, "default_term_definition_prefix", "Sealed reference term")
-    for label in default_terms:
+    # Always register config-driven default terms.
+    # Hardening: bootstrap must not bake in a legacy domain persona.
+    # Use config.default_terms + config.default_term_definition_prefix as the
+    # single source of truth, skip blank labels, and ignore duplicates.
+    seen_default_labels = set()
+    for raw_label in runtime.config.default_terms:
+        label = (raw_label or "").strip()
+        if not label or label in seen_default_labels:
+            continue
+        seen_default_labels.add(label)
         term = Term(
             id=label,
             label=label,
-            definition=f"{definition_prefix}: {label}",
+            definition=f"{runtime.config.default_term_definition_prefix}: {label}",
             constraints=[],
             version="1.0",
         )
-        runtime.meaning.create_term(term)
+        try:
+            runtime.meaning.create_term(term)
+        except Exception:
+            # Defensive duplicate tolerance: bootstrap should remain stable even
+            # if a caller passes overlapping defaults.
+            pass
 
     # §6.8.3 — If Persistence applied migrations during construction, emit the
     # SCHEMA_MIGRATED event now that TRACE is wired up.

@@ -64,8 +64,23 @@ class Oath:
     # Signature: callback(action_class: str, container_id: str, exc: Exception)
     _failure_callback: Optional[Callable] = None
 
+    @staticmethod
+    def _normalize_container_id(container_id: Optional[str]) -> str:
+        """Normalize empty / blank container identifiers to GLOBAL.
+
+        Hardening: callers that pass None or whitespace should not create
+        ambiguous consent keys like ':EXECUTE'. RSS treats a missing container
+        binding as GLOBAL, not as a separate namespace.
+        """
+        if container_id is None:
+            return "GLOBAL"
+        if isinstance(container_id, str):
+            normalized = container_id.strip()
+            return normalized or "GLOBAL"
+        return str(container_id)
+
     def _key(self, action_class: str, container_id: str) -> str:
-        return f"{container_id}:{action_class}"
+        return f"{self._normalize_container_id(container_id)}:{action_class}"
 
     def set_persistence_callback(self, callback) -> None:
         """§6.9.2 — Wire persistence so every authorize() durably saves."""
@@ -109,7 +124,7 @@ class Oath:
             scope=scope,
             requester=requester,
             status="AUTHORIZED",
-            container_id=container_id,
+            container_id=self._normalize_container_id(container_id),
             granted_at=datetime.now(UTC),
             duration=duration,
         )
@@ -133,7 +148,7 @@ class Oath:
                 )
                 if self._failure_callback is not None:
                     try:
-                        self._failure_callback(action_class, container_id, exc)
+                        self._failure_callback(action_class, self._normalize_container_id(container_id), exc)
                     except Exception:
                         pass
                 return {
@@ -141,7 +156,7 @@ class Oath:
                     "error": "PERSISTENCE_FAILURE",
                     "reason": f"Consent not granted: durable write failed ({type(exc).__name__})",
                     "action_class": action_class,
-                    "container_id": container_id,
+                    "container_id": self._normalize_container_id(container_id),
                 }
 
         # Persistence succeeded (or was suppressed via _persist=False during
@@ -149,7 +164,7 @@ class Oath:
         # to exist on disk, so the in-memory state matches.
         self._consents[key] = record
 
-        return {"authorized": True, "action_class": action_class, "container_id": container_id}
+        return {"authorized": True, "action_class": action_class, "container_id": self._normalize_container_id(container_id)}
 
     def revoke(self, action_class: str, container_id: str = "GLOBAL") -> dict:
         """Phase E-4 (Option B) — True write-ahead revocation semantics.
@@ -186,14 +201,15 @@ class Oath:
             except Exception as exc:
                 # Refuse the revocation. In-memory state remains AUTHORIZED.
                 import sys as _sys
+                normalized_container = self._normalize_container_id(container_id)
                 print(
                     f"[OATH WARN §E-4] Revocation REFUSED — persistence failed for "
-                    f"{action_class}/{container_id}: {exc}",
+                    f"{action_class}/{normalized_container}: {exc}",
                     file=_sys.stderr,
                 )
                 if self._failure_callback is not None:
                     try:
-                        self._failure_callback(action_class, container_id, exc)
+                        self._failure_callback(action_class, self._normalize_container_id(container_id), exc)
                     except Exception:
                         pass
                 return {
@@ -236,6 +252,10 @@ class Oath:
 
     def handle(self, task: dict) -> dict:
         action = task.get("action")
+        if action is None:
+            return {"error": "MISSING_ACTION"}
+        if action in {"authorize", "check", "revoke"} and not task.get("action_class"):
+            return {"error": "MISSING_ACTION_CLASS", "action": action}
         if action == "authorize":
             return self.authorize(
                 task["action_class"], task.get("scope", ""),

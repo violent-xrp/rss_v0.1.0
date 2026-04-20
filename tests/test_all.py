@@ -47,7 +47,7 @@ if sys.platform == "win32":
     except (AttributeError, Exception):
         pass
 
-# Path shim: add ../src to sys.path so the 20 modules resolve when running
+# Path shim: add ../src to sys.path so the 21 modules resolve when running
 # `python tests/test_all.py` directly from the repo root. conftest.py does
 # the same thing automatically under pytest; this line makes direct runs work too.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
@@ -80,7 +80,8 @@ from cycle import Cycle
 from config import RSSConfig, RSS_VERSION
 from persistence import Persistence
 from llm_adapter import LLMAdapter
-from trace_export import export_trace_json, export_trace_text, EVENT_CODES, categorize_event, build_event_summary
+from trace_export import export_trace_json, export_trace_text, export_from_db, EVENT_CODES, categorize_event, build_event_summary, _sanitize_artifact_id, REDLINE_REDACTED
+from reference_pack import load_reference_pack, REFERENCE_PACK
 
 # Layer 6
 from runtime import Runtime, bootstrap, DEFAULT_TERMS
@@ -95,6 +96,18 @@ _fail = 0
 _errors = 0
 _funcs = 0
 
+
+def _running_under_pytest() -> bool:
+    """Return True when this module is executing under pytest.
+
+    `python tests/test_all.py` remains the canonical acceptance runner, but
+    pytest collection must still be truthful: a failed `check(...)` should
+    fail the collected test immediately instead of only incrementing our
+    private counters.
+    """
+    return "PYTEST_CURRENT_TEST" in os.environ
+
+
 def check(condition, msg):
     global _pass, _fail
     if condition:
@@ -103,6 +116,8 @@ def check(condition, msg):
     else:
         _fail += 1
         print(f"  [FAIL] {msg}")
+        if _running_under_pytest():
+            raise AssertionError(msg)
 
 
 def section(title):
@@ -380,6 +395,32 @@ def test_state_machine():
                               datetime.now(UTC) - timedelta(minutes=10), "hash")
     r = sm.execute(expired)
     check(r["executed"] is False and "TTL" in r["reason"], "expired blocked")
+
+
+def test_execution_word_boundary_hardening():
+    # CLAIM: §3.2 — verb classification should respect word boundaries
+    section("Execution Word-Boundary Hardening")
+
+    sm = ExecutionStateMachine(
+        high_risk_verbs=["delete", "display"],
+        constitutional_verbs=["seal"],
+    )
+
+    check(sm.classify_intent("display the results").classification == "HIGH_RISK",
+          "standalone high-risk verb still matches")
+    check(sm.classify_intent("seal section 2").classification == "CONSTITUTIONAL",
+          "standalone constitutional verb still matches")
+    check(sm.classify_intent("delete-all temporary files").classification == "HIGH_RISK",
+          "hyphen-boundary high-risk verb still matches")
+
+    check(sm.classify_intent("displayed results only").classification == "REQUEST",
+          "'displayed' does not false-match 'display'")
+    check(sm.classify_intent("displaypanel status").classification == "REQUEST",
+          "embedded 'display' inside larger token stays REQUEST")
+    check(sm.classify_intent("sealant issue at joint").classification == "REQUEST",
+          "'sealant' does not false-match 'seal'")
+    check(sm.classify_intent("unsealed packet").classification == "REQUEST",
+          "'unsealed' does not false-match 'seal'")
 
 
 # ============================================================
@@ -1459,8 +1500,9 @@ def test_contextual_reinjection():
         # Verify the format: label + definition pairs
         terms_text = "\n".join(f"{t['label']}: {t['definition']}" for t in terms)
         check("quote: " in terms_text.lower(), "terms_text includes label:definition format")
-        check("sealed reference term" in terms_text.lower(),
-              "canonical definitions present in reinjection text")
+        expected_prefix = rss.config.default_term_definition_prefix.lower()
+        check(expected_prefix in terms_text.lower(),
+              "canonical config-driven definitions present in reinjection text")
 
         rss.persistence.close()
     finally:
@@ -4689,8 +4731,8 @@ def test_s7_amendment_ceremony():
         check(rss.seal.get_proposal(p4["proposal_id"]).status == "REJECTED",
               "S7-10a: rejected proposal has REJECTED status")
         bad3 = rss.seal.ratify_amendment(p4["proposal_id"], t0_command=True)
-        check(bad3.get("error") is not None,
-              "S7-10b: rejected proposal cannot be ratified")
+        check(bad3.get("error") == "NOT_APPROVED",
+              "S7-10b: rejected proposal returns NOT_APPROVED")
 
         # 7.11 — S0 (Root Physics) requires sovereign override
         s0_fail = rss.seal.propose_amendment("S0", "test root change",
@@ -5299,8 +5341,8 @@ def test_phase_e_regression_battery():
             demo_src = f.read()
         check("rss.hubs.add_entry(" not in demo_src,
               "E-2: demo_llm.py no longer uses bypass rss.hubs.add_entry()")
-        check("rss.save_hub_entry(" in demo_src,
-              "E-2: demo_llm.py uses governed rss.save_hub_entry() path")
+        check(("rss.save_hub_entry(" in demo_src) or ("load_reference_pack(rss)" in demo_src),
+              "E-2: demo_llm.py uses a governed shared-reference loading path")
 
     # E-3: Container restore is part of default boot path
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -6106,6 +6148,517 @@ def test_probe_safe_stop_recovery_ceremony():
         _cleanup_db(path)
 
 
+
+def test_oath_extended_edges():
+    """Hardening: OATH failure callbacks, fallback precedence, and status accounting."""
+    section("OATH Extended Edges")
+
+    oath = Oath()
+    oath.authorize("EXECUTE", "WORK", "SESSION", "T-0")
+    oath.revoke("EXECUTE")
+    oath.authorize("EXECUTE", "WORK", "SESSION", "T-0", container_id="C-ALPHA")
+    check(oath.check("EXECUTE", "C-ALPHA") == "AUTHORIZED",
+          "container-specific AUTHORIZED overrides revoked GLOBAL fallback")
+
+    status = oath.status()
+    check("C-ALPHA:EXECUTE" in status["active_consents"],
+          "status lists active AUTHORIZED consent")
+    check("GLOBAL:EXECUTE" not in status["active_consents"],
+          "status excludes revoked GLOBAL consent")
+
+    calls = []
+    oath2 = Oath()
+    oath2.set_persistence_callback(lambda *args, **kwargs: calls.append("persist"))
+    result = oath2.authorize("EXECUTE", "WORK", "SESSION", "T-0", _persist=False)
+    check(result.get("authorized") is True, "_persist=False restore path still authorizes")
+    check(calls == [], "_persist=False bypasses persistence callback")
+
+    failure_events = []
+    oath3 = Oath()
+    oath3.set_persistence_callback(lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")))
+    oath3.set_failure_callback(lambda action, container_id, exc: failure_events.append((action, container_id, type(exc).__name__)))
+    r = oath3.authorize("EXECUTE", "WORK", "SESSION", "T-0", container_id="C1")
+    check(r.get("error") == "PERSISTENCE_FAILURE", "authorize persistence failure returns structured refusal")
+    check(failure_events == [("EXECUTE", "C1", "RuntimeError")],
+          "authorize persistence failure invokes failure callback")
+
+    failure_events2 = []
+    oath4 = Oath()
+    oath4.authorize("EXECUTE", "WORK", "SESSION", "T-0")
+    oath4.set_persistence_callback(lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")))
+    oath4.set_failure_callback(lambda action, container_id, exc: failure_events2.append((action, container_id, type(exc).__name__)))
+    r2 = oath4.revoke("EXECUTE")
+    check(r2.get("error") == "PERSISTENCE_FAILURE", "revoke persistence failure returns structured refusal")
+    check(failure_events2 == [("EXECUTE", "GLOBAL", "RuntimeError")],
+          "revoke persistence failure invokes failure callback")
+
+
+def test_oath_input_normalization_and_handle_edges():
+    """Hardening: blank container ids normalize to GLOBAL; handle() stays structured."""
+    section("OATH Input Normalization + Handle Edges")
+
+    oath = Oath()
+    auth = oath.authorize("EXECUTE", "WORK", "SESSION", "T-0", container_id="   ")
+    check(auth.get("authorized") is True, "blank container_id normalizes during authorize")
+    check(oath.check("EXECUTE") == "AUTHORIZED",
+          "blank container_id stores as GLOBAL rather than creating ghost namespace")
+
+    revoke = oath.revoke("EXECUTE", container_id="")
+    check(revoke.get("revoked") is True, "blank container_id normalizes during revoke")
+    check(oath.check("EXECUTE") == "REVOKED", "GLOBAL consent revoked through normalized blank container_id")
+
+    missing_action = oath.handle({})
+    check(missing_action.get("error") == "MISSING_ACTION",
+          "handle returns structured error for missing action")
+
+    missing_action_class = oath.handle({"action": "check"})
+    check(missing_action_class.get("error") == "MISSING_ACTION_CLASS",
+          "handle returns structured error for missing action_class")
+
+
+
+def test_runtime_default_term_pack_is_config_driven():
+    """Hardening: bootstrap uses config default term pack, not legacy hardcoding."""
+    section("Runtime Default Term Pack Is Config-Driven")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(
+            db_path=path,
+            default_terms=["deposition", "escrow", "deposition", "   ", "triage"],
+            default_term_definition_prefix="Sealed neutral term",
+        )
+        rss = bootstrap(config)
+
+        sealed = rss.meaning.list_sealed()
+        labels = [t["label"] for t in sealed]
+        check(labels == ["deposition", "escrow", "triage"],
+              "bootstrap loads deduplicated non-blank config default terms only")
+        defs = {t["label"]: t["definition"] for t in sealed}
+        check(defs["deposition"] == "Sealed neutral term: deposition",
+              "bootstrap uses config default_term_definition_prefix for deposition")
+        check(defs["escrow"] == "Sealed neutral term: escrow",
+              "bootstrap uses config default_term_definition_prefix for escrow")
+        check(all("construction" not in d.lower() for d in defs.values()),
+              "bootstrap no longer bakes construction-specific default definitions")
+
+        result = rss.process_request("deposition", use_llm=False)
+        check(result.get("meaning") == "SEALED", "custom config default term participates in pipeline")
+        rss.persistence.close()
+    finally:
+        _cleanup_db(path)
+
+
+
+def test_trace_export_cold_container_redline_sanitization():
+    """Hardening: cold export sanitizes REDLINE ids from container_hub_entries too."""
+    section("TRACE Export Cold Container REDLINE Sanitization")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    out_json = path + ".export.json"
+    out_txt = path + ".export.txt"
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+        container = rss.tecton.create_container("Tenant A", "T-0")
+        rss.tecton.activate_container(container.container_id)
+        entry = rss.tecton.add_container_entry(container.container_id, "WORK", "secret tenant note", redline=True)
+        rss.persistence.save_container_hub_entry(container.container_id, entry)
+        rss._log("TEST_LOG", f"TASK|{entry.id}|child", "container redline reference")
+        rss.persistence.close()
+
+        cold = Persistence(path)
+        count_json = export_from_db(cold, out_json, fmt="json")
+        check(count_json >= 1, "cold JSON export runs")
+        with open(out_json, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        joined_ids = "\n".join(e["artifact_id"] for e in data["events"])
+        check(REDLINE_REDACTED in joined_ids, "cold JSON export redacts container REDLINE entry ids")
+        check(entry.id not in joined_ids, "cold JSON export does not leak raw container REDLINE entry id")
+        check(data.get("redline_sanitized") is True, "cold JSON export flags redline_sanitized for container REDLINE ids")
+
+        count_txt = export_from_db(cold, out_txt, fmt="text")
+        check(count_txt == count_json, "cold text export writes same number of events as JSON export")
+        with open(out_txt, "r", encoding="utf-8") as f:
+            text_out = f.read()
+        check(REDLINE_REDACTED in text_out, "cold text export redacts container REDLINE entry ids")
+        check(entry.id not in text_out, "cold text export does not leak raw container REDLINE entry id")
+        cold.close()
+    finally:
+        for pth in (out_json, out_txt):
+            if os.path.exists(pth):
+                os.unlink(pth)
+        _cleanup_db(path)
+
+
+def test_trace_export_extended_edges():
+    """Hardening: exact-boundary text export filter and redline sanitization."""
+    section("TRACE Export Extended Edges")
+
+    trace = AuditLog()
+    trace.record_event("TEST_A", "TRACE", "TECTON-abc123", "root")
+    trace.record_event("TEST_B", "TRACE", "TECTON-abc123:ENTRY-1", "child")
+    trace.record_event("TEST_C", "TRACE", "TECTON-abc1234:ENTRY-2", "collision")
+
+    fd, path = tempfile.mkstemp(suffix=".txt")
+    os.close(fd)
+    try:
+        count = export_trace_text(trace, path, container_id="TECTON-abc123")
+        check(count == 2, "text export container filter uses exact-boundary matching")
+        with open(path, "r", encoding="utf-8") as f:
+            text_out = f.read()
+        check("TECTON-abc1234:ENTRY-2" not in text_out,
+              "text export excludes prefix-collision artifact_ids")
+        check("TECTON-abc123:ENTRY-1" in text_out,
+              "text export keeps exact-boundary child artifact_id")
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+
+    hubs = HubTopology()
+    red = hubs.add_entry("WORK", "secret", redline=True)
+    clean = hubs.add_entry("WORK", "public", redline=False)
+    trace2 = AuditLog()
+    trace2.record_event("TEST_RED", "TRACE", f"TASK|{red.id}", "redline ref")
+    trace2.record_event("TEST_CLEAN", "TRACE", f"TASK|{clean.id}", "clean ref")
+    fd2, path2 = tempfile.mkstemp(suffix=".txt")
+    os.close(fd2)
+    try:
+        export_trace_text(trace2, path2, hub_topology=hubs)
+        with open(path2, "r", encoding="utf-8") as f:
+            out = f.read()
+        check("[REDLINE-REDACTED]" in out, "text export redacts REDLINE entry IDs")
+        check(red.id not in out, "text export does not leak raw REDLINE entry ID")
+        check(clean.id in out, "text export preserves non-REDLINE entry IDs")
+    finally:
+        if os.path.exists(path2):
+            os.unlink(path2)
+
+
+def test_trace_export_token_boundary_sanitization():
+    """Hardening: REDLINE artifact sanitization should redact tokens, not substrings."""
+    section("TRACE Export Token-Boundary Sanitization")
+
+    redline_ids = {"ENTRY-red", "ENTRY-red-extra"}
+
+    check(_sanitize_artifact_id("ENTRY-red", redline_ids) == REDLINE_REDACTED,
+          "exact REDLINE artifact_id redacted")
+    check(_sanitize_artifact_id("TASK|ENTRY-red|child", redline_ids) == f"TASK|{REDLINE_REDACTED}|child",
+          "pipe-delimited REDLINE token redacted")
+    check(_sanitize_artifact_id("TECTON-1:ENTRY-red", redline_ids) == f"TECTON-1:{REDLINE_REDACTED}",
+          "colon-delimited REDLINE token redacted")
+    check(_sanitize_artifact_id("TASK|ENTRY-red-extra|child", redline_ids) == f"TASK|{REDLINE_REDACTED}|child",
+          "longer REDLINE id redacted before shorter prefix id")
+    check(_sanitize_artifact_id("TASK|ENTRY-redextrasuffix|child", redline_ids) == "TASK|ENTRY-redextrasuffix|child",
+          "alnum-extended token containing REDLINE substring is not over-redacted")
+    check(_sanitize_artifact_id("TASK|XENTRY-redY|child", redline_ids) == "TASK|XENTRY-redY|child",
+          "embedded REDLINE substring inside token is preserved")
+
+def test_trace_verify_cli_error_classification():
+    """Hardening: _main distinguishes file errors from schema errors."""
+    section("TRACE Verifier CLI Error Classification")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        conn = sqlite3.connect(path)
+        conn.execute("CREATE TABLE system_state(key TEXT PRIMARY KEY, value TEXT, updated_at TEXT)")
+        conn.commit()
+        conn.close()
+
+        import trace_verify as tv
+        rc = tv._main([path])
+        check(rc == tv.EXIT_SCHEMA_INVALID,
+              "schema error returns EXIT_SCHEMA_INVALID (not file error)")
+
+        rc2 = tv._main([path + ".missing"])
+        check(rc2 == tv.EXIT_FILE_ERROR,
+              "missing file returns EXIT_FILE_ERROR")
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+
+
+def test_trace_verify_registry_load_failure_is_nonfatal():
+    """Hardening: --use-registry warning path should not crash verification."""
+    section("TRACE Verifier Registry-Load Failure Edge")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        db = Persistence(path)
+        evt = TraceEvent(datetime.now(UTC), "TEST", "AUTH", "ART-1", "hash", 4, None)
+        db.save_trace_event(evt)
+        db.close()
+
+        import builtins
+        from unittest import mock
+        import trace_verify as tv
+
+        original_import = builtins.__import__
+        def _raising_import(name, globals=None, locals=None, fromlist=(), level=0):
+            if name == "trace_export":
+                raise RuntimeError("registry blew up")
+            return original_import(name, globals, locals, fromlist, level)
+
+        with mock.patch("builtins.__import__", side_effect=_raising_import):
+            rc = tv._main([path, "--use-registry"])
+        check(rc == tv.EXIT_OK,
+              "--use-registry load failure degrades to warning instead of crashing")
+    finally:
+        _cleanup_db(path)
+
+
+
+def test_seal_extended_edges():
+    """Hardening: rejected proposals and invalid review inputs."""
+    section("SEAL Extended Edges")
+
+    seal = Seal()
+    p = seal.propose_amendment("S2", "rationale", "text")
+    check("proposal_id" in p, "proposal created for extended edge tests")
+
+    bad_verdict = seal.review_amendment(p["proposal_id"], "reviewer", "MAYBE")
+    check(bad_verdict.get("error") == "INVALID_VERDICT", "review rejects invalid verdict")
+
+    missing_reviewer = seal.review_amendment(p["proposal_id"], "   ", "APPROVE")
+    check(missing_reviewer.get("error") == "REVIEWER_REQUIRED", "review requires non-blank reviewer identity")
+
+    p_lower = seal.propose_amendment(" S3 ", " rationale lower ", " text lower ")
+    check("proposal_id" in p_lower, "whitespace-trimmed proposal fields accepted when substantive")
+    lower_review = seal.review_amendment(p_lower["proposal_id"], " reviewer ", "approve", notes="ok")
+    check(lower_review.get("reviewed") is True and lower_review.get("verdict") == "APPROVE",
+          "review normalizes lowercase verdict and reviewer whitespace")
+    lower_ratify = seal.ratify_amendment(p_lower["proposal_id"], t0_command=True)
+    check(lower_ratify.get("ratified") is True, "normalized APPROVE verdict can be ratified")
+    again = seal.ratify_amendment(p_lower["proposal_id"], t0_command=True)
+    check(again.get("error") == "ALREADY_RATIFIED", "second ratification returns ALREADY_RATIFIED")
+
+    blank = seal.propose_amendment("   ", "   ", "   ")
+    check(blank.get("error") == "INCOMPLETE_PROPOSAL", "whitespace-only proposal fields rejected")
+
+    p2 = seal.propose_amendment("S2", "rationale2", "text2")
+    seal.review_amendment(p2["proposal_id"], "reviewer", "REJECT", notes="no")
+    rr = seal.ratify_amendment(p2["proposal_id"], t0_command=True)
+    check(rr.get("error") == "NOT_APPROVED", "ratify rejected proposal returns NOT_APPROVED")
+
+    rejected = seal.list_proposals(status="REJECTED")
+    check(any(item["proposal_id"] == p2["proposal_id"] for item in rejected),
+          "list_proposals(status='REJECTED') includes rejected proposal")
+
+
+
+def test_trace_verify_additional_proof():
+    """Additional proof: corrupted system_state, JSON output, mixed registry reporting, safe-stop branches."""
+    section("TRACE Verifier Additional Proof")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        db = Persistence(path)
+        log = AuditLog()
+        e1 = log.record_event("KNOWN_CODE", "AUTH", "ART-1", "alpha")
+        e2 = log.record_event("ODD_CODE", "AUTH", "ART-2", "beta")
+        db.save_trace_event(e1)
+        db.save_trace_event(e2)
+        db.set_schema_version(1)
+        db.enter_safe_stop("cold verifier branch test")
+        db.conn.execute("UPDATE system_state SET value='not-an-int' WHERE key='SCHEMA_VERSION'")
+        db.conn.commit()
+        db.close()
+
+        import io
+        from contextlib import redirect_stdout
+        import trace_verify as tv
+
+        result = tv.verify_trace_file(path, registry={"KNOWN_CODE": {}})
+        check(result["verified"] is True, "verify_trace_file still succeeds when system_state schema version is corrupted")
+        check(result["schema_version"] is None, "corrupted SCHEMA_VERSION value degrades to None")
+        check(result["stats"]["unknown_codes"] == ["ODD_CODE"],
+              "mixed known/unknown registry reporting surfaces only the unknown code")
+
+        safe_stop = tv.read_safe_stop_state(path)
+        check(safe_stop["active"] is True, "read_safe_stop_state sees active SAFE_STOP row")
+        check(safe_stop["reason"] == "cold verifier branch test", "read_safe_stop_state preserves halt reason")
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = tv._main([path, "--json", "--safe-stop"])
+        payload = json.loads(buf.getvalue())
+        check(rc == tv.EXIT_OK, "_main --json returns EXIT_OK on intact chain")
+        check(payload["verified"] is True, "_main --json emits verified=True payload")
+        check(payload["safe_stop"]["active"] is True, "_main --json --safe-stop includes Safe-Stop state")
+
+        conn = sqlite3.connect(path)
+        conn.execute("DELETE FROM system_state WHERE key='SAFE_STOP'")
+        conn.commit()
+        conn.close()
+        safe_stop_absent = tv.read_safe_stop_state(path)
+        check(safe_stop_absent["active"] is False,
+              "read_safe_stop_state returns inactive when system_state exists but SAFE_STOP row is absent")
+    finally:
+        _cleanup_db(path)
+
+
+
+def test_trace_export_additional_proof():
+    """Additional proof: filtered summaries, live/cold parity, multiple REDLINE tokens, mixed container/global exports."""
+    section("TRACE Export Additional Proof")
+
+    # Multiple REDLINE IDs in one artifact string should all be redacted.
+    multi = _sanitize_artifact_id("TASK|ENTRY-a|ENTRY-b|ENTRY-clean", {"ENTRY-a", "ENTRY-b"})
+    check(multi.count(REDLINE_REDACTED) == 2, "multiple REDLINE ids in one artifact string are all redacted")
+    check("ENTRY-clean" in multi, "non-REDLINE tokens survive multi-token sanitization")
+
+    trace = AuditLog()
+    trace.record_event("GLOBAL_EVT", "TRACE", "GLOBAL", "root")
+    trace.record_event("CONTAINER_EVT", "TRACE", "TECTON-x:ENTRY-1", "child")
+    trace.record_event("CONTAINER_OTHER", "TRACE", "TECTON-y:ENTRY-2", "other")
+
+    fd, path = tempfile.mkstemp(suffix=".json")
+    os.close(fd)
+    try:
+        export_trace_json(trace, path, container_id="TECTON-x")
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        check(data["event_count"] == 1, "filtered live JSON export returns only exact-boundary container events")
+        check(data["event_summary"]["total"] == data["event_count"], "filtered live JSON summary total matches event_count")
+        check(sum(data["event_summary"]["by_category"].values()) == data["event_count"],
+              "filtered live JSON category totals sum to event_count")
+        check(sum(data["event_summary"]["by_section"].values()) == data["event_count"],
+              "filtered live JSON section totals sum to event_count")
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    live_json = path + ".live.json"
+    cold_json = path + ".cold.json"
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+        red_global = rss.save_hub_entry("WORK", "global secret", redline=True)
+        container = rss.tecton.create_container("Tenant X", "T-0")
+        rss.tecton.activate_container(container.container_id)
+        red_container = rss.tecton.add_container_entry(container.container_id, "WORK", "container secret", redline=True)
+        rss.persistence.save_container_hub_entry(container.container_id, red_container)
+        rss._log("GLOBAL_EVT", f"TASK|{red_global.id}", "global ref")
+        rss._log("CONTAINER_EVT", f"{container.container_id}:{red_container.id}", "container ref")
+
+        live_count = export_trace_json(rss.trace, live_json, hub_topology=rss.hubs)
+        cold_count = export_from_db(rss.persistence, cold_json, fmt="json")
+        with open(live_json, "r", encoding="utf-8") as f:
+            live = json.load(f)
+        with open(cold_json, "r", encoding="utf-8") as f:
+            cold = json.load(f)
+        check(live_count == cold_count == live["event_count"] == cold["event_count"],
+              "live and cold export counts stay aligned on the same persisted chain")
+        check(live["event_summary"]["by_code"] if "by_code" in live["event_summary"] else True,
+              "live event summary remains present")
+        check(live["event_summary"]["total"] == cold["event_summary"]["total"],
+              "live and cold event_summary totals match")
+        joined_live = "\n".join(e["artifact_id"] for e in live["events"])
+        joined_cold = "\n".join(e["artifact_id"] for e in cold["events"])
+        check(REDLINE_REDACTED in joined_live and REDLINE_REDACTED in joined_cold,
+              "live and cold exports both sanitize REDLINE artifact ids")
+        check(red_global.id not in joined_live and red_container.id not in joined_cold,
+              "neither live nor cold export leaks raw REDLINE ids in mixed global/container cases")
+        rss.persistence.close()
+    finally:
+        for pth in (live_json, cold_json):
+            if os.path.exists(pth):
+                os.unlink(pth)
+        _cleanup_db(path)
+
+
+
+def test_seal_ceremony_additional_proof():
+    """Additional proof: repeated review after rejection, mixed-case reject normalization, history ordering, ratification idempotence."""
+    section("SEAL Ceremony Additional Proof")
+
+    seal = Seal()
+
+    rejected = seal.propose_amendment("S4", "clarify clause", "new text")
+    check("proposal_id" in rejected, "proposal exists for rejection-cycle proof")
+    review_reject = seal.review_amendment(rejected["proposal_id"], " reviewer ", "reject", notes="no")
+    check(review_reject.get("reviewed") is True and review_reject.get("verdict") == "REJECT",
+          "mixed-case reject verdict normalizes to REJECT")
+    repeat_review = seal.review_amendment(rejected["proposal_id"], "reviewer", "APPROVE")
+    check(repeat_review.get("error") == "INVALID_STATUS",
+          "re-review after rejection is blocked by proposal status")
+    ratify_rejected = seal.ratify_amendment(rejected["proposal_id"], t0_command=True)
+    check(ratify_rejected.get("error") == "NOT_APPROVED", "rejected proposal still cannot be ratified")
+
+    p1 = seal.propose_amendment("S4", "first", "first text")
+    seal.review_amendment(p1["proposal_id"], "r1", "approve")
+    r1 = seal.ratify_amendment(p1["proposal_id"], t0_command=True)
+    p2 = seal.propose_amendment("S4", "second", "second text")
+    seal.review_amendment(p2["proposal_id"], "r2", "APPROVE")
+    r2 = seal.ratify_amendment(p2["proposal_id"], t0_command=True)
+    hist = seal.amendment_history("S4")
+    versions = [row.new_version for row in hist]
+    check(versions == ["v1.0", "v1.1"], "amendment_history preserves ratification order and version progression")
+    before_len = len(hist)
+    again = seal.ratify_amendment(p2["proposal_id"], t0_command=True)
+    after_len = len(seal.amendment_history("S4"))
+    check(again.get("error") == "ALREADY_RATIFIED", "repeat ratification returns ALREADY_RATIFIED")
+    check(after_len == before_len, "repeat ratification does not duplicate amendment history")
+    check(r1["record"].reviewer == "r1" and r2["record"].reviewer == "r2",
+          "reviewer identity survives into ordered amendment history records")
+
+
+
+def test_genesis_binding_and_offline_fallback():
+    """Pre-demo improvements: real Genesis config binding, deterministic fallback, shared reference pack, ingress note."""
+    section("Genesis Binding + Offline Fallback")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    s0_path = path + ".section0.md"
+    try:
+        section0_text = "SOVEREIGN ROOT PHYSICS"
+        with open(s0_path, "w", encoding="utf-8") as f:
+            f.write(section0_text)
+        expected_hash = compute_hash(section0_text)
+        config = RSSConfig(
+            db_path=path,
+            section0_path=s0_path,
+            section0_hash=expected_hash,
+            require_genesis_file=True,
+        )
+        rss = bootstrap(config)
+        check(rss.section0_path == s0_path, "runtime binds Genesis path from config instead of hardcoded section0.txt")
+        check(rss.verify_genesis()["verified"] is True, "configured Genesis artifact verifies successfully")
+        with open(s0_path, "w", encoding="utf-8") as f:
+            f.write(section0_text + " tampered")
+        check(rss.verify_genesis()["verified"] is False, "configured Genesis binding detects tamper against fixed expected hash")
+        rss.clear_safe_stop()
+        with open(s0_path, "w", encoding="utf-8") as f:
+            f.write(section0_text)
+        check(rss.verify_genesis()["verified"] is True, "configured Genesis binding can be restored after tamper for follow-on operator flows")
+
+        inserted = load_reference_pack(rss)
+        check(inserted == len(REFERENCE_PACK), "shared reference pack inserts every reference row once on first load")
+        check(load_reference_pack(rss) == 0, "shared reference pack loader is idempotent")
+        rss.llm.is_available = lambda: False
+        response = rss.process_request("What is the current quote for?", use_llm=True).get("llm_response", "")
+        check("Echo:" not in response, "offline fallback no longer degrades to raw echo output")
+        check("governed entr" in response.lower(), "offline fallback cites how many governed entries it used")
+        check("I don't have that information" not in response, "offline fallback summarizes governed data when entries are available")
+        empty = rss.llm.call("", "", "What is my password?")
+        check("I don't have that information in the current governed data." in empty,
+              "offline fallback cleanly refuses when governed data is empty")
+        check("not cryptographic" in rss.ingress_posture_note().lower(),
+              "runtime exposes the ingress trust gap in operator-readable wording")
+        rss.persistence.close()
+    finally:
+        if os.path.exists(s0_path):
+            os.unlink(s0_path)
+        _cleanup_db(path)
+
 if __name__ == "__main__":
     safe_run(test_constitution)
     safe_run(test_audit_log)
@@ -6115,6 +6668,7 @@ if __name__ == "__main__":
     safe_run(test_pav)
     safe_run(test_meaning_law)
     safe_run(test_state_machine)
+    safe_run(test_execution_word_boundary_hardening)
     safe_run(test_scribe)
     safe_run(test_seal)
     safe_run(test_oath)
@@ -6235,6 +6789,20 @@ if __name__ == "__main__":
     safe_run(test_probe_hash_envelope_version_marker_present)
     safe_run(test_probe_container_filter_prefix_boundary)
     safe_run(test_probe_safe_stop_recovery_ceremony)
+    # Integrity hardening follow-up: OATH / TRACE export / cold verifier / SEAL edges
+    safe_run(test_oath_extended_edges)
+    safe_run(test_oath_input_normalization_and_handle_edges)
+    safe_run(test_runtime_default_term_pack_is_config_driven)
+    safe_run(test_trace_export_cold_container_redline_sanitization)
+    safe_run(test_trace_export_extended_edges)
+    safe_run(test_trace_export_token_boundary_sanitization)
+    safe_run(test_trace_verify_cli_error_classification)
+    safe_run(test_trace_verify_registry_load_failure_is_nonfatal)
+    safe_run(test_seal_extended_edges)
+    safe_run(test_trace_verify_additional_proof)
+    safe_run(test_trace_export_additional_proof)
+    safe_run(test_seal_ceremony_additional_proof)
+    safe_run(test_genesis_binding_and_offline_fallback)
 
     print(f"\n{'='*60}")
     print(f"RSS v0.1.0 — {_funcs} test functions, {_pass} assertions passed, {_fail} failed", end="")

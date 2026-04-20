@@ -61,6 +61,9 @@ class RSSConfig:
     llm_role_description: str = "governed knowledge assistant"
     llm_context_label: str = "governed data"
     llm_terms_heading: str = "Governed terminology (use these exact definitions):"
+    # Pact / Genesis binding (Section 0)
+    section0_path: str = "pact_section0_root_physics.md"
+    section0_hash: str = "8783d483cdc7b6e20140c19fb2fddf2cfab665ede8f9b3f96005c5f4d8e92e2c"
 
     # §6.6.4 — Phase C G-5: Strict event code validation.
     # When False (default, backward compatible): unknown codes are accepted

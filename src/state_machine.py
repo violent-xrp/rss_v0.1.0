@@ -32,6 +32,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, UTC
 from uuid import uuid4
 import hashlib
+import re
 
 
 class ExecutionError(Exception):
@@ -66,14 +67,24 @@ class ExecutionStateMachine:
         self._high_risk = [v.lower() for v in (high_risk_verbs or HIGH_RISK_VERBS)]
         self._constitutional = [v.lower() for v in (constitutional_verbs or CONSTITUTIONAL_VERBS)]
 
+    @staticmethod
+    def _contains_verb(text_lower: str, verb: str) -> bool:
+        """Word-boundary verb matching.
+
+        v0.1.0 hardening: avoid substring false positives like "displayed"
+        matching "display" or "sealant" matching "seal". Hyphenated forms
+        such as "delete-all" still match because '-' is a non-word boundary.
+        """
+        return bool(re.search(r"\b" + re.escape(verb.lower()) + r"\b", text_lower))
+
     def classify_intent(self, text: str) -> ExecutionIntent:
         """Classify based on verb detection and risk assessment."""
         text_lower = text.lower()
         payload_hash = hashlib.sha256(text.encode()).hexdigest()
 
-        # Check for high-risk verbs
+        # Check for high-risk verbs using whole-word boundaries.
         for verb in self._high_risk:
-            if verb in text_lower:
+            if self._contains_verb(text_lower, verb):
                 return ExecutionIntent(
                     id=f"INTENT-{uuid4().hex[:8]}",
                     raw_text=text,
@@ -83,9 +94,9 @@ class ExecutionStateMachine:
                     payload_hash=payload_hash,
                 )
 
-        # Check for constitutional verbs
+        # Check for constitutional verbs using whole-word boundaries.
         for verb in self._constitutional:
-            if verb in text_lower:
+            if self._contains_verb(text_lower, verb):
                 return ExecutionIntent(
                     id=f"INTENT-{uuid4().hex[:8]}",
                     raw_text=text,

@@ -310,7 +310,7 @@ def verify_trace_file(db_path: str,
 
     Args:
         db_path: Path to the .db file to verify. File is opened read-only.
-        container_filter: Optional substring filter on artifact_id. When
+        help='Optional container_id exact-boundary filter (matches artifact_id == container_id or container_id + ":")',
             provided, only events whose artifact_id contains this string are
             loaded and verified. Useful for container-scoped audits (§6.10.5).
             Note: a filtered subset is not guaranteed to form an unbroken
@@ -473,7 +473,7 @@ def _main(argv: Optional[List[str]] = None) -> int:
     )
     parser.add_argument(
         "--container",
-        help="Optional container_id substring filter (e.g., TECTON-abc12345)",
+        help='Optional container_id exact-boundary filter (matches artifact_id == container_id or container_id + ":")',
         default=None,
     )
     parser.add_argument(
@@ -507,9 +507,9 @@ def _main(argv: Optional[List[str]] = None) -> int:
         try:
             from trace_export import EVENT_CODES as _EC
             registry = _EC
-        except ImportError:
-            print("WARNING: --use-registry requested but trace_export.py not "
-                  "importable; unknown-code detection disabled.", file=sys.stderr)
+        except Exception as exc:
+            print("WARNING: --use-registry requested but trace_export.py could not "
+                  f"be loaded ({type(exc).__name__}: {exc}); unknown-code detection disabled.", file=sys.stderr)
 
     try:
         result = verify_trace_file(
@@ -526,7 +526,13 @@ def _main(argv: Optional[List[str]] = None) -> int:
             }, indent=2))
         else:
             print(f"ERROR: {e}", file=sys.stderr)
-        return EXIT_FILE_ERROR if "not found" in str(e).lower() else EXIT_SCHEMA_INVALID
+        reason = str(e).lower()
+        file_error_markers = (
+            "database file not found",
+            "not a regular file",
+            "cannot open database",
+        )
+        return EXIT_FILE_ERROR if any(marker in reason for marker in file_error_markers) else EXIT_SCHEMA_INVALID
 
     if args.safe_stop:
         try:

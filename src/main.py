@@ -41,6 +41,7 @@ from config import RSSConfig, RSS_VERSION
 from runtime import bootstrap
 from meaning_law import Term
 from trace_export import export_trace_json, export_trace_text, export_from_db
+from reference_pack import load_reference_pack
 
 
 def run_tests(rss):
@@ -78,16 +79,11 @@ def run_tests(rss):
 
 def run_demo(rss):
     """Interactive governed AI chat."""
-    # Load neutral reference data (persisted for future sessions)
-    if rss.hubs.hub_stats()["WORK"] == 0:
-        print("  Loading reference data...")
-        rss.save_hub_entry("WORK", "Vendor quote Q-104: Hosted analytics renewal $24,500. Includes onboarding and support.")
-        rss.save_hub_entry("WORK", "RFI-042: Clarification requested on retention policy and audit export format. Pending legal response.")
-        rss.save_hub_entry("WORK", "Daily log Mar 12: Tenant onboarding checkpoint complete. 12 records migrated.")
-        rss.save_hub_entry("WORK", "Submittal SUB-018: Security questionnaire sent to vendor. Awaiting approval.")
-        rss.save_hub_entry("PERSONAL", "Private compensation note: target salary review next quarter", redline=True)
+    inserted = load_reference_pack(rss)
+    if inserted > 0:
+        print(f"  Loaded shared reference pack: {inserted} new entries")
     else:
-        print(f"  Project data already loaded: {rss.hubs.hub_stats()['WORK']} WORK entries")
+        print(f"  Shared reference pack already present: {rss.hubs.hub_stats()['WORK']} WORK entries")
 
     print(f"  LLM: {'connected' if rss.llm.is_available() else 'fallback mode'}")
     print("  Type your question. 'quit' to exit.\n")
@@ -127,6 +123,7 @@ def show_status(rss):
     print(f"  Hub stats:    {rss.hubs.hub_stats()}")
     print(f"  Seats:        {rss.ward.list_seats()}")
     print(f"  Chain valid:  {rss.trace.verify_chain()}")
+    print(f"  Ingress:      {rss.ingress_posture_note()}")
 
     terms = rss.meaning.list_sealed()
     if terms:
