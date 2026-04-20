@@ -35,6 +35,18 @@ import tempfile
 import traceback
 from datetime import datetime, timedelta, UTC
 
+# Windows console UTF-8 shim: the default Windows console uses cp1252 which
+# cannot encode §, →, ☐, ✓ and other Unicode the suite prints. Reconfigure
+# stdout/stderr to UTF-8 so tests that print sigils / arrows don't crash.
+# Python 3.7+ provides reconfigure(); the try/except keeps this safe on
+# non-standard streams (e.g., when output is being piped through a wrapper).
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, Exception):
+        pass
+
 # Path shim: add ../src to sys.path so the 21 modules resolve when running
 # `python tests/test_all.py` directly from the repo root. conftest.py does
 # the same thing automatically under pytest; this line makes direct runs work too.
@@ -107,6 +119,43 @@ def safe_run(test_func):
         _errors += 1
         print(f"  [ERROR] {test_func.__name__} crashed: {e}")
         traceback.print_exc()
+
+
+def _cleanup_db(path):
+    """Windows-safe temp-DB cleanup.
+
+    On Windows, SQLite can hold file handles open slightly after a Python
+    reference to the connection is dropped (especially when tempfile holds
+    a dup'd handle from mkstemp). A naive os.unlink() raises WinError 32
+    'file in use' in those cases, even though functionally we're done with
+    the file. This helper:
+      - runs GC first to drop any lingering Python refs to sqlite3 connections
+      - retries deletion a few times with a short backoff
+      - suppresses errors on the last attempt so a test already past its
+        assertions does not fail its teardown on Windows quirks
+
+    Cleans path + SQLite sidecar files (-wal, -shm).
+    """
+    import gc
+    import time
+    gc.collect()
+    for suffix in ("", "-wal", "-shm"):
+        target = path + suffix
+        if not os.path.exists(target):
+            continue
+        for attempt in range(5):
+            try:
+                os.unlink(target)
+                break
+            except (PermissionError, OSError):
+                if attempt < 4:
+                    time.sleep(0.05 * (attempt + 1))
+                    gc.collect()
+                else:
+                    # Last attempt — swallow the error. The file will be
+                    # cleaned up by the OS at some later point. Not a test
+                    # failure.
+                    pass
 
 
 # ============================================================
@@ -4214,8 +4263,7 @@ def test_adversarial_ingress():
 
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 def test_adversarial_cross_container():
@@ -4304,8 +4352,7 @@ def test_adversarial_cross_container():
 
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 def test_adversarial_scope_escalation():
@@ -4385,8 +4432,7 @@ def test_adversarial_scope_escalation():
 
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 def test_adversarial_audit_tamper():
@@ -4442,8 +4488,7 @@ def test_adversarial_audit_tamper():
         rss2.persistence.close()
 
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 def test_adversarial_malformed_inputs():
@@ -4505,8 +4550,7 @@ def test_adversarial_malformed_inputs():
 
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 def test_adversarial_policy_confusion():
@@ -4561,8 +4605,7 @@ def test_adversarial_policy_confusion():
 
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 def test_s7_amendment_ceremony():
@@ -4691,8 +4734,7 @@ def test_s7_amendment_ceremony():
 
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 
@@ -4775,8 +4817,7 @@ def test_domain_pack_equivalence():
 
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 def test_exception_context_leak():
@@ -4835,8 +4876,7 @@ def test_exception_context_leak():
 
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 def test_idempotence_replay():
@@ -4908,8 +4948,7 @@ def test_idempotence_replay():
 
         rss2.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 def test_instructional_override():
@@ -4986,8 +5025,7 @@ def test_instructional_override():
 
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 def test_scenario_high_liability_flow():
@@ -5047,8 +5085,7 @@ def test_scenario_high_liability_flow():
 
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 def test_scenario_tamper_recovery():
@@ -5100,8 +5137,7 @@ def test_scenario_tamper_recovery():
 
         rss2.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 
@@ -5165,8 +5201,7 @@ def test_phase_e5_contextvar_isolation():
 
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
     # E-5.3 — Reset discipline: exception mid-request still restores context
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -5202,8 +5237,7 @@ def test_phase_e5_contextvar_isolation():
 
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 def test_phase_e_regression_battery():
@@ -5247,16 +5281,26 @@ def test_phase_e_regression_battery():
                   "E-1: refusal reason cites §E-1")
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
     # E-2: Demo harness uses governed save_hub_entry path (no direct add_entry)
-    with open(os.path.join(os.path.dirname(__file__), "demo_llm.py")) as f:
-        demo_src = f.read()
-    check("rss.hubs.add_entry(" not in demo_src,
-          "E-2: demo_llm.py no longer uses bypass rss.hubs.add_entry()")
-    check("rss.save_hub_entry(" in demo_src,
-          "E-2: demo_llm.py uses governed rss.save_hub_entry() path")
+    # Look in both tests/ (legacy) and examples/ (current layout).
+    test_dir = os.path.dirname(__file__)
+    candidates = [
+        os.path.join(test_dir, "demo_llm.py"),
+        os.path.join(test_dir, "..", "examples", "demo_llm.py"),
+        os.path.join(test_dir, "..", "demo_llm.py"),
+    ]
+    demo_path = next((p for p in candidates if os.path.exists(p)), None)
+    if demo_path is None:
+        check(False, f"E-2: demo_llm.py not found in any of: {candidates}")
+    else:
+        with open(demo_path) as f:
+            demo_src = f.read()
+        check("rss.hubs.add_entry(" not in demo_src,
+              "E-2: demo_llm.py no longer uses bypass rss.hubs.add_entry()")
+        check("rss.save_hub_entry(" in demo_src,
+              "E-2: demo_llm.py uses governed rss.save_hub_entry() path")
 
     # E-3: Container restore is part of default boot path
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -5280,8 +5324,7 @@ def test_phase_e_regression_battery():
                   "E-3: container state preserved across restart")
         rss2.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
     # E-4: OATH revoke also write-ahead (authorize already covered above)
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -5307,8 +5350,7 @@ def test_phase_e_regression_battery():
               "E-4: prior AUTHORIZED status preserved (no inverse split-brain)")
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 def test_phase_d_regression_battery():
@@ -5371,8 +5413,7 @@ def test_phase_d_regression_battery():
 
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
     # D-5 — ChatGPT's five scenarios for can_access_system_hub enforcement
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -5433,8 +5474,7 @@ def test_phase_d_regression_battery():
 
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
     # D-6 + E-4 Option B: OATH true write-ahead.
     # D-6 added loud failure visibility (kept). E-4 strengthens semantics:
@@ -5470,8 +5510,7 @@ def test_phase_d_regression_battery():
               "D-6: OATH_PERSISTENCE_FAILURE still emitted to unified TRACE")
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 def test_c_phase_regression_battery():
@@ -5523,8 +5562,7 @@ def test_c_phase_regression_battery():
               "C-1: EXECUTE revocation survives restart")
         rss2.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
     # C-4: max_requests_per_minute enforcement via TECTON
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -5548,8 +5586,7 @@ def test_c_phase_regression_battery():
               "C-4: container max_requests_per_minute=2 rate-limits 3rd request")
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
     # C-5: Strict event code validation
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -5570,8 +5607,7 @@ def test_c_phase_regression_battery():
         check(True, "C-5: strict mode accepts CONTAINER_REQUEST_* prefix")
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
     # C-6: Audit failure threshold → Safe-Stop
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -5589,8 +5625,7 @@ def test_c_phase_regression_battery():
               "C-6: threshold consecutive failures → Safe-Stop")
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
     # C-7: State criticality — CRITICAL load failure → Safe-Stop
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -5609,8 +5644,7 @@ def test_c_phase_regression_battery():
               "C-7: CRITICAL load failure enters Safe-Stop")
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
     # C-8: REDLINE export sanitization (live path)
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -5635,8 +5669,7 @@ def test_c_phase_regression_battery():
         os.unlink(out)
         rss.persistence.close()
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s): os.unlink(path + s)
+        _cleanup_db(path)
 
 
 
@@ -6070,9 +6103,7 @@ def test_probe_safe_stop_recovery_ceremony():
               "(external audit of the whole story)")
 
     finally:
-        for s in ["", "-wal", "-shm"]:
-            if os.path.exists(path + s):
-                os.unlink(path + s)
+        _cleanup_db(path)
 
 
 if __name__ == "__main__":
