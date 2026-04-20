@@ -49,7 +49,8 @@ from persistence import Persistence, CURRENT_SCHEMA_VERSION
 from llm_adapter import LLMAdapter
 
 
-# Default sealed terms for construction domain
+# Reference sealed terms bundled with the stock config.
+# Deployments can override these via RSSConfig.default_terms.
 DEFAULT_TERMS = [
     "quote", "RFI", "purchase order", "NCR", "submittal", "change order"
 ]
@@ -1010,12 +1011,14 @@ def bootstrap(config=None, restore: bool = False) -> Runtime:
         print(f"  *** System halted since {ss.get('timestamp', 'unknown')} ***")
         print(f"  *** Only T-0 can clear: runtime.clear_safe_stop() ***")
 
-    # Always register default terms
-    for label in DEFAULT_TERMS:
+    # Always register the configured reference terms.
+    default_terms = getattr(runtime.config, "default_terms", DEFAULT_TERMS) or []
+    definition_prefix = getattr(runtime.config, "default_term_definition_prefix", "Sealed reference term")
+    for label in default_terms:
         term = Term(
             id=label,
             label=label,
-            definition=f"Sealed construction term: {label}",
+            definition=f"{definition_prefix}: {label}",
             constraints=[],
             version="1.0",
         )

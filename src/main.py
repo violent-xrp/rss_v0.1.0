@@ -48,7 +48,7 @@ def run_tests(rss):
     tests = [
         ("quote",             True,  "SEALED term"),
         ("Quote",             True,  "Case-insensitive sealed term"),
-        ("RFI",               True,  "SEALED construction term"),
+        ("RFI",               True,  "SEALED reference term"),
         ("change order",      True,  "SEALED multi-word term"),
         ("estimate",          False, "Ambiguous — unknown phrase"),
         ("delete everything", False, "Unknown phrase — passes through"),
@@ -78,14 +78,14 @@ def run_tests(rss):
 
 def run_demo(rss):
     """Interactive governed AI chat."""
-    # Load sample project data (persisted for future sessions)
+    # Load neutral reference data (persisted for future sessions)
     if rss.hubs.hub_stats()["WORK"] == 0:
-        print("  Loading sample project data...")
-        rss.save_hub_entry("WORK", "Morrison Electrical panel upgrade quote: $245,000. Includes main switchgear replacement and 200A service panel.")
-        rss.save_hub_entry("WORK", "Johnson HVAC RFI-042: Duct routing conflict in structural bay 4. Pending engineer response.")
-        rss.save_hub_entry("WORK", "Daily log Feb 27: Concrete pour Building C complete. 12 workers on site.")
-        rss.save_hub_entry("WORK", "Submittal SUB-018: Fire alarm panel specs sent to architect. Awaiting approval.")
-        rss.save_hub_entry("PERSONAL", "Salary negotiation notes: asking for 15 percent raise next quarter", redline=True)
+        print("  Loading reference data...")
+        rss.save_hub_entry("WORK", "Vendor quote Q-104: Hosted analytics renewal $24,500. Includes onboarding and support.")
+        rss.save_hub_entry("WORK", "RFI-042: Clarification requested on retention policy and audit export format. Pending legal response.")
+        rss.save_hub_entry("WORK", "Daily log Mar 12: Tenant onboarding checkpoint complete. 12 records migrated.")
+        rss.save_hub_entry("WORK", "Submittal SUB-018: Security questionnaire sent to vendor. Awaiting approval.")
+        rss.save_hub_entry("PERSONAL", "Private compensation note: target salary review next quarter", redline=True)
     else:
         print(f"  Project data already loaded: {rss.hubs.hub_stats()['WORK']} WORK entries")
 

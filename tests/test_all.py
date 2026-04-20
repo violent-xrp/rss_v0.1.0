@@ -47,7 +47,7 @@ if sys.platform == "win32":
     except (AttributeError, Exception):
         pass
 
-# Path shim: add ../src to sys.path so the 21 modules resolve when running
+# Path shim: add ../src to sys.path so the 20 modules resolve when running
 # `python tests/test_all.py` directly from the repo root. conftest.py does
 # the same thing automatically under pytest; this line makes direct runs work too.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
@@ -1459,7 +1459,7 @@ def test_contextual_reinjection():
         # Verify the format: label + definition pairs
         terms_text = "\n".join(f"{t['label']}: {t['definition']}" for t in terms)
         check("quote: " in terms_text.lower(), "terms_text includes label:definition format")
-        check("sealed construction term" in terms_text.lower(),
+        check("sealed reference term" in terms_text.lower(),
               "canonical definitions present in reinjection text")
 
         rss.persistence.close()

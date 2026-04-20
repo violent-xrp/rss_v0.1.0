@@ -24,19 +24,25 @@
 # ==============================================================================
 """
 RSS v0.1.0 — LLM Demo
-Real governed AI calls with construction project data.
+Real governed AI calls with neutral reference data.
 """
+import os
+import sys
+
+# Path shim so `python examples/demo_llm.py` works from the repo root.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+
 from runtime import bootstrap
 
 def run():
     rss = bootstrap()
 
-    # Load project data
-    rss.save_hub_entry("WORK", "Morrison Electrical panel upgrade quote: $245,000. Includes main switchgear replacement and 200A service panel.")
-    rss.save_hub_entry("WORK", "Johnson HVAC RFI-042: Duct routing conflict in structural bay 4. Pending engineer response.")
-    rss.save_hub_entry("WORK", "Daily log Feb 27: Concrete pour Building C complete. 12 workers on site.")
-    rss.save_hub_entry("WORK", "Submittal SUB-018: Fire alarm panel specs sent to architect. Awaiting approval.")
-    rss.save_hub_entry("PERSONAL", "Salary negotiation notes: asking for 15 percent raise next quarter", redline=True)
+    # Load neutral reference data
+    rss.save_hub_entry("WORK", "Vendor quote Q-104: Hosted analytics renewal $24,500. Includes onboarding and support.")
+    rss.save_hub_entry("WORK", "RFI-042: Clarification requested on retention policy and audit export format. Pending legal response.")
+    rss.save_hub_entry("WORK", "Daily log Mar 12: Tenant onboarding checkpoint complete. 12 records migrated.")
+    rss.save_hub_entry("WORK", "Submittal SUB-018: Security questionnaire sent to vendor. Awaiting approval.")
+    rss.save_hub_entry("PERSONAL", "Private compensation note: target salary review next quarter", redline=True)
 
     print("=" * 60)
     print("RSS v0.1.0 — Governed LLM Demo")
@@ -47,10 +53,10 @@ def run():
     print("=" * 60)
 
     tests = [
-        "What is the Morrison quote for?",
+        "What is the current quote for?",
         "Is there an open RFI?",
         "What happened on the daily log?",
-        "What are my salary notes?",
+        "What are my private notes?",
         "What submittals are pending?",
     ]
 

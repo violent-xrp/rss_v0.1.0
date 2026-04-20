@@ -62,15 +62,15 @@ class LLMAdapter:
         terms_section = ""
         if terms and terms.strip():
             terms_section = (
-                f"\nProject terminology (use these exact definitions):\n{terms}\n"
+                f"\n{self.config.llm_terms_heading}\n{terms}\n"
             )
 
         prompt = (
-            f"You are a construction project assistant. "
-            f"Answer based ONLY on the project data provided below. "
-            f"If the data does not contain the answer, say 'I don't have that information in the current project data.' "
+            f"You are a {self.config.llm_role_description}. "
+            f"Answer based ONLY on the {self.config.llm_context_label} provided below. "
+            f"If the data does not contain the answer, say 'I don't have that information in the current governed data.' "
             f"Be concise and professional. Do not list definitions. Do not repeat the question.\n\n"
-            f"Project data:\n{pav_text}\n"
+            f"{self.config.llm_context_label.title()}:\n{pav_text}\n"
             f"{terms_section}\n"
             f"Question: {user_text}"
         )

@@ -10,3 +10,5 @@ __pycache__/
 *.db-shm
 *.db-wal
 rss_trace_export.json
+rss_v3*
+rss_trace_export*

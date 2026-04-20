@@ -52,6 +52,15 @@ class RSSConfig:
     standard_verbs: List[str] = field(default_factory=lambda: [
         "draft", "review", "list", "read", "check", "view", "query", "get",
     ])
+    # Reference seed terms bundled with the stock config. Deployments are
+    # expected to replace these with their own domain pack or leave them empty.
+    default_terms: List[str] = field(default_factory=lambda: [
+        "quote", "RFI", "purchase order", "NCR", "submittal", "change order",
+    ])
+    default_term_definition_prefix: str = "Sealed reference term"
+    llm_role_description: str = "governed knowledge assistant"
+    llm_context_label: str = "governed data"
+    llm_terms_heading: str = "Governed terminology (use these exact definitions):"
 
     # §6.6.4 — Phase C G-5: Strict event code validation.
     # When False (default, backward compatible): unknown codes are accepted

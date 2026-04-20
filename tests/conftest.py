@@ -25,7 +25,7 @@
 """
 RSS v0.1.0 — pytest path shim.
 
-This file makes the 21 modules in /src/ importable when tests are run from
+This file makes the 20 modules in /src/ importable when tests are run from
 /tests/. It is loaded automatically by pytest. test_all.py also sets up its
 own sys.path shim explicitly so it works under direct `python tests/test_all.py`
 invocation (where conftest.py is NOT auto-loaded).
