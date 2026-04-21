@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🙏 Questions and discussion
+    url: https://github.com/violent-xrp/rss_v0.1.0/discussions
+    about: Ask questions, discuss architecture, and share ideas here.
+
+  - name: 🔒 Security vulnerability reporting
+    url: mailto:rose.systems@outlook.com
+    about: Please do not open public issues for security vulnerabilities.

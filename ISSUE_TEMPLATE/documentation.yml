@@ -1,0 +1,35 @@
+name: Documentation issue
+description: Report missing, confusing, or incorrect documentation
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is unclear or incorrect?
+      placeholder: Describe the documentation problem.
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Where is it?
+      description: File, section, README heading, or page location.
+      placeholder: e.g. README.md / "Architecture Overview"
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested improvement
+      placeholder: What wording, explanation, or example would help?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      placeholder: Explain where you got stuck or what you expected to find.

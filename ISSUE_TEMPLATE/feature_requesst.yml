@@ -1,0 +1,71 @@
+name: Feature request
+description: Propose a concrete improvement to RSS
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for actionable feature requests.
+        For open-ended brainstorming or design debate, please use Discussions / Ideas.
+
+  - type: input
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      placeholder: Describe the pain point or gap.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      placeholder: Describe the feature you want to see.
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Why is this important?
+      placeholder: Explain why this matters for users, operators, or maintainers.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Suggested scope
+      description: Keep it concrete. What should be included or excluded?
+      placeholder: |
+        Include:
+        Exclude:
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: Describe any alternatives or workarounds.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area does this affect?
+      options:
+        - Constitution / Section 0
+        - TRACE
+        - SCOPE
+        - RUNE
+        - OATH
+        - CYCLE
+        - SCRIBE / SEAL
+        - TECTON
+        - Persistence
+        - Docs / Examples
+        - CLI / UX
+        - Other
+    validations:
+      required: true

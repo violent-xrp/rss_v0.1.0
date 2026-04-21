@@ -4,8 +4,8 @@ Release target: **v0.1.0**
 
 Current code state:
 - **126 test functions / 956 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **20 committed `src/` modules** on the live repo at last verified project snapshot
-- `chain_hash_migrate.py` exists as a prepared support module and belongs in `src/`; once committed there, the source-module count becomes **21**
+- **22 committed `src/` modules** in the current project truth
+- **88.3% total coverage** in the most recent full review pass
 - claim traceability generated at `docs/claim_matrix.md`
 
 Current posture:
@@ -73,6 +73,8 @@ If counts go down, the reason must be written here in plain language.
 - **121 / 909 / 0** — config-driven bootstrap term packs + cold export container REDLINE sanitization
 - **126 / 956 / 0** — current pre-demo hardening baseline after verifier/export/ceremony proof growth, governed fallback strengthening, and shared reference-pack demo foundation
 
+> Carry-forward note: one external review pass reported an off-by-one assertion discrepancy (**955** instead of **956**). Until that is reproduced locally, the direct local acceptance run remains canonical and the discrepancy is tracked below as a review finding rather than treated as settled truth.
+
 ---
 
 ## Phase Ledger
@@ -88,6 +90,10 @@ Landed:
 - default EXECUTE consent now respects persisted state rather than overwriting revocations
 - entry IDs remain stable across restore paths
 
+Carry-forward findings:
+- `constitution.py` still has the weakest coverage in the codebase (~55%) because `load_constitution()` is not directly exercised; either add explicit proof for the public API or formally treat `verify_genesis()` as the sole supported path
+- `constitution.py` docstrings should eventually be brought up to the same Pact-citation discipline used elsewhere
+
 ### Phase B — Vocabulary and pipeline law hardening
 Landed:
 - word-boundary matching for sealed terms
@@ -97,6 +103,10 @@ Landed:
 - compound-term detection available through `classify_all()` and attached compound context
 - REDLINE count suppressed from normal response surfaces while still auditable through TRACE
 - stage/stage_name reporting on pipeline halts
+
+Carry-forward findings:
+- `pav.py` currently falls back silently to `CONTENT_ONLY` for an unknown sanitization policy; this is safe but can hide config typos
+- future hardening should prefer loud failure or warning over silent downgrade on invalid policy names
 
 ### Phase C — Audit rigor, export discipline, and failure semantics
 Landed:
@@ -108,6 +118,22 @@ Landed:
 - cold/export parity tests for container/global REDLINE handling
 - visible `chain_hash_migrate.py` scaffold so version bumps cannot happen silently
 
+Still active under Phase C:
+- more `trace_verify.py` proof:
+  - corrupted `system_state`
+  - malformed JSON output expectations
+  - mixed known/unknown code reporting with `--use-registry`
+  - more cold Safe-Stop read branches
+- more `trace_export.py` proof:
+  - summary integrity when filters are applied
+  - export consistency between live and cold paths
+  - multiple REDLINE IDs in one artifact string
+  - container/global mixed export cases
+
+Carry-forward findings:
+- `audit_log.verify_chain()` still returns only a boolean; the cold verifier has better diagnostic detail, so there is room for API parity later
+- `persistence.save_hub_entry()` uses `INSERT OR REPLACE`; collision is theoretical with UUID-style IDs, but the audit-first posture may eventually want a louder failure mode for impossible ID reuse
+
 ### Phase D — Container governance and ingress discipline
 Landed:
 - unified TRACE for TECTON lifecycle and request events
@@ -117,9 +143,15 @@ Landed:
 - container profile immutability in ACTIVE state
 - container-specific rate limiting through CYCLE
 
-Still open under Phase D / adjacent wrapper work:
+Still active under Phase D / adjacent wrapper work:
 - real caller authentication beyond single-process ingress discipline
 - stronger wrapper/API identity propagation guarantees
+- better audit symmetry for destructive container transitions
+
+Carry-forward findings:
+- TECTON destructive transitions (`suspend_container`, `archive_container`, `destroy_container`, `reactivate_container`) still lack a `reason` parameter even though `mutate_active_profile` already requires one
+- `hub_topology.archive_entry()` returns `None` while adjacent state-changing APIs return the mutated entry; this is minor API inconsistency
+- demo-path code should avoid hardcoded container labels when the reference pack already carries the canonical container names
 
 ### Phase E — Production posture, write-ahead consent truth, and context isolation
 Landed:
@@ -132,6 +164,10 @@ Landed:
 Still open under Phase E:
 - thread / worker context propagation beyond current single-process assumptions
 - wrapper-layer guarantees for future FastAPI / ASGI surfaces
+
+Carry-forward findings:
+- `scope._envelopes`, `scribe._drafts`, and `scribe._uaps` currently have no eviction/cleanup strategy; that is acceptable at alpha scale but should be tracked for long-running processes
+- `cycle.check_rate_limit()` correctly auto-registers unknown domains, but that also masks typos; keep this in mind if more explicit operator diagnostics are added later
 
 ### Phase F — Pre-demo hardening and governed usefulness
 **Current active focus**
@@ -146,16 +182,6 @@ Landed already:
 - runtime/bootstrap moved to config-driven Section 0 path/hash and config-driven default terminology
 
 Still active before demo:
-- more `trace_verify.py` proof:
-  - corrupted `system_state`
-  - malformed JSON output expectations
-  - mixed known/unknown code reporting with `--use-registry`
-  - more cold Safe-Stop read branches
-- more `trace_export.py` proof:
-  - summary integrity when filters are applied
-  - export consistency between live and cold paths
-  - multiple REDLINE IDs in one artifact string
-  - container/global mixed export cases
 - more `seal.py` ceremony proof:
   - repeated review after rejection
   - whitespace-only rationale / proposed_text
@@ -165,6 +191,12 @@ Still active before demo:
   - negative-path persistence-failure density
   - consent namespace edge cases
   - explicit regression guards around blank / malformed container bindings
+- runtime/LLM/runtime-support hardening from full review:
+  - make `clear_safe_stop()` idempotent so it does not emit false `SAFE_STOP_CLEARED` events
+  - add an explicit Phase F TODO on `clear_safe_stop()` for future sovereign identity gating
+  - move the hardcoded `llm_adapter.is_available()` timeout into config (`llm_availability_check_timeout`)
+  - move per-request `STAGES` allocation in runtime to a module/class constant
+  - reconcile the one review-reported assertion discrepancy rather than letting the count drift silently
 
 ### Phase G — Demo / operator experience
 **Next after current hardening focus**
@@ -184,6 +216,10 @@ Build out:
 
 Goal:
 - a live demo that feels like a governed system following real state, not a thin placeholder
+
+Carry-forward findings:
+- `reference_pack.py` is in good shape as the shared demo truth source, but its current schema assumes `personal_entries` are always REDLINE-style private material; if future demo packs need non-REDLINE PERSONAL examples, the shape may need to widen
+- `demo_suite.py` should continue to key off the reference-pack structure rather than hardcoded labels or assumptions
 
 ### Phase H — External trust anchoring and deployment-boundary maturity
 Future work:
@@ -255,6 +291,20 @@ Move items from here into active phase work when they become immediate.
 - `CHAIN_HASH_VERSION` bump procedure once a real migration exists
 - external audit portability and cross-machine verification ergonomics
 - whether demo/reference data should gain versioning or pack selection once multiple demo worlds exist
+- whether in-memory TRACE verification should eventually return richer break-location detail
+- whether alpha-scale in-memory caches need a lightweight TTL cleanup utility before wrapper/API surfaces expand
+
+---
+
+## Review Findings Carry-Forward (April 2026 full code review)
+
+These findings were integrated into the phase ledger above. This section exists only to keep the remaining housekeeping items visible in one place.
+
+- **Module count truth:** current project truth is **22 `src/` modules**, not 20 or 21
+- **Coverage citation:** current review citation is **88.3%**
+- **CLAIM-tag drift:** 14 of 126 tests were reported as missing `# CLAIM:` tags in the full review pass and should be brought back into compliance
+- **Test-suite header wording:** stale fixed-count comments and dated wording still exist in `tests/test_all.py` / `conftest.py`
+- **Assertion-count discrepancy:** one review pass saw **955** assertions while the local acceptance run reported **956**; do not hide the mismatch, reconcile it when convenient
 
 ---
 
