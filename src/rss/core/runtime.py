@@ -32,21 +32,21 @@ Persistence round-trip: saves AND loads state on restart.
 from datetime import datetime, UTC
 from typing import Any, Dict, Optional
 
-from constitution import verify_integrity, SafeStopTriggered
-from config import RSSConfig
-from audit_log import AuditLog
-from ward import Ward
-from scope import Scope, ScopeError
-from hub_topology import HubTopology
-from pav import PAVBuilder, CONTENT_ONLY
-from meaning_law import MeaningLaw, Term
-from state_machine import ExecutionStateMachine
-from oath import Oath
-from cycle import Cycle
-from scribe import Scribe
-from seal import Seal
-from persistence import Persistence, CURRENT_SCHEMA_VERSION
-from llm_adapter import LLMAdapter
+from rss.governance.constitution import verify_integrity, SafeStopTriggered
+from rss.core.config import RSSConfig
+from rss.audit.log import AuditLog
+from rss.governance.seats.ward import Ward
+from rss.governance.seats.scope import Scope, ScopeError
+from rss.hubs.topology import HubTopology
+from rss.hubs.pav import PAVBuilder, CONTENT_ONLY
+from rss.governance.seats.rune import MeaningLaw, Term
+from rss.core.state_machine import ExecutionStateMachine
+from rss.governance.seats.oath import Oath
+from rss.governance.seats.cycle import Cycle
+from rss.governance.seats.scribe import Scribe
+from rss.governance.seats.seal import Seal
+from rss.persistence.sqlite import Persistence, CURRENT_SCHEMA_VERSION
+from rss.llm.adapter import LLMAdapter
 
 
 # Default sealed terms come from config. This constant remains as a backward-
@@ -67,6 +67,12 @@ DEFAULT_TERMS = RSSConfig().default_terms
 # TLS, OAuth, etc.). RSS v0.1.0 is a single-process kernel; enforcement happens
 # at the edge, not at the runtime boundary.
 _TECTON_INGRESS_TOKEN = object()
+
+# Pipeline stage names — module-level so they are not re-allocated per request (§3.3.4)
+_PIPELINE_STAGES: dict = {
+    0: "SAFE_STOP", 1: "GENESIS", 2: "SCOPE", 3: "RUNE",
+    4: "EXECUTION", 5: "OATH", 6: "CYCLE", 7: "PAV", 8: "LLM", 9: "TRACE",
+}
 
 
 # Phase E-5 — Context-bound hub isolation. Replaces the earlier global mutation
@@ -118,7 +124,7 @@ class Runtime:
         # record_event() validates codes. Default non-strict (warn) to remain
         # backward compatible; T-0 can flip config.strict_event_codes=True
         # for production.
-        from trace_export import EVENT_CODES as _TRACE_CODES
+        from rss.audit.export import EVENT_CODES as _TRACE_CODES
         self.trace.set_code_registry(
             _TRACE_CODES,
             strict=self.config.strict_event_codes,
@@ -160,7 +166,7 @@ class Runtime:
         # self._log() instead of a side AuditLog. This gives container events
         # write-ahead persistence (§0.8.3), boot-chain verification (§6.3.5),
         # export visibility, and cold verifier coverage.
-        from tecton import Tecton
+        from rss.hubs.tecton import Tecton
         self.tecton = Tecton()
         self.tecton.attach_runtime(self)
 
@@ -298,10 +304,17 @@ class Runtime:
         self.persistence.enter_safe_stop(reason)
         self._log("SAFE_STOP_ENTERED", "SYSTEM", reason)
 
-    def clear_safe_stop(self):
-        """Clear Safe-Stop. T-0 only. Pact §0.5.2"""
+    def clear_safe_stop(self) -> dict:
+        """Clear Safe-Stop. T-0 only. Pact §0.5.2
+        Idempotent: if the system is not currently halted, returns NO_OP
+        without emitting a SAFE_STOP_CLEARED event (avoids false audit records).
+        # TODO Phase F: gate behind sovereign identity verification — see oath.authorize() pattern
+        """
+        if not self.persistence.is_safe_stopped().get("active"):
+            return {"status": "NO_OP", "reason": "not_halted"}
         self.persistence.clear_safe_stop()
         self._log("SAFE_STOP_CLEARED", "SYSTEM", "T-0 cleared Safe-Stop")
+        return {"status": "CLEARED"}
 
     def is_safe_stopped(self) -> dict:
         """Check persistent Safe-Stop state."""
@@ -802,11 +815,8 @@ class Runtime:
                 "container_id": container_id,
             }
 
-        # Stage tracking (§3.3.4)
-        STAGES = {
-            0: "SAFE_STOP", 1: "GENESIS", 2: "SCOPE", 3: "RUNE",
-            4: "EXECUTION", 5: "OATH", 6: "CYCLE", 7: "PAV", 8: "LLM", 9: "TRACE",
-        }
+        # Stage tracking (§3.3.4) — names live in module-level _PIPELINE_STAGES
+        STAGES = _PIPELINE_STAGES
         last_stage = -1  # No stage completed yet
 
         try:

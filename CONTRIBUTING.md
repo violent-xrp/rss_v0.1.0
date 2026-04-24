@@ -27,7 +27,7 @@ python tests/test_all.py
 ```
 Current expected final line:
 ```text
-RSS v0.1.0 — 126 test functions, 956 assertions passed, 0 failed
+RSS v0.1.0 — 131 test functions, 994 assertions passed, 0 failed
 ```
 
 If `pytest` is installed, parity check:
@@ -42,7 +42,8 @@ python -m pytest -q tests/test_all.py
 - do not bury count-history logic inside the test runner itself
 
 ## Where to put things
-- runtime/support modules → `src/`
+- kernel modules → `src/rss/` (subpackages: `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`)
+- CLI entry point → `src/main.py`
 - acceptance tests / helpers → `tests/`
 - demos / walkthroughs → `examples/`
 - pact text → `pact/`

@@ -59,14 +59,24 @@ class Cycle:
             if domain not in self._domains:
                 self._domains[domain] = CycleRecord(domain=domain, max_per_minute=max_per_minute)
 
-    def check_rate_limit(self, domain: str, max_per_minute: int = None) -> dict:
+    def check_rate_limit(self, domain: str, max_per_minute: int = None,
+                          strict: bool = False) -> dict:
         """Check rate limit for a domain; enforce max_per_minute.
 
         §C-NEW-3 — Optional `max_per_minute` argument lets callers pass a
         container-specific limit from ContainerPermissions. If provided, the
         domain's max is updated to this value before the check. This lets
         per-container limits from TECTON override the default 10/min without
-        requiring a separate CYCLE instance per container."""
+        requiring a separate CYCLE instance per container.
+
+        `strict=True` — raise ValueError if the domain was not previously
+        registered. Useful for diagnostic callers who want typos to fail loud
+        rather than silently creating a new domain with default limits."""
+        if strict and domain not in self._domains:
+            raise ValueError(
+                f"CYCLE strict mode: domain {domain!r} is not registered. "
+                "Call register_domain() first or pass strict=False."
+            )
         self.register_domain(domain)
         record = self._domains[domain]
 

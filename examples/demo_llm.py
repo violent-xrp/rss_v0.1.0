@@ -13,9 +13,9 @@ import sys
 # Path shim so `python examples/demo_llm.py` works from the repo root.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from runtime import bootstrap
-from tecton import ContainerRequest
-from reference_pack import seed_demo_world, DEMO_CONTAINERS, DEMO_QUESTIONS
+from rss.core.runtime import bootstrap
+from rss.hubs.tecton import ContainerRequest
+from rss.reference_pack import seed_demo_world, DEMO_CONTAINERS, DEMO_QUESTIONS
 
 
 def _print_answer(prefix: str, result: dict):

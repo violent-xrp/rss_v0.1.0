@@ -62,7 +62,7 @@ Usage:
 
   As a library:
 
-    from trace_verify import verify_trace_file
+    from rss.audit.verify import verify_trace_file
     result = verify_trace_file("rss.db")
     if result["verified"]:
         print("Chain intact.")
@@ -505,7 +505,7 @@ def _main(argv: Optional[List[str]] = None) -> int:
     registry = None
     if args.use_registry:
         try:
-            from trace_export import EVENT_CODES as _EC
+            from rss.audit.export import EVENT_CODES as _EC
             registry = _EC
         except Exception as exc:
             print("WARNING: --use-registry requested but trace_export.py could not "

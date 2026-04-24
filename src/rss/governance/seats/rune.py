@@ -125,7 +125,7 @@ class MeaningLaw:
         if self._high_risk_verbs is not None:
             return self._high_risk_verbs
         try:
-            from config import RSSConfig
+            from rss.core.config import RSSConfig
             return RSSConfig().high_risk_verbs
         except Exception:
             return []

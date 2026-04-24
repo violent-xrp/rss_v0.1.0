@@ -38,11 +38,11 @@ Usage:
   python main.py export-trace      Export TRACE audit log to file
 """
 import sys
-from config import RSSConfig, RSS_VERSION
-from runtime import bootstrap
-from meaning_law import Term
-from trace_export import export_trace_json, export_trace_text, export_from_db
-from reference_pack import load_reference_pack, seed_demo_world, DEMO_CONTAINERS, DEMO_QUESTIONS
+from rss.core.config import RSSConfig, RSS_VERSION
+from rss.core.runtime import bootstrap
+from rss.governance.seats.rune import Term
+from rss.audit.export import export_trace_json, export_trace_text, export_from_db
+from rss.reference_pack import load_reference_pack, seed_demo_world, DEMO_CONTAINERS, DEMO_QUESTIONS
 
 
 def run_tests(rss):
@@ -120,7 +120,7 @@ def run_demo_suite(rss):
         print(f"    A: {answer}")
 
     print("\n  [Container workflows]")
-    from tecton import ContainerRequest
+    from rss.hubs.tecton import ContainerRequest
     for spec in DEMO_CONTAINERS:
         cid = seeded["containers"][spec["label"]]
         print(f"\n    Container: {spec['label']} ({cid})")

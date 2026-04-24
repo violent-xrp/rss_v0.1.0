@@ -47,8 +47,8 @@ from types import MappingProxyType
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from hub_topology import HubTopology, HubEntry, VALID_HUBS
-from audit_log import AuditLog
+from rss.hubs.topology import HubTopology, HubEntry, VALID_HUBS
+from rss.audit.log import AuditLog
 
 
 class TectonError(Exception):
@@ -399,66 +399,76 @@ class Tecton:
                                  f"Container '{c.profile.label}' activated")
         return c
 
-    def suspend_container(self, cid: str) -> TenantContainer:
-        """§5.2.2 — Suspend. ACTIVE → SUSPENDED. Reversible.
+    def suspend_container(self, cid: str, reason: str = "") -> TenantContainer:
+        """§5.2.2 — Suspend. ACTIVE → SUSPENDED. Reversible. Requires reason.
         Profile remains locked while suspended — reactivation does not require re-sealing."""
+        if not reason or not reason.strip():
+            raise TectonError("Suspending a container requires a non-empty reason (§5.2.2)")
         c = self._get(cid)
         self._assert_transition(c, "SUSPENDED")
         c.state = "SUSPENDED"
         c.lifecycle_log.append({
             "action": "SUSPENDED",
             "timestamp": datetime.now(UTC).isoformat(),
+            "reason": reason,
         })
         self._emit("CONTAINER_SUSPENDED", cid,
-                                 f"Container '{c.profile.label}' suspended")
+                                 f"Container '{c.profile.label}' suspended: reason={reason}")
         return c
 
-    def reactivate_container(self, cid: str) -> TenantContainer:
-        """§5.2.2 — Reactivate. SUSPENDED → ACTIVE.
+    def reactivate_container(self, cid: str, reason: str = "") -> TenantContainer:
+        """§5.2.2 — Reactivate. SUSPENDED → ACTIVE. Requires reason.
         Verifies profile valid, logs reactivation, consent grants intact.
         §5.3.3 — Profile stays locked (was locked on original activation)."""
+        if not reason or not reason.strip():
+            raise TectonError("Reactivating a container requires a non-empty reason (§5.2.2)")
         c = self._get(cid)
         self._assert_transition(c, "ACTIVE")
-        # Profile validation — ensure hubs exist and label non-empty
         if not c.profile.label:
             raise TectonError(f"Cannot reactivate: invalid profile (empty label)")
         c.state = "ACTIVE"
-        # Defensive: ensure lock is set (it should already be, but this is idempotent)
         if not getattr(c.profile, "_locked", False):
             c.profile._lock()
         c.lifecycle_log.append({
             "action": "REACTIVATED",
             "timestamp": datetime.now(UTC).isoformat(),
+            "reason": reason,
         })
         self._emit("CONTAINER_REACTIVATED", cid,
-                                 f"Container '{c.profile.label}' reactivated from SUSPENDED")
+                                 f"Container '{c.profile.label}' reactivated from SUSPENDED: reason={reason}")
         return c
 
-    def archive_container(self, cid: str) -> TenantContainer:
-        """§5.2.2 — Archive. ACTIVE/SUSPENDED → ARCHIVED. Permanent read-only."""
+    def archive_container(self, cid: str, reason: str = "") -> TenantContainer:
+        """§5.2.2 — Archive. ACTIVE/SUSPENDED → ARCHIVED. Permanent read-only. Requires reason."""
+        if not reason or not reason.strip():
+            raise TectonError("Archiving a container requires a non-empty reason (§5.2.2)")
         c = self._get(cid)
         self._assert_transition(c, "ARCHIVED")
         c.state = "ARCHIVED"
         c.lifecycle_log.append({
             "action": "ARCHIVED",
             "timestamp": datetime.now(UTC).isoformat(),
+            "reason": reason,
         })
         self._emit("CONTAINER_ARCHIVED", cid,
-                                 f"Container '{c.profile.label}' archived")
+                                 f"Container '{c.profile.label}' archived: reason={reason}")
         return c
 
-    def destroy_container(self, cid: str) -> dict:
-        """§5.2.5 — Destroy. ARCHIVED → DESTROYED only.
+    def destroy_container(self, cid: str, reason: str = "") -> dict:
+        """§5.2.5 — Destroy. ARCHIVED → DESTROYED only. Requires reason.
         Tombstones container. Data preserved for audit. No automatic purge."""
+        if not reason or not reason.strip():
+            raise TectonError("Destroying a container requires a non-empty reason (§5.2.5)")
         c = self._get(cid)
         self._assert_transition(c, "DESTROYED")
         c.state = "DESTROYED"
         c.lifecycle_log.append({
             "action": "DESTROYED",
             "timestamp": datetime.now(UTC).isoformat(),
+            "reason": reason,
         })
         self._emit("CONTAINER_DESTROYED", cid,
-                                 f"Container '{c.profile.label}' destroyed. Data preserved for audit.")
+                                 f"Container '{c.profile.label}' destroyed: reason={reason}. Data preserved for audit.")
         return {"destroyed": True, "container_id": cid, "data_preserved": True}
 
     def mutate_active_profile(self, cid: str, scope_policy: Optional[dict] = None,
@@ -588,7 +598,7 @@ class Tecton:
         # used to precisely reverse the change in the finally block — not a
         # blind restore of whatever the prior value was, which matters if
         # nested delegation ever gets added.
-        from runtime import ACTIVE_HUBS, _TECTON_INGRESS_TOKEN
+        from rss.core.runtime import ACTIVE_HUBS, _TECTON_INGRESS_TOKEN
         _hub_token = ACTIVE_HUBS.set(c.hubs)
 
         try:

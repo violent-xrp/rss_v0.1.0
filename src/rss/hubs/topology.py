@@ -208,8 +208,9 @@ class HubTopology:
 
     # ── State transitions ─────────────────────────────────────────────────
 
-    def archive_entry(self, entry_id: str) -> None:
-        """§4.4.3 — archive preserves original_hub. §4.3.4 — logs provenance."""
+    def archive_entry(self, entry_id: str) -> "HubEntry":
+        """§4.4.3 — archive preserves original_hub. §4.3.4 — logs provenance.
+        Returns the archived HubEntry (matches lifecycle method convention)."""
         for hub_name, hub_entries in self._hubs.items():
             for entry in hub_entries:
                 if entry.id == entry_id:
@@ -217,14 +218,13 @@ class HubTopology:
                     from_hub = entry.hub
                     entry.hub = "ARCHIVE"
                     self._hubs["ARCHIVE"].append(entry)
-                    # §4.3.4 — provenance
                     entry.provenance.append({
                         "action": "ARCHIVED",
                         "from_hub": from_hub,
                         "to_hub": "ARCHIVE",
                         "timestamp": datetime.now(UTC).isoformat(),
                     })
-                    return
+                    return entry
         raise HubError(f"Entry not found for archive: {entry_id}")
 
     def hard_purge(self, entry_id: str, reason: str = "") -> HubEntry:

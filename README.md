@@ -2,7 +2,7 @@
 
 Rose Sigil Systems (RSS) is a **domain-agnostic, application-layer zero-trust AI governance kernel**. It decides what a system may see, say, and do **before** the model runs, not after. Every request flows through a constitutional pipeline of typed seats with bounded authority. Scope is declared. Meaning is classified. Consent is checked. Rate limits are enforced. A Prepared Advisory View is built. TRACE is written before the result is allowed to stand.
 
-**Current verified project-snapshot baseline:** **126 test functions / 956 assertions / 0 failures** via `python tests/test_all.py`.
+**Current verified project-snapshot baseline:** **131 test functions / 994 assertions / 0 failures** via `python tests/test_all.py`.
 
 ## What RSS is
 
@@ -40,7 +40,7 @@ python tests/test_all.py
 ```
 Expected current final line:
 ```text
-RSS v0.1.0 — 126 test functions, 956 assertions passed, 0 failed
+RSS v0.1.0 — 131 test functions, 994 assertions passed, 0 failed
 ```
 
 ### Run the guided demo walkthrough
@@ -59,6 +59,8 @@ python src/main.py status
 python src/main.py demo
 python src/main.py demo-suite
 ```
+
+> **Repo layout note:** kernel modules live under `src/rss/` (subpackages `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`). The CLI entry point at `src/main.py` and the test runner at `tests/test_all.py` handle path resolution automatically.
 
 ## Architecture at a glance
 
@@ -96,6 +98,13 @@ The practical request path is:
 - deterministic offline fallback that summarizes governed data instead of echoing user input
 - shared reference pack and seeded demo world for examples/tests
 - ingress posture surfaced explicitly as architectural, not cryptographic
+- TECTON destructive transitions (`suspend`, `archive`, `destroy`, `reactivate`) now require a non-empty `reason`, logged into the lifecycle audit record
+- `clear_safe_stop()` is idempotent — returns `NO_OP` when not halted, emits no false audit events
+- `load_constitution()` is directly tested across all branches (file-not-found, hash mismatch, missing marker, happy path)
+- PAV `_sanitize` raises `ValueError` on unknown policy names rather than silently defaulting
+- CYCLE `check_rate_limit` supports `strict=True` mode to reject unregistered domains loudly
+- LLM availability-check timeout is config-driven (`llm_availability_check_timeout`) rather than hardcoded
+- `archive_entry()` returns the archived `HubEntry` for lifecycle-method parity
 
 ## Demo / operator posture
 

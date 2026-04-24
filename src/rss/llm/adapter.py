@@ -48,7 +48,7 @@ class LLMAdapter:
         try:
             import urllib.request
             req = urllib.request.Request(f"{self.config.ollama_url}/api/tags", method="GET")
-            with urllib.request.urlopen(req, timeout=3) as resp:
+            with urllib.request.urlopen(req, timeout=self.config.llm_availability_check_timeout) as resp:
                 self._available = resp.status == 200
         except Exception:
             self._available = False

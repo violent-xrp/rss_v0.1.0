@@ -25,7 +25,7 @@ Mitigation: sovereign gating for PERSONAL, unconditional REDLINE exclusion in PA
 Mitigation: RUNE enforces SEALED / SOFT / AMBIGUOUS / DISALLOWED classifications; contextual reinjection sends canonical definitions every request.
 
 ### Audit tamper / chain corruption
-Mitigation: TRACE chain linkage, boot verification, and stand-alone cold verification.
+Mitigation: TRACE chain linkage, boot verification, and stand-alone cold verification. Destructive TECTON lifecycle transitions (`suspend`, `archive`, `destroy`, `reactivate`) now require a non-empty `reason` logged into the audit record — no silent destructive operation is possible without an auditable rationale.
 
 ### Tenant data bleed
 Mitigation: per-container HubTopology, lifecycle/state checks, context-bound hub isolation, and container-aware TRACE filtering.
@@ -38,7 +38,8 @@ Mitigation: OATH write-ahead persistence semantics and persistence-failure surfa
 - a custom helper written outside governed paths could still violate REDLINE discipline
 - meaning normalization is not yet full confusables-table / homoglyph defense
 - wrapper/API concurrency and deployment identity remain later-phase work
-- public-doc drift is itself a trust risk if metrics are not kept synchronized
+- `clear_safe_stop()` is T-0 only by convention, not by mechanical identity gate (gate planned for Phase F)
+- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 131/994 baseline
 
 ## Current honesty line
 RSS v0.1.0 is strong at **governance-before-model** inside a single-process governed runtime. It is not yet the whole deployment security story.

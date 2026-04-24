@@ -42,7 +42,7 @@ import threading
 from datetime import datetime, UTC
 from typing import List, Optional
 
-from audit_log import TraceEvent
+from rss.audit.log import TraceEvent
 
 # §6.7.3 — Current persistence schema version.
 # Bump this whenever a migration lands in _migrate_hub_entries() or elsewhere.

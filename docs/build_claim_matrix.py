@@ -125,13 +125,13 @@ def render_markdown(matrix: dict, total_tests: int, total_claims: int) -> str:
 
 
 def main() -> int:
-    here = Path(__file__).resolve().parent
-    test_file = here / "test_all.py"
+    repo_root = Path(__file__).resolve().parent.parent
+    test_file = repo_root / "tests" / "test_all.py"
     if not test_file.exists():
         print(f"test_all.py not found at {test_file}", file=sys.stderr)
         return 1
 
-    src = test_file.read_text()
+    src = test_file.read_text(encoding="utf-8")
     claims = extract_claims(src)
     matrix = build_matrix(claims)
     total_tests = len(TEST_DEF_RE.findall(src))
@@ -141,10 +141,8 @@ def main() -> int:
         print(md)
         return 0
 
-    out_dir = here / "docs"
-    out_dir.mkdir(exist_ok=True)
-    out_path = out_dir / "claim_matrix.md"
-    out_path.write_text(md)
+    out_path = repo_root / "docs" / "claim_matrix.md"
+    out_path.write_text(md, encoding="utf-8")
     print(f"[claim-matrix] wrote {out_path}")
     print(f"[claim-matrix] {len(matrix)} sections, {len(claims)} claims, "
           f"{total_tests} tests")

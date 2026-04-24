@@ -38,7 +38,7 @@ from datetime import datetime, UTC
 from typing import Dict, Optional, Tuple
 from uuid import uuid4
 
-from hub_topology import VALID_HUBS
+from rss.hubs.topology import VALID_HUBS
 
 
 class ScopeError(Exception):

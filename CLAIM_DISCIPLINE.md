@@ -29,8 +29,8 @@ Do not say RSS v0.1.0 is:
 
 ## Metric discipline
 Current project-snapshot baseline:
-- **126 test functions / 956 assertions / 0 failures**
-- **22 source modules in `src/`**
+- **131 test functions / 994 assertions / 0 failures**
+- **22 source modules in `src/rss/` package tree** (R1 restructure complete)
 
 When metrics change:
 - update `ROADMAP.md` first

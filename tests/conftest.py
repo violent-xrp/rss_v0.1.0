@@ -25,7 +25,7 @@
 """
 RSS v0.1.0 — pytest path shim.
 
-This file makes the 20 modules in /src/ importable when tests are run from
+This file makes the rss package in /src/ importable when tests are run from
 /tests/. It is loaded automatically by pytest. test_all.py also sets up its
 own sys.path shim explicitly so it works under direct `python tests/test_all.py`
 invocation (where conftest.py is NOT auto-loaded).
@@ -34,7 +34,7 @@ import sys
 from pathlib import Path
 
 # Add the sibling /src/ directory to the front of sys.path so that
-# `from constitution import ...` and all other module imports resolve.
+# `from rss.governance.constitution import ...` and all other module imports resolve.
 _SRC = (Path(__file__).resolve().parent.parent / "src").resolve()
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))

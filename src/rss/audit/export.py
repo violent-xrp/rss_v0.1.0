@@ -38,8 +38,8 @@ import re
 from datetime import datetime, UTC
 from typing import Dict, List, Optional
 
-from audit_log import AuditLog, TraceEvent
-from persistence import Persistence
+from rss.audit.log import AuditLog, TraceEvent
+from rss.persistence.sqlite import Persistence
 
 
 # ── §6.10.6 — Phase C G-8: REDLINE export sanitization ──

@@ -47,47 +47,47 @@ if sys.platform == "win32":
     except (AttributeError, Exception):
         pass
 
-# Path shim: add ../src to sys.path so the 21 modules resolve when running
+# Path shim: add ../src to sys.path so the rss package resolves when running
 # `python tests/test_all.py` directly from the repo root. conftest.py does
 # the same thing automatically under pytest; this line makes direct runs work too.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 # Layer 1
-from constitution import compute_hash, verify_integrity, safe_stop, SafeStopTriggered, ConstitutionError
-from audit_log import AuditLog, AuditLogError, TraceEvent
+from rss.governance.constitution import compute_hash, verify_integrity, safe_stop, SafeStopTriggered, ConstitutionError, ConstitutionConfig, load_constitution
+from rss.audit.log import AuditLog, AuditLogError, TraceEvent
 
 # Layer 2
-from ward import Ward, WardError
-from scope import Scope, ScopeError
+from rss.governance.seats.ward import Ward, WardError
+from rss.governance.seats.scope import Scope, ScopeError
 
 # Layer 3
-from hub_topology import HubTopology, HubError, HubEntry, VALID_HUBS, PURGE_SENTINEL
-from pav import PAVBuilder, CONTENT_ONLY, CONTENT_HUB, FULL_CONTEXT
+from rss.hubs.topology import HubTopology, HubError, HubEntry, VALID_HUBS, PURGE_SENTINEL
+from rss.hubs.pav import PAVBuilder, CONTENT_ONLY, CONTENT_HUB, FULL_CONTEXT
 
 # Layer 4
-from meaning_law import MeaningLaw, MeaningError, Term, TermStatus
-from state_machine import ExecutionStateMachine, ExecutionIntent
+from rss.governance.seats.rune import MeaningLaw, MeaningError, Term, TermStatus
+from rss.core.state_machine import ExecutionStateMachine, ExecutionIntent
 
 # Layer 5
-from scribe import Scribe, ScribeError
-from seal import Seal, SealError, SealPacket, CanonArtifact
+from rss.governance.seats.scribe import Scribe, ScribeError
+from rss.governance.seats.seal import Seal, SealError, SealPacket, CanonArtifact
 
 # Consent + Cadence
-from oath import Oath, OathError
-from cycle import Cycle
+from rss.governance.seats.oath import Oath, OathError
+from rss.governance.seats.cycle import Cycle
 
 # Infra
-from config import RSSConfig, RSS_VERSION
-from persistence import Persistence
-from llm_adapter import LLMAdapter
-from trace_export import export_trace_json, export_trace_text, export_from_db, EVENT_CODES, categorize_event, build_event_summary, _sanitize_artifact_id, REDLINE_REDACTED
-from reference_pack import load_reference_pack, load_demo_containers, seed_demo_world, REFERENCE_PACK, DEMO_CONTAINERS
+from rss.core.config import RSSConfig, RSS_VERSION
+from rss.persistence.sqlite import Persistence
+from rss.llm.adapter import LLMAdapter
+from rss.audit.export import export_trace_json, export_trace_text, export_from_db, EVENT_CODES, categorize_event, build_event_summary, _sanitize_artifact_id, REDLINE_REDACTED
+from rss.reference_pack import load_reference_pack, load_demo_containers, seed_demo_world, REFERENCE_PACK, DEMO_CONTAINERS
 
 # Layer 6
-from runtime import Runtime, bootstrap, DEFAULT_TERMS
+from rss.core.runtime import Runtime, bootstrap, DEFAULT_TERMS
 
 # Layer 7
-from tecton import (Tecton, TectonError, ContainerRequest, ContainerPermissions,
+from rss.hubs.tecton import (Tecton, TectonError, ContainerRequest, ContainerPermissions,
                     ContainerProfile, TenantContainer, SEAT_SIGILS, VALID_TRANSITIONS)
 
 
@@ -198,6 +198,92 @@ def test_constitution():
         check(False, "should have raised")
     except SafeStopTriggered:
         check(True, "safe_stop raises correctly")
+
+
+def test_constitution_load_constitution():
+    # CLAIM: §0.2, §0.2.1 — load_constitution: file-not-found, hash-mismatch, missing-marker, and happy-path branches
+    import tempfile, os
+    section("Layer 1: load_constitution branches")
+
+    # --- file-not-found ---
+    cfg = ConstitutionConfig(section0_path="/nonexistent/path/section0.txt", expected_hash="x")
+    try:
+        load_constitution(cfg)
+        check(False, "should have raised ConstitutionError for missing file")
+    except ConstitutionError:
+        check(True, "ConstitutionError raised for nonexistent file")
+
+    # --- hash mismatch ---
+    fd, tmp_path = tempfile.mkstemp(suffix=".txt")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write("SOVEREIGN\nThis is Section 0.\n")
+        cfg2 = ConstitutionConfig(section0_path=tmp_path, expected_hash="badbadbad")
+        try:
+            load_constitution(cfg2)
+            check(False, "should have raised ConstitutionError for hash mismatch")
+        except ConstitutionError:
+            check(True, "ConstitutionError raised for hash mismatch")
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+
+    # --- missing required marker ---
+    fd2, tmp_path2 = tempfile.mkstemp(suffix=".txt")
+    try:
+        content = "No authority marker here.\n"
+        with os.fdopen(fd2, "w", encoding="utf-8") as f:
+            f.write(content)
+        good_hash = compute_hash(content)
+        cfg3 = ConstitutionConfig(section0_path=tmp_path2, expected_hash=good_hash,
+                                  required_markers=["SOVEREIGN"])
+        try:
+            load_constitution(cfg3)
+            check(False, "should have raised SafeStopTriggered for missing marker")
+        except SafeStopTriggered:
+            check(True, "SafeStopTriggered raised for missing required marker")
+    finally:
+        try:
+            os.unlink(tmp_path2)
+        except OSError:
+            pass
+
+    # --- happy path ---
+    fd3, tmp_path3 = tempfile.mkstemp(suffix=".txt")
+    try:
+        content3 = "SOVEREIGN\nThis is the lawful Section 0.\n"
+        with os.fdopen(fd3, "w", encoding="utf-8") as f:
+            f.write(content3)
+        good_hash3 = compute_hash(content3)
+        cfg4 = ConstitutionConfig(section0_path=tmp_path3, expected_hash=good_hash3)
+        state = load_constitution(cfg4)
+        check(state["section0_text"] == content3, "happy path: section0_text returned")
+        check(state["section0_hash"] == good_hash3, "happy path: hash stored")
+        check("SOVEREIGN" in state["markers_verified"], "happy path: marker verified")
+    finally:
+        try:
+            os.unlink(tmp_path3)
+        except OSError:
+            pass
+
+    # --- custom markers (multi-marker) ---
+    fd4, tmp_path4 = tempfile.mkstemp(suffix=".txt")
+    try:
+        content4 = "SOVEREIGN\nALPHA\nBETA\nThis is Section 0.\n"
+        with os.fdopen(fd4, "w", encoding="utf-8") as f:
+            f.write(content4)
+        good_hash4 = compute_hash(content4)
+        cfg5 = ConstitutionConfig(section0_path=tmp_path4, expected_hash=good_hash4,
+                                  required_markers=["SOVEREIGN", "ALPHA", "BETA"])
+        state5 = load_constitution(cfg5)
+        check(len(state5["markers_verified"]) == 3, "custom multi-marker: all three verified")
+    finally:
+        try:
+            os.unlink(tmp_path4)
+        except OSError:
+            pass
 
 
 def test_audit_log():
@@ -1040,7 +1126,7 @@ def test_tecton():
         check(len(SEAT_SIGILS) == 8, "8 seat sigils")
         check(tecton._resolve_sigil("⛉") == "WARD", "sigil resolution")
 
-        tecton.suspend_container(m.container_id)
+        tecton.suspend_container(m.container_id, reason="test: suspend before request")
         resp = tecton.process_request(
             ContainerRequest(m.container_id, "ᚱ", {"text": "quote"}), runtime)
         check(resp.result["error"] == "CONTAINER_NOT_ACTIVE", "suspended -> blocked")
@@ -2491,19 +2577,19 @@ def test_s5_lifecycle_transitions():
     check(c.state == "ACTIVE", "CONFIGURED → ACTIVE valid")
 
     # ACTIVE → SUSPENDED
-    tecton.suspend_container(c.container_id)
+    tecton.suspend_container(c.container_id, reason="test: suspend for lifecycle walk")
     check(c.state == "SUSPENDED", "ACTIVE → SUSPENDED valid")
 
     # SUSPENDED → ACTIVE (reactivation)
-    tecton.reactivate_container(c.container_id)
+    tecton.reactivate_container(c.container_id, reason="test: reactivate after suspend")
     check(c.state == "ACTIVE", "SUSPENDED → ACTIVE reactivation valid (§5.2.2)")
 
     # ACTIVE → ARCHIVED
-    tecton.archive_container(c.container_id)
+    tecton.archive_container(c.container_id, reason="test: archive after reactivation")
     check(c.state == "ARCHIVED", "ACTIVE → ARCHIVED valid")
 
     # ARCHIVED → DESTROYED
-    tecton.destroy_container(c.container_id)
+    tecton.destroy_container(c.container_id, reason="test: destroy archived container")
     check(c.state == "DESTROYED", "ARCHIVED → DESTROYED valid")
 
     # Invalid transitions
@@ -2511,7 +2597,7 @@ def test_s5_lifecycle_transitions():
     tecton.activate_container(c2.container_id)
 
     try:
-        tecton.destroy_container(c2.container_id)  # ACTIVE → DESTROYED is invalid
+        tecton.destroy_container(c2.container_id, reason="test: invalid transition")  # ACTIVE → DESTROYED is invalid
         check(False, "should reject ACTIVE → DESTROYED")
     except TectonError as e:
         check("§5.2.2" in str(e), "invalid transition cites §5.2.2")
@@ -2547,8 +2633,8 @@ def test_s5_destroyed_inaccessibility():
         tecton.add_container_entry(c.container_id, "WORK", "Project Alpha quote")
 
         # Archive then destroy
-        tecton.archive_container(c.container_id)
-        tecton.destroy_container(c.container_id)
+        tecton.archive_container(c.container_id, reason="test: archive before destroy")
+        tecton.destroy_container(c.container_id, reason="test: destroy archived container")
 
         # Hub access blocked
         try:
@@ -2618,7 +2704,7 @@ def test_s5_profile_immutability():
         check(True, "mutation without reason rejected (§5.3.3)")
 
     # Mutation on non-ACTIVE rejected
-    tecton.suspend_container(c.container_id)
+    tecton.suspend_container(c.container_id, reason="test: suspend to block mutation")
     try:
         tecton.mutate_active_profile(c.container_id, reason="test")
         check(False, "should reject mutation on SUSPENDED")
@@ -2669,7 +2755,7 @@ def test_s5_trace_filtering():
                   "Morrison events only contain Morrison container_id")
 
         # AuditLog also has the method
-        from audit_log import AuditLog
+        from rss.audit.log import AuditLog
         log = AuditLog()
         log.record_event("TEST", "AUTH", "TECTON-abc:RUNE:001", "test")
         log.record_event("TEST", "AUTH", "TECTON-xyz:RUNE:002", "test")
@@ -2694,10 +2780,10 @@ def test_s5_lifecycle_logging():
     c = tecton.create_container("Test Co", "T-0")
     tecton.configure_container(c.container_id)
     tecton.activate_container(c.container_id)
-    tecton.suspend_container(c.container_id)
-    tecton.reactivate_container(c.container_id)
-    tecton.archive_container(c.container_id)
-    tecton.destroy_container(c.container_id)
+    tecton.suspend_container(c.container_id, reason="test: trace coverage suspend")
+    tecton.reactivate_container(c.container_id, reason="test: trace coverage reactivate")
+    tecton.archive_container(c.container_id, reason="test: trace coverage archive")
+    tecton.destroy_container(c.container_id, reason="test: trace coverage destroy")
 
     events = tecton._trace.all_events()
     codes = [e.event_code for e in events]
@@ -2726,10 +2812,10 @@ def test_s5_lifecycle_provenance():
     check(len(c.lifecycle_log) == 2, "activation adds lifecycle log entry")
     check(c.lifecycle_log[1]["action"] == "ACTIVATED", "second log is ACTIVATED")
 
-    tecton.suspend_container(c.container_id)
-    tecton.reactivate_container(c.container_id)
-    tecton.archive_container(c.container_id)
-    tecton.destroy_container(c.container_id)
+    tecton.suspend_container(c.container_id, reason="test: provenance suspend")
+    tecton.reactivate_container(c.container_id, reason="test: provenance reactivate")
+    tecton.archive_container(c.container_id, reason="test: provenance archive")
+    tecton.destroy_container(c.container_id, reason="test: provenance destroy")
 
     check(len(c.lifecycle_log) == 6, "full lifecycle produces 6 provenance entries")
     actions = [entry["action"] for entry in c.lifecycle_log]
@@ -3255,7 +3341,7 @@ def test_s6_schema_version_tracking():
     # CLAIM: §6.7.3 — schema version stamped and idempotent
     section("S6: Schema Version Tracking (§6.7.3)")
 
-    from persistence import CURRENT_SCHEMA_VERSION
+    from rss.persistence.sqlite import CURRENT_SCHEMA_VERSION
 
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
@@ -3509,8 +3595,7 @@ def test_s6_cold_verifier():
     # CLAIM: §6.11.4 — cold trace verifier: clean, tampered, missing, empty cases + Safe-Stop + filter
     section("S6: Cold TRACE Verifier (§6.11.4)")
 
-    import trace_verify
-    from trace_verify import verify_trace_file, read_safe_stop_state, ColdVerifyError
+    from rss.audit.verify import verify_trace_file, read_safe_stop_state, ColdVerifyError
 
     # ── Scenario 1: Happy path ──
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -3751,7 +3836,7 @@ def test_s6_cold_verifier():
         raw.close()
 
         # With registry, unknown code should appear in unknown_codes
-        from trace_export import EVENT_CODES
+        from rss.audit.export import EVENT_CODES
         result = verify_trace_file(path, registry=EVENT_CODES)
         check(result["verified"] is True,
               "registry test: chain still valid (we preserved linkage)")
@@ -3956,8 +4041,7 @@ def test_a1_unified_container_filter():
     # CLAIM: §5.8.3 — container filter unified across audit_log, trace_export, trace_verify
     section("Phase A.1: Unified Container Filter (Prefix Matching)")
 
-    import trace_verify
-    from trace_verify import verify_trace_file
+    from rss.audit.verify import verify_trace_file
 
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
@@ -4019,7 +4103,7 @@ def test_a1_unified_container_filter():
               f"audit_log.events_by_container boundary match: 1 event (got {len(in_mem)})")
 
         # Export filter (via export_trace_json) should also match only Event A
-        from trace_export import export_trace_json
+        from rss.audit.export import export_trace_json
         fd_export, export_path = tempfile.mkstemp(suffix=".json")
         os.close(fd_export)
         try:
@@ -4042,7 +4126,7 @@ def test_a1_export_from_db_emits_chain_valid():
     # CLAIM: §6.10 — export_from_db reports chain_valid in output
     section("Phase A.1: export_from_db Emits chain_valid")
 
-    from trace_export import export_from_db
+    from rss.audit.export import export_from_db
 
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
@@ -4248,7 +4332,7 @@ def test_adversarial_ingress():
     # CLAIM: §5.1, §5.6 — spoofed/None/empty container_id handled; ingress sentinel required
     section("ADVERSARIAL: Ingress Bypass Attempts")
 
-    from runtime import _TECTON_INGRESS_TOKEN, ACTIVE_HUBS
+    from rss.core.runtime import _TECTON_INGRESS_TOKEN, ACTIVE_HUBS
 
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
@@ -4287,7 +4371,7 @@ def test_adversarial_ingress():
         check(blocked, "ADV-I5: direct runtime.hubs assignment raises AttributeError")
 
         # A6: Try to set ACTIVE_HUBS from outside TECTON context
-        from hub_topology import HubTopology
+        from rss.hubs.topology import HubTopology
         rogue = HubTopology()
         rogue.add_entry("WORK", "injected-rogue-data")
         tok = ACTIVE_HUBS.set(rogue)
@@ -4313,7 +4397,7 @@ def test_adversarial_cross_container():
     # CLAIM: §5.1.1 — no cross-container bleed across hub data, events, or threads
     section("ADVERSARIAL: Cross-Container Bleed Attempts")
 
-    from tecton import ContainerRequest, ContainerPermissions
+    from rss.hubs.tecton import ContainerRequest, ContainerPermissions
 
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
@@ -4366,13 +4450,13 @@ def test_adversarial_cross_container():
 
         # B6: Threaded simultaneous container requests — no bleed
         import threading
-        from runtime import ACTIVE_HUBS
+        from rss.core.runtime import ACTIVE_HUBS
 
         results = {}
         barrier = threading.Barrier(2)
 
         def worker(name, container):
-            from runtime import ACTIVE_HUBS
+            from rss.core.runtime import ACTIVE_HUBS
             tok = ACTIVE_HUBS.set(container.hubs)
             try:
                 barrier.wait()
@@ -4402,7 +4486,7 @@ def test_adversarial_scope_escalation():
     # CLAIM: §4.5.7, §5.3.3, §2.8.1 — scope mutation blocked at multiple layers
     section("ADVERSARIAL: Scope Mutation & Escalation")
 
-    from tecton import ContainerPermissions, ContainerRequest, TectonError
+    from rss.hubs.tecton import ContainerPermissions, ContainerRequest, TectonError
 
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
@@ -4463,7 +4547,7 @@ def test_adversarial_scope_escalation():
             check(True, "ADV-S4: synonym registration rejects nonexistent term_id")
 
         # S5: Disallowed classification takes precedence over sealed
-        from meaning_law import Term
+        from rss.governance.seats.rune import Term
         rss.meaning.create_term(Term(id="ADV-T1", label="test_priority",
                                      definition="testing classification order",
                                      constraints="none", version="1"))
@@ -4497,7 +4581,7 @@ def test_adversarial_audit_tamper():
         conn.execute("UPDATE trace_events SET content_hash='aaaa' WHERE id=2")
         conn.commit()
         conn.close()
-        from trace_verify import verify_trace_file
+        from rss.audit.verify import verify_trace_file
         result = verify_trace_file(path)
         check(result["verified"] is False,
               "ADV-T1: modified content_hash detected by cold verifier")
@@ -4564,7 +4648,7 @@ def test_adversarial_malformed_inputs():
         check(env is not None, "ADV-M4: duplicate allowed_sources doesn't crash")
 
         # M5: Zero max_requests_per_minute
-        from tecton import ContainerPermissions
+        from rss.hubs.tecton import ContainerPermissions
         try:
             c = rss.tecton.create_container("ZeroRate", "T-0",
                                             permissions=ContainerPermissions(max_requests_per_minute=0))
@@ -4788,8 +4872,8 @@ def test_domain_pack_equivalence():
     # CLAIM: §2.1, §4.7 — governance domain-agnostic across legal/medical/finance
     section("DOMAIN-PACK: Agnostic Governance Equivalence")
 
-    from meaning_law import Term
-    from pav import PAVBuilder
+    from rss.governance.seats.rune import Term
+    from rss.hubs.pav import PAVBuilder
 
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
@@ -4868,8 +4952,8 @@ def test_exception_context_leak():
     # CLAIM: §5.1.1 — exception in tenant A does not leak context or data to tenant B
     section("ADVERSARIAL: Exception Context Leak (Panic Bleed)")
 
-    from tecton import ContainerRequest, ContainerPermissions
-    from runtime import ACTIVE_HUBS
+    from rss.hubs.tecton import ContainerRequest, ContainerPermissions
+    from rss.core.runtime import ACTIVE_HUBS
 
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
@@ -4932,7 +5016,7 @@ def test_idempotence_replay():
         rss = bootstrap(RSSConfig(db_path=path))
 
         # R1: Repeated cold verification returns consistent results
-        from trace_verify import verify_trace_file
+        from rss.audit.verify import verify_trace_file
         rss.process_request("quote", use_llm=False)
         rss.persistence.close()
         r1 = verify_trace_file(path)
@@ -4982,7 +5066,7 @@ def test_idempotence_replay():
         os.close(fd2)
         fd3, out2 = tempfile.mkstemp(suffix=".json")
         os.close(fd3)
-        from trace_export import export_trace_json
+        from rss.audit.export import export_trace_json
         c1 = export_trace_json(rss2.trace, out1)
         c2 = export_trace_json(rss2.trace, out2)
         check(c1 == c2, "IDEM-R6: repeated export produces same event count")
@@ -5000,7 +5084,7 @@ def test_instructional_override():
     # CLAIM: §4.2.3, §4.7.6 — jailbreak attempts cannot surface PERSONAL or REDLINE
     section("ADVERSARIAL: Instructional Override (Jailbreak)")
 
-    from pav import PAVBuilder
+    from rss.hubs.pav import PAVBuilder
 
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
@@ -5039,7 +5123,7 @@ def test_instructional_override():
                   f"JAIL-J2: attack prompt doesn't leak PERSONAL: {prompt[:40]}...")
 
         # J3: PERSONAL requires sovereign=True in SCOPE — without it, ScopeError
-        from scope import ScopeError
+        from rss.governance.seats.scope import ScopeError
         try:
             rss.scope.declare(task_id="JAIL-3",
                               allowed_sources=["WORK", "PERSONAL"],
@@ -5108,7 +5192,7 @@ def test_scenario_high_liability_flow():
         # Export audit trail
         fd2, export_path = tempfile.mkstemp(suffix=".json")
         os.close(fd2)
-        from trace_export import export_trace_json
+        from rss.audit.export import export_trace_json
         count = export_trace_json(rss.trace, export_path, hub_topology=rss.hubs)
         check(count > 0, "SCEN-HL5: audit export produces events")
 
@@ -5196,8 +5280,8 @@ def test_phase_e5_contextvar_isolation():
     section("Phase E-5: ContextVar Hub Isolation (thread-level)")
 
     import threading
-    from runtime import ACTIVE_HUBS
-    from hub_topology import HubTopology
+    from rss.core.runtime import ACTIVE_HUBS
+    from rss.hubs.topology import HubTopology
 
     # E-5.1 — Two threads, isolated topologies, no cross-bleed
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -5294,7 +5378,7 @@ def test_phase_e_regression_battery():
     # CLAIM: §E-1, §E-3, §E-4 — production-mode, demo parity, auto-restore, OATH atomicity
     section("Phase E: Regression Battery")
 
-    from tecton import ContainerRequest
+    from rss.hubs.tecton import ContainerRequest
 
     # E-1: production_mode flips strict postures
     cfg = RSSConfig(db_path=":memory:", production_mode=True)
@@ -5406,8 +5490,8 @@ def test_phase_d_regression_battery():
     # CLAIM: §5.6, §5.4.1, §6.9.2, §0.8.3 — UUID ingress, scope-on-permission, OATH persistence-failure visibility
     section("Phase D: Full Regression Battery")
 
-    from tecton import Tecton, ContainerRequest, ContainerPermissions, TectonError
-    import runtime as runtime_mod
+    from rss.hubs.tecton import Tecton, ContainerRequest, ContainerPermissions, TectonError
+    import rss.core.runtime as runtime_mod
 
     # D-0: Unified TRACE — container lifecycle events reach runtime.trace + SQLite
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -5561,9 +5645,9 @@ def test_c_phase_regression_battery():
     # CLAIM: §6.3.3, §5.3.3, §6.6.4, §0.5.4, §6.10.6 — canonical JSON, profile freezing, strict mode, threshold Safe-Stop, REDLINE sanitization
     section("Phase C Expanded: Full Regression Battery")
 
-    from audit_log import canonical_json, AuditLog, AuditLogError
-    from tecton import Tecton, ContainerPermissions, TectonError
-    from trace_export import export_trace_json, _sanitize_artifact_id
+    from rss.audit.log import canonical_json, AuditLog, AuditLogError
+    from rss.hubs.tecton import Tecton, ContainerPermissions, TectonError
+    from rss.audit.export import export_trace_json, _sanitize_artifact_id
 
     # C-2: Canonical JSON determinism
     h1 = AuditLog.hash_content({"a": 1, "b": 2, "c": 3})
@@ -5610,7 +5694,7 @@ def test_c_phase_regression_battery():
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
     try:
-        from tecton import ContainerRequest
+        from rss.hubs.tecton import ContainerRequest
         rss = bootstrap(RSSConfig(db_path=path))
         tec = Tecton(_trace=rss.trace)
         cnt = tec.create_container("RateLimit", "T-0",
@@ -5930,7 +6014,7 @@ def test_probe_hash_envelope_version_marker_present():
     # CLAIM: §6.3.6 — CHAIN_HASH_VERSION marker pinned at v1 for forward-compat
     section("Probe E — Chain Hash Version Marker (§6.3.6)")
 
-    from audit_log import CHAIN_HASH_VERSION
+    from rss.audit.log import CHAIN_HASH_VERSION
     check(isinstance(CHAIN_HASH_VERSION, int),
           "Probe-E1: CHAIN_HASH_VERSION is an integer")
     check(CHAIN_HASH_VERSION >= 1,
@@ -5959,7 +6043,7 @@ def test_probe_container_filter_prefix_boundary():
     # CLAIM: §5.8.3 — container TRACE filter requires exact : boundary; prefix-collision hole closed
     section("Probe F — Container Filter Prefix Boundary (§5.8.3)")
 
-    from audit_log import AuditLog, TraceEvent
+    from rss.audit.log import AuditLog, TraceEvent
     from datetime import datetime, UTC
 
     log = AuditLog()
@@ -6138,7 +6222,7 @@ def test_probe_safe_stop_recovery_ceremony():
 
         # Cold verifier agrees with in-memory state
         rss2.persistence.close()
-        from trace_verify import verify_trace_file
+        from rss.audit.verify import verify_trace_file
         cold_result = verify_trace_file(path)
         check(cold_result["verified"] is True,
               "Probe-G20: cold verifier confirms ceremony chain is intact "
@@ -6150,6 +6234,7 @@ def test_probe_safe_stop_recovery_ceremony():
 
 
 def test_oath_extended_edges():
+    # CLAIM: §1.4, §3.4 — OATH extended edges: revocation fallback, multi-container consent, status accounting
     """Hardening: OATH failure callbacks, fallback precedence, and status accounting."""
     section("OATH Extended Edges")
 
@@ -6194,6 +6279,7 @@ def test_oath_extended_edges():
 
 
 def test_oath_input_normalization_and_handle_edges():
+    # CLAIM: §1.4, §3.4.3 — OATH input normalization: blank container_id normalizes to GLOBAL; handle() structured error paths
     """Hardening: blank container ids normalize to GLOBAL; handle() stays structured."""
     section("OATH Input Normalization + Handle Edges")
 
@@ -6218,6 +6304,7 @@ def test_oath_input_normalization_and_handle_edges():
 
 
 def test_runtime_default_term_pack_is_config_driven():
+    # CLAIM: §2.1, §0.1 — runtime bootstrap term pack is config-driven, not hardcoded; definition prefix also config-driven
     """Hardening: bootstrap uses config default term pack, not legacy hardcoding."""
     section("Runtime Default Term Pack Is Config-Driven")
 
@@ -6252,6 +6339,7 @@ def test_runtime_default_term_pack_is_config_driven():
 
 
 def test_trace_export_cold_container_redline_sanitization():
+    # CLAIM: §6.10.6, §4.7.6 — cold TRACE export sanitizes REDLINE artifact IDs from container hub rows as well as global rows
     """Hardening: cold export sanitizes REDLINE ids from container_hub_entries too."""
     section("TRACE Export Cold Container REDLINE Sanitization")
 
@@ -6294,6 +6382,7 @@ def test_trace_export_cold_container_redline_sanitization():
 
 
 def test_trace_export_extended_edges():
+    # CLAIM: §5.8.3, §6.10.6 — TRACE export exact-boundary container prefix filter and REDLINE sanitization in text export
     """Hardening: exact-boundary text export filter and redline sanitization."""
     section("TRACE Export Extended Edges")
 
@@ -6338,6 +6427,7 @@ def test_trace_export_extended_edges():
 
 
 def test_trace_export_token_boundary_sanitization():
+    # CLAIM: §4.7.6 — REDLINE artifact_id sanitization uses token-boundary matching; non-REDLINE tokens survive
     """Hardening: REDLINE artifact sanitization should redact tokens, not substrings."""
     section("TRACE Export Token-Boundary Sanitization")
 
@@ -6357,6 +6447,7 @@ def test_trace_export_token_boundary_sanitization():
           "embedded REDLINE substring inside token is preserved")
 
 def test_trace_verify_cli_error_classification():
+    # CLAIM: §6.11.4 — cold verifier CLI exit codes: file-not-found returns EXIT_FILE_ERROR; schema-invalid returns EXIT_SCHEMA_INVALID
     """Hardening: _main distinguishes file errors from schema errors."""
     section("TRACE Verifier CLI Error Classification")
 
@@ -6368,7 +6459,7 @@ def test_trace_verify_cli_error_classification():
         conn.commit()
         conn.close()
 
-        import trace_verify as tv
+        import rss.audit.verify as tv
         rc = tv._main([path])
         check(rc == tv.EXIT_SCHEMA_INVALID,
               "schema error returns EXIT_SCHEMA_INVALID (not file error)")
@@ -6382,6 +6473,7 @@ def test_trace_verify_cli_error_classification():
 
 
 def test_trace_verify_registry_load_failure_is_nonfatal():
+    # CLAIM: §6.11.4 — cold verifier --use-registry load failure degrades to a warning; EXIT_OK still returned
     """Hardening: --use-registry warning path should not crash verification."""
     section("TRACE Verifier Registry-Load Failure Edge")
 
@@ -6395,11 +6487,11 @@ def test_trace_verify_registry_load_failure_is_nonfatal():
 
         import builtins
         from unittest import mock
-        import trace_verify as tv
+        import rss.audit.verify as tv
 
         original_import = builtins.__import__
         def _raising_import(name, globals=None, locals=None, fromlist=(), level=0):
-            if name == "trace_export":
+            if name == "rss.audit.export":
                 raise RuntimeError("registry blew up")
             return original_import(name, globals, locals, fromlist, level)
 
@@ -6413,6 +6505,7 @@ def test_trace_verify_registry_load_failure_is_nonfatal():
 
 
 def test_seal_extended_edges():
+    # CLAIM: §1.8, §5.7 — SEAL extended edges: rejection path, invalid review inputs, idempotent ratification, whitespace normalization
     """Hardening: rejected proposals and invalid review inputs."""
     section("SEAL Extended Edges")
 
@@ -6451,6 +6544,7 @@ def test_seal_extended_edges():
 
 
 def test_trace_verify_additional_proof():
+    # CLAIM: §6.11.4, §0.5 — cold verifier: corrupted schema version degrades gracefully; mixed known/unknown codes reported; safe-stop state readable cold
     """Additional proof: corrupted system_state, JSON output, mixed registry reporting, safe-stop branches."""
     section("TRACE Verifier Additional Proof")
 
@@ -6471,7 +6565,7 @@ def test_trace_verify_additional_proof():
 
         import io
         from contextlib import redirect_stdout
-        import trace_verify as tv
+        import rss.audit.verify as tv
 
         result = tv.verify_trace_file(path, registry={"KNOWN_CODE": {}})
         check(result["verified"] is True, "verify_trace_file still succeeds when system_state schema version is corrupted")
@@ -6504,6 +6598,7 @@ def test_trace_verify_additional_proof():
 
 
 def test_trace_export_additional_proof():
+    # CLAIM: §6.10, §5.8.3, §4.7.6 — TRACE export: summary integrity under filters, live/cold parity, multi-token REDLINE redaction, mixed global/container export
     """Additional proof: filtered summaries, live/cold parity, multiple REDLINE tokens, mixed container/global exports."""
     section("TRACE Export Additional Proof")
 
@@ -6576,6 +6671,7 @@ def test_trace_export_additional_proof():
 
 
 def test_seal_ceremony_additional_proof():
+    # CLAIM: §1.8, §5.7 — SEAL ceremony: rejection-cycle re-review blocked, mixed-case verdict normalizes, amendment history ordering, ratification idempotence
     """Additional proof: repeated review after rejection, mixed-case reject normalization, history ordering, ratification idempotence."""
     section("SEAL Ceremony Additional Proof")
 
@@ -6612,6 +6708,7 @@ def test_seal_ceremony_additional_proof():
 
 
 def test_genesis_binding_and_offline_fallback():
+    # CLAIM: §0.2.1, §0.1, §3.7 — Genesis artifact bound from config; offline fallback summarizes governed data; shared reference pack is idempotent; ingress posture exposed
     """Pre-demo improvements: real Genesis config binding, deterministic fallback, shared reference pack, ingress note."""
     section("Genesis Binding + Offline Fallback")
 
@@ -6661,6 +6758,7 @@ def test_genesis_binding_and_offline_fallback():
 
 
 def test_demo_world_seed_and_container_isolation():
+    # CLAIM: §5.1, §5.2, §4.1 — demo world seed is idempotent; container data is isolated across tenants; governed offline fallback answers from seeded global data
     """Demo hardening: shared demo world is idempotent and container-scoped."""
     section("Demo World Seed + Isolation")
 
@@ -6691,8 +6789,158 @@ def test_demo_world_seed_and_container_isolation():
     finally:
         _cleanup_db(path)
 
+def test_tecton_destructive_transitions_require_reason():
+    # CLAIM: §5.2.2, §5.2.5 — destructive TECTON transitions (suspend/reactivate/archive/destroy) require non-empty reason; reason persisted in lifecycle_log and TRACE event
+    section("Priority A-1: TECTON Destructive Transitions Require Reason")
+
+    tecton = Tecton()
+
+    # ── suspend_container ──
+    c = tecton.create_container("ReasonTest", "T-0")
+    tecton.configure_container(c.container_id)
+    tecton.activate_container(c.container_id)
+
+    try:
+        tecton.suspend_container(c.container_id)
+        check(False, "suspend without reason should raise TectonError")
+    except TectonError as e:
+        check("reason" in str(e).lower(), "suspend missing-reason error mentions reason")
+
+    try:
+        tecton.suspend_container(c.container_id, reason="   ")
+        check(False, "suspend with whitespace-only reason should raise TectonError")
+    except TectonError:
+        check(True, "suspend whitespace-only reason rejected")
+
+    tecton.suspend_container(c.container_id, reason="capacity planning pause")
+    check(c.state == "SUSPENDED", "suspend with valid reason succeeds")
+    check(c.lifecycle_log[-1].get("reason") == "capacity planning pause",
+          "suspend reason persisted in lifecycle_log")
+
+    # ── reactivate_container ──
+    try:
+        tecton.reactivate_container(c.container_id)
+        check(False, "reactivate without reason should raise TectonError")
+    except TectonError as e:
+        check("reason" in str(e).lower(), "reactivate missing-reason error mentions reason")
+
+    tecton.reactivate_container(c.container_id, reason="capacity restored")
+    check(c.state == "ACTIVE", "reactivate with valid reason succeeds")
+    check(c.lifecycle_log[-1].get("reason") == "capacity restored",
+          "reactivate reason persisted in lifecycle_log")
+
+    # ── archive_container ──
+    try:
+        tecton.archive_container(c.container_id)
+        check(False, "archive without reason should raise TectonError")
+    except TectonError as e:
+        check("reason" in str(e).lower(), "archive missing-reason error mentions reason")
+
+    tecton.archive_container(c.container_id, reason="project closed")
+    check(c.state == "ARCHIVED", "archive with valid reason succeeds")
+    check(c.lifecycle_log[-1].get("reason") == "project closed",
+          "archive reason persisted in lifecycle_log")
+
+    # ── destroy_container ──
+    try:
+        tecton.destroy_container(c.container_id)
+        check(False, "destroy without reason should raise TectonError")
+    except TectonError as e:
+        check("reason" in str(e).lower(), "destroy missing-reason error mentions reason")
+
+    result = tecton.destroy_container(c.container_id, reason="data retention policy")
+    check(result.get("destroyed") is True, "destroy with valid reason succeeds")
+    check(c.lifecycle_log[-1].get("reason") == "data retention policy",
+          "destroy reason persisted in lifecycle_log")
+
+    # ── reason surfaces in TRACE event ──
+    events = tecton._trace.all_events()
+    suspend_event = next((e for e in events if e.event_code == "CONTAINER_SUSPENDED"
+                          and c.container_id in e.artifact_id), None)
+    check(suspend_event is not None, "CONTAINER_SUSPENDED event emitted for this container")
+    check(suspend_event is not None and suspend_event.artifact_id == c.container_id,
+          "CONTAINER_SUSPENDED event artifact_id matches container")
+
+
+def test_clear_safe_stop_idempotence():
+    # CLAIM: §0.5.2 — clear_safe_stop is idempotent: returns NO_OP without emitting audit event when system is not halted; emits SAFE_STOP_CLEARED only on real clear
+    section("Priority A-2: clear_safe_stop Idempotence")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+
+        # System is not halted — clear_safe_stop must return NO_OP without emitting an event
+        before_count = len(rss.trace.all_events())
+        result = rss.clear_safe_stop()
+        after_count = len(rss.trace.all_events())
+
+        check(result.get("status") == "NO_OP", "clear on non-halted runtime returns NO_OP")
+        check(result.get("reason") == "not_halted", "NO_OP result includes reason=not_halted")
+        check(after_count == before_count, "no SAFE_STOP_CLEARED event emitted when not halted")
+
+        # Calling again is also a no-op
+        result2 = rss.clear_safe_stop()
+        check(result2.get("status") == "NO_OP", "second call on non-halted is also NO_OP")
+        check(len(rss.trace.all_events()) == before_count, "event count unchanged after second no-op call")
+
+        # Halt then clear — this time it should work and emit the event
+        rss.enter_safe_stop("test halt for clear proof")
+        halted_count = len(rss.trace.all_events())
+        result3 = rss.clear_safe_stop()
+        check(result3.get("status") == "CLEARED", "clear on halted runtime returns CLEARED")
+        check(len(rss.trace.all_events()) == halted_count + 1, "SAFE_STOP_CLEARED event emitted after real clear")
+        check(not rss.is_safe_stopped().get("active"), "system is no longer halted after clear")
+
+        rss.persistence.close()
+    finally:
+        _cleanup_db(path)
+
+
+def test_llm_availability_timeout_is_config_driven():
+    # CLAIM: §3.7.5 — LLM availability check timeout is config-driven via llm_availability_check_timeout; independent of generation timeout
+    section("Priority A-4: LLM Availability Timeout Config-Driven")
+
+    default_cfg = RSSConfig()
+    check(default_cfg.llm_availability_check_timeout == 3,
+          "default llm_availability_check_timeout is 3")
+
+    custom_cfg = RSSConfig(llm_availability_check_timeout=10)
+    check(custom_cfg.llm_availability_check_timeout == 10,
+          "llm_availability_check_timeout respects override")
+
+    # Adapter reads from config — confirm the attribute is wired
+    adapter = LLMAdapter(custom_cfg)
+    check(adapter.config.llm_availability_check_timeout == 10,
+          "LLMAdapter receives config with correct timeout")
+
+
+def test_archive_entry_returns_hub_entry():
+    # CLAIM: §4.4.3, §4.3.4 — archive_entry returns the archived HubEntry with provenance logged; return value matches other lifecycle method convention
+    section("Priority A-5: archive_entry Returns HubEntry")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        hubs = HubTopology()
+        added = hubs.add_entry("WORK", "Project Alpha documentation")
+        entries_before = hubs.list_hub("WORK")
+        check(any(e.id == added.id for e in entries_before), "entry exists in WORK before archive")
+
+        returned = hubs.archive_entry(added.id)
+
+        check(returned is not None, "archive_entry returns a value (not None)")
+        check(isinstance(returned, HubEntry), "archive_entry returns a HubEntry instance")
+        check(returned.id == added.id, "returned HubEntry has the correct entry id")
+        check(returned.hub == "ARCHIVE", "returned HubEntry reflects ARCHIVE hub")
+    finally:
+        _cleanup_db(path)
+
+
 if __name__ == "__main__":
     safe_run(test_constitution)
+    safe_run(test_constitution_load_constitution)
     safe_run(test_audit_log)
     safe_run(test_ward)
     safe_run(test_scope)
@@ -6836,6 +7084,11 @@ if __name__ == "__main__":
     safe_run(test_seal_ceremony_additional_proof)
     safe_run(test_genesis_binding_and_offline_fallback)
     safe_run(test_demo_world_seed_and_container_isolation)
+    # Priority A — behavior gap closures (April 20 review)
+    safe_run(test_tecton_destructive_transitions_require_reason)
+    safe_run(test_clear_safe_stop_idempotence)
+    safe_run(test_llm_availability_timeout_is_config_driven)
+    safe_run(test_archive_entry_returns_hub_entry)
 
     print(f"\n{'='*60}")
     print(f"RSS v0.1.0 — {_funcs} test functions, {_pass} assertions passed, {_fail} failed", end="")

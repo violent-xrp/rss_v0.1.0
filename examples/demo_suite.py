@@ -12,9 +12,9 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from runtime import bootstrap
-from tecton import ContainerRequest
-from reference_pack import seed_demo_world, DEMO_CONTAINERS, DEMO_QUESTIONS
+from rss.core.runtime import bootstrap
+from rss.hubs.tecton import ContainerRequest
+from rss.reference_pack import seed_demo_world, DEMO_CONTAINERS, DEMO_QUESTIONS
 
 
 def _answer_text(result: dict) -> str:

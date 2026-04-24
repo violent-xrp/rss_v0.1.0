@@ -3,8 +3,8 @@
 ## v0.1.0
 
 ### Current verified snapshot
-- **126 test functions / 956 assertions / 0 failures** via `python tests/test_all.py`
-- **22 source modules in `src/`** in the current project snapshot
+- **131 test functions / 994 assertions / 0 failures** via `python tests/test_all.py`
+- **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
 - Section 0 integrity verification and persistent Safe-Stop flow
@@ -15,9 +15,17 @@
 - SEAL amendment ceremony support and ceremony hardening
 - config-driven default term packs and definition prefixes
 - deterministic governed offline fallback in `llm_adapter.py`
-- shared demo/reference pack in `src/reference_pack.py`
+- shared demo/reference pack in `src/rss/reference_pack.py`
 - seeded demo containers and deterministic walkthroughs in `examples/`
 - runner-truth hardening so the acceptance harness remains the single pass/fail truth source
+- R1 repo restructure: flat `src/` → `src/rss/` package tree with subpackages `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`
+- TECTON destructive transitions (`suspend`, `archive`, `destroy`, `reactivate`) now require non-empty `reason`, logged into lifecycle audit record
+- `clear_safe_stop()` is idempotent — returns `NO_OP` and emits no false audit event when not halted
+- `archive_entry()` returns the archived `HubEntry` — lifecycle method return-value parity
+- PAV `_sanitize` raises `ValueError` on unknown policy names
+- CYCLE `check_rate_limit` supports `strict=True` for diagnostic callers
+- LLM availability-check timeout is config-driven via `llm_availability_check_timeout`
+- `_PIPELINE_STAGES` promoted to module-level constant in `runtime.py`
 
 ### Proof growth
 - constitution loader edges
@@ -25,6 +33,9 @@
 - SCRIBE edge coverage
 - cold verifier CLI/error/safe-stop coverage
 - extended OATH, SEAL, TRACE export, verifier, and demo-world coverage
+- `load_constitution()` — all branches directly tested (file-not-found, hash-mismatch, missing-marker, happy-path, multi-marker)
+- Priority A closures: TECTON reason gate, clear_safe_stop idempotence, config-driven LLM timeout, archive_entry return
+- Priority B closures: PAV strict policy, CYCLE strict mode, STAGES constant, constitution coverage
 
 ### Known limitations preserved honestly
 - ingress identity is still architectural, not cryptographic
