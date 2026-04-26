@@ -120,14 +120,20 @@ class LLMAdapter:
             "my", "our", "are", "is", "was", "how", "why",
         }
         raw_tokens = re.findall(r"[A-Za-z0-9'-]+", user_text.lower())
-        tokens = [t for t in raw_tokens if len(t) > 2 and t not in stopwords]
+        tokens = []
+        for token in raw_tokens:
+            if len(token) <= 2 or token in stopwords:
+                continue
+            tokens.append(token)
+            if token.endswith("s") and len(token) > 4:
+                tokens.append(token[:-1])
 
         scored = []
         for entry in entries:
             lower = entry.lower()
             score = sum(1 for token in tokens if token in lower)
             scored.append((score, entry))
-        scored.sort(key=lambda item: (item[0], len(item[1])), reverse=True)
+        scored.sort(key=lambda item: (-item[0], len(item[1])))
         chosen = [entry for score, entry in scored if score > 0][:2]
 
         privacy_markers = {"private", "personal", "counsel", "clinical", "salary", "compensation"}

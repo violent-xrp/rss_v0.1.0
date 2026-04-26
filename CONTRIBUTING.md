@@ -27,7 +27,7 @@ python tests/test_all.py
 ```
 Current expected final line:
 ```text
-RSS v0.1.0 — 134 test functions, 1039 assertions passed, 0 failed
+RSS v0.1.0 - 135 test functions, 1055 assertions passed, 0 failed
 ```
 
 If `pytest` is installed, parity check:
@@ -44,7 +44,8 @@ python -m pytest -q tests/test_all.py
 ## Where to put things
 - kernel modules → `src/rss/` (subpackages: `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`)
 - CLI entry point → `src/main.py`
-- acceptance tests / helpers → `tests/`
+- canonical acceptance runner → `tests/test_all.py`
+- split proof modules and helpers → `tests/`
 - demos / walkthroughs → `examples/`
 - pact text → `pact/`
 - supporting docs → `docs/`

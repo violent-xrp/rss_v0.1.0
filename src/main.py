@@ -120,12 +120,15 @@ def run_demo_suite(rss):
         print(f"    A: {answer}")
 
     print("\n  [Container workflows]")
-    from rss.hubs.tecton import ContainerRequest
+    from rss.hubs.tecton import ContainerRequest, SEAT_SIGILS
     for spec in DEMO_CONTAINERS:
         cid = seeded["containers"][spec["label"]]
         print(f"\n    Container: {spec['label']} ({cid})")
         for text in spec["questions"]:
-            result = rss.tecton.process_request(ContainerRequest(cid, "ᚱ", {"text": text}), rss).result
+            result = rss.tecton.process_request(
+                ContainerRequest(cid, SEAT_SIGILS["RUNE"], {"text": text, "use_llm": True}),
+                rss,
+            ).result
             answer = result.get("llm_response", result.get("error", "NO_RESPONSE"))
             print(f"      Q: {text}")
             print(f"      A: {answer}")

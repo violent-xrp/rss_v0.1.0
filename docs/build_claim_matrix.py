@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""build_claim_matrix.py — generate docs/claim_matrix.md from test_all.py.
+"""build_claim_matrix.py — generate docs/claim_matrix.md from split tests.
 
-Walks the test file, finds every `# CLAIM: §x.y.z — description` tag, and
+Walks the test modules, finds every `# CLAIM: §x.y.z — description` tag, and
 builds a markdown document mapping Pact sections to the test functions that
 prove them. The output is a grep-friendly, human-readable traceability
 matrix — the Phase G deliverable.
@@ -91,7 +91,7 @@ def render_markdown(matrix: dict, total_tests: int, total_claims: int) -> str:
     now = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     lines.append("# RSS Claim Traceability Matrix")
     lines.append("")
-    lines.append(f"_Auto-generated from `tests/test_all.py` on {now}_")
+    lines.append(f"_Auto-generated from split `tests/test_*.py` modules on {now}_")
     lines.append("")
     lines.append(
         "This document maps Pact sections to the test functions that prove them. "
@@ -126,15 +126,23 @@ def render_markdown(matrix: dict, total_tests: int, total_claims: int) -> str:
 
 def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
-    test_file = repo_root / "tests" / "test_all.py"
-    if not test_file.exists():
-        print(f"test_all.py not found at {test_file}", file=sys.stderr)
+    tests_dir = repo_root / "tests"
+    test_files = sorted(
+        p for p in tests_dir.glob("test_*.py")
+        if p.name not in {"test_all.py", "test_support.py"}
+    )
+    if not test_files:
+        print(f"no split test modules found under {tests_dir}", file=sys.stderr)
         return 1
 
-    src = test_file.read_text(encoding="utf-8")
-    claims = extract_claims(src)
+    claims = []
+    total_tests = 0
+    for test_file in test_files:
+        src = test_file.read_text(encoding="utf-8")
+        claims.extend(extract_claims(src))
+        total_tests += len(TEST_DEF_RE.findall(src))
+
     matrix = build_matrix(claims)
-    total_tests = len(TEST_DEF_RE.findall(src))
     md = render_markdown(matrix, total_tests, len(claims))
 
     if "--stdout" in sys.argv:

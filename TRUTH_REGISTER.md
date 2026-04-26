@@ -3,9 +3,9 @@
 Release: **v0.1.0**
 
 ## Current verified state
-- **134 test functions / 1039 assertions / 0 failures** via `python tests/test_all.py`
-- **90.3% statement coverage** via `python run_coverage.py`
-- **134 claims / 134 tests / 101 Pact sections** in `docs/claim_matrix.md`
+- **135 test functions / 1055 assertions / 0 failures** via `python tests/test_all.py`
+- **90.5% statement coverage** via `python run_coverage.py`
+- **135 claims / 135 tests / 101 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (subpackages: `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`) + `src/main.py` CLI entry point
 - demo/reference-pack and governed offline fallback are implemented in the current code snapshot
 
@@ -50,7 +50,7 @@ RSS v0.1.0 does **not** yet implement:
 - demo usefulness should not be sold as deployment maturity
 - `clear_safe_stop()` is T-0 only by convention and docstring, not by mechanical identity gate; the mechanical gate remains future perimeter hardening, not a current v0.1.0 claim
 - hard guarantees depend on meaningful side effects entering through the governed runtime boundary
-- public docs are synchronized to the 134/1039 baseline as of this update; ROADMAP remains the working truth source going forward
+- public docs are synchronized to the 135/1055 baseline as of this update; ROADMAP remains the working truth source going forward
 
 ---
 

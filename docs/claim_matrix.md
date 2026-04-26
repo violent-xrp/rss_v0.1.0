@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from `tests/test_all.py` on 2026-04-26 16:44 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-04-26 20:34 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 101 distinct Pact sections referenced across 134 claim tags on 134 test functions.
+**Coverage:** 101 distinct Pact sections referenced across 135 claim tags on 135 test functions.
 
 ---
 
@@ -26,8 +26,8 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §0.3
 
-- `test_tecton` — TECTON tenant container basics
 - `test_trace_seat` — TRACE as WARD-routed seat
+- `test_tecton` — TECTON tenant container basics
 
 ## §0.3.1
 
@@ -35,13 +35,14 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §0.5
 
-- `test_trace_export` — TRACE export format and REDLINE sanitization
-- `test_safe_stop_persistent` — Safe-Stop persists across restart
 - `test_idempotence_replay` — Safe-Stop/schema/declassify/revocation/verification are idempotent
 - `test_scenario_high_liability_flow` — high-liability review flow: REDLINE + revoke + resume + halt + recover
 - `test_scenario_tamper_recovery` — tamper → boot detection → Safe-Stop → T-0 recovery → resumed governance
+- `test_trace_export` — TRACE export format and REDLINE sanitization
+- `test_safe_stop_persistent` — Safe-Stop persists across restart
 - `test_probe_safe_stop_recovery_ceremony` — full operator-triggered Safe-Stop recovery ceremony with audit durability
 - `test_trace_verify_additional_proof` — cold verifier: corrupted schema version degrades gracefully; mixed known/unknown codes reported; safe-stop state readable cold
+- `test_phase_g_demo_suite_operator_flow` — Phase G demo suite proves governed usefulness, REDLINE exclusion, consent recovery, Safe-Stop restart recovery, isolation, and cold TRACE verification
 
 ## §0.5.2
 
@@ -50,8 +51,8 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §0.5.4
 
-- `test_safe_stop_persistent` — Safe-Stop persists across restart
 - `test_c_phase_regression_battery` — canonical JSON, profile freezing, strict mode, threshold Safe-Stop, REDLINE sanitization
+- `test_safe_stop_persistent` — Safe-Stop persists across restart
 
 ## §0.7.3
 
@@ -78,12 +79,12 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §1.4
 
-- `test_oath` — OATH consent grant, revoke, check
-- `test_a1_consent_persistence_roundtrip` — consent state persists and restores
 - `test_scenario_high_liability_flow` — high-liability review flow: REDLINE + revoke + resume + halt + recover
+- `test_oath` — OATH consent grant, revoke, check
 - `test_oath_extended_edges` — OATH extended edges: revocation fallback, multi-container consent, status accounting
 - `test_oath_input_normalization_and_handle_edges` — OATH input normalization: blank container_id normalizes to GLOBAL; handle() structured error paths
 - `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
+- `test_a1_consent_persistence_roundtrip` — consent state persists and restores
 
 ## §1.5
 
@@ -96,9 +97,9 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §1.7
 
+- `test_ward_hook_enforcement` — WARD hooks cannot mutate protected governance keys
 - `test_ward` — WARD seat registration, routing, hooks
 - `test_scribe_extended_edges` — SCRIBE extended edges: draft uniqueness, error states, UAP assembly, status, and handle dispatch
-- `test_ward_hook_enforcement` — WARD hooks cannot mutate protected governance keys
 
 ## §1.8
 
@@ -112,9 +113,9 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §2.1
 
-- `test_meaning_law` — RUNE term sealing, synonym binding, disallowed
 - `test_domain_pack_equivalence` — governance domain-agnostic across legal/medical/finance
 - `test_runtime_default_term_pack_is_config_driven` — runtime bootstrap term pack is config-driven, not hardcoded; definition prefix also config-driven
+- `test_meaning_law` — RUNE term sealing, synonym binding, disallowed
 
 ## §2.1.1
 
@@ -153,8 +154,8 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §2.8.1
 
-- `test_classification_order` — DISALLOWED takes precedence over SEALED
 - `test_adversarial_scope_escalation` — scope mutation blocked at multiple layers
+- `test_classification_order` — DISALLOWED takes precedence over SEALED
 
 ## §2.8.4
 
@@ -179,13 +180,13 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §3.3
 
-- `test_runtime` — runtime full pipeline happy path and halt semantics
 - `test_adversarial_malformed_inputs` — pipeline survives 10K/empty/unicode/0/negative/50K malformed inputs
+- `test_runtime` — runtime full pipeline happy path and halt semantics
 
 ## §3.3.4
 
-- `test_pipeline_stage_tracking` — every halt carries stage number and stage_name
 - `test_a1_ttl_enforcement_in_stage_4` — expired intent rejected at Stage 4 with PIPELINE_ERROR
+- `test_pipeline_stage_tracking` — every halt carries stage number and stage_name
 
 ## §3.4
 
@@ -207,6 +208,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_llm` — LLM adapter contract
 - `test_genesis_binding_and_offline_fallback` — Genesis artifact bound from config; offline fallback summarizes governed data; shared reference pack is idempotent; ingress posture exposed
+- `test_phase_g_demo_suite_operator_flow` — Phase G demo suite proves governed usefulness, REDLINE exclusion, consent recovery, Safe-Stop restart recovery, isolation, and cold TRACE verification
 
 ## §3.7.5
 
@@ -215,8 +217,8 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §3.7.7
 
-- `test_llm_response_validation` — post-LLM scan strips external names and governance artifacts
 - `test_a1_post_llm_scan_covers_archive_and_ledger` — post-LLM REDLINE scan covers ARCHIVE and LEDGER hubs
+- `test_llm_response_validation` — post-LLM scan strips external names and governance artifacts
 
 ## §4.1
 
@@ -224,10 +226,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §4.2.3
 
+- `test_instructional_override` — jailbreak attempts cannot surface PERSONAL or REDLINE
 - `test_pav` — PAV builder — sovereign guard, REDLINE exclusion
 - `test_s4_personal_scope_guard` — PERSONAL hub requires sovereign=True
 - `test_s4_pipeline_integration` — S4 features integrated in full pipeline
-- `test_instructional_override` — jailbreak attempts cannot surface PERSONAL or REDLINE
 
 ## §4.3
 
@@ -276,14 +278,14 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §4.5.7
 
+- `test_adversarial_scope_escalation` — scope mutation blocked at multiple layers
 - `test_s4_scope_immutability` — SCOPE envelope tuples; frozen dataclass
 - `test_s5_scope_policy_tuples` — container scope_policy tuples frozen
-- `test_adversarial_scope_escalation` — scope mutation blocked at multiple layers
 
 ## §4.6
 
-- `test_pav` — PAV builder — sovereign guard, REDLINE exclusion
 - `test_a1_post_llm_scan_covers_archive_and_ledger` — post-LLM REDLINE scan covers ARCHIVE and LEDGER hubs
+- `test_pav` — PAV builder — sovereign guard, REDLINE exclusion
 
 ## §4.6.6
 
@@ -297,6 +299,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_domain_pack_equivalence` — governance domain-agnostic across legal/medical/finance
 - `test_scenario_high_liability_flow` — high-liability review flow: REDLINE + revoke + resume + halt + recover
+- `test_phase_g_demo_suite_operator_flow` — Phase G demo suite proves governed usefulness, REDLINE exclusion, consent recovery, Safe-Stop restart recovery, isolation, and cold TRACE verification
 
 ## §4.7.4
 
@@ -313,15 +316,16 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §5.1
 
-- `test_tecton` — TECTON tenant container basics
 - `test_adversarial_ingress` — spoofed/None/empty container_id handled; ingress sentinel required
 - `test_demo_world_seed_and_container_isolation` — demo world seed is idempotent; container data is isolated across tenants; governed offline fallback answers from seeded global data
+- `test_phase_g_demo_suite_operator_flow` — Phase G demo suite proves governed usefulness, REDLINE exclusion, consent recovery, Safe-Stop restart recovery, isolation, and cold TRACE verification
+- `test_tecton` — TECTON tenant container basics
 
 ## §5.1.1
 
-- `test_s5_container_isolation` — Morrison and Johnson containers cannot see each other's data
 - `test_adversarial_cross_container` — no cross-container bleed across hub data, events, or threads
 - `test_exception_context_leak` — exception in tenant A does not leak context or data to tenant B
+- `test_s5_container_isolation` — Morrison and Johnson containers cannot see each other's data
 - `test_phase_e5_contextvar_isolation` — context-bound hub isolation via ContextVar, thread-level
 
 ## §5.2
@@ -330,8 +334,8 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §5.2.1
 
-- `test_s5_container_persistence` — containers persist and restore from SQLite
 - `test_f2_container_entry_id_stability` — container entry IDs stable across restart
+- `test_s5_container_persistence` — containers persist and restore from SQLite
 
 ## §5.2.2
 
@@ -358,9 +362,9 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §5.3.3
 
-- `test_s5_profile_immutability` — ACTIVE profile frozen; mutate_active_profile requires reason
 - `test_adversarial_scope_escalation` — scope mutation blocked at multiple layers
 - `test_c_phase_regression_battery` — canonical JSON, profile freezing, strict mode, threshold Safe-Stop, REDLINE sanitization
+- `test_s5_profile_immutability` — ACTIVE profile frozen; mutate_active_profile requires reason
 
 ## §5.4.1
 
@@ -383,16 +387,16 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §5.7.1
 
-- `test_s5_consent_scoping` — container-specific consent overrides global revocation
 - `test_adversarial_policy_confusion` — policy confusion: global vs container consent; forbidden wins at PAV; production-mode
+- `test_s5_consent_scoping` — container-specific consent overrides global revocation
 
 ## §5.8.3
 
-- `test_s5_trace_filtering` — container-scoped TRACE filtering
 - `test_a1_unified_container_filter` — container filter unified across audit_log, trace_export, trace_verify
 - `test_probe_container_filter_prefix_boundary` — container TRACE filter requires exact : boundary; prefix-collision hole closed
 - `test_trace_export_extended_edges` — TRACE export exact-boundary container prefix filter and REDLINE sanitization in text export
 - `test_trace_export_additional_proof` — TRACE export: summary integrity under filters, live/cold parity, multi-token REDLINE redaction, mixed global/container export
+- `test_s5_trace_filtering` — container-scoped TRACE filtering
 
 ## §5.9.1
 
@@ -406,6 +410,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §6.3
 
 - `test_audit_log` — TRACE envelope, chain linkage, event filtering
+- `test_phase_g_demo_suite_operator_flow` — Phase G demo suite proves governed usefulness, REDLINE exclusion, consent recovery, Safe-Stop restart recovery, isolation, and cold TRACE verification
 
 ## §6.3.3
 
@@ -429,9 +434,9 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §6.5
 
+- `test_a1_historical_trace_chain_loaded_on_restart` — restart loads historical chain into memory
 - `test_persistence_roundtrip` — bootstrap→save→restore integrity
 - `test_f2_entry_id_stability` — entry IDs stable across restart (no re-generation)
-- `test_a1_historical_trace_chain_loaded_on_restart` — restart loads historical chain into memory
 - `test_a1_consent_persistence_roundtrip` — consent state persists and restores
 
 ## §6.6.3
@@ -457,8 +462,8 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §6.9.2
 
-- `test_phase_d_regression_battery` — UUID ingress, scope-on-permission, OATH persistence-failure visibility
 - `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
+- `test_phase_d_regression_battery` — UUID ingress, scope-on-permission, OATH persistence-failure visibility
 
 ## §6.10
 
@@ -479,15 +484,15 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §6.11.3
 
+- `test_scenario_tamper_recovery` — tamper → boot detection → Safe-Stop → T-0 recovery → resumed governance
 - `test_s6_boot_chain_detects_tampering` — tampered chain triggers Safe-Stop at boot
 - `test_a1_boot_verification_catches_persisted_tamper` — persisted-chain tamper caught at boot
-- `test_scenario_tamper_recovery` — tamper → boot detection → Safe-Stop → T-0 recovery → resumed governance
 - `test_probe_safe_stop_recovery_ceremony` — full operator-triggered Safe-Stop recovery ceremony with audit durability
 
 ## §6.11.4
 
-- `test_s6_cold_verifier` — cold trace verifier: clean, tampered, missing, empty cases + Safe-Stop + filter
 - `test_idempotence_replay` — Safe-Stop/schema/declassify/revocation/verification are idempotent
+- `test_s6_cold_verifier` — cold trace verifier: clean, tampered, missing, empty cases + Safe-Stop + filter
 - `test_trace_verify_cli_error_classification` — cold verifier CLI exit codes: file-not-found returns EXIT_FILE_ERROR; schema-invalid returns EXIT_SCHEMA_INVALID
 - `test_trace_verify_registry_load_failure_is_nonfatal` — cold verifier --use-registry load failure degrades to a warning; EXIT_OK still returned
 - `test_trace_verify_additional_proof` — cold verifier: corrupted schema version degrades gracefully; mixed known/unknown codes reported; safe-stop state readable cold

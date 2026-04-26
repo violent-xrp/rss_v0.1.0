@@ -14,7 +14,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 from rss.core.runtime import bootstrap
-from rss.hubs.tecton import ContainerRequest
+from rss.hubs.tecton import ContainerRequest, SEAT_SIGILS
 from rss.reference_pack import seed_demo_world, DEMO_CONTAINERS, DEMO_QUESTIONS
 
 
@@ -53,7 +53,7 @@ def run():
         for question in spec['questions']:
             print(f"Q: {question}")
             result = rss.tecton.process_request(
-                ContainerRequest(cid, "ᚱ", {"text": question, "use_llm": True}), rss
+                ContainerRequest(cid, SEAT_SIGILS["RUNE"], {"text": question, "use_llm": True}), rss
             ).result
             _print_answer("A: ", result)
             print()
@@ -61,7 +61,7 @@ def run():
     print("[ISOLATION CHECK]")
     legal_cid = seeded['containers']['Northwind Legal']
     result = rss.tecton.process_request(
-        ContainerRequest(legal_cid, "ᚱ", {"text": "What does the triage memo say?", "use_llm": True}), rss
+        ContainerRequest(legal_cid, SEAT_SIGILS["RUNE"], {"text": "What does the triage memo say?", "use_llm": True}), rss
     ).result
     _print_answer("Northwind asking about Harbor Medical: ", result)
 
