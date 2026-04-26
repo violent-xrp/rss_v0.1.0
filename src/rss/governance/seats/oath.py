@@ -65,6 +65,17 @@ class Oath:
     _failure_callback: Optional[Callable] = None
 
     @staticmethod
+    def _normalize_action_class(action_class: Optional[str]) -> str:
+        """Normalize action classes so consent keys do not drift by case or
+        incidental whitespace. The colon is reserved as the key separator."""
+        if action_class is None:
+            return ""
+        normalized = str(action_class).strip().upper()
+        if ":" in normalized:
+            raise OathError("action_class must not contain ':'")
+        return normalized
+
+    @staticmethod
     def _normalize_container_id(container_id: Optional[str]) -> str:
         """Normalize empty / blank container identifiers to GLOBAL.
 
@@ -74,13 +85,18 @@ class Oath:
         """
         if container_id is None:
             return "GLOBAL"
-        if isinstance(container_id, str):
-            normalized = container_id.strip()
-            return normalized or "GLOBAL"
-        return str(container_id)
+        normalized = str(container_id).strip()
+        if not normalized:
+            return "GLOBAL"
+        if ":" in normalized:
+            raise OathError("container_id must not contain ':'")
+        return normalized
 
     def _key(self, action_class: str, container_id: str) -> str:
-        return f"{self._normalize_container_id(container_id)}:{action_class}"
+        normalized_action = self._normalize_action_class(action_class)
+        if not normalized_action:
+            raise OathError("action_class must not be empty.")
+        return f"{self._normalize_container_id(container_id)}:{normalized_action}"
 
     def set_persistence_callback(self, callback) -> None:
         """§6.9.2 — Wire persistence so every authorize() durably saves."""
@@ -114,21 +130,24 @@ class Oath:
         Honest exception: when _persist=False (the restore_from_db rehydration
         path), we install in-memory directly — the record was already durable
         before this session and we're just rebuilding the cache."""
-        if not action_class:
+        normalized_action = self._normalize_action_class(action_class)
+        if not normalized_action:
             raise OathError("action_class must not be empty.")
-        if not requester:
+        normalized_requester = str(requester).strip() if requester is not None else ""
+        if not normalized_requester:
             raise OathError("requester must not be empty.")
+        normalized_container = self._normalize_container_id(container_id)
 
         record = ConsentRecord(
-            action_class=action_class,
+            action_class=normalized_action,
             scope=scope,
-            requester=requester,
+            requester=normalized_requester,
             status="AUTHORIZED",
-            container_id=self._normalize_container_id(container_id),
+            container_id=normalized_container,
             granted_at=datetime.now(UTC),
             duration=duration,
         )
-        key = self._key(action_class, container_id)
+        key = self._key(normalized_action, normalized_container)
 
         # Phase E-4: Persist BEFORE in-memory install. If persistence fails,
         # the in-memory state remains untouched and we return a structured
@@ -143,20 +162,20 @@ class Oath:
                 import sys as _sys
                 print(
                     f"[OATH WARN §E-4] Consent grant REFUSED — persistence failed for "
-                    f"{action_class}/{container_id}: {exc}",
+                    f"{normalized_action}/{normalized_container}: {exc}",
                     file=_sys.stderr,
                 )
                 if self._failure_callback is not None:
                     try:
-                        self._failure_callback(action_class, self._normalize_container_id(container_id), exc)
+                        self._failure_callback(normalized_action, normalized_container, exc)
                     except Exception:
                         pass
                 return {
                     "authorized": False,
                     "error": "PERSISTENCE_FAILURE",
                     "reason": f"Consent not granted: durable write failed ({type(exc).__name__})",
-                    "action_class": action_class,
-                    "container_id": self._normalize_container_id(container_id),
+                    "action_class": normalized_action,
+                    "container_id": normalized_container,
                 }
 
         # Persistence succeeded (or was suppressed via _persist=False during
@@ -164,7 +183,7 @@ class Oath:
         # to exist on disk, so the in-memory state matches.
         self._consents[key] = record
 
-        return {"authorized": True, "action_class": action_class, "container_id": self._normalize_container_id(container_id)}
+        return {"authorized": True, "action_class": normalized_action, "container_id": normalized_container}
 
     def revoke(self, action_class: str, container_id: str = "GLOBAL") -> dict:
         """Phase E-4 (Option B) — True write-ahead revocation semantics.
@@ -173,15 +192,19 @@ class Oath:
         in memory. RSS does not revoke authority it cannot durably remember
         revoking — that would create the inverse split-brain (memory says
         REVOKED but SQLite still says AUTHORIZED, restart restores access)."""
-        key = self._key(action_class, container_id)
+        normalized_action = self._normalize_action_class(action_class)
+        if not normalized_action:
+            raise OathError("action_class must not be empty.")
+        normalized_container = self._normalize_container_id(container_id)
+        key = self._key(normalized_action, normalized_container)
         if key not in self._consents:
-            return {"revoked": False, "reason": f"No consent found for: {action_class}"}
+            return {"revoked": False, "reason": f"No consent found for: {normalized_action}"}
 
         # Phase E-4: Stage the new state, persist, then commit on success.
         prior_status = self._consents[key].status
         if prior_status == "REVOKED":
             # Idempotent — already revoked, nothing to write.
-            return {"revoked": True, "action_class": action_class,
+            return {"revoked": True, "action_class": normalized_action,
                     "note": "already revoked"}
 
         # Build the would-be record without mutating in-memory yet.
@@ -201,15 +224,14 @@ class Oath:
             except Exception as exc:
                 # Refuse the revocation. In-memory state remains AUTHORIZED.
                 import sys as _sys
-                normalized_container = self._normalize_container_id(container_id)
                 print(
                     f"[OATH WARN §E-4] Revocation REFUSED — persistence failed for "
-                    f"{action_class}/{normalized_container}: {exc}",
+                    f"{normalized_action}/{normalized_container}: {exc}",
                     file=_sys.stderr,
                 )
                 if self._failure_callback is not None:
                     try:
-                        self._failure_callback(action_class, self._normalize_container_id(container_id), exc)
+                        self._failure_callback(normalized_action, normalized_container, exc)
                     except Exception:
                         pass
                 return {
@@ -217,21 +239,29 @@ class Oath:
                     "error": "PERSISTENCE_FAILURE",
                     "reason": f"Revocation not applied: durable write failed ({type(exc).__name__})",
                     "prior_status": prior_status,
-                    "action_class": action_class,
+                    "action_class": normalized_action,
                 }
 
         # Persistence succeeded — commit the status change in memory.
         self._consents[key].status = "REVOKED"
-        return {"revoked": True, "action_class": action_class}
+        return {"revoked": True, "action_class": normalized_action}
 
     def check(self, action_class: str, container_id: str = "GLOBAL") -> str:
         """Check consent. Container-specific first, then GLOBAL fallback."""
-        key = self._key(action_class, container_id)
+        try:
+            normalized_action = self._normalize_action_class(action_class)
+            if not normalized_action:
+                return "DENIED"
+            normalized_container = self._normalize_container_id(container_id)
+        except OathError:
+            return "DENIED"
+
+        key = self._key(normalized_action, normalized_container)
         if key in self._consents:
             return self._consents[key].status
 
         # Fallback to GLOBAL
-        global_key = self._key(action_class, "GLOBAL")
+        global_key = self._key(normalized_action, "GLOBAL")
         if global_key in self._consents:
             return self._consents[global_key].status
 
@@ -254,17 +284,26 @@ class Oath:
         action = task.get("action")
         if action is None:
             return {"error": "MISSING_ACTION"}
-        if action in {"authorize", "check", "revoke"} and not task.get("action_class"):
-            return {"error": "MISSING_ACTION_CLASS", "action": action}
+        action_class = task.get("action_class")
+        if action in {"authorize", "check", "revoke"}:
+            try:
+                action_class = self._normalize_action_class(action_class)
+                container_id = self._normalize_container_id(task.get("container_id", "GLOBAL"))
+            except OathError as exc:
+                return {"error": "INVALID_CONSENT_NAMESPACE", "reason": str(exc)}
+            if not action_class:
+                return {"error": "MISSING_ACTION_CLASS", "action": action}
+        else:
+            container_id = task.get("container_id", "GLOBAL")
         if action == "authorize":
             return self.authorize(
-                task["action_class"], task.get("scope", ""),
+                action_class, task.get("scope", ""),
                 task.get("duration", ""), task.get("requester", "T-0"),
-                task.get("container_id", "GLOBAL"),
+                container_id,
             )
         if action == "check":
-            s = self.check(task["action_class"], task.get("container_id", "GLOBAL"))
-            return {"action_class": task["action_class"], "status": s}
+            s = self.check(action_class, container_id)
+            return {"action_class": action_class, "status": s}
         if action == "revoke":
-            return self.revoke(task["action_class"], task.get("container_id", "GLOBAL"))
+            return self.revoke(action_class, container_id)
         return {"error": f"Unknown action: {action}"}

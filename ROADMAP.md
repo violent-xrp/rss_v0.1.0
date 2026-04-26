@@ -3,19 +3,16 @@
 Release target: **v0.1.0**
 
 Current code state:
-- **131 test functions / 994 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **22 committed `src/` modules** on the live repo at last verified project snapshot
-  - 20 kernel seats + runtime + persistence + config + adapters
-  - `reference_pack.py` for shared demo/runtime data
-  - `chain_hash_migrate.py` as a visible scaffold so version bumps cannot happen silently
-- **88.3% statement coverage** across the 22 kernel modules (2,440 statements, 286 missed) via `python run_coverage.py`
-- claim traceability generated at `docs/claim_matrix.md`
+- **134 test functions / 1039 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **22 kernel modules** in the `src/rss/` package tree (subpackages: `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`) + `src/main.py` CLI entry point; R1 restructure complete
+- **90.3% statement coverage** (April 26 Phase F coverage-honesty closure) via `python run_coverage.py`
+- claim traceability generated at `docs/claim_matrix.md` (134 claims, 134 tests, 101 Pact sections)
 
 Current posture:
 - public-alpha hardening has advanced materially beyond the earlier 111/850 baseline
 - the acceptance harness now reports a single truthful verdict instead of allowing pytest/pass-counter split-brain
 - the kernel is ahead of the public surface; ROADMAP remains the working source of truth until every downstream doc is re-synced
-- the current frontier is **pre-demo hardening + governed demo usefulness**, not new claim inflation
+- the current frontier is **Phase G governed demo usefulness + downstream truth sync**, not new claim inflation
 - the April 20 full-module review is folded in below as active engineering ledger material
 
 Operator environment note:
@@ -82,6 +79,9 @@ If counts go down, the reason must be written here in plain language.
 - **126 / 956 / 0** — confirmed baseline after R1 repo structure move; runner output is ground truth
 - **130 / 987 / 0** — Priority A closure: TECTON destructive reason gate, clear_safe_stop idempotence, config-driven LLM availability timeout, archive_entry return parity
 - **131 / 994 / 0** — Priority B closure: STAGES module constant, constitution.py direct coverage (load_constitution all branches), PAV strict policy raise, CYCLE strict mode parameter
+- **132 / 1017 / 0** — Phase F OATH proof closure: normalized consent namespaces, persistence-failure density, malformed action/container bindings fail closed
+- **133 / 1035 / 0** — Phase F SCRIBE coverage closure: draft error states, UAP/status proof, and handle dispatch paths
+- **134 / 1039 / 0** — Phase F migration-scaffold proof: chain-hash migration helper paths locked so version bumps cannot be silent
 
 ---
 
@@ -95,6 +95,8 @@ The full-module review on April 20 surfaced four drift items between docs and re
 | Module count | 20 committed + 1 prepared = 21 | 22 | **22** |
 | Tagged tests | 130 | 130 | **130** — all tests tagged, 100 Pact sections covered |
 | Coverage citation | not cited | 88.3% | cite **88.3%** in downstream docs |
+
+Latest April 26 truth supersedes the old citation for active work: **134 claims on 134 tests**, **101 Pact sections**, and **90.3%** package coverage. Keep the April 20 drift table as historical reconciliation; use the current code-state block above for new public numbers.
 
 Reason for 956 vs 955: the prior "955 stands" statement was itself wrong — the runner after R1 move and 6 error fixes prints **956**. Runner output is always ground truth; no doc statement overrides it.
 
@@ -162,40 +164,46 @@ Still open under Phase E:
 - wrapper-layer guarantees for future FastAPI / ASGI surfaces
 
 ### Phase F — Pre-demo hardening and governed usefulness
-**Current active focus**
+**Current checkpoint status**
 
 Landed already:
 - `trace_verify.py` proof expansion around CLI, schema, safe-stop, registry, and filter branches
 - `trace_export.py` hardening for exact-boundary redaction and container/global REDLINE handling
 - `seal.py` amendment ceremony tightening (input normalization, explicit rejection/ratification paths, clearer idempotence, ALREADY_RATIFIED guard)
+- `oath.py` namespace hardening: action classes normalize to uppercase, requesters/container IDs trim, delimiter-bearing consent namespaces fail closed, and handle paths return structured errors
 - governed offline fallback now summarizes scoped data instead of echoing user input
 - shared `reference_pack.py` foundation for demo/runtime/examples/tests
 - deterministic demo entrypoints built on shared reference data
 - runtime/bootstrap moved to config-driven Section 0 path/hash and config-driven default terminology
 
-Still active before demo:
-- more `trace_verify.py` proof:
+Phase F proof checklist status before demo:
+- more `trace_verify.py` proof — covered by the current proof suite:
   - corrupted `system_state`
   - malformed JSON output expectations
   - mixed known/unknown code reporting with `--use-registry`
   - more cold Safe-Stop read branches
-- more `trace_export.py` proof:
+- more `trace_export.py` proof — covered by the current proof suite:
   - summary integrity when filters are applied
   - export consistency between live and cold paths
   - multiple REDLINE IDs in one artifact string
   - container/global mixed export cases
-- more `seal.py` ceremony proof:
+- more `seal.py` ceremony proof — covered by the current proof suite:
   - repeated review after rejection
   - whitespace-only rationale / proposed_text
   - mixed-case verdict normalization
   - ratification history ordering and idempotence
-- more `oath.py` proof:
+- more `oath.py` proof — landed in the latest pass:
   - negative-path persistence-failure density
   - consent namespace edge cases
   - explicit regression guards around blank / malformed container bindings
 
+Phase F coverage honesty is now closed for the current checkpoint:
+- `scribe.py` moved from 73.3% to 100.0% through proof around draft uniqueness, missing-draft errors, empty-promotion refusal, UAP/status accounting, and `handle()` dispatch.
+- `audit/migrate.py` moved from 0.0% to 100.0% through explicit proof of the no-op path and the "do not silently bump CHAIN_HASH_VERSION" warning path.
+- Every package module is now at or above the Phase F 80% floor. Remaining coverage polish belongs to Phase G, where the target rises to 85% per module.
+
 ### Phase G — Demo / operator experience
-**Next after current hardening focus**
+**Current active focus after Phase F coverage closure**
 
 Build out:
 - richer fake WORK data
@@ -293,32 +301,15 @@ Safe behavior (defaults to most-restrictive) but hides config typos. Should rais
 Correct governance behavior but masks typos. Keep behavior, add optional `strict: bool = False` parameter for diagnostic callers.
 - File: `cycle.py`
 
-### Priority C — Cleanup / Consistency
+### Priority C — Cleanup / Consistency — CLOSED
 
-**C-1.** Module count drift in ROADMAP wording — **resolved above in Drift Resolution section** (22 modules).
+**C-1.** Module count drift in ROADMAP wording — **resolved** (22 modules; R1 path updated to `src/rss/`).
 
-**C-2.** Assertion count drift — **resolved above** (956, not 955).
+**C-2.** Assertion count drift — **resolved** (956, not 955; runner output is ground truth).
 
-**C-3.** 14 of 126 tests untagged with `# CLAIM:` tags. Violates CONTRIBUTING protocol. Full list:
-```
-test_oath_extended_edges
-test_oath_input_normalization_and_handle_edges
-test_runtime_default_term_pack_is_config_driven
-test_trace_export_cold_container_redline_sanitization
-test_trace_export_extended_edges
-test_trace_export_token_boundary_sanitization
-test_trace_verify_cli_error_classification
-test_trace_verify_registry_load_failure_is_nonfatal
-test_seal_extended_edges
-test_trace_verify_additional_proof
-test_trace_export_additional_proof
-test_seal_ceremony_additional_proof
-test_genesis_binding_and_offline_fallback
-test_demo_world_seed_and_container_isolation
-```
-After tagging, regenerate claim matrix — expected 126 claims across 94+ sections.
+**C-3.** 14 untagged tests — **resolved**. All 14 originally-untagged tests plus 4 new Priority A tests tagged with `# CLAIM:` tags. Claim matrix regenerated: 130 claims on 131 tests, 100 Pact sections covered.
 
-**C-4.** `conftest.py` docstring says "20 modules" — correct to 22.
+**C-4.** `conftest.py` docstring "20 modules" — **resolved** (updated to `rss` package in `src/`).
 
 **C-5.** `persistence.save_hub_entry` uses `INSERT OR REPLACE`. UUID-keyed, collision theoretical, but `INSERT OR ABORT` would fail loudly in audit-first posture. Philosophy-over-behavior item.
 
@@ -334,13 +325,16 @@ After tagging, regenerate claim matrix — expected 126 claims across 94+ sectio
 
 ---
 
-## Coverage Map (April 20 baseline)
+## Coverage Map (April 26 current run)
 
 ```
 config.py              100.0%
 state_machine.py       100.0%
+audit/migrate.py       100.0%
+scribe.py              100.0%
+constitution.py         92.5%
 trace_export.py         94.8%
-tecton.py               94.7%
+tecton.py               94.8%
 persistence.py          93.9%
 meaning_law.py          93.1%
 hub_topology.py         92.9%
@@ -349,23 +343,26 @@ seal.py                 91.4%
 ward.py                 90.5%
 scope.py                90.0%
 audit_log.py            87.4%
+runtime.py              86.9%
+oath.py                 86.5%
 pav.py                  86.4%
-runtime.py              85.6%
-oath.py                 84.1%
+llm_adapter.py          84.6%
 trace_verify.py         82.1%
-cycle.py                82.0%
-scribe.py               73.3%
-llm_adapter.py          72.3%
-constitution.py         55.0%
-TOTAL                   88.3%
+cycle.py                80.8%
+TOTAL                   90.3%
 ```
 
-Modules under 80% are the real next-testing targets:
-- **`constitution.py`** — genuine gap (§B-4)
-- **`scribe.py`** — unused `handle()` dispatch paths; add tests or remove
-- **`llm_adapter.py`** — unused `handle()` dispatch paths; add tests or remove
+Modules under 80%:
+- none in the `src/rss/` package tree. Phase F per-module floor is satisfied.
 
-Goal for end of Phase F: every kernel module ≥ 80% coverage.
+Modules under the Phase G 85% target:
+- **`cycle.py`** — 80.8%; strict-mode and cadence edge proof can lift it.
+- **`trace_verify.py`** — 82.1%; cold verifier branches remain a good external-audit polish target.
+- **`llm_adapter.py`** — 84.6%; just under the 85% Phase G target.
+
+Coverage re-run is complete: **90.3% total**. The old 88.3% line is now historical context only, not the current release number.
+
+Goal for end of Phase F: every kernel module ≥ 80% coverage — **met**.
 Goal for end of Phase G: every kernel module ≥ 85% coverage.
 
 ---
@@ -374,17 +371,24 @@ Goal for end of Phase G: every kernel module ≥ 85% coverage.
 
 ### Test / proof growth
 Completed:
-- baseline moved from **111 / 850 / 0** to **126 / 955 / 0**
-- constitution loader edge coverage
+- baseline moved from **111 / 850 / 0** to **134 / 1039 / 0**
+- constitution loader edge coverage; `load_constitution()` all branches directly tested (B-4)
 - LLM adapter prompt / fallback / config-aware coverage
 - SCRIBE UAP / status / handler edge coverage
+- SCRIBE Phase F coverage closure: draft uniqueness, write/promote error paths, candidate editability, UAP/status accounting, and `handle()` dispatch proof
 - cold TRACE verifier CLI / error-path / safe-stop coverage
 - extended OATH, SEAL, and TRACE export coverage
+- OATH Phase F proof density: normalized action classes, trimmed requesters/container IDs, write-ahead failure branches, delimiter-bearing namespace fail-closed behavior
+- chain-hash migration scaffold proof so same-version no-op and version-change warning paths are both explicit
 - runner-truth hardening so failed `check(...)` conditions cannot silently coexist with a green-looking invocation
 - demo/reference-pack proof for shared seeding and governed usage paths
+- Priority A closure: TECTON reason gate, `clear_safe_stop` idempotence, config-driven LLM timeout, `archive_entry` return parity
+- Priority B closure: PAV strict policy raise, CYCLE strict mode, STAGES constant
+- Priority C closure: all 14+4 tests tagged; claim matrix regenerated (now 134 claims, 134 tests, 101 sections after Phase F coverage closure)
 
 ### Hardening fixes landed
 Completed:
+- R1 repo restructure: flat `src/` → `src/rss/` package tree
 - runtime bootstrap now uses config-driven default term packs and config-driven definition prefixes
 - config binds Section 0 to a real Pact artifact path/hash instead of placeholder-only posture
 - cold TRACE export sanitizes REDLINE IDs from container-hub rows as well as global rows
@@ -392,8 +396,14 @@ Completed:
 - `trace_verify.py` exit-code correction for schema-invalid vs file-error paths
 - `trace_verify.py` registry-load handling hardened beyond ImportError-only failure
 - OATH blank-container normalization and structured `handle()` error paths
+- OATH action-class normalization and consent namespace delimiter guard; malformed `check()` paths deny instead of creating ambiguous keys
 - SEAL amendment input normalization and explicit `ALREADY_RATIFIED` path
-- lifecycle transition reasoning / auditability improvements
+- TECTON destructive transitions require non-empty `reason`, logged into lifecycle audit record
+- `clear_safe_stop()` is idempotent — no false audit events when not halted
+- `archive_entry()` returns the archived `HubEntry` — lifecycle parity
+- PAV `_sanitize` raises `ValueError` on unknown policy names
+- CYCLE `check_rate_limit` supports `strict=True` for diagnostic callers
+- LLM availability-check timeout is config-driven via `llm_availability_check_timeout`
 - governed offline fallback replaces raw echo behavior
 - shared reference-pack foundation for CLI/examples/tests
 
@@ -401,22 +411,22 @@ Completed:
 Completed:
 - clarified that the canonical acceptance run is the custom harness
 - clarified that `pytest` parity is optional tooling, not the sole source of truth
-- clarified source-module counting rule: **Python files in `src/` only**
+- clarified source-module layout rule: kernel modules in `src/rss/` package tree
 - clarified that ingress posture is architectural, not cryptographic, in the current runtime
+- all public-facing docs were synced to the 131/994 baseline (2026-04-26); ROADMAP and claim matrix now carry the newer 134/1039 truth pending downstream doc follow-up
 
 ---
 
 ## Current Active Focus
 
-For the next passes, optimize for this order:
-1. keep ROADMAP truthful after each pass
-2. close Priority A items from the April 20 review (real behavior gaps)
-3. tag the 14 untagged tests and regenerate the claim matrix
-4. finish pre-demo hardening proof around verifier / export / ceremony / consent edges
-5. make governed usefulness feel alive without weakening the law
-6. sync downstream docs only after ROADMAP and the acceptance baseline are correct
+Priority A, B, C, the named Phase F proof bullets, and the Phase F ≥80% per-module coverage floor are closed for the current demo checkpoint. The current frontier is:
 
-This is the real focus now. Do not diffuse effort equally across all future phases.
+1. **Now — Phase G demo usefulness**: make the governed demo feel like a real governed system, not a thin placeholder. Prioritize richer demo data, cross-container question flows, consent denial/recovery, REDLINE exclusion, Safe-Stop recovery, and offline answers from scoped data.
+2. **Next — downstream truth sync**: propagate the ROADMAP/claim-matrix numbers to public docs: **134 / 1039 / 0**, **90.3%**, and **134 claims / 134 tests / 101 Pact sections**.
+3. **Keep Warm — Phase G coverage polish**: lift `cycle.py`, `trace_verify.py`, and `llm_adapter.py` to ≥85% so Phase G can close cleanly.
+4. **Future Watch — perimeter maturity**: keep identity propagation, async/thread context hazards, external signing, and deployment-boundary trust on the watchlist without letting them block the demo kernel.
+
+Do not diffuse effort equally across all future phases. Keep ROADMAP truthful after each pass.
 
 ---
 
@@ -469,16 +479,15 @@ Future proof targets:
 
 ## Test Layout Maintenance
 
-The current giant `tests/test_all.py` remains acceptable because it gives one clear acceptance surface.
+The current `tests/test_all.py` remains the single acceptance surface and gives one truthful verdict. All 134 tests are tagged with `# CLAIM:` tags; the claim matrix is current at 134 claims / 134 tests / 101 Pact sections.
 
-Near-term cleanup should stay internal:
-- helper factories for temp DB/runtime setup
-- fewer repeated cleanup blocks (Windows `_cleanup_db` helper already landed)
-- grouped registrations of test sections
-- removal of stale fixed-count comments / dated wording
-- claim-tag completeness check (14 tests still untagged — Priority C-3)
+Near-term cleanup that can happen opportunistically:
+- helper factories for temp DB/runtime setup (reduce repetition in fixture-heavy tests)
+- fewer repeated cleanup blocks (`_cleanup_db` helper already landed on Windows)
+- grouped runner registrations by section for easier navigation
+- removal of any stale wording added during rapid iteration
 
-If the suite is eventually split, keep a single top-level acceptance entry point and preserve the truthful direct-run summary.
+If the suite is eventually split into per-module files, keep a single top-level acceptance entry point and preserve the truthful direct-run summary line.
 
 ---
 
@@ -497,17 +506,21 @@ These are not all fully absorbed into downstream docs yet, but they should remai
 
 ---
 
-## Downstream Docs Still Owed Sync Later
+## Downstream Doc Sync Status
 
-These should be updated **after** hardening when convenient, but ROADMAP stays current first:
-- `README.md` — baseline numbers (126/955/0), coverage (88.3%), module count (22), governed offline fallback language
-- `TRUTH_REGISTER.md` — column-A current-truth refresh; S7 landed; F-0 probes locked; 14-tag closure before public push
-- `CLAIM_DISCIPLINE.md` — baseline numbers; claim-matrix regeneration instructions; untagged-test policy reinforcement
-- `CONTRIBUTING.md` — expected-output line; claim-tag requirement in PR checklist
-- `CHANGELOG.md` — Phase F reconciliation entries; drift-resolution note
-- `THREAT_MODEL.md` — §2.7 full-envelope hashing statement; §5.8.3 boundary-filter note; A-3 disclosure about `clear_safe_stop`
+All public-facing docs were synced to the 131/994 baseline on 2026-04-26:
+- `README.md` ✓
+- `TRUTH_REGISTER.md` ✓
+- `CLAIM_DISCIPLINE.md` ✓
+- `CONTRIBUTING.md` ✓
+- `CHANGELOG.md` ✓
+- `THREAT_MODEL.md` ✓
 
-Downstream doc sync should happen after Priority A fixes land and the 14 tests are tagged.
+Newer source-of-truth since that sync:
+- ROADMAP / claim matrix now show **134 / 1039 / 0**, **90.3%** coverage, and **134 claims / 134 tests / 101 Pact sections**.
+- Downstream docs now owe a small follow-up sync, but ROADMAP remains current first.
+
+ROADMAP stays current first; propagate to downstream docs after each meaningful pass.
 
 ---
 
@@ -522,39 +535,6 @@ Explicit non-goals:
 - full async-streaming safety in all wrappers (Phase F-late)
 - polished end-user AI product experience (Phase G+)
 - repo structural refactor into a nested package tree (tracked separately in `REPO_STRUCTURE_PROPOSAL.md`, not in this roadmap per operator instruction)
-
----
-
-## Next Coding Steps (concrete)
-
-The next pass should close Priority A in one focused session, not spread across several. Each item is independent; all can land together.
-
-**Session 1 — Priority A closure — DONE (130 / 987 / 0):**
-- A-1 landed: `reason` required on `suspend_container`, `archive_container`, `destroy_container`, `reactivate_container`; logged to lifecycle_log and TRACE event.
-- A-2 landed: `clear_safe_stop()` returns `{"status": "NO_OP", "reason": "not_halted"}` when not halted; no false audit event emitted.
-- A-3 landed: `# TODO Phase F` comment in `clear_safe_stop()` docstring pointing to `oath.authorize()` pattern.
-- A-4 landed: `llm_availability_check_timeout: int = 3` in `RSSConfig`; wired through `llm_adapter.is_available()`.
-- A-5 landed: `archive_entry()` returns the archived `HubEntry` (was `None`).
-- 4 new test functions, 31 new assertions.
-
-**Session 2 — Priority C closure — DONE (130 / 987 / 0):**
-- All 14 originally-untagged tests tagged; 4 new Priority A tests also tagged.
-- `conftest.py` and `test_all.py` path-shim comments updated (removed stale "20/21 modules" wording).
-- `build_claim_matrix.py` path bug fixed (looked in `docs/` instead of `tests/`); Windows UTF-8 encoding added.
-- Claim matrix regenerated: **130 claims on 130 tests, 100 Pact sections covered**.
-
-**Session 3 — Priority B hardening (~1.5 hours):**
-1. **B-2** `STAGES` → module-level constant.
-2. **B-4** Add `constitution.load_constitution` direct test (target: raise module coverage ≥ 75%).
-3. **B-5** `pav._sanitize` — raise `ValueError` on unknown policy; update tests.
-4. **B-6** `cycle.check_rate_limit` — add `strict: bool = False` parameter.
-5. Re-run harness, re-run coverage, confirm under-80% modules have moved.
-
-**Session 4 — Phase F Pre-demo hardening proof expansion:**
-Pick up the "Still active before demo" list under Phase F. Each sub-bullet is a 30-60 minute proof addition. Run 3-5 per session.
-
-**Downstream doc sync — after Session 2:**
-Only after Priority A + C are green in the harness, start the doc sync pass. ROADMAP first, then propagate.
 
 ---
 

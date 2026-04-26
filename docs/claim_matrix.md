@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from `tests/test_all.py` on 2026-04-24 14:39 UTC_
+_Auto-generated from `tests/test_all.py` on 2026-04-26 16:44 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 100 distinct Pact sections referenced across 130 claim tags on 130 test functions.
+**Coverage:** 101 distinct Pact sections referenced across 134 claim tags on 134 test functions.
 
 ---
 
@@ -16,9 +16,11 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §0.2
 
 - `test_constitution` — constitution hashing, verify_integrity, safe_stop
+- `test_constitution_load_constitution` — load_constitution: file-not-found, hash-mismatch, missing-marker, and happy-path branches
 
 ## §0.2.1
 
+- `test_constitution_load_constitution` — load_constitution: file-not-found, hash-mismatch, missing-marker, and happy-path branches
 - `test_genesis_blocking` — genesis tamper blocks boot; production_mode enforcement
 - `test_genesis_binding_and_offline_fallback` — Genesis artifact bound from config; offline fallback summarizes governed data; shared reference pack is idempotent; ingress posture exposed
 
@@ -62,6 +64,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_write_ahead_guarantee` — audit write-ahead guarantee
 - `test_phase_d_regression_battery` — UUID ingress, scope-on-permission, OATH persistence-failure visibility
 
+## §0.9
+
+- `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
+
 ## §1.2
 
 - `test_ward` — WARD seat registration, routing, hooks
@@ -77,6 +83,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_scenario_high_liability_flow` — high-liability review flow: REDLINE + revoke + resume + halt + recover
 - `test_oath_extended_edges` — OATH extended edges: revocation fallback, multi-container consent, status accounting
 - `test_oath_input_normalization_and_handle_edges` — OATH input normalization: blank container_id normalizes to GLOBAL; handle() structured error paths
+- `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
 
 ## §1.5
 
@@ -85,10 +92,12 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §1.6
 
 - `test_scribe` — SCRIBE drafting and versioning
+- `test_scribe_extended_edges` — SCRIBE extended edges: draft uniqueness, error states, UAP assembly, status, and handle dispatch
 
 ## §1.7
 
 - `test_ward` — WARD seat registration, routing, hooks
+- `test_scribe_extended_edges` — SCRIBE extended edges: draft uniqueness, error states, UAP assembly, status, and handle dispatch
 - `test_ward_hook_enforcement` — WARD hooks cannot mutate protected governance keys
 
 ## §1.8
@@ -410,6 +419,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §6.3.6
 
+- `test_s6_chain_hash_migration_scaffold` — chain-hash migration scaffold refuses silent CHAIN_HASH_VERSION drift
 - `test_probe_chain_catches_duplicate_content_tamper` — hash envelope uniqueness; chain detects middle-row deletion
 - `test_probe_hash_envelope_version_marker_present` — CHAIN_HASH_VERSION marker pinned at v1 for forward-compat
 
@@ -443,10 +453,12 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §6.8.3
 
 - `test_s6_schema_migrated_event` — SCHEMA_MIGRATED event on legacy row migration
+- `test_s6_chain_hash_migration_scaffold` — chain-hash migration scaffold refuses silent CHAIN_HASH_VERSION drift
 
 ## §6.9.2
 
 - `test_phase_d_regression_battery` — UUID ingress, scope-on-permission, OATH persistence-failure visibility
+- `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
 
 ## §6.10
 

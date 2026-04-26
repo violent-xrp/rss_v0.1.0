@@ -81,6 +81,7 @@ from rss.core.config import RSSConfig, RSS_VERSION
 from rss.persistence.sqlite import Persistence
 from rss.llm.adapter import LLMAdapter
 from rss.audit.export import export_trace_json, export_trace_text, export_from_db, EVENT_CODES, categorize_event, build_event_summary, _sanitize_artifact_id, REDLINE_REDACTED
+from rss.audit.migrate import migration_required, describe_migration_path
 from rss.reference_pack import load_reference_pack, load_demo_containers, seed_demo_world, REFERENCE_PACK, DEMO_CONTAINERS
 
 # Layer 6
@@ -532,6 +533,90 @@ def test_scribe():
 
     diff = scribe.diff("line1\nline2", "line1\nline2 modified\nline3")
     check(len(diff) > 0, "diff produces output")
+
+
+def test_scribe_extended_edges():
+    # CLAIM: §1.6, §1.7 — SCRIBE extended edges: draft uniqueness, error states, UAP assembly, status, and handle dispatch
+    """Coverage hardening: SCRIBE error branches and WARD-facing handle paths."""
+    section("SCRIBE Extended Edges")
+
+    scribe = Scribe()
+
+    draft = scribe.start_draft("S2", 7)
+    check(draft.status == "DRAFT", "extended: draft starts in DRAFT")
+
+    try:
+        scribe.start_draft("S2", 7)
+        check(False, "duplicate draft should raise ScribeError")
+    except ScribeError as exc:
+        check("already exists" in str(exc), "duplicate draft rejected with explicit error")
+
+    try:
+        scribe.write("S9", 1, "missing draft")
+        check(False, "write to missing draft should raise ScribeError")
+    except ScribeError as exc:
+        check("No draft found" in str(exc), "write rejects unknown draft")
+
+    empty = scribe.start_draft("S3", 1)
+    check(empty.status == "DRAFT", "empty draft created for promote guard")
+    try:
+        scribe.promote("S3", 1)
+        check(False, "empty draft promote should raise ScribeError")
+    except ScribeError as exc:
+        check("empty draft" in str(exc), "promote rejects empty draft")
+
+    scribe.write("S2", 7, "Section 2 revised text")
+    promoted = scribe.promote("S2", 7)
+    check(promoted.status == "CANDIDATE", "written draft promotes to CANDIDATE")
+    rewritten = scribe.write("S2", 7, "Candidate can still be edited before SEAL")
+    check("Candidate" in rewritten.text, "CANDIDATE draft remains editable before sealing")
+    rewritten.status = "SEALED"
+    try:
+        scribe.write("S2", 7, "post-seal edit")
+        check(False, "write to SEALED draft should raise ScribeError")
+    except ScribeError as exc:
+        check("Cannot write" in str(exc), "write rejects SEALED draft state")
+
+    try:
+        scribe.promote("S4", 1)
+        check(False, "promote missing draft should raise ScribeError")
+    except ScribeError as exc:
+        check("No draft found" in str(exc), "promote rejects unknown draft")
+
+    uap = scribe.assemble_uap(
+        "S2", 7,
+        insertions=["insert A", "insert B"],
+        rationale="clarify drafting ceremony",
+        risk_notes=["review drift"],
+        sources=["pact_section1"],
+    )
+    check(uap.doc_id.startswith("UAP-"), "assemble_uap creates UAP id")
+    check(uap.section_id == "S2" and uap.rewrite_id == 7, "UAP preserves section and rewrite ids")
+    check(uap.insertions == ["insert A", "insert B"], "UAP preserves insertion list")
+    status = scribe.status()
+    check(status["open_drafts"] == 2 and status["open_uaps"] == 1,
+          "status reports open drafts and UAP count")
+
+    routed = Scribe()
+    start = routed.handle({"action": "start_draft", "section_id": "S5", "rewrite_id": 2})
+    check(start == {"section_id": "S5", "rewrite_id": 2, "status": "DRAFT"},
+          "handle(start_draft) returns draft metadata")
+    write = routed.handle({
+        "action": "write",
+        "section_id": "S5",
+        "rewrite_id": 2,
+        "text": "Routed draft text",
+    })
+    check(write["section_id"] == "S5" and write["length"] == len("Routed draft text"),
+          "handle(write) returns text length")
+    promote = routed.handle({"action": "promote", "section_id": "S5", "rewrite_id": 2})
+    check(promote["status"] == "CANDIDATE", "handle(promote) returns candidate status")
+    unknown = routed.handle({"action": "mystery"})
+    check(unknown.get("error") == "Unknown action: mystery",
+          "handle returns structured unknown-action error")
+    missing = routed.handle({})
+    check(missing.get("error") == "Unknown action: None",
+          "handle returns structured error when action is missing")
 
 
 def test_seal():
@@ -3446,6 +3531,23 @@ def test_s6_schema_migrated_event():
                 os.unlink(path + suffix)
 
 
+def test_s6_chain_hash_migration_scaffold():
+    # CLAIM: §6.3.6, §6.8.3 — chain-hash migration scaffold refuses silent CHAIN_HASH_VERSION drift
+    """Coverage hardening: migration scaffold records no-op and policy-missing paths."""
+    section("S6: Chain Hash Migration Scaffold")
+
+    check(migration_required(1, 1) is False,
+          "same chain-hash version does not require migration")
+    check(migration_required("1", "2") is True,
+          "version change requires migration even when inputs are strings")
+    no_op = describe_migration_path(1, 1)
+    check(no_op == "No chain-hash migration required.",
+          "same-version migration path is explicit no-op")
+    path = describe_migration_path(1, 2)
+    check("not yet implemented" in path and "Do not bump CHAIN_HASH_VERSION" in path,
+          "version-change path warns against silent hash-version bump")
+
+
 def test_s6_boot_chain_verification():
     """§6.3.5, §6.11.3 — Boot-time chain verification"""
     # CLAIM: §6.3.5 — BOOT_CHAIN_VERIFIED emitted on clean boot
@@ -6302,6 +6404,108 @@ def test_oath_input_normalization_and_handle_edges():
           "handle returns structured error for missing action_class")
 
 
+def test_oath_additional_proof():
+    # CLAIM: §1.4, §6.9.2, §0.9 — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
+    """Additional proof: OATH namespace hygiene and negative persistence paths."""
+    section("OATH Additional Proof")
+
+    persisted = []
+    oath = Oath()
+    oath.set_persistence_callback(
+        lambda key, record: persisted.append(
+            (key, record.action_class, record.container_id, record.requester)
+        )
+    )
+
+    auth = oath.authorize(" execute ", "WORK", "SESSION", " T-0 ", container_id=" Tenant-A ")
+    check(auth.get("authorized") is True, "whitespace-padded action_class/requester authorizes after normalization")
+    check(auth.get("action_class") == "EXECUTE", "authorize returns normalized uppercase action_class")
+    check(auth.get("container_id") == "Tenant-A", "authorize returns trimmed container_id")
+    check(persisted[-1] == ("Tenant-A:EXECUTE", "EXECUTE", "Tenant-A", "T-0"),
+          "persistence key and record use normalized consent namespace")
+    check(oath.check("execute", "Tenant-A") == "AUTHORIZED",
+          "lowercase check resolves to normalized action namespace")
+    check(oath.check(" EXECUTE ", " Tenant-A ") == "AUTHORIZED",
+          "whitespace-padded check resolves to same consent namespace")
+    check(oath.check("EXECUTE") == "DENIED",
+          "container-specific consent does not grant unrelated GLOBAL namespace")
+    revoke = oath.revoke(" execute ", container_id=" Tenant-A ")
+    check(revoke.get("revoked") is True and revoke.get("action_class") == "EXECUTE",
+          "revoke normalizes action_class before state transition")
+    check(oath.check("EXECUTE", "Tenant-A") == "REVOKED",
+          "normalized revoke updates the original container consent record")
+
+    attempts = []
+    failures = []
+
+    def broken_save(key, record):
+        attempts.append((key, record.action_class, record.container_id))
+        raise RuntimeError("boom")
+
+    oath2 = Oath()
+    oath2.set_persistence_callback(broken_save)
+    oath2.set_failure_callback(
+        lambda action, container_id, exc: failures.append(
+            (action, container_id, type(exc).__name__)
+        )
+    )
+    refused = oath2.authorize(" draft ", "WORK", "SESSION", "T-0", container_id=None)
+    check(refused.get("error") == "PERSISTENCE_FAILURE",
+          "authorize persistence failure returns structured refusal with normalized inputs")
+    check(refused.get("action_class") == "DRAFT" and refused.get("container_id") == "GLOBAL",
+          "authorize failure payload reports normalized action/container")
+    check(attempts == [("GLOBAL:DRAFT", "DRAFT", "GLOBAL")],
+          "authorize failure attempted exactly one normalized durable write")
+    check(failures == [("DRAFT", "GLOBAL", "RuntimeError")],
+          "authorize failure callback receives normalized namespace")
+    check(oath2.check("DRAFT") == "DENIED" and oath2.status()["total_records"] == 0,
+          "failed authorize leaves no ghost in-memory consent")
+
+    revoke_attempts = []
+    revoke_failures = []
+
+    def broken_revoke(key, record):
+        revoke_attempts.append((key, record.action_class, record.container_id, record.status))
+        raise RuntimeError("revoke boom")
+
+    oath3 = Oath()
+    oath3.authorize(" execute ", "WORK", "SESSION", "T-0", container_id="  ", _persist=False)
+    oath3.set_persistence_callback(broken_revoke)
+    oath3.set_failure_callback(
+        lambda action, container_id, exc: revoke_failures.append(
+            (action, container_id, type(exc).__name__)
+        )
+    )
+    revoke_refused = oath3.revoke(" execute ", container_id="")
+    check(revoke_refused.get("error") == "PERSISTENCE_FAILURE",
+          "revoke persistence failure returns structured refusal")
+    check(revoke_attempts == [("GLOBAL:EXECUTE", "EXECUTE", "GLOBAL", "REVOKED")],
+          "revoke failure attempted one normalized durable revocation write")
+    check(revoke_failures == [("EXECUTE", "GLOBAL", "RuntimeError")],
+          "revoke failure callback receives normalized namespace")
+    check(oath3.check("EXECUTE") == "AUTHORIZED",
+          "failed revoke preserves prior authorized in-memory state")
+
+    oath4 = Oath()
+    check(oath4.check("EXEC:UTE", "GLOBAL") == "DENIED",
+          "malformed action namespace fails closed during check")
+    check(oath4.check("EXECUTE", "BAD:ID") == "DENIED",
+          "malformed container namespace fails closed during check")
+    invalid_action = oath4.handle({"action": "authorize", "action_class": "EXEC:UTE"})
+    check(invalid_action.get("error") == "INVALID_CONSENT_NAMESPACE",
+          "handle(authorize) returns structured error for delimiter-bearing action_class")
+    invalid_container = oath4.handle({
+        "action": "check",
+        "action_class": "EXECUTE",
+        "container_id": "BAD:ID",
+    })
+    check(invalid_container.get("error") == "INVALID_CONSENT_NAMESPACE",
+          "handle(check) returns structured error for delimiter-bearing container_id")
+    blank_action = oath4.handle({"action": "check", "action_class": "   "})
+    check(blank_action.get("error") == "MISSING_ACTION_CLASS",
+          "handle(check) treats whitespace-only action_class as missing")
+
+
 
 def test_runtime_default_term_pack_is_config_driven():
     # CLAIM: §2.1, §0.1 — runtime bootstrap term pack is config-driven, not hardcoded; definition prefix also config-driven
@@ -6950,6 +7154,7 @@ if __name__ == "__main__":
     safe_run(test_state_machine)
     safe_run(test_execution_word_boundary_hardening)
     safe_run(test_scribe)
+    safe_run(test_scribe_extended_edges)
     safe_run(test_seal)
     safe_run(test_oath)
     safe_run(test_cycle)
@@ -7023,6 +7228,7 @@ if __name__ == "__main__":
     # Section 6: Persistence & Audit — Phase A
     safe_run(test_s6_schema_version_tracking)
     safe_run(test_s6_schema_migrated_event)
+    safe_run(test_s6_chain_hash_migration_scaffold)
     safe_run(test_s6_boot_chain_verification)
     safe_run(test_s6_boot_chain_detects_tampering)
     safe_run(test_s6_event_codes_registered)
@@ -7072,6 +7278,7 @@ if __name__ == "__main__":
     # Integrity hardening follow-up: OATH / TRACE export / cold verifier / SEAL edges
     safe_run(test_oath_extended_edges)
     safe_run(test_oath_input_normalization_and_handle_edges)
+    safe_run(test_oath_additional_proof)
     safe_run(test_runtime_default_term_pack_is_config_driven)
     safe_run(test_trace_export_cold_container_redline_sanitization)
     safe_run(test_trace_export_extended_edges)
