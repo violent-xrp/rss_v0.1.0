@@ -3,7 +3,9 @@
 ## v0.1.0
 
 ### Current verified snapshot
-- **131 test functions / 994 assertions / 0 failures** via `python tests/test_all.py`
+- **134 test functions / 1039 assertions / 0 failures** via `python tests/test_all.py`
+- **90.3% statement coverage** via `python run_coverage.py`
+- **134 claims / 134 tests / 101 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -26,6 +28,9 @@
 - CYCLE `check_rate_limit` supports `strict=True` for diagnostic callers
 - LLM availability-check timeout is config-driven via `llm_availability_check_timeout`
 - `_PIPELINE_STAGES` promoted to module-level constant in `runtime.py`
+- OATH namespace hardening normalizes action/request/container inputs and fails closed on malformed delimiter-bearing bindings
+- SCRIBE proof and coverage density now covers duplicate drafts, missing write/promote paths, empty promotions, candidate editing, UAP/status, and dispatch
+- chain-hash migration scaffold now proves same-version no-op and version-change warning behavior
 
 ### Proof growth
 - constitution loader edges
@@ -36,9 +41,10 @@
 - `load_constitution()` — all branches directly tested (file-not-found, hash-mismatch, missing-marker, happy-path, multi-marker)
 - Priority A closures: TECTON reason gate, clear_safe_stop idempotence, config-driven LLM timeout, archive_entry return
 - Priority B closures: PAV strict policy, CYCLE strict mode, STAGES constant, constitution coverage
+- Phase F coverage-honesty closure: every package module is at or above the 80% floor; `scribe.py` and `audit/migrate.py` are both at 100.0%
 
 ### Known limitations preserved honestly
 - ingress identity is still architectural, not cryptographic
 - wrapper/API maturity still trails single-process kernel maturity
 - external trust anchoring remains future work
-- demo/operator usefulness is ahead of public-doc sync, not ahead of kernel maturity
+- per-action/tool-call enforcement is the next hardening target before broad external side effects move behind wrappers

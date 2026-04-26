@@ -2,7 +2,8 @@
 
 Rose Sigil Systems (RSS) is a **domain-agnostic, application-layer zero-trust AI governance kernel**. It decides what a system may see, say, and do **before** the model runs, not after. Every request flows through a constitutional pipeline of typed seats with bounded authority. Scope is declared. Meaning is classified. Consent is checked. Rate limits are enforced. A Prepared Advisory View is built. TRACE is written before the result is allowed to stand.
 
-**Current verified project-snapshot baseline:** **131 test functions / 994 assertions / 0 failures** via `python tests/test_all.py`.
+**Current verified project-snapshot baseline:** **134 test functions / 1039 assertions / 0 failures** via `python tests/test_all.py`.
+**Current coverage / traceability:** **90.3% statement coverage** via `python run_coverage.py`; `docs/claim_matrix.md` tracks **134 claims / 134 tests / 101 Pact sections**.
 
 ## What RSS is
 
@@ -17,6 +18,7 @@ RSS v0.1.0 should **not** be presented as:
 - a full deployment-layer zero-trust stack
 - cryptographically immutable end to end
 - fully async-safe across future wrappers/APIs
+- per-action/tool-call enforced for every future side effect
 - distributed or enterprise-complete
 - a polished end-user application
 
@@ -40,7 +42,7 @@ python tests/test_all.py
 ```
 Expected current final line:
 ```text
-RSS v0.1.0 — 131 test functions, 994 assertions passed, 0 failed
+RSS v0.1.0 — 134 test functions, 1039 assertions passed, 0 failed
 ```
 
 ### Run the guided demo walkthrough
@@ -105,6 +107,9 @@ The practical request path is:
 - CYCLE `check_rate_limit` supports `strict=True` mode to reject unregistered domains loudly
 - LLM availability-check timeout is config-driven (`llm_availability_check_timeout`) rather than hardcoded
 - `archive_entry()` returns the archived `HubEntry` for lifecycle-method parity
+- OATH consent namespaces normalize action classes/requesters/container IDs and fail closed on malformed delimiter-bearing bindings
+- SCRIBE error states, promotion paths, and dispatch surfaces are covered to the current proof floor
+- chain-hash migration helpers now warn explicitly when `CHAIN_HASH_VERSION` would change rather than allowing silent version drift
 
 ## Demo / operator posture
 

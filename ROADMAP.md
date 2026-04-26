@@ -11,8 +11,8 @@ Current code state:
 Current posture:
 - public-alpha hardening has advanced materially beyond the earlier 111/850 baseline
 - the acceptance harness now reports a single truthful verdict instead of allowing pytest/pass-counter split-brain
-- the kernel is ahead of the public surface; ROADMAP remains the working source of truth until every downstream doc is re-synced
-- the current frontier is **Phase G governed demo usefulness + downstream truth sync**, not new claim inflation
+- ROADMAP remains the working source of truth; downstream public docs are synced to the current 134/1039 baseline
+- the current frontier is **Phase G governed demo usefulness + test-suite modularization**, not new claim inflation
 - the April 20 full-module review is folded in below as active engineering ledger material
 
 Operator environment note:
@@ -56,6 +56,7 @@ RSS v0.1.0 can be presented as:
 ### Unsafe claims now
 RSS v0.1.0 should not yet be described as:
 - fully async-safe in all wrappers
+- per-action/tool-call enforced for every future side effect
 - distributed
 - cryptographically immutable
 - enterprise-complete
@@ -413,7 +414,7 @@ Completed:
 - clarified that `pytest` parity is optional tooling, not the sole source of truth
 - clarified source-module layout rule: kernel modules in `src/rss/` package tree
 - clarified that ingress posture is architectural, not cryptographic, in the current runtime
-- all public-facing docs were synced to the 131/994 baseline (2026-04-26); ROADMAP and claim matrix now carry the newer 134/1039 truth pending downstream doc follow-up
+- all public-facing docs were synced to the 134/1039 baseline (2026-04-26); ROADMAP and claim matrix remain the source of truth for the next pass
 
 ---
 
@@ -422,7 +423,7 @@ Completed:
 Priority A, B, C, the named Phase F proof bullets, and the Phase F ≥80% per-module coverage floor are closed for the current demo checkpoint. The current frontier is:
 
 1. **Now — Phase G demo usefulness**: make the governed demo feel like a real governed system, not a thin placeholder. Prioritize richer demo data, cross-container question flows, consent denial/recovery, REDLINE exclusion, Safe-Stop recovery, and offline answers from scoped data.
-2. **Next — downstream truth sync**: propagate the ROADMAP/claim-matrix numbers to public docs: **134 / 1039 / 0**, **90.3%**, and **134 claims / 134 tests / 101 Pact sections**.
+2. **Near-Term Enabler — test-suite modularization without verdict drift**: keep `tests/test_all.py` as the canonical acceptance command, but split the physical test bodies into smaller domain files before Phase G adds much more demo surface.
 3. **Keep Warm — Phase G coverage polish**: lift `cycle.py`, `trace_verify.py`, and `llm_adapter.py` to ≥85% so Phase G can close cleanly.
 4. **Future Watch — perimeter maturity**: keep identity propagation, async/thread context hazards, external signing, and deployment-boundary trust on the watchlist without letting them block the demo kernel.
 
@@ -455,6 +456,8 @@ Kernel / governance:
 - homoglyph/confusables hardening beyond current NFKC normalization
 - larger-event-count chain verification characterization (10k, 100k, 1M events)
 - longer-lived replay / recovery / restart scenarios
+- per-action / tool-call enforcement boundary design before real side effects move behind wrappers
+- capability-revocation semantics: keep the current Stage 0 Safe-Stop halt distinct from future granular tool/capability revocation
 - wrapper/API context propagation hazards across worker threads or background jobs
 - `CHAIN_HASH_VERSION` bump procedure once a real migration exists
 - external audit portability and cross-machine verification ergonomics
@@ -481,23 +484,39 @@ Future proof targets:
 
 The current `tests/test_all.py` remains the single acceptance surface and gives one truthful verdict. All 134 tests are tagged with `# CLAIM:` tags; the claim matrix is current at 134 claims / 134 tests / 101 Pact sections.
 
-Near-term cleanup that can happen opportunistically:
+This is now a near-term enabling task, not a speculative cleanup. The file is doing useful work, but it is too large to remain the only place humans read tests as Phase G grows. The split must be mechanical and conservative:
+- no behavior changes
+- no assertion-count drop
+- no claim-tag loss
+- no claim-matrix regression
+- no loss of the direct-run summary line
+- no removal of `tests/test_all.py` as the canonical command
+
+Preferred split shape:
+- keep `tests/test_all.py` as the runner / acceptance aggregator
+- move proof bodies into smaller domain files such as `test_core_runtime.py`, `test_governance_seats.py`, `test_audit_trace.py`, `test_hubs_persistence.py`, and `test_demo_reference_pack.py`
+- preserve claim tags next to the proof functions they describe
+- preserve shared helpers in one local test support module instead of duplicating setup logic across the split files
+- regenerate `docs/claim_matrix.md` immediately after the split
+
+Cleanup that can happen during or just before the split:
 - helper factories for temp DB/runtime setup (reduce repetition in fixture-heavy tests)
 - fewer repeated cleanup blocks (`_cleanup_db` helper already landed on Windows)
 - grouped runner registrations by section for easier navigation
 - removal of any stale wording added during rapid iteration
 
-If the suite is eventually split into per-module files, keep a single top-level acceptance entry point and preserve the truthful direct-run summary line.
+Success condition: after modularization, the canonical command still reports **134 / 1039 / 0** unless new proof is intentionally added in the same pass and recorded in the acceptance baseline history.
 
 ---
 
 ## Threat Notes to Carry Forward
 
-These are not all fully absorbed into downstream docs yet, but they should remain visible here:
+These are standing risk notes even when downstream docs mention them:
 
 - the ingress boundary is still architectural, not cryptographic
 - offline assistant usefulness is still behind kernel integrity
 - wrapper / API maturity lags behind single-process kernel maturity
+- side effects are only governable when they pass through the runtime boundary; per-action/tool-call enforcement remains future hardening
 - doc-surface drift is itself a trust risk and must be treated as such
 - module-count language must stay tied to the `src/` rule only
 - demo quality should not outrun governance integrity
@@ -508,7 +527,7 @@ These are not all fully absorbed into downstream docs yet, but they should remai
 
 ## Downstream Doc Sync Status
 
-All public-facing docs were synced to the 131/994 baseline on 2026-04-26:
+All public-facing docs were synced to the current 134/1039 baseline on 2026-04-26:
 - `README.md` ✓
 - `TRUTH_REGISTER.md` ✓
 - `CLAIM_DISCIPLINE.md` ✓
@@ -516,9 +535,12 @@ All public-facing docs were synced to the 131/994 baseline on 2026-04-26:
 - `CHANGELOG.md` ✓
 - `THREAT_MODEL.md` ✓
 
-Newer source-of-truth since that sync:
-- ROADMAP / claim matrix now show **134 / 1039 / 0**, **90.3%** coverage, and **134 claims / 134 tests / 101 Pact sections**.
-- Downstream docs now owe a small follow-up sync, but ROADMAP remains current first.
+Current synced public numbers:
+- **134 / 1039 / 0**
+- **90.3%** coverage
+- **134 claims / 134 tests / 101 Pact sections**
+
+No newer public-doc metric sync is currently owed.
 
 ROADMAP stays current first; propagate to downstream docs after each meaningful pass.
 
@@ -532,7 +554,8 @@ Explicit non-goals:
 - cryptographic non-repudiation (Phase H)
 - distributed multi-node TECTON (Phase H)
 - REST ingestion layer (Phase G)
-- full async-streaming safety in all wrappers (Phase F-late)
+- full async-streaming safety in all wrappers (future wrapper/API hardening)
+- universal per-action/tool-call enforcement for external side effects
 - polished end-user AI product experience (Phase G+)
 - repo structural refactor into a nested package tree (tracked separately in `REPO_STRUCTURE_PROPOSAL.md`, not in this roadmap per operator instruction)
 

@@ -29,7 +29,9 @@ Do not say RSS v0.1.0 is:
 
 ## Metric discipline
 Current project-snapshot baseline:
-- **131 test functions / 994 assertions / 0 failures**
+- **134 test functions / 1039 assertions / 0 failures**
+- **90.3% statement coverage**
+- **134 claims / 134 tests / 101 Pact sections**
 - **22 source modules in `src/rss/` package tree** (R1 restructure complete)
 
 When metrics change:

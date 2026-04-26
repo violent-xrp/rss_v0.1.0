@@ -38,8 +38,9 @@ Mitigation: OATH write-ahead persistence semantics and persistence-failure surfa
 - a custom helper written outside governed paths could still violate REDLINE discipline
 - meaning normalization is not yet full confusables-table / homoglyph defense
 - wrapper/API concurrency and deployment identity remain later-phase work
-- `clear_safe_stop()` is T-0 only by convention, not by mechanical identity gate (gate planned for Phase F)
-- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 131/994 baseline
+- `clear_safe_stop()` is T-0 only by convention, not by mechanical identity gate
+- side effects are only governable when they pass through the runtime boundary; per-action/tool-call enforcement remains future hardening
+- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 134/1039 baseline
 
 ## Current honesty line
 RSS v0.1.0 is strong at **governance-before-model** inside a single-process governed runtime. It is not yet the whole deployment security story.
