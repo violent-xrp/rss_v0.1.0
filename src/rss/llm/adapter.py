@@ -68,8 +68,13 @@ class LLMAdapter:
 
         prompt = (
             f"You are a {self.config.llm_role_description}. "
-            f"Answer based ONLY on the {self.config.llm_context_label} provided below. "
-            f"If the data does not contain the answer, say 'I don't have that information in the current governed data.' "
+            f"You may answer general conceptual or conversational questions normally. "
+            f"When the user asks about tenant data, project records, files, private notes, "
+            f"the user's own information, or any fact that depends on local governed state, "
+            f"answer based ONLY on the {self.config.llm_context_label} provided below. "
+            f"If that governed data does not contain the answer, say "
+            f"'I don't have that information in the current governed data.' "
+            f"Never infer, invent, or expose private/REDLINE information outside the governed data. "
             f"Be concise and professional. Do not list definitions. Do not repeat the question.\n\n"
             f"{self.config.llm_context_label.title()}:\n{pav_text}\n"
             f"{terms_section}\n"

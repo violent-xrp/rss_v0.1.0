@@ -78,6 +78,31 @@ def run_tests(rss):
     return failed == 0
 
 
+DEMO_DATA_MARKERS = (
+    "quote", "rfi", "daily log", "submittal", "tenant", "project", "record",
+    "file", "private", "personal", "redline", "work", "hub", "data",
+    "northwind", "harbor", "aster", "lumen", "medical", "legal",
+    "construction", "finance", "invoice", "variance", "approval",
+    "punch list", "change order", "safety hold", "cash risk",
+)
+
+
+def demo_scope_policy_for(text: str):
+    """Demo-only router for normal chat vs governed data lookup.
+
+    This is not the final RUNE/domain-pack architecture. It keeps the current
+    interactive demo honest: ordinary conceptual chat gets a SYSTEM-only scope,
+    while obvious seeded-data questions still open the governed WORK/PAV path.
+    """
+    lower = (text or "").lower()
+    if any(marker in lower for marker in DEMO_DATA_MARKERS):
+        return None
+    return {
+        "allowed_sources": ["SYSTEM"],
+        "forbidden_sources": ["WORK", "PERSONAL", "ARCHIVE", "LEDGER"],
+    }
+
+
 def run_demo(rss):
     """Interactive governed AI chat."""
     inserted = load_reference_pack(rss)
@@ -98,7 +123,7 @@ def run_demo(rss):
             break
         if not text:
             continue
-        result = rss.process_request(text, use_llm=True)
+        result = rss.process_request(text, use_llm=True, scope_policy=demo_scope_policy_for(text))
         if "error" in result:
             print(f"RSS: I can't help with that right now.\n")
         else:
@@ -124,6 +149,8 @@ def run_demo_suite(rss):
     for spec in DEMO_CONTAINERS:
         cid = seeded["containers"][spec["label"]]
         print(f"\n    Container: {spec['label']} ({cid})")
+        print(f"      Domain pack: {spec.get('domain')} ({spec.get('pack_version')})")
+        print(f"      Flows: {', '.join(spec.get('flows', []))}")
         for text in spec["questions"]:
             result = rss.tecton.process_request(
                 ContainerRequest(cid, SEAT_SIGILS["RUNE"], {"text": text, "use_llm": True}),

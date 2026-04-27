@@ -11,6 +11,7 @@ This threat model is intentionally narrow:
 - **Request content** is untrusted input
 - **Hub content** is governed for exposure, not semantically trusted by default
 - **External model output** is informational only and cannot create authority
+- **Normal live-advisor conversation** may answer general conceptual questions, but tenant/project/private facts still require governed PAV evidence
 - **Synonym / SOFT classifications** are non-binding
 - **Ingress identity** is architectural in v0.1.0, not cryptographic
 
@@ -40,7 +41,8 @@ Mitigation: OATH write-ahead persistence semantics and persistence-failure surfa
 - wrapper/API concurrency and deployment identity remain later-phase work
 - `clear_safe_stop()` is T-0 only by convention, not by mechanical identity gate
 - side effects are only governable when they pass through the runtime boundary; per-action/tool-call enforcement remains future hardening
-- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 135/1055 baseline
+- live model fluency is not evidence; governed data claims still need scoped PAV context and TRACE-backed runtime flow
+- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 135/1083 baseline
 
 ## Current honesty line
 RSS v0.1.0 is strong at **governance-before-model** inside a single-process governed runtime. It is not yet the whole deployment security story.

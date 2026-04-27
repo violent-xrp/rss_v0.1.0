@@ -28,8 +28,18 @@ from rss.hubs.tecton import ContainerRequest, SEAT_SIGILS
 from rss.reference_pack import DEMO_CONTAINERS, DEMO_QUESTIONS, seed_demo_world
 
 
+NORMAL_ADVISOR_QUESTIONS = [
+    "Explain runtime governance for AI in two sentences.",
+    "What is the difference between written policy and an enforcement boundary?",
+]
+
+
 def _answer_text(result: dict) -> str:
     return result.get("llm_response", result.get("error", "NO_RESPONSE"))
+
+
+def _join_labels(items: list) -> str:
+    return ", ".join(str(item) for item in items if str(item).strip())
 
 
 def _boot_runtime(config: RSSConfig, restore: bool = False, quiet: bool = False):
@@ -105,6 +115,10 @@ def build_demo_report(
         "trace_chain_valid": False,
         "cold_chain_verified": False,
         "cold_event_count": 0,
+        "normal_advisor_questions": 0,
+        "normal_advisor_skipped": False,
+        "domain_count": len({spec.get("domain") for spec in DEMO_CONTAINERS}),
+        "flow_count": sum(len(spec.get("flows", [])) for spec in DEMO_CONTAINERS),
         "db_path": db_path,
     }
 
@@ -127,8 +141,28 @@ def build_demo_report(
         lines.append(f"Global pack inserted: {seeded['global_inserted']}")
         lines.append(f"Containers created: {seeded['created']}")
         lines.append(f"Container entries inserted: {seeded['entries_inserted']}")
+        lines.append(f"Domain packs loaded: {_join_labels(sorted({spec.get('domain') for spec in DEMO_CONTAINERS}))}")
+        lines.append(f"Governed flows declared: {verification['flow_count']}")
         lines.append(f"LLM available: {llm_available}")
         lines.append(f"Ingress posture: {rss.ingress_posture_note()}")
+
+        if live_llm:
+            lines.append("\n[GENERAL ADVISOR WORKFLOW]")
+            if llm_available:
+                lines.append("General questions run with SYSTEM-only scope; tenant/project facts still require governed PAV data.")
+                general_scope = {
+                    "allowed_sources": ["SYSTEM"],
+                    "forbidden_sources": ["WORK", "PERSONAL", "ARCHIVE", "LEDGER"],
+                }
+                for question in NORMAL_ADVISOR_QUESTIONS:
+                    result = rss.process_request(question, use_llm=True, scope_policy=general_scope)
+                    if "error" not in result:
+                        verification["normal_advisor_questions"] += 1
+                    lines.append(f"Q: {question}")
+                    lines.append(f"A: {_answer_text(result)}")
+            else:
+                verification["normal_advisor_skipped"] = True
+                lines.append("Configured LLM unavailable; normal advisor conversation skipped while governed proof flow continues.")
 
         lines.append("\n[GLOBAL WORKFLOW]")
         for question in DEMO_QUESTIONS:
@@ -145,6 +179,11 @@ def build_demo_report(
         for spec in DEMO_CONTAINERS:
             cid = seeded["containers"][spec["label"]]
             lines.append(f"\nContainer: {spec['label']} [{cid}]")
+            lines.append(f"Domain pack: {spec.get('domain')} ({spec.get('pack_version')})")
+            lines.append(f"Purpose: {spec.get('summary')}")
+            lines.append(f"Flows: {_join_labels(spec.get('flows', []))}")
+            vocab = [term.get("label") for term in spec.get("vocab_terms", [])]
+            lines.append(f"Vocab hints: {_join_labels(vocab)}")
             for question in spec["questions"]:
                 result = _run_container_question(rss, cid, question)
                 answer = _answer_text(result)

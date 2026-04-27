@@ -233,6 +233,16 @@ def test_llm():
     section("LLM Adapter")
 
     adapter = LLMAdapter(RSSConfig())
+    import inspect
+    source = inspect.getsource(adapter.call)
+    check("general conceptual or conversational questions normally" in source,
+          "LLM prompt allows normal general conversation")
+    check("tenant data, project records, files, private notes" in source,
+          "LLM prompt names governed data surfaces")
+    check("answer based ONLY on the" in source,
+          "LLM prompt still binds governed-data answers to PAV context")
+    check("Never infer, invent, or expose private/REDLINE" in source,
+          "LLM prompt refuses invention and REDLINE exposure")
     r = adapter.call("context", "terms", "user request")
     if "[RSS FALLBACK" in r:
         check(True, "fallback mode (Ollama not running)")

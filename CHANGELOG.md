@@ -3,7 +3,7 @@
 ## v0.1.0
 
 ### Current verified snapshot
-- **135 test functions / 1055 assertions / 0 failures** via `python tests/test_all.py`
+- **135 test functions / 1083 assertions / 0 failures** via `python tests/test_all.py`
 - **90.5% statement coverage** via `python run_coverage.py`
 - **135 claims / 135 tests / 101 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
@@ -17,8 +17,12 @@
 - SEAL amendment ceremony support and ceremony hardening
 - config-driven default term packs and definition prefixes
 - deterministic governed offline fallback in `llm_adapter.py`
+- live LLM prompt posture now permits normal general conversation while binding tenant/project/user/private facts to governed PAV evidence
 - shared demo/reference pack in `src/rss/reference_pack.py`
 - seeded demo containers and deterministic walkthroughs in `examples/`
+- reference-pack v2 with construction, legal, medical, and finance packs, explicit entry metadata, governed flows, vocab hints, and non-REDLINE PERSONAL support
+- live demo-suite normal-advisor lane uses SYSTEM-only scope so ordinary conversation does not open WORK/PERSONAL data
+- interactive `src/main.py demo` routes ordinary chat through SYSTEM-only scope while obvious seeded-data questions keep the governed WORK/PAV path
 - runner-truth hardening so the acceptance harness remains the single pass/fail truth source
 - R1 repo restructure: flat `src/` → `src/rss/` package tree with subpackages `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`
 - TECTON destructive transitions (`suspend`, `archive`, `destroy`, `reactivate`) now require non-empty `reason`, logged into lifecycle audit record
@@ -38,6 +42,8 @@
 - SCRIBE edge coverage
 - cold verifier CLI/error/safe-stop coverage
 - extended OATH, SEAL, TRACE export, verifier, and demo-world coverage
+- Phase G normal-advisor boundary proof for prompt posture and SYSTEM-only demo scope
+- Phase G reference-pack v2 proof for cross-domain packs, explicit metadata, and schema compatibility
 - `load_constitution()` — all branches directly tested (file-not-found, hash-mismatch, missing-marker, happy-path, multi-marker)
 - Priority A closures: TECTON reason gate, clear_safe_stop idempotence, config-driven LLM timeout, archive_entry return
 - Priority B closures: PAV strict policy, CYCLE strict mode, STAGES constant, constitution coverage

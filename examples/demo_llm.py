@@ -50,6 +50,8 @@ def run():
     for spec in DEMO_CONTAINERS:
         cid = seeded['containers'][spec['label']]
         print(f"\nContainer: {spec['label']} ({cid})")
+        print(f"Domain pack: {spec.get('domain')} ({spec.get('pack_version')})")
+        print(f"Flows: {', '.join(spec.get('flows', []))}")
         for question in spec['questions']:
             print(f"Q: {question}")
             result = rss.tecton.process_request(
@@ -59,11 +61,13 @@ def run():
             print()
 
     print("[ISOLATION CHECK]")
-    legal_cid = seeded['containers']['Northwind Legal']
+    source_spec = DEMO_CONTAINERS[0]
+    target_spec = DEMO_CONTAINERS[1]
+    source_cid = seeded['containers'][source_spec['label']]
     result = rss.tecton.process_request(
-        ContainerRequest(legal_cid, SEAT_SIGILS["RUNE"], {"text": "What does the triage memo say?", "use_llm": True}), rss
+        ContainerRequest(source_cid, SEAT_SIGILS["RUNE"], {"text": target_spec["questions"][0], "use_llm": True}), rss
     ).result
-    _print_answer("Northwind asking about Harbor Medical: ", result)
+    _print_answer(f"{source_spec['label']} asking about {target_spec['label']}: ", result)
 
     print(f"\n{'=' * 72}")
     print(f"TRACE events: {rss.persistence.event_count()}")

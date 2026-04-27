@@ -30,12 +30,20 @@ import importlib.util
 import inspect
 
 from test_support import *
-from rss.reference_pack import DEMO_QUESTIONS
+from rss.reference_pack import DEMO_QUESTIONS, iter_container_entries
 
 
 def _load_demo_suite_module():
     module_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "examples", "demo_suite.py"))
     spec = importlib.util.spec_from_file_location("rss_demo_suite_for_test", module_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_main_module():
+    module_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "main.py"))
+    spec = importlib.util.spec_from_file_location("rss_main_for_test", module_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -104,6 +112,29 @@ def test_demo_world_seed_and_container_isolation():
         seeded = seed_demo_world(rss)
         check(seeded["global_inserted"] == len(REFERENCE_PACK), "seed_demo_world inserts the global reference pack once")
         check(len(seeded["containers"]) == len(DEMO_CONTAINERS), "seed_demo_world provisions every configured demo container")
+        domains = {spec.get("domain") for spec in DEMO_CONTAINERS}
+        check({"construction", "finance", "legal", "medical"}.issubset(domains),
+              "demo world carries construction, finance, legal, and medical domain packs")
+        check(all(spec.get("pack_version") and spec.get("flows") for spec in DEMO_CONTAINERS),
+              "every demo container declares a pack version and governed flows")
+        check(all(spec.get("vocab_terms") for spec in DEMO_CONTAINERS),
+              "every demo container declares vocabulary hints without changing RUNE law directly")
+        check(all("entries" in spec for spec in DEMO_CONTAINERS),
+              "demo containers use explicit entry metadata instead of legacy work/personal buckets")
+        check(any(e["hub"] == "PERSONAL" and not e["redline"]
+                  for spec in DEMO_CONTAINERS for e in iter_container_entries(spec)),
+              "reference pack schema supports non-REDLINE PERSONAL entries")
+        check(any(e["hub"] == "PERSONAL" and e["redline"]
+                  for spec in DEMO_CONTAINERS for e in iter_container_entries(spec)),
+              "reference pack schema still carries explicit PERSONAL/REDLINE entries")
+        legacy_entries = list(iter_container_entries({
+            "work_entries": ["Legacy work row"],
+            "personal_entries": ["Legacy private row"],
+        }))
+        check(legacy_entries[0]["hub"] == "WORK" and not legacy_entries[0]["redline"],
+              "reference pack iterator preserves legacy WORK rows")
+        check(legacy_entries[1]["hub"] == "PERSONAL" and legacy_entries[1]["redline"],
+              "reference pack iterator preserves legacy PERSONAL rows as REDLINE")
         seeded_again = seed_demo_world(rss)
         check(seeded_again["global_inserted"] == 0, "seed_demo_world is idempotent on global data")
         check(seeded_again["entries_inserted"] == 0, "seed_demo_world is idempotent on container data")
@@ -115,6 +146,14 @@ def test_demo_world_seed_and_container_isolation():
         check(any("Deposition" in e.content for e in northwind_work), "Northwind demo container contains its legal work rows")
         check(any("Triage memo" in e.content for e in harbor_work), "Harbor demo container contains its medical work rows")
         check(not any("Triage memo" in e.content for e in northwind_work), "Northwind does not inherit Harbor work rows")
+        aster_id = seeded["containers"]["Aster Construction"]
+        lumen_id = seeded["containers"]["Lumen Finance"]
+        aster_work = rss.tecton.get_container_hubs(aster_id, "WORK")
+        lumen_work = rss.tecton.get_container_hubs(lumen_id, "WORK")
+        check(any("Change order CO-31" in e.content for e in aster_work),
+              "Aster demo container contains construction change-order rows")
+        check(any("Invoice variance IV-88" in e.content for e in lumen_work),
+              "Lumen demo container contains finance variance rows")
 
         rss.llm.is_available = lambda: False
         response = rss.process_request("What happened on the daily log?", use_llm=True).get("llm_response", "")
@@ -130,6 +169,7 @@ def test_phase_g_demo_suite_operator_flow():
     section("Phase G Demo Suite Operator Flow")
 
     demo_suite = _load_demo_suite_module()
+    main_module = _load_main_module()
     report = demo_suite.build_demo_report(live_llm=False)
     transcript = report["transcript"]
     proof = report["verification"]
@@ -138,8 +178,32 @@ def test_phase_g_demo_suite_operator_flow():
     check(proof["mode"] == "offline", "demo defaults to deterministic offline fallback mode")
     check(inspect.signature(demo_suite.run).parameters["live_llm"].default is True,
           "human-facing demo command defaults to the live RSS-bound LLM path")
+    demo_source = inspect.getsource(demo_suite.build_demo_report)
+    check(len(demo_suite.NORMAL_ADVISOR_QUESTIONS) >= 2,
+          "demo includes live-only normal advisor questions")
+    check("allowed_sources" in demo_source and "\"SYSTEM\"" in demo_source,
+          "demo normal-advisor path uses a SYSTEM-only governed scope")
+    check("forbidden_sources" in demo_source and "\"PERSONAL\"" in demo_source,
+          "demo normal-advisor path keeps project and private data out of general chat")
+    check(proof["domain_count"] >= 4, "demo proof tracks multiple domain packs")
+    check(proof["flow_count"] >= len(DEMO_CONTAINERS) * 3, "demo proof tracks governed domain flows")
+    check("Domain packs loaded:" in transcript and "construction" in transcript and "finance" in transcript,
+          "demo transcript shows cross-domain pack loading")
+    check("Domain pack: construction" in transcript and "Domain pack: finance" in transcript,
+          "demo transcript prints per-container domain packs")
+    normal_policy = main_module.demo_scope_policy_for("Explain runtime governance in plain English.")
+    check(normal_policy["allowed_sources"] == ["SYSTEM"],
+          "interactive demo routes normal chat through SYSTEM-only scope")
+    check("WORK" in normal_policy["forbidden_sources"] and "PERSONAL" in normal_policy["forbidden_sources"],
+          "interactive demo keeps WORK/PERSONAL closed for normal chat")
+    check(main_module.demo_scope_policy_for("What is the current quote for?") is None,
+          "interactive demo opens default governed data path for obvious seeded-data questions")
     check(proof["global_success"] == len(DEMO_QUESTIONS), "demo global workflow answers every seeded global question")
     check("Submittal SUB-018" in transcript, "demo retrieves the submittal row for the plural submittals question")
+    check("Finance exception FIN-009" in transcript, "demo retrieves the global finance exception row")
+    check("Construction punch list CP-77" in transcript, "demo retrieves the global construction punch-list row")
+    check("Change order CO-31" in transcript, "demo retrieves the construction container row")
+    check("Invoice variance IV-88" in transcript, "demo retrieves the finance container row")
     check(proof["container_success"] == sum(len(spec["questions"]) for spec in DEMO_CONTAINERS),
           "demo container workflow answers every seeded tenant question")
     check(proof["redline_global_refused"], "demo refuses global PERSONAL/REDLINE requests")

@@ -3,15 +3,15 @@
 Release target: **v0.1.0**
 
 Current code state:
-- **135 test functions / 1055 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **135 test functions / 1083 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
 - **22 kernel modules** in the `src/rss/` package tree (subpackages: `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`) + `src/main.py` CLI entry point; R1 restructure complete
-- **90.5% statement coverage** (April 26 Phase G demo-suite proof pass) via `python run_coverage.py`
+- **90.5% statement coverage** (April 27 Phase G reference-pack v2 proof pass) via `python run_coverage.py`
 - claim traceability generated at `docs/claim_matrix.md` (135 claims, 135 tests, 101 Pact sections)
 
 Current posture:
 - public-alpha hardening has advanced materially beyond the earlier 111/850 baseline
 - the acceptance harness now reports a single truthful verdict instead of allowing pytest/pass-counter split-brain
-- ROADMAP remains the working source of truth; downstream public docs are synced to the current 135/1055 baseline
+- ROADMAP remains the working source of truth; downstream public docs are synced to the current 135/1083 baseline
 - the current frontier is **Phase G governed demo usefulness + Phase G coverage polish**, not new claim inflation
 - the April 20 full-module review is folded in below as active engineering ledger material
 
@@ -85,6 +85,9 @@ If counts go down, the reason must be written here in plain language.
 - **133 / 1035 / 0** — Phase F SCRIBE coverage closure: draft error states, UAP/status proof, and handle dispatch paths
 - **134 / 1039 / 0** — Phase F migration-scaffold proof: chain-hash migration helper paths locked so version bumps cannot be silent
 - **135 / 1055 / 0** — Phase G demo-suite proof: deterministic operator transcript now covers useful retrieval, plural demo-query usefulness, REDLINE exclusion, tenant isolation, consent denial/recovery, Safe-Stop restart recovery, cold TRACE verification, and the human-facing demo defaulting to the live RSS-bound LLM path
+- **135 / 1062 / 0** — Phase G normal-advisor boundary proof: live LLM prompt now allows ordinary conceptual/conversational answers while binding tenant/project/user/private facts to governed PAV evidence, and the demo has a SYSTEM-only general-advisor lane so normal chat does not open WORK/PERSONAL data.
+- **135 / 1065 / 0** — Phase G interactive containment proof: `src/main.py demo` now routes ordinary chat through SYSTEM-only scope while obvious seeded-data questions still open the governed WORK/PAV path.
+- **135 / 1083 / 0** — Phase G reference-pack v2 proof: demo packs now cover construction, legal, medical, and finance domains with explicit entry metadata, domain pack versions, governed flows, vocab hints, non-REDLINE PERSONAL entries, and explicit PERSONAL/REDLINE rows.
 
 ---
 
@@ -216,13 +219,25 @@ First Phase G demo pass landed:
 - container demo requests in the CLI demo-suite now request the governed LLM/offline fallback path, so they produce visible scoped answers instead of `NO_RESPONSE`.
 - the Phase G demo flow is covered by `test_phase_g_demo_suite_operator_flow`, including a guard that the human-facing command defaults to the live RSS-bound advisor path.
 
+Second Phase G demo-usefulness adjustment landed:
+- `LLMAdapter` live prompt now permits normal general/conceptual conversation while still binding tenant data, project records, files, private notes, user-specific facts, and local governed state to the prepared PAV context only.
+- `examples/demo_suite.py` now includes a live-only GENERAL ADVISOR WORKFLOW that uses a SYSTEM-only scope with WORK/PERSONAL/ARCHIVE/LEDGER forbidden, so ordinary advisor conversation does not open project or private data just to talk normally.
+- `src/main.py demo` now uses `demo_scope_policy_for()` so ordinary interactive chat receives the same SYSTEM-only containment, while obvious seeded-data questions still use the governed data path.
+- the deterministic offline proof transcript remains focused on governed retrieval/refusal/recovery; it does not pretend the fallback is a normal model conversation.
+- RUNE/domain-pack direction is clarified: domain agnostic does not mean uncontrolled hardcoded dictionary sprawl. The direction is governed tenant/domain vocabulary packs and flow descriptors feeding a shared RUNE law, with pack structure/versioning audited through the runtime.
+
+Third Phase G reference-pack v2 pass landed:
+- `src/rss/reference_pack.py` now uses explicit entry metadata instead of rigid `work_entries` / `personal_entries` buckets, while preserving legacy compatibility through `iter_container_entries()`.
+- the demo world now includes construction, legal, medical, and finance domain packs with pack versions, flow descriptors, and vocab hints that document domain texture without mutating RUNE law directly.
+- PERSONAL entries can now be non-REDLINE or REDLINE explicitly, which removes the old schema assumption that all PERSONAL rows are automatically private exclusion rows.
+- global demo data now includes finance variance and construction punch-list examples; container data now includes construction change order / safety hold and finance approval / cash-risk scenarios.
+- `examples/demo_suite.py`, `examples/demo_llm.py`, and `src/main.py demo-suite` now surface domain pack and flow metadata in the operator transcript.
+
 Still build out:
-- richer fake WORK data
-- richer fake PERSONAL / REDLINE data
-- multiple fake tenants / containers
-- realistic cross-domain example packs (construction, legal, medical, finance)
-- a cleaner operator-facing transcript shape once the data pack is richer
+- cleaner operator-facing artifacts now that the data pack is richer
 - optional export artifacts for demo runs, such as `demo_trace.json` and a short operator-readable summary
+- explicit demo-pack validation helpers so malformed future packs fail loud before seeding
+- eventual governed pack-selection/versioning path once multiple demo worlds or tenant-specific packs exist
 - governed question flows that demonstrate:
   - useful retrieval
   - REDLINE exclusion
@@ -230,6 +245,8 @@ Still build out:
   - Safe-Stop entry / persistence / recovery
   - container isolation
   - offline-LLM answer generation from scoped data
+  - live normal-advisor behavior that stays outside project/private data until a governed task needs that data
+  - domain-pack usefulness without uncontrolled dictionary sprawl
 
 Goal:
 - a live demo that feels like a governed system following real state, not a thin placeholder
@@ -338,7 +355,7 @@ Correct governance behavior but masks typos. Keep behavior, add optional `strict
 
 ---
 
-## Coverage Map (April 26 current run)
+## Coverage Map (April 27 current run)
 
 ```
 config.py              100.0%
@@ -383,7 +400,7 @@ Goal for end of Phase G: every kernel module ≥ 85% coverage. Remaining below-t
 
 ### Test / proof growth
 Completed:
-- baseline moved from **111 / 850 / 0** to **135 / 1055 / 0**
+- baseline moved from **111 / 850 / 0** to **135 / 1083 / 0**
 - constitution loader edge coverage; `load_constitution()` all branches directly tested (B-4)
 - LLM adapter prompt / fallback / config-aware coverage
 - SCRIBE UAP / status / handler edge coverage
@@ -395,6 +412,8 @@ Completed:
 - runner-truth hardening so failed `check(...)` conditions cannot silently coexist with a green-looking invocation
 - demo/reference-pack proof for shared seeding and governed usage paths
 - Phase G demo-suite proof for deterministic operator transcript, REDLINE refusal, isolation, consent recovery, Safe-Stop restart recovery, and cold TRACE verification
+- Phase G normal-advisor boundary proof for live LLM conversation that remains separate from project/private data until SCOPE/PAV opens governed context
+- Phase G reference-pack v2 proof for structured domain packs, explicit entry metadata, cross-domain usefulness, and PERSONAL/REDLINE schema flexibility
 - Priority A closure: TECTON reason gate, `clear_safe_stop` idempotence, config-driven LLM timeout, `archive_entry` return parity
 - Priority B closure: PAV strict policy raise, CYCLE strict mode, STAGES constant
 - Priority C closure: all 14+4 tests tagged; claim matrix regenerated (now 135 claims, 135 tests, 101 sections after the first Phase G demo-suite proof)
@@ -419,8 +438,10 @@ Completed:
 - LLM availability-check timeout is config-driven via `llm_availability_check_timeout`
 - governed offline fallback replaces raw echo behavior
 - shared reference-pack foundation for CLI/examples/tests
+- reference-pack v2: construction, legal, medical, and finance packs with pack versions, governed flows, vocab hints, explicit hub/redline entry metadata, and legacy iterator compatibility
 - test-suite modularization: `tests/test_all.py` remains the canonical acceptance runner while proof bodies now live in smaller domain files; claim-matrix generation scans split test modules
 - `examples/demo_suite.py` now defaults to the live RSS-bound LLM path for humans, keeps deterministic `--offline` mode, uses temporary demo storage unless a DB is supplied, and emits proof flags alongside the operator transcript
+- `examples/demo_suite.py` now has a live-only GENERAL ADVISOR WORKFLOW with SYSTEM-only scope, proving normal conversation can exist beside governed data containment
 - `examples/demo_llm.py` and `src/main.py demo-suite` now route container questions through the canonical RUNE sigil registry instead of duplicating raw sigil literals
 
 ### Honesty / release-surface clarifications
@@ -429,7 +450,7 @@ Completed:
 - clarified that `pytest` parity is optional tooling, not the sole source of truth
 - clarified source-module layout rule: kernel modules in `src/rss/` package tree
 - clarified that ingress posture is architectural, not cryptographic, in the current runtime
-- all public-facing docs were synced to the 135/1055 baseline (2026-04-26); ROADMAP and claim matrix remain the source of truth for the next pass
+- all public-facing docs were synced to the 135/1083 baseline (2026-04-27); ROADMAP and claim matrix remain the source of truth for the next pass
 
 ---
 
@@ -437,7 +458,7 @@ Completed:
 
 Priority A, B, C, the named Phase F proof bullets, the Phase F ≥80% per-module coverage floor, downstream public-doc sync, test-suite modularization, and the first Phase G demo-suite proof pass are closed for the current demo checkpoint. The current frontier is:
 
-1. **Now — Phase G demo usefulness, second pass**: enrich the fake data and transcript so the governed demo feels like a real operator story across construction, legal, medical, and finance examples. The first proof flow works; next value comes from better scenario texture and clearer operator artifacts.
+1. **Now — Phase G demo usefulness, third pass**: the cross-domain demo packs now exist. Next value comes from cleaner operator artifacts, pack validation, and optional demo exports that make the proof easier to hand to another engineer.
 2. **Keep Warm — Phase G coverage polish**: lift `cycle.py` and `trace_verify.py` to ≥85% so Phase G can close cleanly.
 3. **Future Watch — perimeter maturity**: keep identity propagation, async/thread context hazards, external signing, and deployment-boundary trust on the watchlist without letting them block the demo kernel.
 
@@ -453,7 +474,7 @@ Keep special attention on these areas during future passes:
 - **Safe-Stop truth** — entry durability, restart recovery, idempotence, audit consistency
 - **OATH/consent rigor** — write-ahead semantics, persistence-failure paths, namespace hygiene
 - **TECTON/container isolation** — ContextVar propagation, filter-boundary correctness, destructive-transition auditability
-- **RUNE/pack architecture** — normalization honesty about homoglyph limits, domain-pack extensibility
+- **RUNE/pack architecture** — normalization honesty about homoglyph limits; governed tenant/domain vocabulary packs and flow descriptors rather than uncontrolled hardcoded dictionary sprawl
 - **Governed usefulness vs over-constraint** — offline fallback should summarize real scoped data, not refuse by default
 - **Future perimeter/API hardening** — identity, rate limiting at the edge, async safety, transport posture
 - **TECTON as product/workspace layer** — structure and spec may precede full kernel readiness, but kernel law always wins
@@ -525,6 +546,21 @@ Verified after the first Phase G demo-suite proof:
 - claim matrix: **101 sections / 135 claims / 135 tests**
 - coverage: **90.5% total**
 
+Verified after the Phase G normal-advisor boundary proof:
+- canonical runner: **135 / 1062 / 0**
+- claim matrix: **101 sections / 135 claims / 135 tests**
+- coverage: **90.5% total**
+
+Verified after the Phase G interactive containment proof:
+- canonical runner: **135 / 1065 / 0**
+- claim matrix: **101 sections / 135 claims / 135 tests**
+- coverage: **90.5% total**
+
+Verified after the Phase G reference-pack v2 proof:
+- canonical runner: **135 / 1083 / 0**
+- claim matrix: **101 sections / 135 claims / 135 tests**
+- coverage: **90.5% total**
+
 Reason for preserving this note: the old monolithic file was not wrong; it was useful while the project needed one obvious place to read every proof. The maintenance risk changed once Phase G started adding demo and operator-surface work. Keeping the runner stable while moving proof bodies lets future work grow without making every edit pass through one 7k-line file. The important invariant is still the same: one command, one truthful verdict, claim tags beside proof bodies, and ROADMAP updated whenever counts or structure change.
 
 Future cleanup can now happen locally inside the smaller files:
@@ -555,7 +591,7 @@ These are standing risk notes even when downstream docs mention them:
 
 ## Downstream Doc Sync Status
 
-All public-facing docs were synced to the current 135/1055 baseline on 2026-04-26:
+All public-facing docs were synced to the current 135/1083 baseline on 2026-04-27:
 - `README.md` ✓
 - `TRUTH_REGISTER.md` ✓
 - `CLAIM_DISCIPLINE.md` ✓
@@ -564,7 +600,7 @@ All public-facing docs were synced to the current 135/1055 baseline on 2026-04-2
 - `THREAT_MODEL.md` ✓
 
 Current synced public numbers:
-- **135 / 1055 / 0**
+- **135 / 1083 / 0**
 - **90.5%** coverage
 - **135 claims / 135 tests / 101 Pact sections**
 

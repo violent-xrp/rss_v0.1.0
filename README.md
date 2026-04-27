@@ -1,8 +1,8 @@
 # Rose Sigil Systems — RSS v0.1.0
 
-Rose Sigil Systems (RSS) is a **domain-agnostic, application-layer zero-trust AI governance kernel**. It decides what a system may see, say, and do **before** the model runs, not after. Every request flows through a constitutional pipeline of typed seats with bounded authority. Scope is declared. Meaning is classified. Consent is checked. Rate limits are enforced. A Prepared Advisory View is built. TRACE is written before the result is allowed to stand.
+Rose Sigil Systems (RSS) - "An AI that Waits" is a **domain-agnostic, application-layer zero-trust AI governance kernel**. It decides what a system may see, say, and do **before** the model runs, not after. Every request flows through a constitutional pipeline of typed seats with bounded authority. Scope is declared. Meaning is classified. Consent is checked. Rate limits are enforced. A Prepared Advisory View is built. TRACE is written before the result is allowed to stand.
 
-**Current verified project-snapshot baseline:** **135 test functions / 1055 assertions / 0 failures** via `python tests/test_all.py`.
+**Current verified project-snapshot baseline:** **135 test functions / 1083 assertions / 0 failures** via `python tests/test_all.py`.
 **Current coverage / traceability:** **90.5% statement coverage** via `python run_coverage.py`; `docs/claim_matrix.md` tracks **135 claims / 135 tests / 101 Pact sections**.
 
 ## What RSS is
@@ -59,14 +59,14 @@ python tests/test_all.py
 ```
 Expected current final line:
 ```text
-RSS v0.1.0 - 135 test functions, 1055 assertions passed, 0 failed
+RSS v0.1.0 - 135 test functions, 1083 assertions passed, 0 failed
 ```
 
 ### Run the guided demo walkthrough
 ```bash
 python examples/demo_suite.py
 ```
-This uses the configured local LLM when available; otherwise it falls back to governed offline answers. For deterministic proof recordings:
+This uses the configured local LLM when available. In live mode, general advisor questions run normally with SYSTEM-only scope; project, tenant, and private facts still require governed PAV data. The demo now loads construction, legal, medical, and finance packs with explicit flows and REDLINE metadata. If the LLM is unavailable, it falls back to governed offline answers. For deterministic proof recordings:
 ```bash
 python examples/demo_suite.py --offline
 ```
