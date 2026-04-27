@@ -3,9 +3,9 @@
 Release: **v0.1.0**
 
 ## Current verified state
-- **135 test functions / 1116 assertions / 0 failures** via `python tests/test_all.py`
-- **91.0% statement coverage** via `python run_coverage.py`
-- **135 claims / 135 tests / 101 Pact sections** in `docs/claim_matrix.md`
+- **138 test functions / 1155 assertions / 0 failures** via `python tests/test_all.py`
+- **92.2% statement coverage** via `python run_coverage.py`
+- **138 claims / 138 tests / 101 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (subpackages: `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`) + `src/main.py` CLI entry point
 - demo/reference-pack v2, pack validation, demo artifact export, governed offline fallback, live normal-advisor boundary, and interactive SYSTEM-only normal-chat containment are implemented in the current code snapshot
 
@@ -24,6 +24,8 @@ RSS v0.1.0 currently implements:
 - amendment-ceremony support in SEAL
 - deterministic offline fallback that summarizes governed data instead of echoing raw user text
 - live LLM prompt posture that allows normal general/conceptual conversation while binding tenant/project/user/private facts to governed PAV evidence
+- live LLM prompt posture that treats governed data as untrusted quoted evidence, not as authority or instruction
+- an untrusted-content import boundary that labels external content as data-only evidence, records source provenance, persists the entry, and emits TRACE
 - interactive demo routing that keeps ordinary chat on SYSTEM-only scope until an obvious seeded-data question needs WORK/PAV context
 - shared demo/reference data with construction, legal, medical, and finance domain packs, explicit flow metadata, vocab hints, and seeded demo containers
 - reference-pack entry metadata that supports non-REDLINE PERSONAL rows and explicit PERSONAL/REDLINE rows
@@ -33,6 +35,7 @@ RSS v0.1.0 currently implements:
 - `clear_safe_stop()` is idempotent — no false audit events emitted when the system is not halted
 - `archive_entry()` returns the archived `HubEntry` — lifecycle method return parity is consistent
 - PAV `_sanitize` raises `ValueError` on unrecognized policy names — misconfigured deployers fail loud
+- PAV honors forbidden sources during advisory-view construction even when a source is also listed as allowed
 - CYCLE `check_rate_limit` supports `strict=True` — diagnostic callers can detect unregistered domain typos
 - LLM availability-check timeout is config-driven (`llm_availability_check_timeout`), independent of generation timeout
 - OATH consent namespace handling normalizes action/request/container inputs and fails closed on malformed delimiter-bearing bindings
@@ -56,7 +59,7 @@ RSS v0.1.0 does **not** yet implement:
 - normal live-advisor behavior depends on an available configured local LLM; deterministic proof mode remains the governed offline fallback
 - `clear_safe_stop()` is T-0 only by convention and docstring, not by mechanical identity gate; the mechanical gate remains future perimeter hardening, not a current v0.1.0 claim
 - hard guarantees depend on meaningful side effects entering through the governed runtime boundary
-- public docs are synchronized to the 135/1116 baseline as of this update; ROADMAP remains the working truth source going forward
+- public docs are synchronized to the 138/1155 baseline as of this update; ROADMAP remains the working truth source going forward
 
 ---
 
@@ -76,7 +79,9 @@ The current code snapshot includes proof for:
 - thread-level context-bound isolation
 - unified TRACE capture for container events
 - PAV strict policy — unknown policy names raise ValueError
+- PAV forbidden-source enforcement during advisory-view construction
 - CYCLE strict mode — unregistered domain typos raise ValueError when strict=True
+- CYCLE strict/handle routing proof covers diagnostic failure, default-domain routing, complexity reporting, and unknown-action errors
 - config-driven LLM availability-check timeout
 - `archive_entry()` return-value parity with other lifecycle methods
 - pre-demo demo-world seeding and governed offline answers
@@ -84,6 +89,8 @@ The current code snapshot includes proof for:
 - reference-pack v2: cross-domain packs, explicit hub/redline entry metadata, legacy iterator compatibility, and richer governed retrieval rows
 - demo-pack validation: required metadata, explicit REDLINE booleans, invalid hub rejection, no partial seeding on malformed packs, and inactive container reuse
 - demo artifact export: `demo_report.json`, `demo_summary.md`, `demo_trace.json`, proof-status summary, and exported TRACE count parity
+- indirect prompt-injection proof: poisoned retrieved content remains scoped data, is imported through the untrusted-content boundary, does not pull forbidden PERSONAL/REDLINE data, and cannot mutate OATH consent state
+- cold verifier operator reports: filtered broken-chain detail, schema version, unknown-code listing, CLI stats, JSON schema errors, and absent Safe-Stop table handling
 - OATH namespace hardening: normalized action classes, trimmed requesters/container IDs, persistence-failure density, delimiter-bearing namespace fail-closed behavior
 - SCRIBE proof density: duplicate drafts, missing writes/promotes, empty-promotion refusal, candidate editing, UAP/status, and `handle()` dispatch
 - chain-hash migration scaffold proof: same-version no-op and version-change warning paths

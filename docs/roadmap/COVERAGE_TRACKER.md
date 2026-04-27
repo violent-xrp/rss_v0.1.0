@@ -6,7 +6,7 @@ This file preserves coverage detail that used to live in `ROADMAP.md`.
 
 ## Current Coverage Snapshot
 
-Verified on the April 27 Phase G demo artifact export proof pass.
+Verified on the April 27 Phase G coverage-floor closure pass.
 
 ```text
 config.py              100.0%
@@ -14,23 +14,23 @@ state_machine.py       100.0%
 audit/migrate.py       100.0%
 scribe.py              100.0%
 reference_pack.py      100.0%
-constitution.py         92.5%
+trace_verify.py         94.7%
 trace_export.py         94.8%
 tecton.py               94.8%
+cycle.py                94.2%
 persistence.py          93.9%
 meaning_law.py          93.1%
-hub_topology.py         92.9%
+hub_topology.py         91.4%
 seal.py                 91.4%
 ward.py                 90.5%
 scope.py                90.0%
 llm_adapter.py          90.1%
 audit_log.py            87.4%
-runtime.py              86.9%
+runtime.py              87.0%
 oath.py                 86.5%
-pav.py                  86.4%
-trace_verify.py         82.1%
-cycle.py                80.8%
-TOTAL                   91.0%
+pav.py                  86.9%
+constitution.py         92.5%
+TOTAL                   92.2%
 ```
 
 ## Current Targets
@@ -41,22 +41,23 @@ Phase F target:
 
 Phase G target:
 - every package module at or above 85% coverage
-- status: **not yet met**
+- status: **met**
 
 Modules below the Phase G 85% target:
-- **`cycle.py`** — 80.8%; strict-mode and cadence edge proof can lift it
-- **`trace_verify.py`** — 82.1%; cold verifier branches remain a strong external-audit polish target
+- none
 
 ## Coverage Notes
 
 - The first Phase G demo pass lifted `llm_adapter.py` above the Phase G target through deterministic offline-fallback coverage and a plural-token usefulness guard.
 - The demo-pack validation pass lifted `reference_pack.py` to 100.0%.
-- Current total package coverage is **91.0%**.
+- The indirect prompt-injection proof lifted `pav.py` to 86.9% while pinning forbidden-source enforcement.
+- The untrusted-content import boundary pass added `save_untrusted_content()` and `UNTRUSTED_CONTENT_IMPORTED` TRACE while keeping total coverage at 91.0%.
+- The Phase G coverage-floor pass lifted `cycle.py` to 94.2% and `trace_verify.py` to 94.7%.
+- Current total package coverage is **92.2%**.
 
 ## Next Coverage Work
 
-Prioritize:
-- `cycle.py`
-- `trace_verify.py`
+- Maintain the >=85% package-module floor as new modules and branches land.
+- Do not chase 100% coverage mechanically; prioritize governance, auditability, operator trust, and threat-model proof.
 
 Do not add shallow assertions only to increase a number. Coverage work should prove meaningful branches that matter to governance, auditability, or operator trust.

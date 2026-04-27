@@ -108,12 +108,17 @@ Landed:
 - `reference_pack.py` is now at 100.0% statement coverage
 - `build_operator_summary()` and `write_demo_artifacts()` generate handoff artifacts from the same governed demo run
 - `python examples/demo_suite.py --offline --artifacts demo_artifacts` writes `demo_report.json`, `demo_summary.md`, and `demo_trace.json`
+- PAV now enforces `forbidden_sources` during advisory-view construction
+- indirect prompt-injection proof pins poisoned retrieved content as scoped data, not authority, with REDLINE/PERSONAL exclusion and OATH state preserved
+- `save_untrusted_content()` gives future external connectors a canonical data-only import boundary with provenance, persistence, and TRACE
+- Phase G coverage floor is closed: every package module is at or above 85%
+- `cycle.py` proof now covers strict-mode diagnostics and handle routing branches
+- `trace_verify.py` proof now covers filtered broken-chain human reports, unknown-code listings, CLI stats, JSON schema errors, and absent Safe-Stop table handling
+- demo handoff now gives reviewers a fast path, artifact inspection order, proof-signal checklist, and release-boundary language
 
 Still open:
-- cleaner public walkthrough copy around the artifact bundle
 - optional signed/export-bundle structure once external trust anchoring begins
 - governed pack selection/versioning once multiple demo worlds or tenant-specific packs exist
-- Phase G coverage target closure for `cycle.py` and `trace_verify.py`
 
 ## Phase H — External Trust Anchoring And Deployment-Boundary Maturity
 
@@ -156,7 +161,7 @@ Low-priority observations still visible:
 ## Landed Work Since The Earlier Public Baseline
 
 Test / proof growth:
-- baseline moved from **111 / 850 / 0** to **135 / 1116 / 0**
+- baseline moved from **111 / 850 / 0** to **138 / 1155 / 0**
 - constitution loader edge coverage
 - LLM adapter prompt/fallback/config-aware coverage
 - SCRIBE UAP/status/handler edge coverage
@@ -171,6 +176,9 @@ Test / proof growth:
 - Phase G reference-pack v2 proof
 - Phase G demo-pack validation proof
 - Phase G demo artifact proof
+- indirect prompt-injection proof
+- untrusted-content import boundary proof
+- Phase G coverage-floor proof
 
 Hardening fixes:
 - R1 repo restructure into `src/rss/`
@@ -185,6 +193,7 @@ Hardening fixes:
 - `clear_safe_stop()` idempotence
 - `archive_entry()` return parity
 - PAV unknown policy raise
+- PAV forbidden-source enforcement
 - CYCLE strict mode
 - LLM availability timeout config
 - governed offline fallback

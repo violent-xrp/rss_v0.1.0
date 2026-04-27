@@ -66,6 +66,29 @@ VALID_HUBS = {"PERSONAL", "WORK", "SYSTEM", "ARCHIVE", "LEDGER"}
 # §4.4.5 — purge sentinel
 PURGE_SENTINEL = "[PURGED BY T-0]"
 
+UNTRUSTED_CONTENT_HEADER = "[UNTRUSTED_EXTERNAL_CONTENT]"
+UNTRUSTED_INSTRUCTION_STATUS = "DATA_ONLY_NOT_AUTHORITY"
+
+
+def format_untrusted_content(content: str, source_type: str,
+                             source_uri: str = "") -> str:
+    """Wrap imported external content so advisors see a data boundary.
+
+    This does not sanitize by pretending the content is safe. It labels the
+    content as untrusted evidence so future browser/email/RAG/tool adapters
+    share one kernel posture before PAV or an LLM sees it.
+    """
+    source = source_uri.strip() if source_uri else "unspecified"
+    return (
+        f"{UNTRUSTED_CONTENT_HEADER}\n"
+        f"source_type: {source_type}\n"
+        f"source_uri: {source}\n"
+        "authority: none\n"
+        f"instruction_status: {UNTRUSTED_INSTRUCTION_STATUS}\n"
+        "content:\n"
+        f"{content}"
+    )
+
 
 @dataclass
 class HubEntry:
@@ -110,6 +133,40 @@ class HubTopology:
             }],
         )
         self._hubs[hub].append(entry)
+        return entry
+
+    def add_untrusted_entry(self, hub: str, content: str, source_type: str,
+                            source_uri: str = "", redline: bool = False,
+                            entry_id: str = "") -> HubEntry:
+        """Add imported external content as data-only evidence.
+
+        Future browser, email, document, RAG, and tool-return connectors should
+        call this boundary instead of writing raw external content directly into
+        hubs. The entry remains useful for retrieval, but its content and
+        provenance say it carries no authority.
+        """
+        normalized_type = str(source_type).strip().lower()
+        if not normalized_type:
+            raise HubError("source_type must not be empty for untrusted content")
+        if "\n" in normalized_type or "\r" in normalized_type:
+            raise HubError("source_type must be a single line")
+        if content is None or not str(content).strip():
+            raise HubError("content must not be empty for untrusted content")
+
+        entry = self.add_entry(
+            hub,
+            format_untrusted_content(str(content), normalized_type, source_uri),
+            redline=redline,
+            entry_id=entry_id,
+        )
+        entry.provenance.append({
+            "action": "UNTRUSTED_IMPORT",
+            "source_type": normalized_type,
+            "source_uri": source_uri,
+            "authority": "none",
+            "instruction_status": UNTRUSTED_INSTRUCTION_STATUS,
+            "timestamp": entry.timestamp.isoformat(),
+        })
         return entry
 
     def get_entry(self, entry_id: str) -> HubEntry:

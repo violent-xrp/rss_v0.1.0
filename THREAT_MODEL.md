@@ -19,6 +19,9 @@ This threat model is intentionally narrow:
 ### Prompt injection reaching the model with unscoped data
 Mitigation: SCOPE + PAV. Only governed PAV content reaches the model.
 
+### Indirect prompt injection through retrieved or imported content
+Mitigation: hub, reference-pack, document, web, email, and tool-return content must be treated as untrusted data, not executable instruction. SCOPE decides whether the content may be seen, PAV decides what bounded evidence is exposed, OATH/CYCLE govern action authority, and TRACE records the chain. `save_untrusted_content()` gives future external connectors a canonical data-only import boundary with provenance and TRACE. Hidden page text, metadata, comments, document instructions, and retrieved snippets must never acquire authority merely because an LLM reads them.
+
 ### PERSONAL or REDLINE exposure in advisory view or export
 Mitigation: sovereign gating for PERSONAL, unconditional REDLINE exclusion in PAV, export sanitization, and TRACE logging of exclusion counts.
 
@@ -41,8 +44,9 @@ Mitigation: OATH write-ahead persistence semantics and persistence-failure surfa
 - wrapper/API concurrency and deployment identity remain later-phase work
 - `clear_safe_stop()` is T-0 only by convention, not by mechanical identity gate
 - side effects are only governable when they pass through the runtime boundary; per-action/tool-call enforcement remains future hardening
+- future importers, browsers, email connectors, RAG indexes, and tool adapters could reintroduce indirect prompt injection risk if retrieved text is passed as instruction, if hidden/metadata text is not labeled as untrusted, or if model output can trigger side effects without a fresh OATH/CYCLE gate
 - live model fluency is not evidence; governed data claims still need scoped PAV context and TRACE-backed runtime flow
-- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 135/1116 baseline
+- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 138/1155 baseline
 
 ## Current honesty line
 RSS v0.1.0 is strong at **governance-before-model** inside a single-process governed runtime. It is not yet the whole deployment security story.

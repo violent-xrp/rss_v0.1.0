@@ -1792,6 +1792,103 @@ def test_trace_verify_additional_proof():
         _cleanup_db(path)
 
 
+def test_trace_verify_human_report_branches():
+    # CLAIM: §6.11.4 — cold verifier reports expose filtered broken-chain detail, unknown codes, stats, and JSON schema errors
+    """Additional cold-verifier proof for operator-facing report branches."""
+    section("TRACE Verifier Human Report Branches")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    fd_schema, schema_path = tempfile.mkstemp(suffix=".db")
+    os.close(fd_schema)
+    try:
+        db = Persistence(path)
+        first = TraceEvent(
+            datetime.now(UTC),
+            "KNOWN_CODE",
+            "AUTH",
+            "FILTER-C1:first",
+            "hash-A",
+            5,
+            None,
+        )
+        second = TraceEvent(
+            datetime.now(UTC),
+            "UNKNOWN_CODE",
+            "AUTH",
+            "FILTER-C1:second",
+            "hash-B",
+            4,
+            "wrong-parent",
+        )
+        db.save_trace_event(first)
+        db.save_trace_event(second)
+        db.set_schema_version(1)
+        db.close()
+
+        import io
+        from contextlib import redirect_stdout
+        import rss.audit.verify as tv
+
+        result = tv.verify_trace_file(
+            path,
+            container_filter="FILTER-C1",
+            registry={"KNOWN_CODE": {}},
+        )
+        check(result["verified"] is False,
+              "verify_trace_file reports broken filtered chain")
+        check(result["first_break_at_index"] == 1,
+              "broken chain report identifies first mismatch index")
+        check(result["stats"]["unknown_codes"] == ["UNKNOWN_CODE"],
+              "registry comparison surfaces unknown event code")
+
+        report = tv._format_human_report(result)
+        check("Filter:" in report and "FILTER-C1" in report,
+              "human report prints active container filter")
+        check("Schema version: 1" in report,
+              "human report prints concrete schema version")
+        check("BREAK DETAILS:" in report and "wrong-parent" in report,
+              "human report prints broken-chain parent details")
+        check("UNKNOWN_CODE" in report,
+              "human report lists unknown event codes")
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = tv._main([path, "--container", "FILTER-C1", "--stats", "--use-registry"])
+        cli_output = buf.getvalue()
+        check(rc == tv.EXIT_CHAIN_BROKEN,
+              "_main returns EXIT_CHAIN_BROKEN for a verified broken chain")
+        check("EVENT CODE BREAKDOWN" in cli_output,
+              "_main --stats prints event code breakdown")
+        check("AUTHORITY BREAKDOWN" in cli_output,
+              "_main --stats prints authority breakdown")
+
+        conn = sqlite3.connect(schema_path)
+        conn.execute("CREATE TABLE system_state(key TEXT PRIMARY KEY, value TEXT, updated_at TEXT)")
+        conn.commit()
+        conn.close()
+
+        err_buf = io.StringIO()
+        with redirect_stdout(err_buf):
+            err_rc = tv._main([schema_path, "--json"])
+        err_payload = json.loads(err_buf.getvalue())
+        check(err_rc == tv.EXIT_SCHEMA_INVALID,
+              "_main --json returns schema-invalid exit code for missing trace_events")
+        check(err_payload["error"] == "COLD_VERIFY_ERROR",
+              "_main --json emits structured cold-verifier error")
+
+        conn = sqlite3.connect(schema_path)
+        conn.execute("DROP TABLE system_state")
+        conn.commit()
+        conn.close()
+        safe_stop = tv.read_safe_stop_state(schema_path)
+        check(safe_stop["active"] is False and "not present" in safe_stop["reason"],
+              "read_safe_stop_state reports inactive when system_state table is absent")
+    finally:
+        _cleanup_db(path)
+        _cleanup_db(schema_path)
+
+
 def test_trace_export_additional_proof():
     # CLAIM: §6.10, §5.8.3, §4.7.6 — TRACE export: summary integrity under filters, live/cold parity, multi-token REDLINE redaction, mixed global/container export
     """Additional proof: filtered summaries, live/cold parity, multiple REDLINE tokens, mixed container/global exports."""

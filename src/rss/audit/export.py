@@ -160,6 +160,7 @@ EVENT_CODES: Dict[str, Dict[str, str]] = {
 
     # S4: Hub Topology & Data Governance
     "HUB_ENTRY_ADDED":       {"section": "S4", "category": "DATA_GOV", "desc": "Hub entry created"},
+    "UNTRUSTED_CONTENT_IMPORTED": {"section": "S4", "category": "DATA_GOV", "desc": "External content imported as data-only evidence"},
     "HARD_PURGE":            {"section": "S4", "category": "DATA_GOV", "desc": "Sovereign Hard Purge executed (§4.4.5)"},
     "REDLINE_DECLASSIFIED":  {"section": "S4", "category": "DATA_GOV", "desc": "REDLINE flag removed (§4.7.4)"},
 

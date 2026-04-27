@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-04-27 03:43 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-04-27 14:24 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 101 distinct Pact sections referenced across 135 claim tags on 135 test functions.
+**Coverage:** 101 distinct Pact sections referenced across 138 claim tags on 138 test functions.
 
 ---
 
@@ -110,6 +110,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §1.9
 
 - `test_cycle` — CYCLE quantitative cadence enforcement
+- `test_cycle_extended_edges` — CYCLE strict-mode diagnostics and handle routing remain fail-closed and observable
 
 ## §2.1
 
@@ -206,6 +207,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §3.7
 
+- `test_probe_indirect_prompt_injection_stays_data_not_authority` — indirect prompt injection remains scoped data, not authority
 - `test_llm` — LLM adapter contract
 - `test_genesis_binding_and_offline_fallback` — Genesis artifact bound from config; offline fallback summarizes governed data; shared reference pack is idempotent; ingress posture exposed
 - `test_phase_g_demo_suite_operator_flow` — Phase G demo suite proves governed usefulness, REDLINE exclusion, consent recovery, Safe-Stop restart recovery, isolation, and cold TRACE verification
@@ -260,6 +262,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §4.5
 
 - `test_adversarial_policy_confusion` — policy confusion: global vs container consent; forbidden wins at PAV; production-mode
+- `test_probe_indirect_prompt_injection_stays_data_not_authority` — indirect prompt injection remains scoped data, not authority
 
 ## §4.5.2
 
@@ -308,6 +311,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §4.7.6
 
 - `test_instructional_override` — jailbreak attempts cannot surface PERSONAL or REDLINE
+- `test_probe_indirect_prompt_injection_stays_data_not_authority` — indirect prompt injection remains scoped data, not authority
 - `test_probe_redline_not_leaked_via_search_surfaces` — search() and governed_search() fail-closed on REDLINE
 - `test_probe_pav_still_excludes_redline_via_list_hub` — list_hub permissive for governed callers; PAV still excludes REDLINE
 - `test_trace_export_cold_container_redline_sanitization` — cold TRACE export sanitizes REDLINE artifact IDs from container hub rows as well as global rows
@@ -388,6 +392,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §5.7.1
 
 - `test_adversarial_policy_confusion` — policy confusion: global vs container consent; forbidden wins at PAV; production-mode
+- `test_probe_indirect_prompt_injection_stays_data_not_authority` — indirect prompt injection remains scoped data, not authority
 - `test_s5_consent_scoping` — container-specific consent overrides global revocation
 
 ## §5.8.3
@@ -496,6 +501,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_trace_verify_cli_error_classification` — cold verifier CLI exit codes: file-not-found returns EXIT_FILE_ERROR; schema-invalid returns EXIT_SCHEMA_INVALID
 - `test_trace_verify_registry_load_failure_is_nonfatal` — cold verifier --use-registry load failure degrades to a warning; EXIT_OK still returned
 - `test_trace_verify_additional_proof` — cold verifier: corrupted schema version degrades gracefully; mixed known/unknown codes reported; safe-stop state readable cold
+- `test_trace_verify_human_report_branches` — cold verifier reports expose filtered broken-chain detail, unknown codes, stats, and JSON schema errors
 
 ## §7.2
 

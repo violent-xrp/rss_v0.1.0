@@ -3,9 +3,9 @@
 ## v0.1.0
 
 ### Current verified snapshot
-- **135 test functions / 1116 assertions / 0 failures** via `python tests/test_all.py`
-- **91.0% statement coverage** via `python run_coverage.py`
-- **135 claims / 135 tests / 101 Pact sections** in `docs/claim_matrix.md`
+- **138 test functions / 1155 assertions / 0 failures** via `python tests/test_all.py`
+- **92.2% statement coverage** via `python run_coverage.py`
+- **138 claims / 138 tests / 101 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -24,6 +24,11 @@
 - reference/demo-pack validation now fails loud on malformed hub, flow, vocab, entry, and REDLINE metadata before runtime seeding mutates state
 - Phase G demo suite can emit a handoff artifact bundle: `demo_report.json`, `demo_summary.md`, and `demo_trace.json`
 - ROADMAP has been consolidated into a current/future command document, with acceptance history, coverage tracking, phase ledger, testing guidance, and demo handoff detail moved under `docs/`
+- Threat Model now names indirect prompt injection through retrieved/imported content as a first-class external-content risk.
+- PAV now honors `forbidden_sources` while constructing advisory views, closing an overlap/misconfiguration gap where forbidden sources were recorded but not enforced at PAV collection time.
+- LLM prompt posture now labels governed data as untrusted quoted evidence that cannot grant authority, change scope, authorize actions, or request side effects.
+- `save_untrusted_content()` imports external content as data-only evidence with wrapper labels, provenance, persistence, and `UNTRUSTED_CONTENT_IMPORTED` TRACE.
+- demo handoff now gives outside reviewers a fast path, artifact inspection order, proof-signal checklist, and release-boundary language.
 - live demo-suite normal-advisor lane uses SYSTEM-only scope so ordinary conversation does not open WORK/PERSONAL data
 - interactive `src/main.py demo` routes ordinary chat through SYSTEM-only scope while obvious seeded-data questions keep the governed WORK/PAV path
 - runner-truth hardening so the acceptance harness remains the single pass/fail truth source
@@ -49,10 +54,13 @@
 - Phase G reference-pack v2 proof for cross-domain packs, explicit metadata, and schema compatibility
 - Phase G demo-pack validation proof for fail-loud schema checks, no partial seeding, legacy tuple compatibility, and inactive container reuse
 - Phase G demo artifact proof for report JSON, operator summary, persisted TRACE JSON, proof-status wording, and trace event-count parity
+- indirect prompt-injection proof for poisoned retrieved content remaining scoped data, with import provenance, TRACE, REDLINE/PERSONAL exclusion, and OATH immutability preserved
+- Phase G coverage-floor proof for CYCLE strict/handle routing and cold-verifier broken-chain reporting branches
 - `load_constitution()` — all branches directly tested (file-not-found, hash-mismatch, missing-marker, happy-path, multi-marker)
 - Priority A closures: TECTON reason gate, clear_safe_stop idempotence, config-driven LLM timeout, archive_entry return
 - Priority B closures: PAV strict policy, CYCLE strict mode, STAGES constant, constitution coverage
 - Phase F coverage-honesty closure: every package module is at or above the 80% floor; `scribe.py` and `audit/migrate.py` are both at 100.0%
+- Phase G coverage-floor closure: every package module is now at or above the 85% floor; `cycle.py` and `trace_verify.py` both moved above 94%
 
 ### Known limitations preserved honestly
 - ingress identity is still architectural, not cryptographic

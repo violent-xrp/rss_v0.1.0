@@ -62,6 +62,7 @@ class PAVBuilder:
     def build(self, envelope: ScopeEnvelope, hubs: HubTopology,
               brainstorming: bool = False) -> PAV:
         """Build PAV from SCOPE envelope.
+        §4.5.3: forbidden_sources win over allowed_sources.
         §4.6.7: LEDGER excluded unless brainstorming=True.
         §4.4.5: Purged entries excluded (mechanically REDLINE).
         §4.6.6: Tracks contributing hubs."""
@@ -71,6 +72,9 @@ class PAVBuilder:
         contributing_hubs: List[str] = []
 
         for source in envelope.allowed_sources:
+            if source in envelope.forbidden_sources:
+                continue
+
             # §4.6.7 — LEDGER excluded from standard PAVs
             if source == "LEDGER" and not brainstorming:
                 continue

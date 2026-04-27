@@ -719,6 +719,24 @@ class Runtime:
         self._log("HUB_ENTRY_ADDED", entry.id, f"Hub: {hub}, REDLINE: {redline}")
         return entry
 
+    def save_untrusted_content(self, hub: str, content: str, source_type: str,
+                               source_uri: str = "", redline: bool = False):
+        """Add imported external content as untrusted data-only evidence."""
+        entry = self.hubs.add_untrusted_entry(
+            hub, content, source_type, source_uri, redline
+        )
+        self.persistence.save_hub_entry(entry)
+        self._log(
+            "UNTRUSTED_CONTENT_IMPORTED",
+            entry.id,
+            (
+                f"Hub: {hub}, source_type: {source_type}, "
+                f"source_uri: {source_uri or 'unspecified'}, "
+                f"authority: none, REDLINE: {redline}"
+            ),
+        )
+        return entry
+
     def hard_purge(self, entry_id: str, reason: str = ""):
         """§4.4.5 — Sovereign Hard Purge. Destroys content, preserves metadata.
         Irreversible. TRACE logs HARD_PURGE event. Persists purge to SQLite."""

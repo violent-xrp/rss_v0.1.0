@@ -2,8 +2,8 @@
 
 Rose Sigil Systems (RSS) - "An AI that Waits" is a **domain-agnostic, application-layer zero-trust AI governance kernel**. It decides what a system may see, say, and do **before** the model runs, not after. Every request flows through a constitutional pipeline of typed seats with bounded authority. Scope is declared. Meaning is classified. Consent is checked. Rate limits are enforced. A Prepared Advisory View is built. TRACE is written before the result is allowed to stand.
 
-**Current verified project-snapshot baseline:** **135 test functions / 1116 assertions / 0 failures** via `python tests/test_all.py`.
-**Current coverage / traceability:** **91.0% statement coverage** via `python run_coverage.py`; `docs/claim_matrix.md` tracks **135 claims / 135 tests / 101 Pact sections**.
+**Current verified project-snapshot baseline:** **138 test functions / 1155 assertions / 0 failures** via `python tests/test_all.py`.
+**Current coverage / traceability:** **92.2% statement coverage** via `python run_coverage.py`; `docs/claim_matrix.md` tracks **138 claims / 138 tests / 101 Pact sections**.
 
 ## What RSS is
 
@@ -46,7 +46,7 @@ RSS is public-alpha kernel work. The most valuable contributions are boundary-ha
 - **Per-action enforcement:** gating tool calls and side effects immediately before execution, not only at the outer request level.
 - **Cryptographic trust anchoring:** signed TRACE exports, external timestamping, chain-version migration discipline, and cross-machine verification.
 - **Demo and operator artifacts:** pack selection/versioning, guided walkthrough polish, and examples that make the current proof surface easier to inspect.
-- **Security review:** threat-model pressure testing around ingress, REDLINE leakage, container isolation, replay, and capability revocation.
+- **Security review:** threat-model pressure testing around ingress, indirect prompt injection, REDLINE leakage, container isolation, replay, and capability revocation.
 
 Contributions should preserve the core posture: current claims stay conservative, future work stays named, and every meaningful safety claim should gain a proof path.
 
@@ -70,7 +70,7 @@ python tests/test_all.py
 ```
 Expected current final line:
 ```text
-RSS v0.1.0 - 135 test functions, 1116 assertions passed, 0 failed
+RSS v0.1.0 - 138 test functions, 1155 assertions passed, 0 failed
 ```
 
 ### Run the guided demo walkthrough
@@ -143,6 +143,9 @@ The practical request path is:
 - `clear_safe_stop()` is idempotent — returns `NO_OP` when not halted, emits no false audit events
 - `load_constitution()` is directly tested across all branches (file-not-found, hash mismatch, missing marker, happy path)
 - PAV `_sanitize` raises `ValueError` on unknown policy names rather than silently defaulting
+- PAV honors `forbidden_sources` during advisory-view construction even when a source is also listed as allowed
+- indirect prompt-injection proof now treats poisoned retrieved content as scoped data, not authority
+- `save_untrusted_content()` gives future browser/email/document/RAG/tool connectors a canonical data-only import boundary with provenance and TRACE
 - CYCLE `check_rate_limit` supports `strict=True` mode to reject unregistered domains loudly
 - LLM availability-check timeout is config-driven (`llm_availability_check_timeout`) rather than hardcoded
 - `archive_entry()` returns the archived `HubEntry` for lifecycle-method parity

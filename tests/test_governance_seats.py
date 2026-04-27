@@ -358,6 +358,40 @@ def test_cycle():
     check(r["status"] == "RATE_LIMITED", "11th call limited")
 
 
+def test_cycle_extended_edges():
+    # CLAIM: §1.9 — CYCLE strict-mode diagnostics and handle routing remain fail-closed and observable
+    section("CYCLE Extended Edges")
+
+    cycle = Cycle()
+
+    try:
+        cycle.check_rate_limit("UNREGISTERED", strict=True)
+        check(False, "strict mode should reject unregistered domains")
+    except ValueError as exc:
+        check("UNREGISTERED" in str(exc), "strict mode rejects unregistered domains")
+
+    cycle.register_domain("STRICT", max_per_minute=3)
+    strict_result = cycle.check_rate_limit("STRICT", max_per_minute=2, strict=True)
+    check(strict_result["status"] == "OK", "registered strict-mode domain can be checked")
+    check(strict_result["max"] == 2, "positive caller max updates registered cadence limit")
+
+    handled = cycle.handle({"action": "check_rate", "domain": "HANDLED"})
+    check(handled["status"] == "OK" and handled["domain"] == "HANDLED",
+          "handle(check_rate) routes through cadence check")
+
+    default_handled = cycle.handle({"action": "check_rate"})
+    check(default_handled["domain"] == "DEFAULT",
+          "handle(check_rate) uses DEFAULT domain when none is provided")
+
+    complexity = cycle.handle({"action": "complexity"})
+    check(complexity["domains_tracked"] >= 3,
+          "handle(complexity) reports tracked cadence domains")
+
+    unknown = cycle.handle({"action": "unknown"})
+    check(unknown["error"] == "Unknown action: unknown",
+          "handle unknown action returns structured error")
+
+
 def test_vocabulary_management():
     # CLAIM: §2.4, §2.4.4 — vocabulary add/update/remove persistence
     section("Vocabulary Management")

@@ -59,6 +59,7 @@ from test_governance_seats import (
     test_seal,
     test_oath,
     test_cycle,
+    test_cycle_extended_edges,
     test_vocabulary_management,
     test_word_boundary,
     test_classification_order,
@@ -156,6 +157,7 @@ from test_audit_trace import (
     test_trace_verify_cli_error_classification,
     test_trace_verify_registry_load_failure_is_nonfatal,
     test_trace_verify_additional_proof,
+    test_trace_verify_human_report_branches,
     test_trace_export_additional_proof,
 )
 
@@ -177,6 +179,7 @@ from test_adversarial_scenarios import (
     test_probe_redline_not_leaked_via_search_surfaces,
     test_probe_rune_resists_normalization_bypass,
     test_probe_pav_still_excludes_redline_via_list_hub,
+    test_probe_indirect_prompt_injection_stays_data_not_authority,
 )
 
 from test_demo_reference_pack import (
@@ -201,6 +204,7 @@ TESTS = [
     test_seal,
     test_oath,
     test_cycle,
+    test_cycle_extended_edges,
     test_persistence,
     test_persistence_roundtrip,
     test_vocabulary_management,
@@ -298,6 +302,7 @@ TESTS = [
     test_probe_redline_not_leaked_via_search_surfaces,
     test_probe_rune_resists_normalization_bypass,
     test_probe_pav_still_excludes_redline_via_list_hub,
+    test_probe_indirect_prompt_injection_stays_data_not_authority,
     test_probe_hash_envelope_version_marker_present,
     test_probe_container_filter_prefix_boundary,
     test_probe_safe_stop_recovery_ceremony,
@@ -312,6 +317,7 @@ TESTS = [
     test_trace_verify_registry_load_failure_is_nonfatal,
     test_seal_extended_edges,
     test_trace_verify_additional_proof,
+    test_trace_verify_human_report_branches,
     test_trace_export_additional_proof,
     test_seal_ceremony_additional_proof,
     test_genesis_binding_and_offline_fallback,
