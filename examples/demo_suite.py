@@ -13,14 +13,17 @@ import argparse
 import contextlib
 import gc
 import io
+import json
 import os
 import sys
 import tempfile
 import time
+from datetime import datetime, UTC
 from typing import Optional
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
+from rss.audit.export import export_from_db
 from rss.audit.verify import read_safe_stop_state, verify_trace_file
 from rss.core.config import RSSConfig
 from rss.core.runtime import bootstrap
@@ -80,10 +83,85 @@ def _cleanup_db(path: str) -> None:
                     gc.collect()
 
 
+def _proof_status(verification: dict) -> str:
+    required = (
+        "redline_global_refused",
+        "redline_container_refused",
+        "isolation_refused",
+        "consent_denied",
+        "consent_recovered",
+        "safe_stop_persisted",
+        "safe_stop_recovered",
+        "trace_chain_valid",
+        "cold_chain_verified",
+    )
+    return "PASS" if all(verification.get(key) for key in required) else "ATTENTION"
+
+
+def build_operator_summary(report: dict) -> str:
+    """Build a short operator-readable summary for demo handoff artifacts."""
+    verification = report["verification"]
+    artifacts = verification.get("artifacts", {})
+    lines = [
+        "# RSS Governed Demo Summary",
+        "",
+        f"Generated: {verification.get('generated_at')}",
+        f"Mode: {verification.get('mode')}",
+        f"Proof status: {_proof_status(verification)}",
+        "",
+        "## Proof Signals",
+        f"- Global questions answered: {verification.get('global_success')} / {len(DEMO_QUESTIONS)}",
+        f"- Container questions answered: {verification.get('container_success')} / {sum(len(spec['questions']) for spec in DEMO_CONTAINERS)}",
+        f"- Domain packs loaded: {verification.get('domain_count')}",
+        f"- Governed flows declared: {verification.get('flow_count')}",
+        f"- REDLINE global refusal: {verification.get('redline_global_refused')}",
+        f"- REDLINE container refusal: {verification.get('redline_container_refused')}",
+        f"- Cross-container isolation refusal: {verification.get('isolation_refused')}",
+        f"- Consent denial / recovery: {verification.get('consent_denied')} / {verification.get('consent_recovered')}",
+        f"- Safe-Stop persistence / recovery: {verification.get('safe_stop_persisted')} / {verification.get('safe_stop_recovered')}",
+        f"- Live TRACE chain valid: {verification.get('trace_chain_valid')}",
+        f"- Cold TRACE verified: {verification.get('cold_chain_verified')} ({verification.get('cold_event_count')} events)",
+        "",
+        "## Artifacts",
+        f"- Report JSON: {artifacts.get('report_json', '(not exported)')}",
+        f"- TRACE JSON: {artifacts.get('trace_json', '(not exported)')}",
+        f"- Summary: {artifacts.get('summary_md', '(not exported)')}",
+        "",
+        "## Limits To Say Out Loud",
+        "- Ingress identity remains architectural, not cryptographic.",
+        "- Safe-Stop clearing is T-0 by convention/docstring until the mechanical identity gate lands.",
+        "- Side effects are only governable when they pass through the runtime boundary.",
+        "- Live model fluency is not proof; governed data claims still need scoped PAV context and TRACE.",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def write_demo_artifacts(report: dict, persistence, output_dir: str, prefix: str = "demo") -> dict:
+    """Write JSON proof, operator summary, and persisted TRACE export."""
+    safe_prefix = (prefix or "demo").strip() or "demo"
+    os.makedirs(output_dir, exist_ok=True)
+    artifacts = {
+        "report_json": os.path.abspath(os.path.join(output_dir, f"{safe_prefix}_report.json")),
+        "summary_md": os.path.abspath(os.path.join(output_dir, f"{safe_prefix}_summary.md")),
+        "trace_json": os.path.abspath(os.path.join(output_dir, f"{safe_prefix}_trace.json")),
+    }
+    trace_count = export_from_db(persistence, artifacts["trace_json"], "json")
+    artifacts["trace_event_count"] = trace_count
+    report["verification"]["artifacts"] = artifacts
+
+    with open(artifacts["report_json"], "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2)
+    with open(artifacts["summary_md"], "w", encoding="utf-8") as f:
+        f.write(build_operator_summary(report))
+    return artifacts
+
+
 def build_demo_report(
     live_llm: bool = False,
     db_path: Optional[str] = None,
     cleanup: bool = True,
+    artifact_dir: Optional[str] = None,
+    artifact_prefix: str = "demo",
 ) -> dict:
     """Build the Phase G operator transcript and machine-checkable proof flags.
 
@@ -120,6 +198,8 @@ def build_demo_report(
         "domain_count": len({spec.get("domain") for spec in DEMO_CONTAINERS}),
         "flow_count": sum(len(spec.get("flows", [])) for spec in DEMO_CONTAINERS),
         "db_path": db_path,
+        "generated_at": datetime.now(UTC).isoformat(),
+        "artifacts": {},
     }
 
     try:
@@ -254,7 +334,17 @@ def build_demo_report(
         lines.append(f"Cold chain verified: {cold_verify['verified']}")
         lines.append(f"Cold events examined: {cold_verify['event_count']}")
 
-        return {"transcript": "\n".join(lines), "verification": verification}
+        report = {"transcript": "\n".join(lines), "verification": verification}
+        if artifact_dir:
+            artifacts = write_demo_artifacts(report, rss.persistence, artifact_dir, artifact_prefix)
+            lines.append("\n[ARTIFACTS]")
+            lines.append(f"Report JSON: {artifacts['report_json']}")
+            lines.append(f"Summary: {artifacts['summary_md']}")
+            lines.append(f"TRACE JSON: {artifacts['trace_json']}")
+            report["transcript"] = "\n".join(lines)
+            with open(artifacts["report_json"], "w", encoding="utf-8") as f:
+                json.dump(report, f, indent=2)
+        return report
     finally:
         if rss is not None:
             try:
@@ -265,11 +355,29 @@ def build_demo_report(
             _cleanup_db(temp_db)
 
 
-def run(live_llm: bool = True, db_path: Optional[str] = None, keep_db: bool = False):
-    report = build_demo_report(live_llm=live_llm, db_path=db_path, cleanup=not keep_db)
+def run(
+    live_llm: bool = True,
+    db_path: Optional[str] = None,
+    keep_db: bool = False,
+    artifact_dir: Optional[str] = None,
+    artifact_prefix: str = "demo",
+):
+    report = build_demo_report(
+        live_llm=live_llm,
+        db_path=db_path,
+        cleanup=not keep_db,
+        artifact_dir=artifact_dir,
+        artifact_prefix=artifact_prefix,
+    )
     print(report["transcript"])
     if keep_db:
         print(f"\nDemo DB kept at: {report['verification']['db_path']}")
+    if artifact_dir:
+        print("\nDemo artifacts:")
+        for key, path in report["verification"].get("artifacts", {}).items():
+            if key.endswith("_count"):
+                continue
+            print(f"  {key}: {path}")
 
 
 def _main(argv: Optional[list[str]] = None) -> int:
@@ -290,8 +398,16 @@ def _main(argv: Optional[list[str]] = None) -> int:
     )
     parser.add_argument("--db", default=None, help="Optional SQLite DB path for a persistent demo run.")
     parser.add_argument("--keep-db", action="store_true", help="Keep the generated demo DB after the run.")
+    parser.add_argument("--artifacts", default=None, help="Directory for demo_report.json, demo_summary.md, and demo_trace.json.")
+    parser.add_argument("--artifact-prefix", default="demo", help="Artifact filename prefix. Default: demo.")
     args = parser.parse_args(argv)
-    run(live_llm=args.live_llm, db_path=args.db, keep_db=args.keep_db)
+    run(
+        live_llm=args.live_llm,
+        db_path=args.db,
+        keep_db=args.keep_db,
+        artifact_dir=args.artifacts,
+        artifact_prefix=args.artifact_prefix,
+    )
     return 0
 
 

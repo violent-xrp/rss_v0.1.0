@@ -28,9 +28,17 @@ Mechanical split from tests/test_all.py; proof bodies and # CLAIM tags are prese
 """
 import importlib.util
 import inspect
+import shutil
 
 from test_support import *
-from rss.reference_pack import DEMO_QUESTIONS, iter_container_entries
+import rss.reference_pack as reference_pack_module
+from rss.reference_pack import (
+    DEMO_QUESTIONS,
+    ReferencePackError,
+    iter_container_entries,
+    validate_demo_containers,
+    validate_reference_pack,
+)
 
 
 def _load_demo_suite_module():
@@ -47,6 +55,20 @@ def _load_main_module():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def _valid_demo_pack() -> dict:
+    return {
+        "label": "Validation Pack",
+        "owner": "T-0",
+        "domain": "validation",
+        "pack_version": "demo.validation.v1",
+        "summary": "Small validation pack used only for negative schema proofs.",
+        "vocab_terms": [{"label": "proof", "intent": "schema validation marker"}],
+        "flows": ["schema_validation"],
+        "entries": [{"hub": "WORK", "content": "Validation work row", "redline": False}],
+        "questions": ["What validation row exists?"],
+    }
 
 
 def test_genesis_binding_and_offline_fallback():
@@ -104,11 +126,155 @@ def test_demo_world_seed_and_container_isolation():
     """Demo hardening: shared demo world is idempotent and container-scoped."""
     section("Demo World Seed + Isolation")
 
+    check(validate_reference_pack() is True, "global reference pack validates before runtime seeding")
+    check(validate_demo_containers() is True, "demo container packs validate before runtime seeding")
+    try:
+        validate_reference_pack([{
+            "hub": "WORK",
+            "domain": "validation",
+            "flow": "schema_validation",
+            "content": "Missing explicit redline marker",
+        }])
+        check(False, "reference-pack validation rejects missing redline metadata")
+    except ReferencePackError as exc:
+        check("redline" in str(exc), "reference-pack validation rejects missing redline metadata")
+    try:
+        validate_reference_pack([{
+            "hub": "VOID",
+            "domain": "validation",
+            "flow": "schema_validation",
+            "content": "Invalid hub row",
+            "redline": False,
+        }])
+        check(False, "reference-pack validation rejects unknown hubs")
+    except ReferencePackError as exc:
+        check("unknown hub" in str(exc), "reference-pack validation rejects unknown hubs")
+    pack_without_entries = _valid_demo_pack()
+    del pack_without_entries["entries"]
+    try:
+        validate_demo_containers([pack_without_entries])
+        check(False, "demo-pack validation rejects missing entries")
+    except ReferencePackError as exc:
+        check("entries" in str(exc), "demo-pack validation rejects missing entries")
+    pack_bad_redline = _valid_demo_pack()
+    pack_bad_redline["entries"] = [{"hub": "WORK", "content": "Bad redline row", "redline": "false"}]
+    try:
+        validate_demo_containers([pack_bad_redline])
+        check(False, "demo-pack validation rejects string redline values")
+    except ReferencePackError as exc:
+        check("explicit boolean" in str(exc), "demo-pack validation rejects string redline values")
+    check(validate_reference_pack([("WORK", "Legacy validation row", False)]) is True,
+          "reference-pack validation still accepts legacy tuple rows")
+    try:
+        validate_reference_pack([])
+        check(False, "reference-pack validation rejects an empty pack")
+    except ReferencePackError as exc:
+        check("non-empty list" in str(exc), "reference-pack validation rejects an empty pack")
+    try:
+        validate_reference_pack([123])
+        check(False, "reference-pack validation rejects malformed legacy rows")
+    except ReferencePackError as exc:
+        check("legacy row" in str(exc), "reference-pack validation rejects malformed legacy rows")
+    try:
+        validate_reference_pack([{
+            "hub": "WORK",
+            "domain": " ",
+            "flow": "schema_validation",
+            "content": "Blank domain row",
+            "redline": False,
+        }])
+        check(False, "reference-pack validation rejects blank domain metadata")
+    except ReferencePackError as exc:
+        check("domain" in str(exc), "reference-pack validation rejects blank domain metadata")
+    try:
+        validate_demo_containers(["not a pack"])
+        check(False, "demo-pack validation rejects non-dict pack specs")
+    except ReferencePackError as exc:
+        check("dictionary" in str(exc), "demo-pack validation rejects non-dict pack specs")
+    pack_missing_owner = _valid_demo_pack()
+    del pack_missing_owner["owner"]
+    try:
+        validate_demo_containers([pack_missing_owner])
+        check(False, "demo-pack validation rejects missing owner metadata")
+    except ReferencePackError as exc:
+        check("owner" in str(exc), "demo-pack validation rejects missing owner metadata")
+    duplicate_a = _valid_demo_pack()
+    duplicate_b = _valid_demo_pack()
+    try:
+        validate_demo_containers([duplicate_a, duplicate_b])
+        check(False, "demo-pack validation rejects duplicate labels")
+    except ReferencePackError as exc:
+        check("duplicated" in str(exc), "demo-pack validation rejects duplicate labels")
+    pack_bad_vocab_type = _valid_demo_pack()
+    pack_bad_vocab_type["vocab_terms"] = ["bad term"]
+    try:
+        validate_demo_containers([pack_bad_vocab_type])
+        check(False, "demo-pack validation rejects non-dict vocab terms")
+    except ReferencePackError as exc:
+        check("dictionary" in str(exc), "demo-pack validation rejects non-dict vocab terms")
+    pack_bad_vocab_shape = _valid_demo_pack()
+    pack_bad_vocab_shape["vocab_terms"] = [{"label": "proof"}]
+    try:
+        validate_demo_containers([pack_bad_vocab_shape])
+        check(False, "demo-pack validation rejects vocab terms without intent")
+    except ReferencePackError as exc:
+        check("intent" in str(exc), "demo-pack validation rejects vocab terms without intent")
+    pack_bad_entry_type = _valid_demo_pack()
+    pack_bad_entry_type["entries"] = ["bad entry"]
+    try:
+        validate_demo_containers([pack_bad_entry_type])
+        check(False, "demo-pack validation rejects non-dict entries")
+    except ReferencePackError as exc:
+        check("dictionary" in str(exc), "demo-pack validation rejects non-dict entries")
+    pack_bad_entry_shape = _valid_demo_pack()
+    pack_bad_entry_shape["entries"] = [{"hub": "WORK", "redline": False}]
+    try:
+        validate_demo_containers([pack_bad_entry_shape])
+        check(False, "demo-pack validation rejects entries without content")
+    except ReferencePackError as exc:
+        check("content" in str(exc), "demo-pack validation rejects entries without content")
+
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
     try:
         config = RSSConfig(db_path=path)
         rss = bootstrap(config)
+        original_packs = reference_pack_module.DEMO_CONTAINERS
+        reference_pack_module.DEMO_CONTAINERS = [pack_without_entries]
+        try:
+            seed_demo_world(rss)
+            check(False, "seed_demo_world fails malformed demo packs before mutating runtime state")
+        except ReferencePackError as exc:
+            check("entries" in str(exc), "seed_demo_world fails malformed demo packs before mutating runtime state")
+            check(rss.hubs.list_hub("WORK") == [], "malformed demo packs do not partially seed global WORK rows")
+            check(rss.tecton.list_containers() == [], "malformed demo packs do not partially create containers")
+        finally:
+            reference_pack_module.DEMO_CONTAINERS = original_packs
+        original_reference_pack = reference_pack_module.REFERENCE_PACK
+        reference_pack_module.REFERENCE_PACK = [("WORK", "Legacy seeded row", False)]
+        try:
+            check(load_reference_pack(rss) == 1, "reference-pack loader still supports legacy tuple rows")
+        finally:
+            reference_pack_module.REFERENCE_PACK = original_reference_pack
+        created_pack = _valid_demo_pack()
+        configured_pack = _valid_demo_pack()
+        configured_pack["label"] = "Validation Pack Configured"
+        configured_pack["entries"] = [{"hub": "WORK", "content": "Configured validation row", "redline": False}]
+        original_packs = reference_pack_module.DEMO_CONTAINERS
+        reference_pack_module.DEMO_CONTAINERS = [created_pack, configured_pack]
+        try:
+            created_container = rss.tecton.create_container(created_pack["label"], created_pack["owner"])
+            configured_container = rss.tecton.create_container(configured_pack["label"], configured_pack["owner"])
+            rss.tecton.configure_container(configured_container.container_id)
+            inactive_summary = load_demo_containers(rss)
+            check(inactive_summary["existing"] == 2,
+                  "demo container loader reuses pre-existing inactive validation containers")
+            check(rss.tecton.get_container(created_container.container_id).state == "ACTIVE",
+                  "demo container loader activates pre-existing CREATED containers")
+            check(rss.tecton.get_container(configured_container.container_id).state == "ACTIVE",
+                  "demo container loader activates pre-existing CONFIGURED containers")
+        finally:
+            reference_pack_module.DEMO_CONTAINERS = original_packs
         seeded = seed_demo_world(rss)
         check(seeded["global_inserted"] == len(REFERENCE_PACK), "seed_demo_world inserts the global reference pack once")
         check(len(seeded["containers"]) == len(DEMO_CONTAINERS), "seed_demo_world provisions every configured demo container")
@@ -216,6 +382,33 @@ def test_phase_g_demo_suite_operator_flow():
     check(proof["trace_chain_valid"], "demo live TRACE chain remains valid")
     check(proof["cold_chain_verified"], "demo cold verifier validates the persisted TRACE chain")
     check(proof["cold_event_count"] > 0, "demo cold verifier examines persisted TRACE events")
+    artifact_dir = tempfile.mkdtemp(prefix="rss_demo_artifacts_")
+    try:
+        artifact_report = demo_suite.build_demo_report(live_llm=False, artifact_dir=artifact_dir)
+        artifacts = artifact_report["verification"]["artifacts"]
+        check(os.path.exists(artifacts["report_json"]), "demo artifact writer emits machine-readable report JSON")
+        check(os.path.exists(artifacts["summary_md"]), "demo artifact writer emits operator-readable summary")
+        check(os.path.exists(artifacts["trace_json"]), "demo artifact writer emits persisted TRACE JSON")
+        with open(artifacts["report_json"], "r", encoding="utf-8") as f:
+            report_json = json.load(f)
+        with open(artifacts["summary_md"], "r", encoding="utf-8") as f:
+            summary_text = f.read()
+        with open(artifacts["trace_json"], "r", encoding="utf-8") as f:
+            trace_json = json.load(f)
+        check(report_json["verification"]["cold_chain_verified"] is True,
+              "demo report JSON preserves cold verification proof flags")
+        check("[ARTIFACTS]" in report_json["transcript"],
+              "demo report JSON records emitted artifact paths in the transcript")
+        check("Proof status: PASS" in summary_text and "Limits To Say Out Loud" in summary_text,
+              "demo summary gives an operator-readable proof status and limits")
+        check(trace_json["chain_valid"] is True,
+              "demo TRACE artifact preserves chain-valid status")
+        check(trace_json["event_count"] == artifact_report["verification"]["cold_event_count"],
+              "demo TRACE artifact event count matches cold verifier event count")
+        check(artifacts["trace_event_count"] == trace_json["event_count"],
+              "demo artifact metadata reports the exported TRACE event count")
+    finally:
+        shutil.rmtree(artifact_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":

@@ -3,8 +3,8 @@
 ## v0.1.0
 
 ### Current verified snapshot
-- **135 test functions / 1083 assertions / 0 failures** via `python tests/test_all.py`
-- **90.5% statement coverage** via `python run_coverage.py`
+- **135 test functions / 1116 assertions / 0 failures** via `python tests/test_all.py`
+- **91.0% statement coverage** via `python run_coverage.py`
 - **135 claims / 135 tests / 101 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
@@ -21,6 +21,9 @@
 - shared demo/reference pack in `src/rss/reference_pack.py`
 - seeded demo containers and deterministic walkthroughs in `examples/`
 - reference-pack v2 with construction, legal, medical, and finance packs, explicit entry metadata, governed flows, vocab hints, and non-REDLINE PERSONAL support
+- reference/demo-pack validation now fails loud on malformed hub, flow, vocab, entry, and REDLINE metadata before runtime seeding mutates state
+- Phase G demo suite can emit a handoff artifact bundle: `demo_report.json`, `demo_summary.md`, and `demo_trace.json`
+- ROADMAP has been consolidated into a current/future command document, with acceptance history, coverage tracking, phase ledger, testing guidance, and demo handoff detail moved under `docs/`
 - live demo-suite normal-advisor lane uses SYSTEM-only scope so ordinary conversation does not open WORK/PERSONAL data
 - interactive `src/main.py demo` routes ordinary chat through SYSTEM-only scope while obvious seeded-data questions keep the governed WORK/PAV path
 - runner-truth hardening so the acceptance harness remains the single pass/fail truth source
@@ -44,6 +47,8 @@
 - extended OATH, SEAL, TRACE export, verifier, and demo-world coverage
 - Phase G normal-advisor boundary proof for prompt posture and SYSTEM-only demo scope
 - Phase G reference-pack v2 proof for cross-domain packs, explicit metadata, and schema compatibility
+- Phase G demo-pack validation proof for fail-loud schema checks, no partial seeding, legacy tuple compatibility, and inactive container reuse
+- Phase G demo artifact proof for report JSON, operator summary, persisted TRACE JSON, proof-status wording, and trace event-count parity
 - `load_constitution()` — all branches directly tested (file-not-found, hash-mismatch, missing-marker, happy-path, multi-marker)
 - Priority A closures: TECTON reason gate, clear_safe_stop idempotence, config-driven LLM timeout, archive_entry return
 - Priority B closures: PAV strict policy, CYCLE strict mode, STAGES constant, constitution coverage

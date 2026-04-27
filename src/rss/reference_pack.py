@@ -11,6 +11,12 @@ from __future__ import annotations
 
 from typing import Dict, Iterable, List, Tuple
 
+from rss.hubs.topology import VALID_HUBS
+
+
+class ReferencePackError(ValueError):
+    """Raised when shared demo/reference data violates the expected schema."""
+
 # Neutral global data loaded into the main runtime hubs.
 REFERENCE_PACK: List[Dict[str, object]] = [
     {
@@ -209,6 +215,115 @@ def _reference_row(row) -> Tuple[str, str, bool]:
     return row
 
 
+def _require_text(value: object, field: str, context: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ReferencePackError(f"{context} requires non-empty text field '{field}'")
+    return value
+
+
+def _require_list(value: object, field: str, context: str) -> list:
+    if not isinstance(value, list) or not value:
+        raise ReferencePackError(f"{context} requires non-empty list field '{field}'")
+    return value
+
+
+def _validate_hub(value: object, field: str, context: str) -> str:
+    hub = _require_text(value, field, context)
+    if hub not in VALID_HUBS:
+        raise ReferencePackError(f"{context} field '{field}' uses unknown hub '{hub}'")
+    return hub
+
+
+def _validate_redline(value: object, field: str, context: str) -> bool:
+    if not isinstance(value, bool):
+        raise ReferencePackError(f"{context} field '{field}' must be an explicit boolean")
+    return value
+
+
+def validate_reference_pack(rows: object = None) -> bool:
+    """Validate global reference rows before seeding runtime hubs."""
+    rows = REFERENCE_PACK if rows is None else rows
+    pack_rows = _require_list(rows, "rows", "REFERENCE_PACK")
+
+    for idx, row in enumerate(pack_rows):
+        context = f"REFERENCE_PACK[{idx}]"
+        if isinstance(row, dict):
+            for field in ("hub", "domain", "flow", "content", "redline"):
+                if field not in row:
+                    raise ReferencePackError(f"{context} missing required field '{field}'")
+            _validate_hub(row["hub"], "hub", context)
+            _require_text(row["domain"], "domain", context)
+            _require_text(row["flow"], "flow", context)
+            _require_text(row["content"], "content", context)
+            _validate_redline(row["redline"], "redline", context)
+            continue
+
+        try:
+            hub, content, redline = row
+        except (TypeError, ValueError) as exc:
+            raise ReferencePackError(f"{context} legacy row must be (hub, content, redline)") from exc
+        _validate_hub(hub, "hub", context)
+        _require_text(content, "content", context)
+        _validate_redline(redline, "redline", context)
+
+    return True
+
+
+def validate_demo_containers(specs: object = None) -> bool:
+    """Validate canonical Phase G demo container packs before seeding."""
+    specs = DEMO_CONTAINERS if specs is None else specs
+    container_specs = _require_list(specs, "specs", "DEMO_CONTAINERS")
+    seen_labels = set()
+
+    for spec_idx, spec in enumerate(container_specs):
+        context = f"DEMO_CONTAINERS[{spec_idx}]"
+        if not isinstance(spec, dict):
+            raise ReferencePackError(f"{context} must be a dictionary")
+        for field in ("label", "owner", "domain", "pack_version", "summary"):
+            if field not in spec:
+                raise ReferencePackError(f"{context} missing required field '{field}'")
+            _require_text(spec[field], field, context)
+
+        label = spec["label"]
+        if label in seen_labels:
+            raise ReferencePackError(f"{context} label '{label}' is duplicated")
+        seen_labels.add(label)
+
+        flows = _require_list(spec.get("flows"), "flows", context)
+        for flow_idx, flow in enumerate(flows):
+            _require_text(flow, f"flows[{flow_idx}]", context)
+
+        vocab_terms = _require_list(spec.get("vocab_terms"), "vocab_terms", context)
+        for term_idx, term in enumerate(vocab_terms):
+            term_context = f"{context}.vocab_terms[{term_idx}]"
+            if not isinstance(term, dict):
+                raise ReferencePackError(f"{term_context} must be a dictionary")
+            for field in ("label", "intent"):
+                if field not in term:
+                    raise ReferencePackError(f"{term_context} missing required field '{field}'")
+                _require_text(term[field], field, term_context)
+
+        questions = _require_list(spec.get("questions"), "questions", context)
+        for question_idx, question in enumerate(questions):
+            _require_text(question, f"questions[{question_idx}]", context)
+
+        if "entries" not in spec:
+            raise ReferencePackError(f"{context} missing required field 'entries'")
+        entries = _require_list(spec["entries"], "entries", context)
+        for entry_idx, entry in enumerate(entries):
+            entry_context = f"{context}.entries[{entry_idx}]"
+            if not isinstance(entry, dict):
+                raise ReferencePackError(f"{entry_context} must be a dictionary")
+            for field in ("hub", "content", "redline"):
+                if field not in entry:
+                    raise ReferencePackError(f"{entry_context} missing required field '{field}'")
+            _validate_hub(entry["hub"], "hub", entry_context)
+            _require_text(entry["content"], "content", entry_context)
+            _validate_redline(entry["redline"], "redline", entry_context)
+
+    return True
+
+
 def iter_container_entries(spec: Dict[str, object]) -> Iterable[Dict[str, object]]:
     """Yield normalized container entries.
 
@@ -233,6 +348,7 @@ def iter_container_entries(spec: Dict[str, object]) -> Iterable[Dict[str, object
 
 def load_reference_pack(rss) -> int:
     """Idempotently load the shared neutral reference pack into global hubs."""
+    validate_reference_pack()
     inserted = 0
     for row in REFERENCE_PACK:
         hub, content, redline = _reference_row(row)
@@ -257,6 +373,7 @@ def load_demo_containers(rss) -> dict:
     Returns a summary dict with created/existing counts and container ids.
     The loader is idempotent at the content level.
     """
+    validate_demo_containers()
     created = 0
     existing = 0
     entries_inserted = 0
@@ -300,6 +417,8 @@ def load_demo_containers(rss) -> dict:
 
 def seed_demo_world(rss) -> dict:
     """Load the full shared demo world: global pack + container packs."""
+    validate_reference_pack()
+    validate_demo_containers()
     global_inserted = load_reference_pack(rss)
     container_summary = load_demo_containers(rss)
     return {

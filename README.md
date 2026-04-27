@@ -2,8 +2,8 @@
 
 Rose Sigil Systems (RSS) - "An AI that Waits" is a **domain-agnostic, application-layer zero-trust AI governance kernel**. It decides what a system may see, say, and do **before** the model runs, not after. Every request flows through a constitutional pipeline of typed seats with bounded authority. Scope is declared. Meaning is classified. Consent is checked. Rate limits are enforced. A Prepared Advisory View is built. TRACE is written before the result is allowed to stand.
 
-**Current verified project-snapshot baseline:** **135 test functions / 1083 assertions / 0 failures** via `python tests/test_all.py`.
-**Current coverage / traceability:** **90.5% statement coverage** via `python run_coverage.py`; `docs/claim_matrix.md` tracks **135 claims / 135 tests / 101 Pact sections**.
+**Current verified project-snapshot baseline:** **135 test functions / 1116 assertions / 0 failures** via `python tests/test_all.py`.
+**Current coverage / traceability:** **91.0% statement coverage** via `python run_coverage.py`; `docs/claim_matrix.md` tracks **135 claims / 135 tests / 101 Pact sections**.
 
 ## What RSS is
 
@@ -39,6 +39,17 @@ This project is being built in public and in motion. It is not yet a finished, e
 
 If you are an engineer, researcher, or builder who sees the need for deterministic safety in a probabilistic world, there is a place for you here. The direction is simple: build ambitiously, describe conservatively, and prove the boundary before asking anyone to trust the machine inside it.
 
+## Where help is wanted
+
+RSS is public-alpha kernel work. The most valuable contributions are boundary-hardening, proof, and integration work:
+- **API / wrapper boundary:** FastAPI/ASGI ingress, caller identity propagation, request context preservation, and worker/thread safety.
+- **Per-action enforcement:** gating tool calls and side effects immediately before execution, not only at the outer request level.
+- **Cryptographic trust anchoring:** signed TRACE exports, external timestamping, chain-version migration discipline, and cross-machine verification.
+- **Demo and operator artifacts:** pack selection/versioning, guided walkthrough polish, and examples that make the current proof surface easier to inspect.
+- **Security review:** threat-model pressure testing around ingress, REDLINE leakage, container isolation, replay, and capability revocation.
+
+Contributions should preserve the core posture: current claims stay conservative, future work stays named, and every meaningful safety claim should gain a proof path.
+
 ## Quick start
 
 ### Requirements
@@ -59,7 +70,7 @@ python tests/test_all.py
 ```
 Expected current final line:
 ```text
-RSS v0.1.0 - 135 test functions, 1083 assertions passed, 0 failed
+RSS v0.1.0 - 135 test functions, 1116 assertions passed, 0 failed
 ```
 
 ### Run the guided demo walkthrough
@@ -70,6 +81,11 @@ This uses the configured local LLM when available. In live mode, general advisor
 ```bash
 python examples/demo_suite.py --offline
 ```
+To emit handoff artifacts from the same governed run:
+```bash
+python examples/demo_suite.py --offline --artifacts demo_artifacts
+```
+This writes `demo_report.json`, `demo_summary.md`, and `demo_trace.json`. See `docs/demo/DEMO_HANDOFF.md` for artifact meanings and handoff posture.
 
 ### Run the interactive governed demo
 ```bash
@@ -84,6 +100,8 @@ python src/main.py demo-suite
 ```
 
 > **Repo layout note:** kernel modules live under `src/rss/` (subpackages `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`). The CLI entry point at `src/main.py` handles commands, while `tests/test_all.py` remains the canonical acceptance runner over the split domain test modules in `tests/`. Individual split test files can also be run directly while working locally.
+>
+> Testing and count-history details live in `docs/TESTING.md` and `docs/roadmap/ACCEPTANCE_HISTORY.md`; the current work lane stays in `ROADMAP.md`.
 
 ## Architecture at a glance
 

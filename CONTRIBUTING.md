@@ -27,7 +27,7 @@ python tests/test_all.py
 ```
 Current expected final line:
 ```text
-RSS v0.1.0 - 135 test functions, 1083 assertions passed, 0 failed
+RSS v0.1.0 - 135 test functions, 1116 assertions passed, 0 failed
 ```
 
 If `pytest` is installed, parity check:
@@ -35,10 +35,12 @@ If `pytest` is installed, parity check:
 python -m pytest -q tests/test_all.py
 ```
 
+For the current test layout, optional checks, and runner discipline, see `docs/TESTING.md`. Count history belongs in `docs/roadmap/ACCEPTANCE_HISTORY.md`; active release priorities belong in `ROADMAP.md`.
+
 ## Rules for test-count changes
 - counts may go **up** freely when proof grows
 - counts may go **down** only with explicit explanation
-- any drop must be recorded in `ROADMAP.md`
+- any drop must be recorded in `docs/roadmap/ACCEPTANCE_HISTORY.md` and summarized in `ROADMAP.md` if it changes release posture
 - do not bury count-history logic inside the test runner itself
 
 ## Where to put things

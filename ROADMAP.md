@@ -2,46 +2,115 @@
 
 Release target: **v0.1.0**
 
+This is the current command document for RSS. It should answer four questions quickly:
+- what is true now
+- what is active now
+- what must happen before the next release checkpoint
+- what must stay visible without blocking the current work
+
+Historical receipts live in supporting docs:
+- acceptance history: `docs/roadmap/ACCEPTANCE_HISTORY.md`
+- phase ledger and landed work: `docs/roadmap/PHASE_LEDGER.md`
+- coverage tracker: `docs/roadmap/COVERAGE_TRACKER.md`
+- testing layout and runner discipline: `docs/TESTING.md`
+- demo handoff and artifact usage: `docs/demo/DEMO_HANDOFF.md`
+- claim traceability: `docs/claim_matrix.md`
+
+---
+
+## Current Snapshot
+
 Current code state:
-- **135 test functions / 1083 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **22 kernel modules** in the `src/rss/` package tree (subpackages: `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`) + `src/main.py` CLI entry point; R1 restructure complete
-- **90.5% statement coverage** (April 27 Phase G reference-pack v2 proof pass) via `python run_coverage.py`
-- claim traceability generated at `docs/claim_matrix.md` (135 claims, 135 tests, 101 Pact sections)
+- **135 test functions / 1116 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **91.0% statement coverage** via `python run_coverage.py`
+- **135 claims / 135 tests / 101 Pact sections** in `docs/claim_matrix.md`
+- **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
+- current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
-- public-alpha hardening has advanced materially beyond the earlier 111/850 baseline
-- the acceptance harness now reports a single truthful verdict instead of allowing pytest/pass-counter split-brain
-- ROADMAP remains the working source of truth; downstream public docs are synced to the current 135/1083 baseline
-- the current frontier is **Phase G governed demo usefulness + Phase G coverage polish**, not new claim inflation
-- the April 20 full-module review is folded in below as active engineering ledger material
+- public-alpha hardening is materially beyond the earlier 111/850 baseline
+- the acceptance harness is the single local truth command
+- public docs are synced to the current 135/1116 baseline
+- the project is now polishing the demo handoff and closing Phase G coverage gaps, not inflating claims
 
-Operator environment note:
-- on the current Windows machine, `pytest` is **not installed / not on PATH**
-- the canonical local truth-run is therefore:
-  - `python tests\test_all.py`
-- optional parity check later:
-  - `python -m pytest -q tests\test_all.py`
-  - only after `pytest` is installed in the active Python environment
+Canonical local truth-run:
+```bash
+python tests/test_all.py
+```
 
----
+Optional local checks:
+```bash
+python run_coverage.py
+python docs/build_claim_matrix.py
+python examples/demo_suite.py --offline --artifacts demo_artifacts
+```
 
-## Working Rules
-- Build ambitiously. Describe conservatively. Prove aggressively.
-- Trust is earned by mechanism, not by language.
-- What is not proven is not promised.
-- One law, many domains.
-- One verdict, not two.
-- ROADMAP is the return point after every meaningful pass.
-- Human sovereignty at the steering wheel. RSS governs the environment the AI operates inside; it does not handcuff capability for its own sake.
-- Usefulness matters. Do not optimize only for refusal or rigidity.
-- Preserve the distinction between **current truth**, **future phase work**, **aspiration**, and **non-goals**.
-- Product design may move forward as structure/spec before every kernel feature is fully complete. The kernel still holds final authority over what is lawful, bounded, auditable, and provable. Do not let product ideas overwrite unresolved kernel truth.
+Note: on the current Windows environment, `pytest` is not installed / not on PATH. `pytest` parity is optional tooling, not the source of truth.
 
 ---
 
-## Current Release State
+## Active Focus
 
-### Safe claims now
+### Now
+- **Phase G coverage polish:** lift `cycle.py` and `trace_verify.py` to the Phase G >=85% module target.
+- **Demo handoff polish:** make the artifact bundle easy for an outside engineer to run, inspect, and understand.
+
+### Next
+- Tighten the public walkthrough around:
+  - governed useful retrieval
+  - REDLINE refusal
+  - consent denial/recovery
+  - Safe-Stop persistence/recovery
+  - tenant isolation
+  - cold TRACE verification
+  - demo artifact inspection
+- Decide what is required for the v0.1.0 release tag vs what moves to v0.1.1.
+
+### Keep Warm
+- API/wrapper ingress boundary and caller identity propagation.
+- Per-action/tool-call enforcement before real side effects execute.
+- Mechanical T-0 identity gate for Safe-Stop clearing.
+- Governed pack selection/versioning once multiple demo worlds or tenant-specific packs exist.
+
+### Future Watch
+- external signing and timestamp anchoring
+- cross-machine audit portability
+- confusables/homoglyph hardening beyond current normalization
+- larger-event-count TRACE verification characterization
+- product/operator console structure that does not outrun kernel truth
+
+Do not diffuse effort equally across all future phases. Keep the current checkpoint sharp.
+
+---
+
+## v0.1.0 Exit Criteria
+
+Before tagging v0.1.0, RSS should have:
+- one clean acceptance run at the current or higher assertion count
+- current coverage and claim matrix regenerated
+- ROADMAP, README, Truth Register, Claim Discipline, Contributing, Changelog, and Threat Model synced to the same baseline
+- demo artifact flow documented and runnable
+- remaining known limitations disclosed clearly
+- no public claim that exceeds the current proof surface
+
+Phase G should close when:
+- every package module is at or above 85% coverage, or a documented exception is accepted
+- the demo handoff artifacts are documented well enough for an outside engineer to inspect
+- the current release/non-goal boundary is clear
+
+v0.1.0 does **not** require:
+- deployment-layer cryptographic caller identity
+- universal per-action/tool-call enforcement
+- full wrapper/API maturity
+- external signing or timestamp anchoring
+- distributed multi-node TECTON
+- polished end-user product UX
+
+---
+
+## Current Release Truth
+
+### Safe Claims Now
 RSS v0.1.0 can be presented as:
 - a domain-agnostic, application-layer zero-trust governance kernel
 - a constitutional middleware architecture with typed seat authority separation
@@ -51,10 +120,10 @@ RSS v0.1.0 can be presented as:
 - a system with persistent Safe-Stop
 - a system whose acceptance harness produces a truthful single summary verdict
 - a system with a governed offline fallback that summarizes only scoped data
-- a system with a deterministic governed demo walkthrough proving the current useful-retrieval / refusal / recovery story
+- a system with a deterministic governed demo walkthrough proving useful retrieval, refusal, isolation, recovery, and cold verification
 - an honest alpha/MVP
 
-### Unsafe claims now
+### Unsafe Claims Now
 RSS v0.1.0 should not yet be described as:
 - fully async-safe in all wrappers
 - per-action/tool-call enforced for every future side effect
@@ -64,564 +133,80 @@ RSS v0.1.0 should not yet be described as:
 - a full deployment-layer zero-trust stack
 - a production-ready end-user application
 - a polished natural-feeling offline assistant experience
-- cryptographically authenticated ingress
+- cryptographically authenticated at ingress
 
 ---
 
-## Acceptance Baseline History
+## Current Phase Plan
 
-Track count changes here, not inside the test logic.
-If counts go down, the reason must be written here in plain language.
+### Phase G — Demo / Operator Experience
 
-- **111 / 850 / 0** — earlier public-alpha baseline after initial hardening pass
-- **118 / 930 / 0** — stronger branch reached during deeper hardening + runner-truth work
-- **115 / 872 / 0** — lower-count project-folder snapshot reached after branch drift; not a claimed improvement
-- **119 / 897 / 0** — restored branch after OATH / SEAL / `trace_verify.py` hardening
-- **121 / 909 / 0** — config-driven bootstrap term packs + cold export container REDLINE sanitization
-- **126 / 956 / 0** — confirmed baseline after R1 repo structure move; runner output is ground truth
-- **130 / 987 / 0** — Priority A closure: TECTON destructive reason gate, clear_safe_stop idempotence, config-driven LLM availability timeout, archive_entry return parity
-- **131 / 994 / 0** — Priority B closure: STAGES module constant, constitution.py direct coverage (load_constitution all branches), PAV strict policy raise, CYCLE strict mode parameter
-- **132 / 1017 / 0** — Phase F OATH proof closure: normalized consent namespaces, persistence-failure density, malformed action/container bindings fail closed
-- **133 / 1035 / 0** — Phase F SCRIBE coverage closure: draft error states, UAP/status proof, and handle dispatch paths
-- **134 / 1039 / 0** — Phase F migration-scaffold proof: chain-hash migration helper paths locked so version bumps cannot be silent
-- **135 / 1055 / 0** — Phase G demo-suite proof: deterministic operator transcript now covers useful retrieval, plural demo-query usefulness, REDLINE exclusion, tenant isolation, consent denial/recovery, Safe-Stop restart recovery, cold TRACE verification, and the human-facing demo defaulting to the live RSS-bound LLM path
-- **135 / 1062 / 0** — Phase G normal-advisor boundary proof: live LLM prompt now allows ordinary conceptual/conversational answers while binding tenant/project/user/private facts to governed PAV evidence, and the demo has a SYSTEM-only general-advisor lane so normal chat does not open WORK/PERSONAL data.
-- **135 / 1065 / 0** — Phase G interactive containment proof: `src/main.py demo` now routes ordinary chat through SYSTEM-only scope while obvious seeded-data questions still open the governed WORK/PAV path.
-- **135 / 1083 / 0** — Phase G reference-pack v2 proof: demo packs now cover construction, legal, medical, and finance domains with explicit entry metadata, domain pack versions, governed flows, vocab hints, non-REDLINE PERSONAL entries, and explicit PERSONAL/REDLINE rows.
-
----
-
-## Drift Resolution — April 20 Review
-
-The full-module review on April 20 surfaced four drift items between docs and reality. ROADMAP is now the authoritative reconciliation source; downstream docs inherit from here.
-
-| Metric | Prior docs said | Actual run | Reconciled to |
-|---|---|---|---|
-| Assertion count | 955 (prior reconciliation was wrong) | **956** | **956** |
-| Module count | 20 committed + 1 prepared = 21 | 22 | **22** |
-| Tagged tests | 130 | 130 | **130** — all tests tagged, 100 Pact sections covered |
-| Coverage citation | not cited | 88.3% | cite **88.3%** in downstream docs |
-
-Latest April 26 truth supersedes the old citation for active work: **135 claims on 135 tests**, **101 Pact sections**, and **90.5%** package coverage. Keep the April 20 drift table as historical reconciliation; use the current code-state block above for new public numbers.
-
-Reason for 956 vs 955: the prior "955 stands" statement was itself wrong — the runner after R1 move and 6 error fixes prints **956**. Runner output is always ground truth; no doc statement overrides it.
-
-Reason for 20/21 vs 22: the original arithmetic was "20 committed + 1 prepared (`chain_hash_migrate.py`)" which forgot `reference_pack.py` as a kernel module. Real count is 22.
-
----
-
-## Phase Ledger
-
-This section should read like a living engineering ledger, not a wishlist.
-If a pass lands, record it here before downstream docs are updated.
-
-### Phase A — Persistence, restart truth, and baseline runtime integrity
 Landed:
-- persistence round-trip for TRACE, hubs, sealed terms, synonyms, disallowed terms, and consent state
-- historical TRACE chain loaded back into memory on restart
-- boot-time verification catches persisted chain tamper
-- default EXECUTE consent now respects persisted state rather than overwriting revocations
-- entry IDs remain stable across restore paths
+- live demo-suite default with deterministic `--offline` proof mode
+- normal advisor lane with SYSTEM-only scope so ordinary conversation does not open project/private data
+- interactive `src/main.py demo` routing for normal chat vs seeded-data questions
+- cross-domain demo packs for construction, legal, medical, and finance
+- explicit entry metadata with non-REDLINE PERSONAL and explicit PERSONAL/REDLINE rows
+- demo/reference-pack validation that fails loud before runtime seeding mutates state
+- artifact export bundle from a single governed run:
+  - `demo_report.json`
+  - `demo_summary.md`
+  - `demo_trace.json`
 
-### Phase B — Vocabulary and pipeline law hardening
-Landed:
-- word-boundary matching for sealed terms
-- input normalization before classification (§2.1.2 NFKC + whitespace + punctuation + control chars)
-- anti-trojan definition scanning with explicit force override
-- synonym removal returns phrases to null-state without ghost mappings
-- compound-term detection available through `classify_all()` and attached compound context
-- REDLINE count suppressed from normal response surfaces while still auditable through TRACE
-- stage/stage_name reporting on pipeline halts
+Open in Phase G:
+- lift `cycle.py` and `trace_verify.py` to >=85% module coverage
+- polish `docs/demo/DEMO_HANDOFF.md` as the public walkthrough grows
+- decide whether the current demo artifact set is enough for the v0.1.0 tag
 
-### Phase C — Audit rigor, export discipline, and failure semantics
-Landed:
-- event code registry with optional strict validation
-- persistent audit-failure threshold tied to Safe-Stop
-- export summary generation and event categorization
-- REDLINE artifact-ID sanitization in export paths (§4.7.6)
-- exact-boundary container filtering across TRACE views (§5.8.3)
-- cold/export parity tests for container/global REDLINE handling
-- visible `chain_hash_migrate.py` scaffold so version bumps cannot happen silently
-- full-envelope event hashing (§6.3.6) — chain hash covers timestamp, event_code, authority, artifact_id, content, parent_hash, and `CHAIN_HASH_VERSION`
+### Phase H — External Trust Anchoring
 
-### Phase D — Container governance and ingress discipline
-Landed:
-- unified TRACE for TECTON lifecycle and request events
-- ingress rejection for non-GLOBAL caller identities without sanctioned delegation
-- least-privilege SYSTEM access in container scope
-- lifecycle provenance and auditable transitions
-- container profile immutability in ACTIVE state
-- container-specific rate limiting through CYCLE
-
-Still open under Phase D / adjacent wrapper work:
-- real caller authentication beyond single-process ingress discipline
-- stronger wrapper/API identity propagation guarantees
-
-### Phase E — Production posture, write-ahead consent truth, and context isolation
-Landed:
-- production-mode lockdown flags in config
-- OATH write-ahead semantics: no ghost authorization when persistence fails
-- OATH failure surfacing into unified TRACE
-- context-bound hub isolation via `ContextVar`
-- operator-visible ingress posture note
-
-Still open under Phase E:
-- thread / worker context propagation beyond current single-process assumptions
-- wrapper-layer guarantees for future FastAPI / ASGI surfaces
-
-### Phase F — Pre-demo hardening and governed usefulness
-**Current checkpoint status**
-
-Landed already:
-- `trace_verify.py` proof expansion around CLI, schema, safe-stop, registry, and filter branches
-- `trace_export.py` hardening for exact-boundary redaction and container/global REDLINE handling
-- `seal.py` amendment ceremony tightening (input normalization, explicit rejection/ratification paths, clearer idempotence, ALREADY_RATIFIED guard)
-- `oath.py` namespace hardening: action classes normalize to uppercase, requesters/container IDs trim, delimiter-bearing consent namespaces fail closed, and handle paths return structured errors
-- governed offline fallback now summarizes scoped data instead of echoing user input
-- shared `reference_pack.py` foundation for demo/runtime/examples/tests
-- deterministic demo entrypoints built on shared reference data
-- runtime/bootstrap moved to config-driven Section 0 path/hash and config-driven default terminology
-
-Phase F proof checklist status before demo:
-- more `trace_verify.py` proof — covered by the current proof suite:
-  - corrupted `system_state`
-  - malformed JSON output expectations
-  - mixed known/unknown code reporting with `--use-registry`
-  - more cold Safe-Stop read branches
-- more `trace_export.py` proof — covered by the current proof suite:
-  - summary integrity when filters are applied
-  - export consistency between live and cold paths
-  - multiple REDLINE IDs in one artifact string
-  - container/global mixed export cases
-- more `seal.py` ceremony proof — covered by the current proof suite:
-  - repeated review after rejection
-  - whitespace-only rationale / proposed_text
-  - mixed-case verdict normalization
-  - ratification history ordering and idempotence
-- more `oath.py` proof — landed in the latest pass:
-  - negative-path persistence-failure density
-  - consent namespace edge cases
-  - explicit regression guards around blank / malformed container bindings
-
-Phase F coverage honesty is now closed for the current checkpoint:
-- `scribe.py` moved from 73.3% to 100.0% through proof around draft uniqueness, missing-draft errors, empty-promotion refusal, UAP/status accounting, and `handle()` dispatch.
-- `audit/migrate.py` moved from 0.0% to 100.0% through explicit proof of the no-op path and the "do not silently bump CHAIN_HASH_VERSION" warning path.
-- Every package module is now at or above the Phase F 80% floor. Remaining coverage polish belongs to Phase G, where the target rises to 85% per module.
-
-### Phase G — Demo / operator experience
-**Current active focus after Phase F coverage closure**
-
-First Phase G demo pass landed:
-- `examples/demo_suite.py` now runs the live RSS-bound LLM path by default for human demos, while `--offline` forces deterministic fallback for repeatable proof/demo recordings.
-- the imported `build_demo_report(live_llm=False)` helper remains deterministic for tests, so the proof story does not depend on external model availability.
-- the transcript now demonstrates useful global retrieval, tenant-scoped retrieval, PERSONAL / REDLINE refusal, cross-container isolation, OATH consent denial and recovery, Safe-Stop entry / restart persistence / T-0 recovery, and cold TRACE verification.
-- `examples/demo_llm.py` and `src/main.py demo-suite` use the canonical `SEAT_SIGILS["RUNE"]` registry instead of duplicating a raw sigil literal.
-- container demo requests in the CLI demo-suite now request the governed LLM/offline fallback path, so they produce visible scoped answers instead of `NO_RESPONSE`.
-- the Phase G demo flow is covered by `test_phase_g_demo_suite_operator_flow`, including a guard that the human-facing command defaults to the live RSS-bound advisor path.
-
-Second Phase G demo-usefulness adjustment landed:
-- `LLMAdapter` live prompt now permits normal general/conceptual conversation while still binding tenant data, project records, files, private notes, user-specific facts, and local governed state to the prepared PAV context only.
-- `examples/demo_suite.py` now includes a live-only GENERAL ADVISOR WORKFLOW that uses a SYSTEM-only scope with WORK/PERSONAL/ARCHIVE/LEDGER forbidden, so ordinary advisor conversation does not open project or private data just to talk normally.
-- `src/main.py demo` now uses `demo_scope_policy_for()` so ordinary interactive chat receives the same SYSTEM-only containment, while obvious seeded-data questions still use the governed data path.
-- the deterministic offline proof transcript remains focused on governed retrieval/refusal/recovery; it does not pretend the fallback is a normal model conversation.
-- RUNE/domain-pack direction is clarified: domain agnostic does not mean uncontrolled hardcoded dictionary sprawl. The direction is governed tenant/domain vocabulary packs and flow descriptors feeding a shared RUNE law, with pack structure/versioning audited through the runtime.
-
-Third Phase G reference-pack v2 pass landed:
-- `src/rss/reference_pack.py` now uses explicit entry metadata instead of rigid `work_entries` / `personal_entries` buckets, while preserving legacy compatibility through `iter_container_entries()`.
-- the demo world now includes construction, legal, medical, and finance domain packs with pack versions, flow descriptors, and vocab hints that document domain texture without mutating RUNE law directly.
-- PERSONAL entries can now be non-REDLINE or REDLINE explicitly, which removes the old schema assumption that all PERSONAL rows are automatically private exclusion rows.
-- global demo data now includes finance variance and construction punch-list examples; container data now includes construction change order / safety hold and finance approval / cash-risk scenarios.
-- `examples/demo_suite.py`, `examples/demo_llm.py`, and `src/main.py demo-suite` now surface domain pack and flow metadata in the operator transcript.
-
-Still build out:
-- cleaner operator-facing artifacts now that the data pack is richer
-- optional export artifacts for demo runs, such as `demo_trace.json` and a short operator-readable summary
-- explicit demo-pack validation helpers so malformed future packs fail loud before seeding
-- eventual governed pack-selection/versioning path once multiple demo worlds or tenant-specific packs exist
-- governed question flows that demonstrate:
-  - useful retrieval
-  - REDLINE exclusion
-  - consent denial / recovery
-  - Safe-Stop entry / persistence / recovery
-  - container isolation
-  - offline-LLM answer generation from scoped data
-  - live normal-advisor behavior that stays outside project/private data until a governed task needs that data
-  - domain-pack usefulness without uncontrolled dictionary sprawl
-
-Goal:
-- a live demo that feels like a governed system following real state, not a thin placeholder
-
-### Phase H — External trust anchoring and deployment-boundary maturity
-Future work:
-- external signing
+Preview, not current blocker:
+- signed TRACE exports
 - timestamp anchoring
 - stronger off-box audit posture
-- deployment-layer non-repudiation story
-- genuine ingress authentication rather than architectural single-process discipline
+- chain-version migration ceremony when `CHAIN_HASH_VERSION` changes
+- genuine ingress authentication beyond architectural single-process discipline
 
 ---
 
-## April 20 Review Findings — Integrated
+## Open Risks To Keep Visible
 
-These findings are from the full-module review and are now first-class engineering items. They are ordered by weight against kernel truth.
-
-### Priority A — Real Behavior Gaps (highest) — CLOSED
-
-**A-1. TECTON destructive transitions lack `reason` parameter.**
-`suspend_container`, `archive_container`, `destroy_container`, and `reactivate_container` accept no rationale. Only `mutate_active_profile` currently requires one. Suspending or destroying a tenant container is at least as consequential as profile mutation. Parity warranted.
-- File: `tecton.py`
-- Kernel truth impact: audit record for a destroyed tenant currently has no "why"
-- Fix: add `reason: str` parameter (required, non-empty), log into lifecycle event payload, add regression tests for each transition
-- Proof cost: ~4 new assertions per transition × 4 transitions = ~16 assertions
-
-**A-2. `clear_safe_stop()` is not idempotent.**
-Emits `SAFE_STOP_CLEARED` to TRACE even when the system is not currently halted. Creates false audit records and appends noise.
-- File: `runtime.py:301`
-- Kernel truth impact: TRACE contains "clear" events that did not actually clear anything
-- Fix: early return if `not self.is_safe_stopped()["active"]`; surface `{"status": "NO_OP", "reason": "not_halted"}`
-- Proof cost: ~3 assertions (no-op path, idempotent repeat, event-count unchanged)
-
-**A-3. `clear_safe_stop()` has no auth-gate mechanism.**
-Docstring claims T-0 only; no mechanical enforcement. Anyone who can call the method can clear Safe-Stop.
-- File: `runtime.py:301`
-- Kernel truth impact: "T-0 only" is a wording claim, not a mechanical claim
-- Fix for v0.1.0: add `# TODO Phase F: gate behind sovereign identity verification` with specific pointer to `oath.authorize()` pattern as the model
-- Real fix (Phase F): actual sovereign-identity gate, not a comment
-
-**A-4. `llm_adapter.is_available()` hardcodes `timeout=3`.**
-Everything else in that module is config-driven. Magic number.
-- File: `llm_adapter.py:51`
-- Kernel truth impact: minor, but operator cannot tune availability-check timeout independently of the generation timeout
-- Fix: add `llm_availability_check_timeout: int = 3` to `RSSConfig`; wire through
-- Proof cost: ~2 assertions (default value, config override)
-
-**A-5. `archive_container` return inconsistency across modules.**
-TECTON lifecycle methods return the container; `hub_topology.archive_entry()` returns `None`. Small API polish but the asymmetry is live.
-- Files: `hub_topology.py:211`, `tecton.py`
-- Fix: `archive_entry` returns the archived `HubEntry` to match other lifecycle methods
-- Proof cost: ~1 assertion (return value type check)
-
-### Priority B — Small Hardening — CLOSED
-
-**B-1. `enter_safe_stop()` TOCTOU window.**
-Check-then-write between `is_safe_stopped()` and `persistence.enter_safe_stop()`. Not an issue in single-process alpha. Flag when Phase F async work begins.
-- File: `runtime.py:291`
-- Kernel truth impact: benign today, latent hazard under concurrent callers
-
-**B-2. `STAGES` dict re-allocated per request.**
-Trivial. Micro-allocation per pipeline invocation.
-- File: `runtime.py`
-- Fix: module-level constant
-
-**B-3. Unbounded memory growth in non-persistent state.**
-Three caches never evict:
-- `scope._envelopes`
-- `scribe._drafts`
-- `scribe._uaps`
-Fine at alpha scale. Long-running process leak. Future: TTL-based cleanup or explicit operator-triggered prune.
-
-**B-4. `constitution.py` only 55% coverage.**
-`load_constitution()` is not directly exercised by tests; runtime uses `verify_genesis()` inline. Either add coverage or deprecate the unused path. Preference: add coverage; the public API exists and should be proven.
-
-**B-5. `pav._sanitize` silently defaults unknown policy to `CONTENT_ONLY`.**
-Safe behavior (defaults to most-restrictive) but hides config typos. Should raise `ValueError` on unknown policy name so misconfigured deployers fail loud.
-- File: `pav.py:128`
-
-**B-6. `cycle.check_rate_limit` silently registers unknown domains.**
-Correct governance behavior but masks typos. Keep behavior, add optional `strict: bool = False` parameter for diagnostic callers.
-- File: `cycle.py`
-
-### Priority C — Cleanup / Consistency — CLOSED
-
-**C-1.** Module count drift in ROADMAP wording — **resolved** (22 modules; R1 path updated to `src/rss/`).
-
-**C-2.** Assertion count drift — **resolved** (956, not 955; runner output is ground truth).
-
-**C-3.** 14 untagged tests — **resolved**. All 14 originally-untagged tests plus 4 new Priority A tests tagged with `# CLAIM:` tags. Claim matrix regenerated: 130 claims on 131 tests, 100 Pact sections covered.
-
-**C-4.** `conftest.py` docstring "20 modules" — **resolved** (updated to `rss` package in `src/`).
-
-**C-5.** `persistence.save_hub_entry` uses `INSERT OR REPLACE`. UUID-keyed, collision theoretical, but `INSERT OR ABORT` would fail loudly in audit-first posture. Philosophy-over-behavior item.
-
-**C-6.** `demo_suite.py` hardcoded container labels `"Northwind Legal"` and `"Harbor Medical"`. **Resolved for the Phase G demo suite** by deriving the isolation pair from `DEMO_CONTAINERS[0]` and `DEMO_CONTAINERS[1]`. Keep the same habit in future walkthrough scripts when reference-pack labels move.
-
-### Priority D — Observations (not action items)
-
-**D-1.** `constitution.py` lacks `§` references in docstrings. Other modules consistently cite Pact sections. This module is pre-discipline. Low priority; fold in when touched.
-
-**D-2.** `audit_log.verify_chain()` returns bool only. Cold verifier returns detail dict. API divergence between in-memory and cold paths. Consider aligning in Phase G when the external-audit story hardens.
-
-**D-3.** `reference_pack.py` has structural rigidity. `personal_entries` key implies all PERSONAL entries should be REDLINE. Future operator adding non-redline personal data would need to restructure. Schema polish item.
+- **Ingress identity:** architectural in v0.1.0, not cryptographic.
+- **Safe-Stop clearing:** T-0 by convention/docstring today; mechanical identity gate remains future hardening.
+- **Side effects:** only governable when they pass through the runtime boundary.
+- **Per-action enforcement:** current runtime is request/task-level with action-class gates; per-tool-call gating is active future hardening.
+- **Wrapper/API boundary:** context propagation across ASGI, worker threads, background jobs, and external tools remains unresolved.
+- **External audit anchoring:** cold verification exists, but signing/timestamp anchoring is Phase H.
+- **Demo maturity:** demo quality must not outrun governance integrity.
 
 ---
 
-## Coverage Map (April 27 current run)
+## Working Rules
 
-```
-config.py              100.0%
-state_machine.py       100.0%
-audit/migrate.py       100.0%
-scribe.py              100.0%
-constitution.py         92.5%
-trace_export.py         94.8%
-tecton.py               94.8%
-persistence.py          93.9%
-meaning_law.py          93.1%
-hub_topology.py         92.9%
-reference_pack.py       92.7%
-seal.py                 91.4%
-ward.py                 90.5%
-scope.py                90.0%
-audit_log.py            87.4%
-runtime.py              86.9%
-oath.py                 86.5%
-pav.py                  86.4%
-llm_adapter.py          90.1%
-trace_verify.py         82.1%
-cycle.py                80.8%
-TOTAL                   90.5%
-```
-
-Modules under 80%:
-- none in the `src/rss/` package tree. Phase F per-module floor is satisfied.
-
-Modules under the Phase G 85% target:
-- **`cycle.py`** — 80.8%; strict-mode and cadence edge proof can lift it.
-- **`trace_verify.py`** — 82.1%; cold verifier branches remain a good external-audit polish target.
-
-Coverage re-run is complete: **90.5% total**. The old 88.3% line is now historical context only, not the current release number. The first Phase G demo pass also lifted `llm_adapter.py` above the Phase G 85% module target through deterministic offline-fallback coverage and a small plural-token usefulness guard.
-
-Goal for end of Phase F: every kernel module ≥ 80% coverage — **met**.
-Goal for end of Phase G: every kernel module ≥ 85% coverage. Remaining below-target modules are `cycle.py` and `trace_verify.py`.
+- Build ambitiously. Describe conservatively. Prove aggressively.
+- Trust is earned by mechanism, not by language.
+- What is not proven is not promised.
+- One law, many domains.
+- One verdict, not two.
+- ROADMAP is the return point after every meaningful pass.
+- Usefulness matters. Do not optimize only for refusal or rigidity.
+- Preserve the distinction between **current truth**, **future phase work**, **aspiration**, and **non-goals**.
+- Product design may move forward as structure/spec before every kernel feature is fully complete. The kernel still holds final authority over what is lawful, bounded, auditable, and provable.
 
 ---
 
-## What Has Landed Since the Earlier Public Baseline
-
-### Test / proof growth
-Completed:
-- baseline moved from **111 / 850 / 0** to **135 / 1083 / 0**
-- constitution loader edge coverage; `load_constitution()` all branches directly tested (B-4)
-- LLM adapter prompt / fallback / config-aware coverage
-- SCRIBE UAP / status / handler edge coverage
-- SCRIBE Phase F coverage closure: draft uniqueness, write/promote error paths, candidate editability, UAP/status accounting, and `handle()` dispatch proof
-- cold TRACE verifier CLI / error-path / safe-stop coverage
-- extended OATH, SEAL, and TRACE export coverage
-- OATH Phase F proof density: normalized action classes, trimmed requesters/container IDs, write-ahead failure branches, delimiter-bearing namespace fail-closed behavior
-- chain-hash migration scaffold proof so same-version no-op and version-change warning paths are both explicit
-- runner-truth hardening so failed `check(...)` conditions cannot silently coexist with a green-looking invocation
-- demo/reference-pack proof for shared seeding and governed usage paths
-- Phase G demo-suite proof for deterministic operator transcript, REDLINE refusal, isolation, consent recovery, Safe-Stop restart recovery, and cold TRACE verification
-- Phase G normal-advisor boundary proof for live LLM conversation that remains separate from project/private data until SCOPE/PAV opens governed context
-- Phase G reference-pack v2 proof for structured domain packs, explicit entry metadata, cross-domain usefulness, and PERSONAL/REDLINE schema flexibility
-- Priority A closure: TECTON reason gate, `clear_safe_stop` idempotence, config-driven LLM timeout, `archive_entry` return parity
-- Priority B closure: PAV strict policy raise, CYCLE strict mode, STAGES constant
-- Priority C closure: all 14+4 tests tagged; claim matrix regenerated (now 135 claims, 135 tests, 101 sections after the first Phase G demo-suite proof)
-
-### Hardening fixes landed
-Completed:
-- R1 repo restructure: flat `src/` → `src/rss/` package tree
-- runtime bootstrap now uses config-driven default term packs and config-driven definition prefixes
-- config binds Section 0 to a real Pact artifact path/hash instead of placeholder-only posture
-- cold TRACE export sanitizes REDLINE IDs from container-hub rows as well as global rows
-- `trace_export.py` exact-boundary container filtering parity in text export
-- `trace_verify.py` exit-code correction for schema-invalid vs file-error paths
-- `trace_verify.py` registry-load handling hardened beyond ImportError-only failure
-- OATH blank-container normalization and structured `handle()` error paths
-- OATH action-class normalization and consent namespace delimiter guard; malformed `check()` paths deny instead of creating ambiguous keys
-- SEAL amendment input normalization and explicit `ALREADY_RATIFIED` path
-- TECTON destructive transitions require non-empty `reason`, logged into lifecycle audit record
-- `clear_safe_stop()` is idempotent — no false audit events when not halted
-- `archive_entry()` returns the archived `HubEntry` — lifecycle parity
-- PAV `_sanitize` raises `ValueError` on unknown policy names
-- CYCLE `check_rate_limit` supports `strict=True` for diagnostic callers
-- LLM availability-check timeout is config-driven via `llm_availability_check_timeout`
-- governed offline fallback replaces raw echo behavior
-- shared reference-pack foundation for CLI/examples/tests
-- reference-pack v2: construction, legal, medical, and finance packs with pack versions, governed flows, vocab hints, explicit hub/redline entry metadata, and legacy iterator compatibility
-- test-suite modularization: `tests/test_all.py` remains the canonical acceptance runner while proof bodies now live in smaller domain files; claim-matrix generation scans split test modules
-- `examples/demo_suite.py` now defaults to the live RSS-bound LLM path for humans, keeps deterministic `--offline` mode, uses temporary demo storage unless a DB is supplied, and emits proof flags alongside the operator transcript
-- `examples/demo_suite.py` now has a live-only GENERAL ADVISOR WORKFLOW with SYSTEM-only scope, proving normal conversation can exist beside governed data containment
-- `examples/demo_llm.py` and `src/main.py demo-suite` now route container questions through the canonical RUNE sigil registry instead of duplicating raw sigil literals
-
-### Honesty / release-surface clarifications
-Completed:
-- clarified that the canonical acceptance run is the custom harness
-- clarified that `pytest` parity is optional tooling, not the sole source of truth
-- clarified source-module layout rule: kernel modules in `src/rss/` package tree
-- clarified that ingress posture is architectural, not cryptographic, in the current runtime
-- all public-facing docs were synced to the 135/1083 baseline (2026-04-27); ROADMAP and claim matrix remain the source of truth for the next pass
-
----
-
-## Current Active Focus
-
-Priority A, B, C, the named Phase F proof bullets, the Phase F ≥80% per-module coverage floor, downstream public-doc sync, test-suite modularization, and the first Phase G demo-suite proof pass are closed for the current demo checkpoint. The current frontier is:
-
-1. **Now — Phase G demo usefulness, third pass**: the cross-domain demo packs now exist. Next value comes from cleaner operator artifacts, pack validation, and optional demo exports that make the proof easier to hand to another engineer.
-2. **Keep Warm — Phase G coverage polish**: lift `cycle.py` and `trace_verify.py` to ≥85% so Phase G can close cleanly.
-3. **Future Watch — perimeter maturity**: keep identity propagation, async/thread context hazards, external signing, and deployment-boundary trust on the watchlist without letting them block the demo kernel.
-
-Do not diffuse effort equally across all future phases. Keep ROADMAP truthful after each pass.
-
----
-
-## Review Focus Areas (carried forward)
-
-Keep special attention on these areas during future passes:
-- **Pact/code alignment** — every shipped behavior traceable to a Pact clause; every Pact clause testable against code
-- **TRACE/audit rigor** — envelope completeness, canonical serialization, chain linkage, cold verifier honesty
-- **Safe-Stop truth** — entry durability, restart recovery, idempotence, audit consistency
-- **OATH/consent rigor** — write-ahead semantics, persistence-failure paths, namespace hygiene
-- **TECTON/container isolation** — ContextVar propagation, filter-boundary correctness, destructive-transition auditability
-- **RUNE/pack architecture** — normalization honesty about homoglyph limits; governed tenant/domain vocabulary packs and flow descriptors rather than uncontrolled hardcoded dictionary sprawl
-- **Governed usefulness vs over-constraint** — offline fallback should summarize real scoped data, not refuse by default
-- **Future perimeter/API hardening** — identity, rate limiting at the edge, async safety, transport posture
-- **TECTON as product/workspace layer** — structure and spec may precede full kernel readiness, but kernel law always wins
-- **Kernel law vs product layer distinction** — never let product polish overwrite unresolved kernel truth
-
----
-
-## Future Watchlist / Scout Items
-
-These are not all active build tasks yet, but they should remain visible so they are not lost.
-Move items from here into active phase work when they become immediate.
-
-Kernel / governance:
-- homoglyph/confusables hardening beyond current NFKC normalization
-- larger-event-count chain verification characterization (10k, 100k, 1M events)
-- longer-lived replay / recovery / restart scenarios
-- per-action / tool-call enforcement boundary design before real side effects move behind wrappers
-- capability-revocation semantics: keep the current Stage 0 Safe-Stop halt distinct from future granular tool/capability revocation
-- wrapper/API context propagation hazards across worker threads or background jobs
-- `CHAIN_HASH_VERSION` bump procedure once a real migration exists
-- external audit portability and cross-machine verification ergonomics
-- whether demo/reference data should gain versioning or pack selection once multiple demo worlds exist
-
-Operator / product layer (structure allowed to precede kernel completeness):
-- multi-tenant operator console
-- per-container dashboards showing lifecycle, consent, rate-limit state, REDLINE counts
-- governed import path for external data with audited provenance
-- domain-pack marketplace structure (not content — structure)
-- signed Pact-amendment proposals with external review workflow
-
-Future proof targets:
-- timing-side-channel probes on RUNE classification
-- concurrent TECTON activation under `asyncio.to_thread()`
-- kill -9 mid-commit persistence probe
-- genesis-hash rotation via S7 ceremony probe
-- REDLINE declassification + restart round-trip probe
-- hub name case-sensitivity probe
-
----
-
-## Test Layout Maintenance
-
-The modularization pass has landed. `tests/test_all.py` remains the single acceptance surface and gives one truthful verdict; the proof bodies now live in smaller domain modules:
-- `tests/test_core_runtime.py`
-- `tests/test_governance_seats.py`
-- `tests/test_hubs_persistence.py`
-- `tests/test_tenant_containers.py`
-- `tests/test_audit_trace.py`
-- `tests/test_adversarial_scenarios.py`
-- `tests/test_demo_reference_pack.py`
-- `tests/test_support.py` for shared imports, counters, and helper functions
-
-The split was mechanical and conservative:
-- no behavior changes
-- no assertion-count drop
-- no claim-tag loss
-- no claim-matrix regression
-- no loss of the direct-run summary line
-- no removal of `tests/test_all.py` as the canonical command
-- split domain files can also be executed directly for focused local checks
-
-Verified after the split:
-- canonical runner: **134 / 1039 / 0**
-- claim matrix: **101 sections / 134 claims / 134 tests**
-- coverage: **90.3% total**
-
-Verified after the first Phase G demo-suite proof:
-- canonical runner: **135 / 1055 / 0**
-- claim matrix: **101 sections / 135 claims / 135 tests**
-- coverage: **90.5% total**
-
-Verified after the Phase G normal-advisor boundary proof:
-- canonical runner: **135 / 1062 / 0**
-- claim matrix: **101 sections / 135 claims / 135 tests**
-- coverage: **90.5% total**
-
-Verified after the Phase G interactive containment proof:
-- canonical runner: **135 / 1065 / 0**
-- claim matrix: **101 sections / 135 claims / 135 tests**
-- coverage: **90.5% total**
-
-Verified after the Phase G reference-pack v2 proof:
-- canonical runner: **135 / 1083 / 0**
-- claim matrix: **101 sections / 135 claims / 135 tests**
-- coverage: **90.5% total**
-
-Reason for preserving this note: the old monolithic file was not wrong; it was useful while the project needed one obvious place to read every proof. The maintenance risk changed once Phase G started adding demo and operator-surface work. Keeping the runner stable while moving proof bodies lets future work grow without making every edit pass through one 7k-line file. The important invariant is still the same: one command, one truthful verdict, claim tags beside proof bodies, and ROADMAP updated whenever counts or structure change.
-
-Future cleanup can now happen locally inside the smaller files:
-- helper factories for temp DB/runtime setup where repetition is still heavy
-- fewer repeated setup/teardown blocks where `_cleanup_db` is not enough
-- tighter grouping inside individual domain files as Phase G proof grows
-- removal of any stale wording added during rapid iteration
-
-Success condition remains: after future test maintenance, the canonical command must preserve the current counts unless new proof is intentionally added in the same pass and recorded in the acceptance baseline history.
-
----
-
-## Threat Notes to Carry Forward
-
-These are standing risk notes even when downstream docs mention them:
-
-- the ingress boundary is still architectural, not cryptographic
-- offline assistant usefulness is still behind kernel integrity
-- wrapper / API maturity lags behind single-process kernel maturity
-- side effects are only governable when they pass through the runtime boundary; per-action/tool-call enforcement remains future hardening
-- doc-surface drift is itself a trust risk and must be treated as such
-- module-count language must stay tied to the `src/` rule only
-- demo quality should not outrun governance integrity
-- public-facing docs should not carry repo-organization chatter unless directly relevant to their purpose
-- `clear_safe_stop` is not mechanically gated to T-0 in v0.1.0 (Priority A-3) — this must be disclosed if the Threat Model discusses sovereign-only operations
-
----
-
-## Downstream Doc Sync Status
-
-All public-facing docs were synced to the current 135/1083 baseline on 2026-04-27:
-- `README.md` ✓
-- `TRUTH_REGISTER.md` ✓
-- `CLAIM_DISCIPLINE.md` ✓
-- `CONTRIBUTING.md` ✓
-- `CHANGELOG.md` ✓
-- `THREAT_MODEL.md` ✓
-
-Current synced public numbers:
-- **135 / 1083 / 0**
-- **90.5%** coverage
-- **135 claims / 135 tests / 101 Pact sections**
-
-No newer public-doc metric sync is currently owed.
-
-ROADMAP stays current first; propagate to downstream docs after each meaningful pass.
-
----
-
-## Non-Goals for This Release
+## Non-Goals For This Release
 
 Do not bend v0.1.0 into claims it cannot honestly support. The point of the release is not to sound complete. The point is to be real, governable, provable, and increasingly demoable without lying about maturity.
 
 Explicit non-goals:
-- cryptographic non-repudiation (Phase H)
-- distributed multi-node TECTON (Phase H)
-- REST ingestion layer (Phase G)
-- full async-streaming safety in all wrappers (future wrapper/API hardening)
+- cryptographic non-repudiation
+- distributed multi-node TECTON
+- REST ingestion layer
+- full async-streaming safety in all wrappers
 - universal per-action/tool-call enforcement for external side effects
-- polished end-user AI product experience (Phase G+)
-- repo structural refactor into a nested package tree (tracked separately in `REPO_STRUCTURE_PROPOSAL.md`, not in this roadmap per operator instruction)
+- polished end-user AI product experience
+- repo structural refactor into a different package architecture
 
 ---
 

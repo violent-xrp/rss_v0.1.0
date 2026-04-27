@@ -3,11 +3,11 @@
 Release: **v0.1.0**
 
 ## Current verified state
-- **135 test functions / 1083 assertions / 0 failures** via `python tests/test_all.py`
-- **90.5% statement coverage** via `python run_coverage.py`
+- **135 test functions / 1116 assertions / 0 failures** via `python tests/test_all.py`
+- **91.0% statement coverage** via `python run_coverage.py`
 - **135 claims / 135 tests / 101 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (subpackages: `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`) + `src/main.py` CLI entry point
-- demo/reference-pack v2, governed offline fallback, live normal-advisor boundary, and interactive SYSTEM-only normal-chat containment are implemented in the current code snapshot
+- demo/reference-pack v2, pack validation, demo artifact export, governed offline fallback, live normal-advisor boundary, and interactive SYSTEM-only normal-chat containment are implemented in the current code snapshot
 
 This file exists to answer one question clearly: **what can be claimed right now without exaggeration?**
 
@@ -27,6 +27,8 @@ RSS v0.1.0 currently implements:
 - interactive demo routing that keeps ordinary chat on SYSTEM-only scope until an obvious seeded-data question needs WORK/PAV context
 - shared demo/reference data with construction, legal, medical, and finance domain packs, explicit flow metadata, vocab hints, and seeded demo containers
 - reference-pack entry metadata that supports non-REDLINE PERSONAL rows and explicit PERSONAL/REDLINE rows
+- reference/demo-pack validation that fails loud on malformed metadata before demo seeding mutates runtime state
+- Phase G demo artifact export for a machine-readable report, operator summary, and persisted TRACE JSON from the same run
 - TECTON destructive lifecycle transitions (`suspend`, `archive`, `destroy`, `reactivate`) require a non-empty `reason`, logged into the audit record
 - `clear_safe_stop()` is idempotent — no false audit events emitted when the system is not halted
 - `archive_entry()` returns the archived `HubEntry` — lifecycle method return parity is consistent
@@ -54,7 +56,7 @@ RSS v0.1.0 does **not** yet implement:
 - normal live-advisor behavior depends on an available configured local LLM; deterministic proof mode remains the governed offline fallback
 - `clear_safe_stop()` is T-0 only by convention and docstring, not by mechanical identity gate; the mechanical gate remains future perimeter hardening, not a current v0.1.0 claim
 - hard guarantees depend on meaningful side effects entering through the governed runtime boundary
-- public docs are synchronized to the 135/1083 baseline as of this update; ROADMAP remains the working truth source going forward
+- public docs are synchronized to the 135/1116 baseline as of this update; ROADMAP remains the working truth source going forward
 
 ---
 
@@ -80,6 +82,8 @@ The current code snapshot includes proof for:
 - pre-demo demo-world seeding and governed offline answers
 - live normal-advisor boundary: SYSTEM-only general demo scope and prompt checks that preserve PAV-only data claims
 - reference-pack v2: cross-domain packs, explicit hub/redline entry metadata, legacy iterator compatibility, and richer governed retrieval rows
+- demo-pack validation: required metadata, explicit REDLINE booleans, invalid hub rejection, no partial seeding on malformed packs, and inactive container reuse
+- demo artifact export: `demo_report.json`, `demo_summary.md`, `demo_trace.json`, proof-status summary, and exported TRACE count parity
 - OATH namespace hardening: normalized action classes, trimmed requesters/container IDs, persistence-failure density, delimiter-bearing namespace fail-closed behavior
 - SCRIBE proof density: duplicate drafts, missing writes/promotes, empty-promotion refusal, candidate editing, UAP/status, and `handle()` dispatch
 - chain-hash migration scaffold proof: same-version no-op and version-change warning paths
