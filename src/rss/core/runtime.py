@@ -726,12 +726,16 @@ class Runtime:
             hub, content, source_type, source_uri, redline
         )
         self.persistence.save_hub_entry(entry)
+        receipt = entry.provenance[-1]
         self._log(
             "UNTRUSTED_CONTENT_IMPORTED",
             entry.id,
             (
-                f"Hub: {hub}, source_type: {source_type}, "
-                f"source_uri: {source_uri or 'unspecified'}, "
+                f"Hub: {hub}, source_type: {receipt.get('source_type')}, "
+                f"source_uri: {receipt.get('source_uri') or 'unspecified'}, "
+                f"hash_algorithm: {receipt.get('hash_algorithm')}, "
+                f"source_content_sha256: {receipt.get('source_content_sha256')}, "
+                f"wrapped_content_sha256: {receipt.get('wrapped_content_sha256')}, "
                 f"authority: none, REDLINE: {redline}"
             ),
         )

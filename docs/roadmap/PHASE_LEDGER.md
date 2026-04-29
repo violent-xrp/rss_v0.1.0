@@ -111,14 +111,17 @@ Landed:
 - PAV now enforces `forbidden_sources` during advisory-view construction
 - indirect prompt-injection proof pins poisoned retrieved content as scoped data, not authority, with REDLINE/PERSONAL exclusion and OATH state preserved
 - `save_untrusted_content()` gives future external connectors a canonical data-only import boundary with provenance, persistence, and TRACE
+- untrusted import receipts now hash-bind source and wrapped content with SHA-256 digests, byte lengths, provenance persistence, TRACE digest payloads, and mutation detection
 - Phase G coverage floor is closed: every package module is at or above 85%
 - `cycle.py` proof now covers strict-mode diagnostics and handle routing branches
 - `trace_verify.py` proof now covers filtered broken-chain human reports, unknown-code listings, CLI stats, JSON schema errors, and absent Safe-Stop table handling
 - demo handoff now gives reviewers a fast path, artifact inspection order, proof-signal checklist, and release-boundary language
+- external vocabulary map added for engineers/reviewers who need plain-language equivalents for RSS terms without renaming the system vocabulary
 
 Still open:
 - optional signed/export-bundle structure once external trust anchoring begins
 - governed pack selection/versioning once multiple demo worlds or tenant-specific packs exist
+- connector-specific indirect-prompt-injection proof matrix for future browser, email, document, RAG, tool-return, and Unicode-heavy inputs
 
 ## Phase H — External Trust Anchoring And Deployment-Boundary Maturity
 
@@ -161,7 +164,7 @@ Low-priority observations still visible:
 ## Landed Work Since The Earlier Public Baseline
 
 Test / proof growth:
-- baseline moved from **111 / 850 / 0** to **138 / 1155 / 0**
+- baseline moved from **111 / 850 / 0** to **139 / 1171 / 0**
 - constitution loader edge coverage
 - LLM adapter prompt/fallback/config-aware coverage
 - SCRIBE UAP/status/handler edge coverage
@@ -179,6 +182,7 @@ Test / proof growth:
 - indirect prompt-injection proof
 - untrusted-content import boundary proof
 - Phase G coverage-floor proof
+- untrusted import hash-binding proof
 
 Hardening fixes:
 - R1 repo restructure into `src/rss/`
@@ -194,6 +198,7 @@ Hardening fixes:
 - `archive_entry()` return parity
 - PAV unknown policy raise
 - PAV forbidden-source enforcement
+- untrusted import source/wrapped digest receipts and mutation detection
 - CYCLE strict mode
 - LLM availability timeout config
 - governed offline fallback

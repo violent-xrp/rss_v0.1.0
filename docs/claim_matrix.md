@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-04-27 14:24 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-04-29 15:17 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 101 distinct Pact sections referenced across 138 claim tags on 138 test functions.
+**Coverage:** 101 distinct Pact sections referenced across 139 claim tags on 139 test functions.
 
 ---
 
@@ -239,6 +239,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §4.3.4
 
+- `test_probe_untrusted_import_hash_binding` — untrusted import receipt hash-binds source and wrapped content
 - `test_s4_hub_provenance` — hub provenance chain: CREATED/ARCHIVED/PURGED/DECLASSIFIED
 - `test_s4_provenance_persistence` — provenance chain survives restart
 - `test_archive_entry_returns_hub_entry` — archive_entry returns the archived HubEntry with provenance logged; return value matches other lifecycle method convention
@@ -429,6 +430,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §6.3.6
 
+- `test_probe_untrusted_import_hash_binding` — untrusted import receipt hash-binds source and wrapped content
 - `test_s6_chain_hash_migration_scaffold` — chain-hash migration scaffold refuses silent CHAIN_HASH_VERSION drift
 - `test_probe_chain_catches_duplicate_content_tamper` — hash envelope uniqueness; chain detects middle-row deletion
 - `test_probe_hash_envelope_version_marker_present` — CHAIN_HASH_VERSION marker pinned at v1 for forward-compat

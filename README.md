@@ -2,8 +2,8 @@
 
 Rose Sigil Systems (RSS) - "An AI that Waits" is a **domain-agnostic, application-layer zero-trust AI governance kernel**. It decides what a system may see, say, and do **before** the model runs, not after. Every request flows through a constitutional pipeline of typed seats with bounded authority. Scope is declared. Meaning is classified. Consent is checked. Rate limits are enforced. A Prepared Advisory View is built. TRACE is written before the result is allowed to stand.
 
-**Current verified project-snapshot baseline:** **138 test functions / 1155 assertions / 0 failures** via `python tests/test_all.py`.
-**Current coverage / traceability:** **92.2% statement coverage** via `python run_coverage.py`; `docs/claim_matrix.md` tracks **138 claims / 138 tests / 101 Pact sections**.
+**Current verified project-snapshot baseline:** **139 test functions / 1171 assertions / 0 failures** via `python tests/test_all.py`.
+**Current coverage / traceability:** **92.3% statement coverage** via `python run_coverage.py`; `docs/claim_matrix.md` tracks **139 claims / 139 tests / 101 Pact sections**.
 
 ## What RSS is
 
@@ -26,6 +26,7 @@ RSS v0.1.0 should **not** be presented as:
 - Ingress identity is architectural inside the current single-process runtime; it is not cryptographic caller authentication yet.
 - `clear_safe_stop()` is T-0 only by convention and docstring today; the mechanical sovereign-identity gate remains future hardening.
 - Hard guarantees depend on meaningful side effects entering through the governed runtime boundary; universal per-action/tool-call enforcement remains future work.
+- Future browser, email, document, RAG, and tool-return connectors still require connector-specific indirect-prompt-injection tests before claims expand.
 
 ## Operator's note
 
@@ -70,7 +71,7 @@ python tests/test_all.py
 ```
 Expected current final line:
 ```text
-RSS v0.1.0 - 138 test functions, 1155 assertions passed, 0 failed
+RSS v0.1.0 - 139 test functions, 1171 assertions passed, 0 failed
 ```
 
 ### Run the guided demo walkthrough
@@ -145,7 +146,7 @@ The practical request path is:
 - PAV `_sanitize` raises `ValueError` on unknown policy names rather than silently defaulting
 - PAV honors `forbidden_sources` during advisory-view construction even when a source is also listed as allowed
 - indirect prompt-injection proof now treats poisoned retrieved content as scoped data, not authority
-- `save_untrusted_content()` gives future browser/email/document/RAG/tool connectors a canonical data-only import boundary with provenance and TRACE
+- `save_untrusted_content()` gives future browser/email/document/RAG/tool connectors a canonical data-only import boundary with provenance, source/wrapped SHA-256 receipts, byte lengths, mutation detection, and TRACE
 - CYCLE `check_rate_limit` supports `strict=True` mode to reject unregistered domains loudly
 - LLM availability-check timeout is config-driven (`llm_availability_check_timeout`) rather than hardcoded
 - `archive_entry()` returns the archived `HubEntry` for lifecycle-method parity

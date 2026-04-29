@@ -180,6 +180,7 @@ from test_adversarial_scenarios import (
     test_probe_rune_resists_normalization_bypass,
     test_probe_pav_still_excludes_redline_via_list_hub,
     test_probe_indirect_prompt_injection_stays_data_not_authority,
+    test_probe_untrusted_import_hash_binding,
 )
 
 from test_demo_reference_pack import (
@@ -303,6 +304,7 @@ TESTS = [
     test_probe_rune_resists_normalization_bypass,
     test_probe_pav_still_excludes_redline_via_list_hub,
     test_probe_indirect_prompt_injection_stays_data_not_authority,
+    test_probe_untrusted_import_hash_binding,
     test_probe_hash_envelope_version_marker_present,
     test_probe_container_filter_prefix_boundary,
     test_probe_safe_stop_recovery_ceremony,

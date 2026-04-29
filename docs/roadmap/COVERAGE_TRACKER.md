@@ -6,7 +6,7 @@ This file preserves coverage detail that used to live in `ROADMAP.md`.
 
 ## Current Coverage Snapshot
 
-Verified on the April 27 Phase G coverage-floor closure pass.
+Verified on the April 29 untrusted import hash-binding pass.
 
 ```text
 config.py              100.0%
@@ -20,17 +20,17 @@ tecton.py               94.8%
 cycle.py                94.2%
 persistence.py          93.9%
 meaning_law.py          93.1%
-hub_topology.py         91.4%
+hub_topology.py         92.7%
 seal.py                 91.4%
 ward.py                 90.5%
 scope.py                90.0%
 llm_adapter.py          90.1%
 audit_log.py            87.4%
-runtime.py              87.0%
+runtime.py              87.1%
 oath.py                 86.5%
 pav.py                  86.9%
 constitution.py         92.5%
-TOTAL                   92.2%
+TOTAL                   92.3%
 ```
 
 ## Current Targets
@@ -53,7 +53,7 @@ Modules below the Phase G 85% target:
 - The indirect prompt-injection proof lifted `pav.py` to 86.9% while pinning forbidden-source enforcement.
 - The untrusted-content import boundary pass added `save_untrusted_content()` and `UNTRUSTED_CONTENT_IMPORTED` TRACE while keeping total coverage at 91.0%.
 - The Phase G coverage-floor pass lifted `cycle.py` to 94.2% and `trace_verify.py` to 94.7%.
-- Current total package coverage is **92.2%**.
+- The untrusted import hash-binding pass lifted `hub_topology.py` to 92.7% and total package coverage to **92.3%**.
 
 ## Next Coverage Work
 

@@ -14,6 +14,7 @@ Historical receipts live in supporting docs:
 - coverage tracker: `docs/roadmap/COVERAGE_TRACKER.md`
 - testing layout and runner discipline: `docs/TESTING.md`
 - demo handoff and artifact usage: `docs/demo/DEMO_HANDOFF.md`
+- external vocabulary / reviewer map: `docs/EXTERNAL_MAP.md`
 - claim traceability: `docs/claim_matrix.md`
 
 ---
@@ -21,16 +22,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **138 test functions / 1155 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **92.2% statement coverage** via `python run_coverage.py`
-- **138 claims / 138 tests / 101 Pact sections** in `docs/claim_matrix.md`
+- **139 test functions / 1171 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **92.3% statement coverage** via `python run_coverage.py`
+- **139 claims / 139 tests / 101 Pact sections** in `docs/claim_matrix.md`
 - **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 138/1155 baseline
+- public docs are synced to the current 139/1171 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -52,18 +53,12 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 ## Active Focus
 
 ### Now
-- **Demo handoff polish:** make the artifact bundle easy for an outside engineer to run, inspect, and understand.
 - **Release-boundary polish:** keep the v0.1.0 claim surface aligned with the closed Phase G coverage floor and remaining known limits.
+- **Connector-proof planning:** keep future browser/email/document/RAG/tool-return import tests mapped before adding real external adapters.
 
 ### Next
-- Tighten the public walkthrough around:
-  - governed useful retrieval
-  - REDLINE refusal
-  - consent denial/recovery
-  - Safe-Stop persistence/recovery
-  - tenant isolation
-  - cold TRACE verification
-  - demo artifact inspection
+- Decide whether the current demo artifact set is enough for the v0.1.0 release tag.
+- Keep tightening the reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
 - Decide what is required for the v0.1.0 release tag vs what moves to v0.1.1.
 
 ### Keep Warm
@@ -71,9 +66,15 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - Per-action/tool-call enforcement before real side effects execute.
 - Mechanical T-0 identity gate for Safe-Stop clearing.
 - Governed pack selection/versioning once multiple demo worlds or tenant-specific packs exist.
+- Runner JSON verdict export for independent tooling / CI cross-checks.
+- External vocabulary map maintenance as reviewer-facing language evolves.
+- Seat load-bearing audit after v0.1.0.
 
 ### Future Watch
 - indirect prompt-injection probes against imported web, email, document, RAG, and tool-return content
+- structured PAV trust metadata beyond content-string markers
+- structured authority spoof tests for imported JSON/YAML/tool-return text
+- connector-specific IPI acceptance matrix for PDF, HTML, email, RAG chunks, tool returns, and Unicode invisibles/confusables
 - external signing and timestamp anchoring
 - cross-machine audit portability
 - confusables/homoglyph hardening beyond current normalization
@@ -155,20 +156,33 @@ Landed:
 - PAV now honors `forbidden_sources` during advisory-view construction
 - indirect prompt-injection proof for poisoned retrieved content as scoped data, not authority
 - `save_untrusted_content()` import boundary for future browser/email/document/RAG/tool connectors
+- untrusted import receipt hardening: source content SHA-256, wrapped content SHA-256, byte lengths, provenance persistence, TRACE payload binding, and mutation detection
 - Phase G coverage floor closed: `cycle.py` and `trace_verify.py` are both above 94% and every package module is at or above 85%
 - demo handoff now names the fast reviewer path, artifact review order, proof signals, and release boundary
+- external vocabulary map added for engineers/reviewers who do not know RSS terms yet
 - artifact export bundle from a single governed run:
   - `demo_report.json`
   - `demo_summary.md`
   - `demo_trace.json`
 
 Threat-hardening note:
-- **Improved now:** PAV closes the allowed/forbidden-source overlap; `save_untrusted_content()` gives future external adapters a single import path that wraps external content with `UNTRUSTED_EXTERNAL_CONTENT` and `DATA_ONLY_NOT_AUTHORITY`; TRACE records `UNTRUSTED_CONTENT_IMPORTED`; adversarial coverage proves poisoned imported content stays data, does not mutate OATH consent, and does not expose forbidden PERSONAL/REDLINE material through the advisory path.
+- **Improved now:** PAV closes the allowed/forbidden-source overlap; `save_untrusted_content()` gives future external adapters a single import path that wraps external content with `UNTRUSTED_EXTERNAL_CONTENT` and `DATA_ONLY_NOT_AUTHORITY`; import receipts now carry source/wrapped SHA-256 digests and byte lengths; TRACE records `UNTRUSTED_CONTENT_IMPORTED` with digest-bearing payload; adversarial coverage proves poisoned imported content stays data, does not mutate OATH consent, and does not expose forbidden PERSONAL/REDLINE material through the advisory path.
 - **Still not proven:** RSS has not implemented real browser, email, document, RAG, or tool-return connectors. Each future connector needs hidden-text, metadata, comment, retrieved-snippet, and tool-output tests before public claims expand.
 
 Open in Phase G:
 - decide whether the current demo artifact set is enough for the v0.1.0 tag
 - keep connector-specific indirect prompt-injection probes parked as required acceptance criteria for future external adapters
+
+### v0.1.1 Candidate Hardening Queue
+
+These are not v0.1.0 blockers unless a release-gate review says otherwise:
+- structured trust metadata in PAV entries, so `instruction_status` survives as data, not only as rendered text
+- entry-level PAV trust filters by provenance/source_type/instruction_status, not only hub name
+- structured authority-spoof probes: imported JSON/YAML/tool-return text cannot become consent, scope, or side-effect authorization
+- connector IPI acceptance matrix for PDF metadata/hidden text, HTML hidden spans/alt text, email MIME parts, RAG neighbor chunks, tool returns, and Unicode invisible/confusable text
+- runner JSON verdict export for independent verification and future CI
+- external-map refinement for public reviewers
+- post-v0.1.0 seat load-bearing audit: verify each seat owns a unique invariant as connectors and per-action gates arrive
 
 ### Phase H — External Trust Anchoring
 

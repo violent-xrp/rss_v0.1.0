@@ -3,9 +3,9 @@
 ## v0.1.0
 
 ### Current verified snapshot
-- **138 test functions / 1155 assertions / 0 failures** via `python tests/test_all.py`
-- **92.2% statement coverage** via `python run_coverage.py`
-- **138 claims / 138 tests / 101 Pact sections** in `docs/claim_matrix.md`
+- **139 test functions / 1171 assertions / 0 failures** via `python tests/test_all.py`
+- **92.3% statement coverage** via `python run_coverage.py`
+- **139 claims / 139 tests / 101 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -28,6 +28,8 @@
 - PAV now honors `forbidden_sources` while constructing advisory views, closing an overlap/misconfiguration gap where forbidden sources were recorded but not enforced at PAV collection time.
 - LLM prompt posture now labels governed data as untrusted quoted evidence that cannot grant authority, change scope, authorize actions, or request side effects.
 - `save_untrusted_content()` imports external content as data-only evidence with wrapper labels, provenance, persistence, and `UNTRUSTED_CONTENT_IMPORTED` TRACE.
+- untrusted import receipts now hash-bind source content and wrapped content with SHA-256 digests, byte lengths, provenance persistence, TRACE digest payloads, and mutation detection.
+- `docs/EXTERNAL_MAP.md` gives outside reviewers a plain-English map from RSS vocabulary to engineering responsibilities without renaming internals.
 - demo handoff now gives outside reviewers a fast path, artifact inspection order, proof-signal checklist, and release-boundary language.
 - live demo-suite normal-advisor lane uses SYSTEM-only scope so ordinary conversation does not open WORK/PERSONAL data
 - interactive `src/main.py demo` routes ordinary chat through SYSTEM-only scope while obvious seeded-data questions keep the governed WORK/PAV path
@@ -55,6 +57,7 @@
 - Phase G demo-pack validation proof for fail-loud schema checks, no partial seeding, legacy tuple compatibility, and inactive container reuse
 - Phase G demo artifact proof for report JSON, operator summary, persisted TRACE JSON, proof-status wording, and trace event-count parity
 - indirect prompt-injection proof for poisoned retrieved content remaining scoped data, with import provenance, TRACE, REDLINE/PERSONAL exclusion, and OATH immutability preserved
+- untrusted import hash-binding proof for source/wrapped SHA-256 receipts, byte lengths, TRACE digest payload, persistence, mutation detection, and source URI newline rejection
 - Phase G coverage-floor proof for CYCLE strict/handle routing and cold-verifier broken-chain reporting branches
 - `load_constitution()` — all branches directly tested (file-not-found, hash-mismatch, missing-marker, happy-path, multi-marker)
 - Priority A closures: TECTON reason gate, clear_safe_stop idempotence, config-driven LLM timeout, archive_entry return

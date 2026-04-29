@@ -6,9 +6,9 @@ This file preserves the count history and verification receipts that used to liv
 
 ## Current Baseline
 
-- **138 test functions / 1155 assertions / 0 failures**
-- **92.2% statement coverage**
-- **138 claims / 138 tests / 101 Pact sections**
+- **139 test functions / 1171 assertions / 0 failures**
+- **92.3% statement coverage**
+- **139 claims / 139 tests / 101 Pact sections**
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
 - Claim matrix: `python docs/build_claim_matrix.py`
@@ -39,6 +39,7 @@ If counts go down, the reason must be written here in plain language.
 - **136 / 1129 / 0** - indirect prompt-injection proof: poisoned retrieved content remains scoped data, PAV enforces forbidden sources, REDLINE/PERSONAL data stays excluded, and OATH state cannot be mutated by content
 - **136 / 1135 / 0** - untrusted-content import boundary proof: external content receives data-only wrapper labels, provenance, persistence, and TRACE before it can enter PAV
 - **138 / 1155 / 0** - Phase G coverage-floor proof: CYCLE strict/handle routing and cold-verifier broken-chain report branches lifted every package module above 85%
+- **139 / 1171 / 0** - untrusted import hash-binding proof: source/wrapped SHA-256 receipts, byte lengths, provenance persistence, TRACE digest payload, mutation detection, and source metadata newline rejection
 
 ## Recent Verification Receipts
 
@@ -92,9 +93,14 @@ Verified after the Phase G coverage-floor proof:
 - claim matrix: **101 sections / 138 claims / 138 tests**
 - coverage: **92.2% total**
 
+Verified after the untrusted import hash-binding proof:
+- canonical runner: **139 / 1171 / 0**
+- claim matrix: **101 sections / 139 claims / 139 tests**
+- coverage: **92.3% total**
+
 ## Public Doc Sync
 
-All public-facing docs were synced to the current **138 / 1155 / 0** baseline on 2026-04-27:
+All public-facing docs were synced to the current **139 / 1171 / 0** baseline on 2026-04-29:
 - `README.md`
 - `TRUTH_REGISTER.md`
 - `CLAIM_DISCIPLINE.md`
@@ -103,8 +109,8 @@ All public-facing docs were synced to the current **138 / 1155 / 0** baseline on
 - `THREAT_MODEL.md`
 
 Current synced public numbers:
-- **138 / 1155 / 0**
-- **92.2%** coverage
-- **138 claims / 138 tests / 101 Pact sections**
+- **139 / 1171 / 0**
+- **92.3%** coverage
+- **139 claims / 139 tests / 101 Pact sections**
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.

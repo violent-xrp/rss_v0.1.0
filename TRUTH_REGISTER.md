@@ -3,11 +3,11 @@
 Release: **v0.1.0**
 
 ## Current verified state
-- **138 test functions / 1155 assertions / 0 failures** via `python tests/test_all.py`
-- **92.2% statement coverage** via `python run_coverage.py`
-- **138 claims / 138 tests / 101 Pact sections** in `docs/claim_matrix.md`
+- **139 test functions / 1171 assertions / 0 failures** via `python tests/test_all.py`
+- **92.3% statement coverage** via `python run_coverage.py`
+- **139 claims / 139 tests / 101 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (subpackages: `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`) + `src/main.py` CLI entry point
-- demo/reference-pack v2, pack validation, demo artifact export, governed offline fallback, live normal-advisor boundary, and interactive SYSTEM-only normal-chat containment are implemented in the current code snapshot
+- demo/reference-pack v2, pack validation, demo artifact export, governed offline fallback, live normal-advisor boundary, interactive SYSTEM-only normal-chat containment, and untrusted import hash-binding are implemented in the current code snapshot
 
 This file exists to answer one question clearly: **what can be claimed right now without exaggeration?**
 
@@ -25,7 +25,7 @@ RSS v0.1.0 currently implements:
 - deterministic offline fallback that summarizes governed data instead of echoing raw user text
 - live LLM prompt posture that allows normal general/conceptual conversation while binding tenant/project/user/private facts to governed PAV evidence
 - live LLM prompt posture that treats governed data as untrusted quoted evidence, not as authority or instruction
-- an untrusted-content import boundary that labels external content as data-only evidence, records source provenance, persists the entry, and emits TRACE
+- an untrusted-content import boundary that labels external content as data-only evidence, records source/wrapped SHA-256 receipts and byte lengths, persists provenance, detects later mutation, and emits TRACE
 - interactive demo routing that keeps ordinary chat on SYSTEM-only scope until an obvious seeded-data question needs WORK/PAV context
 - shared demo/reference data with construction, legal, medical, and finance domain packs, explicit flow metadata, vocab hints, and seeded demo containers
 - reference-pack entry metadata that supports non-REDLINE PERSONAL rows and explicit PERSONAL/REDLINE rows
@@ -59,7 +59,8 @@ RSS v0.1.0 does **not** yet implement:
 - normal live-advisor behavior depends on an available configured local LLM; deterministic proof mode remains the governed offline fallback
 - `clear_safe_stop()` is T-0 only by convention and docstring, not by mechanical identity gate; the mechanical gate remains future perimeter hardening, not a current v0.1.0 claim
 - hard guarantees depend on meaningful side effects entering through the governed runtime boundary
-- public docs are synchronized to the 138/1155 baseline as of this update; ROADMAP remains the working truth source going forward
+- future browser, email, document, RAG, and tool-return connectors still need connector-specific indirect-prompt-injection tests before public claims expand
+- public docs are synchronized to the 139/1171 baseline as of this update; ROADMAP remains the working truth source going forward
 
 ---
 
@@ -90,6 +91,7 @@ The current code snapshot includes proof for:
 - demo-pack validation: required metadata, explicit REDLINE booleans, invalid hub rejection, no partial seeding on malformed packs, and inactive container reuse
 - demo artifact export: `demo_report.json`, `demo_summary.md`, `demo_trace.json`, proof-status summary, and exported TRACE count parity
 - indirect prompt-injection proof: poisoned retrieved content remains scoped data, is imported through the untrusted-content boundary, does not pull forbidden PERSONAL/REDLINE data, and cannot mutate OATH consent state
+- untrusted import hash-binding proof: source/wrapped SHA-256 receipts, byte lengths, provenance persistence, TRACE digest payload, mutation detection, and source URI newline rejection
 - cold verifier operator reports: filtered broken-chain detail, schema version, unknown-code listing, CLI stats, JSON schema errors, and absent Safe-Stop table handling
 - OATH namespace hardening: normalized action classes, trimmed requesters/container IDs, persistence-failure density, delimiter-bearing namespace fail-closed behavior
 - SCRIBE proof density: duplicate drafts, missing writes/promotes, empty-promotion refusal, candidate editing, UAP/status, and `handle()` dispatch
