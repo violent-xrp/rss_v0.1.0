@@ -21,7 +21,7 @@ cycle.py                94.2%
 persistence.py          93.9%
 meaning_law.py          93.3%
 hub_topology.py         92.7%
-seal.py                 91.4%
+seal.py                 91.6%
 ward.py                 90.5%
 scope.py                90.0%
 llm_adapter.py          90.1%

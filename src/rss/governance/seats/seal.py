@@ -174,6 +174,11 @@ class Seal:
                     "reason": f"Section '{section_id}' is constitutionally protected. "
                               f"Amendment requires sovereign_override=True (§7.2.1)"}
 
+        ext_issue = self._check_external_names(proposed_text)
+        if ext_issue:
+            ext_issue["stage"] = "proposal"
+            return ext_issue
+
         from uuid import uuid4
         proposal_id = f"AMEND-{uuid4().hex[:12]}"
         proposal = AmendmentProposal(

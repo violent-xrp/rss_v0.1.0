@@ -1196,6 +1196,18 @@ def test_seal_extended_edges():
     blank = seal.propose_amendment("   ", "   ", "   ")
     check(blank.get("error") == "INCOMPLETE_PROPOSAL", "whitespace-only proposal fields rejected")
 
+    external = seal.propose_amendment(
+        "S2",
+        "rationale3",
+        "This section was drafted by Claude for review.",
+    )
+    check(external.get("error") == "EXTERNAL_NAME_PRESENT",
+          "proposal rejects external advisor attribution before review")
+    check(external.get("stage") == "proposal",
+          "external attribution rejection identifies proposal stage")
+    check("proposal_id" not in external,
+          "external-attribution proposal does not create actionable proposal state")
+
     p2 = seal.propose_amendment("S2", "rationale2", "text2")
     seal.review_amendment(p2["proposal_id"], "reviewer", "REJECT", notes="no")
     rr = seal.ratify_amendment(p2["proposal_id"], t0_command=True)

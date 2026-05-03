@@ -122,7 +122,7 @@ Section 7 / amendment and evolution:
 - Protected Section 0 amendments require `sovereign_override=True` at proposal time, surfacing elevated gravity before review or ratification.
 - Review is a real gate: verdicts normalize to APPROVE/REJECT, blank reviewers are rejected, rejected proposals become terminal, and rejected proposals cannot be ratified.
 - Ratification requires explicit `t0_command=True`, an APPROVE review verdict, and a non-terminal proposal. Repeat ratification returns `ALREADY_RATIFIED` and does not duplicate amendment history.
-- Ratification flows through `seal()`, which runs the configured pre-seal integrity check and the external advisor attribution guard before canonizing the proposed text.
+- Amendment proposals now run the external advisor attribution guard before proposal state is created, and ratification still flows through `seal()` with the same guard before canonizing the proposed text.
 - `AmendmentRecord` preserves the current required evidence surface: proposal ID, section ID, old/new versions, old/new hashes, rationale, ratification timestamp, sovereign override flag, reviewer, and review notes.
 - Section-level versions increment independently (`v1.0`, `v1.1`, etc.) as sections are sealed. This is separate from project/release versions such as `v0.1.0` and future `v0.1.1`.
 - The four ceremony event codes are registered in the TRACE export registry: `AMENDMENT_PROPOSED`, `AMENDMENT_REVIEWED`, `AMENDMENT_REJECTED`, and `AMENDMENT_RATIFIED`.
@@ -195,7 +195,6 @@ Persistence/audit gaps:
 Amendment/evolution gaps:
 - SEAL amendment TRACE emission currently flows through `_emit()`, which swallows trace callback failures. This means ceremony actions may continue even if amendment TRACE events fail to persist, which is weaker than Section 7's same-write-ahead-guarantee posture.
 - Proposal objects, review state, and queryable amendment history do not persist across restart. A reviewed-but-not-ratified proposal is lost on restart even though its TRACE review event may survive.
-- External advisor attribution is checked during `seal()` / ratification, not at proposal submission. A proposal containing forbidden attribution can exist until ratification attempts to seal it.
 - Reviewer identity is a string today. There is no reviewer credentialing, section-scoped reviewer authorization, signer binding, proposer/reviewer separation, or multi-reviewer quorum yet.
 - Proposal lifecycle states are minimal: PROPOSED, REVIEWED, RATIFIED, and REJECTED. There is no WITHDRAWN, DEFERRED, SUPERSEDED, EXPIRED, or stale-base state.
 - There is no read-only ratification preview/dry-run step that shows the exact diff, expected hashes, version transition, integrity result, and AmendmentRecord before T-0 commits.

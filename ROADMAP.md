@@ -29,7 +29,7 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **139 test functions / 1187 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **139 test functions / 1190 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
 - **92.4% statement coverage** via `python run_coverage.py`
 - **139 claims / 139 tests / 101 Pact sections** in `docs/claim_matrix.md`
 - **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
@@ -38,7 +38,7 @@ Current code state:
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 139/1187 baseline
+- public docs are synced to the current 139/1190 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -105,6 +105,32 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - internal advisor layer design: structured, auditable, non-authoritative advisors between external models and the kernel/operator
 
 Do not diffuse effort equally across all future phases. Keep the current checkpoint sharp.
+
+---
+
+## v0.1.0 Final Scope Split
+
+The release standard is **safe to evolve**, not complete forever. A v0.1.0 item
+belongs on this side of the tag only if it must exist before RSS can trust its
+own release or amendment path. Default destination for everything else is the
+v0.1.1 ceremony queue.
+
+Mandatory before `v0.1.0-rc.1` / final tag:
+- one current acceptance pass with synced docs and no public claim beyond proof
+- completion of small pre-tag mechanical hardening already mapped in Phase G
+- Section 7 ceremony viability fixes that are code-proven and narrow enough to
+  keep outside a broad Pact rewrite
+- T-0 recovery / lock-out design notes before any cryptographic identity work
+  becomes load-bearing
+- explicit decision on whether amendment persistence is required before final
+  `v0.1.0` or can land immediately after `v0.1.0-rc.1`
+
+Held for v0.1.1 ceremony unless a release-gate review proves otherwise:
+- broad Pact wording cleanup and Council/vocabulary sweep
+- full-Pact integrity extension and reverse Pact-reference extraction
+- internal advisor layer / multi-voice amendment design
+- TECTON product UI and operator-surface design
+- accumulated section-level Pact refinements from `docs/PACT_ALIGNMENT.md`
 
 ---
 
@@ -187,6 +213,7 @@ Landed:
 - stale top-level duplicate modules `src/pav.py` and `src/reference_pack.py` removed; canonical code now lives under `src/rss/`
 - cold TRACE verifier now fails full-chain verification when the first surviving row still has a parent hash, detecting head truncation while preserving filtered container-view semantics
 - `_validate_llm_response()` now documents that response scanning is downstream sanitation, while SCOPE/PAV/OATH remain the authoritative upstream boundary
+- SEAL amendment proposals now reject external advisor attribution before review or ratification, so forbidden authorship claims cannot sit in actionable proposal state
 - Phase G coverage floor closed: `cycle.py` and `trace_verify.py` are both above 94% and every package module is at or above 85%
 - demo handoff now names the fast reviewer path, artifact review order, proof signals, and release boundary
 - external vocabulary map added for engineers/reviewers who do not know RSS terms yet
