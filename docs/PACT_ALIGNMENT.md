@@ -72,6 +72,16 @@ Section 3 / execution law:
 - Sustained audit-write failure is stronger in code than the current Section 3 wording: a single write-ahead failure aborts the operation, while repeated failures crossing `audit_failure_threshold` enter persistent Safe-Stop.
 - LLM response validation implements external-name replacement, REDLINE leak flagging, and governance artifact suppression. This remains a downstream sanitation layer; upstream SCOPE/PAV/OATH boundaries remain the real enforcement surface.
 
+Section 4 / hub topology and data governance:
+- Hubs are represented as typed governance locations, not ordinary folders: `HubEntry` carries hub, original hub, REDLINE state, purge state, timestamp, version, and provenance.
+- SCOPE envelope immutability is mechanically enforced with a frozen dataclass and tuple-backed `allowed_sources` / `forbidden_sources`.
+- `ScopeEnvelope` currently exposes the nine expected runtime fields: token, task_id, allowed_sources, forbidden_sources, redline_handling, metadata_policy, container_id, expiration, and sovereign.
+- PERSONAL access requires explicit sovereign construction in SCOPE; REDLINE remains excluded by PAV even when PERSONAL is sovereignly included.
+- Query surfaces (`search()` and `governed_search()`) default-exclude REDLINE. Enumeration/identity surfaces (`list_hub()` and `get_entry()`) intentionally return complete state to governed callers that apply their own output policy.
+- PAV construction excludes REDLINE and purged entries, tracks `redline_excluded` as a count, and records contributing hub names without emitting placeholder content for excluded entries.
+- LEDGER exclusion is mechanical in standard PAV construction; brainstorming inclusion exists as a `PAVBuilder.build(..., brainstorming=True)` parameter, not as a first-class SCOPE envelope field.
+- Untrusted imported content now adds `UNTRUSTED_IMPORT` provenance with source and wrapped SHA-256 digests; this is a kernel improvement beyond the older provenance event list.
+
 ## Known Alignment Gaps
 
 T-0 mechanical identity:
@@ -109,6 +119,12 @@ Execution-law gaps:
 - `UNAUTHORIZED_INGRESS` should be added to Section 3's halt-condition/stage language or explicitly fenced as a pre-pipeline architectural rejection below the constitutional stage table.
 - Section 3 should eventually name the sustained-audit-failure threshold as Constitutional Drift / Safe-Stop behavior, because the kernel already implements it.
 
+Data-governance gaps:
+- Hard-purge irreversibility is true inside the current persistent store, but local backup restoration or database replacement can reintroduce pre-purge content until external anchoring/backup policy closes that deployment gap.
+- Future API/operator/connector output boundaries must classify raw hub-returning helpers as either PAV-only/enumeration surfaces or boundary-output surfaces. Boundary-output helpers must apply REDLINE exclusion before content leaves governance.
+- REDLINE exclusion IDs are not carried in the PAV object; this is the right privacy posture for advisor-facing surfaces, but future Pact wording should make clear where excluded-entry identity may appear for audit.
+- LEDGER brainstorming support is builder-level today. Moving it into a first-class envelope field remains a future design decision.
+
 Seat interface:
 - WARD's protocol expects seats to expose `status()` and `handle(task)`.
 - CYCLE, OATH, SCRIBE, SEAL, and WARD currently expose both.
@@ -134,12 +150,19 @@ Pact text candidates:
 - Section 3 should clarify WARD's bootstrap relationship: seven domain/operational seats register with WARD, while WARD remains the routing/enforcement infrastructure rather than a peer in the execution sequence.
 - Section 3 should acknowledge LLM invocation states more precisely: disabled, available-and-called, unavailable/failed with governed fallback.
 - Operational configuration values that T-0 may change without Pact amendment (verb lists, TTL windows, model/timeout settings, audit-failure threshold) should be exposed in an evidence doc or generated snapshot rather than hidden only in `config.py`.
+- Section 4's provenance event list should include `UNTRUSTED_IMPORT` or be reframed as a non-exhaustive list of current reference events.
+- Section 4 should fence hard-purge irreversibility as store-local until Phase H external anchoring and backup/restore policy are in place.
+- Section 4 should specify REDLINE behavior by output boundary: PAV-only/enumeration helpers may return raw entries to governed callers; boundary-output helpers must exclude REDLINE before exposure.
+- Section 4 should state that PAV carries REDLINE exclusion counts and contributing hubs, not REDLINE entry IDs.
+- Section 4's section-boundary style is a useful model for later Pact amendments: name the constitutional surface, then name exactly what the current reference implementation enforces and what remains non-end-to-end.
 
 ## Version Watch
 
 Before v0.1.1:
 - The S0-S2 pre-tag mechanical OATH/RUNE gaps listed in `ROADMAP.md` are closed; keep future work version-sensitive rather than silently amending the Pact.
 - Resolve the Section 3 payload-hash and TTL-upper-bound questions as code changes or explicit Pact/claim clarifications.
+- Carry Section 4's output-boundary rule into future API/operator/connector work before adding raw hub-returning public surfaces.
+- Decide whether LEDGER brainstorming belongs in SCOPE as a first-class envelope field or remains a PAV-builder-only expert mode.
 - Decide the standard seat-interface question for SCOPE/RUNE.
 - Add or schedule tests for WARD hook protected-field coverage, CYCLE fail-closed internal errors, SEAL external attribution bypasses, and RUNE confidence/edge-token behavior.
 - Keep this file aligned with any new tests that prove additional Pact clauses.
