@@ -3,7 +3,7 @@
 ## v0.1.0
 
 ### Current verified snapshot
-- **139 test functions / 1199 assertions / 0 failures** via `python tests/test_all.py`
+- **139 test functions / 1202 assertions / 0 failures** via `python tests/test_all.py`
 - **92.5% statement coverage** via `python run_coverage.py`
 - **139 claims / 139 tests / 101 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)

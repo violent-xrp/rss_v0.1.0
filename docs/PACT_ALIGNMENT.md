@@ -74,8 +74,8 @@ Section 3 / execution law:
 - Runtime stage tracking matches the Pact's execution pipeline: Stage 0 Safe-Stop through Stage 9 TRACE use stable `stage` and `stage_name` fields on structured halts.
 - The main halt codes named by the Pact are represented in runtime behavior: `SAFE_STOP_ACTIVE`, `GENESIS_FAILURE`, `DISALLOWED_TERM`, `CONSENT_REQUIRED`, `RATE_LIMITED`, and `UNEXPECTED_ERROR`.
 - Intent classification checks HIGH_RISK verbs before CONSTITUTIONAL verbs, matching the Pact's most-restrictive ordering for mixed-risk requests.
-- Execution intents carry a SHA-256 `payload_hash` of the original text. In v0.1.0 this is receipt metadata; the runtime does not yet perform a later re-hash comparison before execution.
-- Runtime-created TTLs are bounded internally by intent class (`HIGH_RISK`, `CONSTITUTIONAL`, `REQUEST`), and Stage 4 validates expiration before OATH/CYCLE/PAV/LLM. Externally constructed `ExecutionIntent` objects with far-future TTLs are not rejected by an upper-bound policy yet.
+- Execution intents carry a SHA-256 `payload_hash` of the original text, and validation re-hashes `raw_text` before execution so tampered intent payloads fail closed.
+- Runtime-created TTLs are bounded internally by intent class (`HIGH_RISK`, `CONSTITUTIONAL`, `REQUEST`), and Stage 4 validates both expiration and unreasonably distant TTLs before OATH/CYCLE/PAV/LLM.
 - `UNAUTHORIZED_INGRESS` is a real pre-pipeline architectural rejection for non-GLOBAL container spoofing without the TECTON sentinel. It is tested and TRACE-recorded, but it is not yet named in the Pact's Section 3 stage or halt-condition tables.
 - Sustained audit-write failure is stronger in code than the current Section 3 wording: a single write-ahead failure aborts the operation, while repeated failures crossing `audit_failure_threshold` enter persistent Safe-Stop.
 - LLM response validation implements external-name replacement, REDLINE leak flagging, and governance artifact suppression. The code now states this is downstream sanitation; upstream SCOPE/PAV/OATH boundaries remain the real enforcement surface.
@@ -124,6 +124,7 @@ Section 7 / amendment and evolution:
 - Ratification requires explicit `t0_command=True`, an APPROVE review verdict, and a non-terminal proposal. Repeat ratification returns `ALREADY_RATIFIED` and does not duplicate amendment history.
 - Amendment proposals now run the external advisor attribution guard before proposal state is created, and ratification still flows through `seal()` with the same guard before canonizing the proposed text.
 - When a TRACE callback is wired, proposal, review, and ratification emit the corresponding amendment event before mutating ceremony state. TRACE callback failure returns `AMENDMENT_TRACE_FAILED` and leaves proposal/canon/history state unchanged for that step.
+- Rejected amendment reviews emit `AMENDMENT_REJECTED` as the terminal review event rather than emitting both `AMENDMENT_REVIEWED` and `AMENDMENT_REJECTED`; audit queries that count reviewed proposals should count both event families.
 - `AmendmentRecord` preserves the current required evidence surface: proposal ID, section ID, old/new versions, old/new hashes, rationale, ratification timestamp, sovereign override flag, reviewer, and review notes.
 - Section-level versions increment independently (`v1.0`, `v1.1`, etc.) as sections are sealed. This is separate from project/release versions such as `v0.1.0` and future `v0.1.1`.
 - The four ceremony event codes are registered in the TRACE export registry: `AMENDMENT_PROPOSED`, `AMENDMENT_REVIEWED`, `AMENDMENT_REJECTED`, and `AMENDMENT_RATIFIED`.
@@ -167,8 +168,6 @@ OATH consent semantics:
 - OATH `handle({"action": "authorize"})` now fails closed when `requester` is missing or blank instead of defaulting to T-0. Current proof verifies no consent record is created on missing identity and explicit requester flow still works.
 
 Execution-law gaps:
-- `ExecutionIntent.payload_hash` is computed but not currently re-verified before runtime execution. If the Pact keeps the tamper-detection claim, v0.1.1 should either add a re-hash guard or clarify that the hash is an audit receipt.
-- TTL upper bounds are implicit because the runtime creates short-lived intents itself; `ExecutionStateMachine.validate()` does not reject far-future TTLs on externally constructed intents.
 - `UNAUTHORIZED_INGRESS` should be added to Section 3's halt-condition/stage language or explicitly fenced as a pre-pipeline architectural rejection below the constitutional stage table.
 - Section 3 should eventually name the sustained-audit-failure threshold as Constitutional Drift / Safe-Stop behavior, because the kernel already implements it.
 
@@ -195,6 +194,7 @@ Persistence/audit gaps:
 
 Amendment/evolution gaps:
 - Proposal objects, review state, and queryable amendment history do not persist across restart. A reviewed-but-not-ratified proposal is lost on restart even though its TRACE review event may survive.
+- When amendment persistence lands, it must preserve the same ordering now proven for in-memory ceremony state: TRACE emission first, durable proposal/history write second, in-memory mutation last.
 - Reviewer identity is a string today. There is no reviewer credentialing, section-scoped reviewer authorization, signer binding, proposer/reviewer separation, or multi-reviewer quorum yet.
 - Proposal lifecycle states are minimal: PROPOSED, REVIEWED, RATIFIED, and REJECTED. There is no WITHDRAWN, DEFERRED, SUPERSEDED, EXPIRED, or stale-base state.
 - There is no read-only ratification preview/dry-run step that shows the exact diff, expected hashes, version transition, integrity result, and AmendmentRecord before T-0 commits.

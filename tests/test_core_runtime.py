@@ -141,6 +141,8 @@ def test_constitution_load_constitution():
 
 def test_state_machine():
     # CLAIM: §3.2 — execution state transitions
+    import hashlib
+
     section("Layer 4: Execution Law")
 
     sm = ExecutionStateMachine()
@@ -154,12 +156,29 @@ def test_state_machine():
     i = sm.classify_intent("Seal Section 2")
     check(i.classification == "CONSTITUTIONAL" and i.validation_tier == 3, "constitutional detected")
 
+    i = sm.classify_intent("Rewrite the policy and delete the old version")
+    check(i.classification == "HIGH_RISK",
+          "high-risk verb wins over constitutional verb in mixed request")
+
     i = sm.classify_intent("Review the submittal")
     r = sm.execute(i)
     check(r["executed"] is True, "standard executes")
 
+    tampered = sm.classify_intent("Review the submittal")
+    tampered.raw_text = "Review changed text"
+    r = sm.execute(tampered)
+    check(r["executed"] is False and "payload_hash" in r["reason"],
+          "payload hash mismatch blocks tampered intent")
+
+    far_future = sm.classify_intent("Review the submittal")
+    far_future.ttl_expiry = datetime.now(UTC) + timedelta(days=365)
+    r = sm.execute(far_future)
+    check(r["executed"] is False and "TTL too distant" in r["reason"],
+          "far-future TTL blocked")
+
     expired = ExecutionIntent("X", "test", "REQUEST", 1,
-                              datetime.now(UTC) - timedelta(minutes=10), "hash")
+                              datetime.now(UTC) - timedelta(minutes=10),
+                              hashlib.sha256("test".encode()).hexdigest())
     r = sm.execute(expired)
     check(r["executed"] is False and "TTL" in r["reason"], "expired blocked")
 

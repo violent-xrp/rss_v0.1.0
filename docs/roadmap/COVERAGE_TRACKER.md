@@ -10,7 +10,7 @@ Verified on the April 29 untrusted import hash-binding pass.
 
 ```text
 config.py              100.0%
-state_machine.py       100.0%
+state_machine.py       95.0%
 audit/migrate.py       100.0%
 scribe.py              100.0%
 reference_pack.py      100.0%

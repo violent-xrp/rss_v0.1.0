@@ -57,6 +57,13 @@ HIGH_RISK_VERBS = [
 CONSTITUTIONAL_VERBS = ["seal", "amend", "rewrite", "canonize"]
 STANDARD_VERBS = ["draft", "review", "list", "read", "check", "view", "query", "get"]
 
+MAX_TTL_BY_CLASS = {
+    "HIGH_RISK": timedelta(minutes=1),
+    "CONSTITUTIONAL": timedelta(minutes=2),
+    "REQUEST": timedelta(minutes=5),
+}
+TTL_CLOCK_SKEW = timedelta(seconds=5)
+
 
 class ExecutionStateMachine:
     """
@@ -118,8 +125,21 @@ class ExecutionStateMachine:
 
     def validate(self, intent: ExecutionIntent) -> dict:
         now = datetime.now(UTC)
-        if now > intent.ttl_expiry:
-            return {"valid": False, "reason": "TTL expired"}
+        expected_hash = hashlib.sha256(intent.raw_text.encode()).hexdigest()
+        if intent.payload_hash != expected_hash:
+            return {"valid": False, "reason": "payload_hash mismatch"}
+
+        ttl_limit = MAX_TTL_BY_CLASS.get(intent.classification)
+        if ttl_limit is None:
+            return {"valid": False, "reason": f"Unknown classification: {intent.classification}"}
+
+        try:
+            if intent.ttl_expiry > now + ttl_limit + TTL_CLOCK_SKEW:
+                return {"valid": False, "reason": "TTL too distant"}
+            if now > intent.ttl_expiry:
+                return {"valid": False, "reason": "TTL expired"}
+        except TypeError:
+            return {"valid": False, "reason": "TTL timezone mismatch"}
 
         # High-risk requires explicit consent (checked upstream by OATH)
         if intent.classification == "HIGH_RISK":

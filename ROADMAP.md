@@ -29,7 +29,7 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **139 test functions / 1199 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **139 test functions / 1202 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
 - **92.5% statement coverage** via `python run_coverage.py`
 - **139 claims / 139 tests / 101 Pact sections** in `docs/claim_matrix.md`
 - **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
@@ -38,7 +38,7 @@ Current code state:
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 139/1199 baseline
+- public docs are synced to the current 139/1202 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -214,6 +214,7 @@ Landed:
 - stale top-level duplicate modules `src/pav.py` and `src/reference_pack.py` removed; canonical code now lives under `src/rss/`
 - cold TRACE verifier now fails full-chain verification when the first surviving row still has a parent hash, detecting head truncation while preserving filtered container-view semantics
 - `_validate_llm_response()` now documents that response scanning is downstream sanitation, while SCOPE/PAV/OATH remain the authoritative upstream boundary
+- Section 3 execution validation now re-hashes `ExecutionIntent.raw_text` before execution and rejects far-future TTLs on externally constructed intents
 - SEAL amendment proposals now reject external advisor attribution before review or ratification, so forbidden authorship claims cannot sit in actionable proposal state
 - SEAL ceremony TRACE emission now fails closed when a trace callback is wired: proposal, review, and ratification do not mutate ceremony state if amendment audit emission fails
 - Phase G coverage floor closed: `cycle.py` and `trace_verify.py` are both above 94% and every package module is at or above 85%
@@ -257,7 +258,7 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - Section 6 export/audit precision: keep cold verification, cold export, and future payload-inclusive external recomputability as separate claims
 - Section 6 production posture evidence: keep the one-switch `production_mode` behavior visible if more settings join that profile
 - Section 6 provenance proof: decide whether `UNTRUSTED_IMPORT` needs a dedicated full restore test beyond current SQLite row round-trip proof
-- Section 7 amendment persistence: persist proposals, review state, and ratified amendment records before relying on long-running amendment batches
+- Section 7 amendment persistence: persist proposals, review state, and ratified amendment records before final v0.1.0; preserve TRACE emission -> durable write -> in-memory mutation ordering
 - Section 7 version model: define how section-level versions (`v1.0`, `v1.1`) relate to project/release versions (`v0.1.0`, `v0.1.1`)
 - Section 7 operator ceremony API: future preview/dry-run, diff report, stale-base handling, and post-ratification verification report for TECTON UI readiness
 - T-0 recovery authority: design auditable manual recovery so future cryptographic identity strengthens attestation without creating permanent lock-out risk
