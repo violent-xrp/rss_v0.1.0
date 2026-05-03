@@ -10,7 +10,7 @@ The Pact can use constitutional language because it is the constitutional docume
 
 In particular:
 - **Seat** should stay. It means a fixed authority surface whose responsibility survives code changes.
-- **Council** should not be used as a general external label unless a specific Pact context requires it. There is no separate Council runtime actor, class, or vote path today.
+- **Council** should not be used as a general external label. There is no separate Council runtime actor, class, or vote path today. Any future Pact exception should be explicit and rare; the default should be replacement with more precise seat-class language.
 - Prefer **the eight seats**, **operational seats**, **constitutional seats**, **authority surfaces**, or **governance modules** depending on audience.
 - Product copy should say **operator**, **system owner**, **amendment workflow**, and **authority module** where those are clearer than sovereign/ceremony/seat language.
 

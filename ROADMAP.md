@@ -85,6 +85,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - Runner JSON verdict export for independent tooling / CI cross-checks.
 - External vocabulary map maintenance as reviewer-facing language evolves.
 - Pact alignment map maintenance before Pact wording, v0.1.1, or v0.2.0 changes.
+- Section-ordered Pact amendment plan before the v0.1.1 ceremony; `docs/PACT_ALIGNMENT.md` is the inventory, not the execution order.
 - Seat load-bearing audit after v0.1.0.
 - T-0 recovery/lock-out design before cryptographic identity becomes load-bearing.
 - Full-Pact integrity and reverse Pact-reference extraction so code/law drift is visible in both directions.
@@ -229,6 +230,7 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - Full-Pact integrity: extend hash verification and pre-seal integrity beyond Section 0, and generate reverse maps from code references back to Pact sections
 - Local enforcement hooks: add pre-commit/CI checks for baseline sync, claim matrix drift, and Pact-reference extraction once the commands are stable
 - Vocabulary/register pass: keep "seat" as the authority-surface term, prefer operational/constitutional seat classes over broad Council language, and translate Pact vocabulary in reviewer/product docs
+- Amendment planning pass: group the accumulated `docs/PACT_ALIGNMENT.md` Pact text candidates by section before the v0.1.1 ceremony begins
 - Pact wording candidates after code proof: runtime-mediated callbacks, immutable envelopes, revocation split-brain symmetry, full-envelope TRACE hashing, typed drift/fault response, Section 5 permission status, Section 6 persistence boundaries, Section 7 amendment ceremony hardening, T-0 recovery authority, full-Pact integrity, formal vocabulary/register cleanup, and dynamic TRACE event-code exceptions
 
 ### v0.2.0 / TECTON Candidate Queue
@@ -253,20 +255,31 @@ Preview, not current blocker:
 
 ## Open Risks To Keep Visible
 
+Grouped for scanning; the grouping does not reduce severity or remove any disclosed gap.
+
+Identity and authority:
 - **Ingress identity:** architectural in v0.1.0, not cryptographic.
 - **Safe-Stop clearing:** T-0 by convention/docstring today; mechanical identity gate remains future hardening.
+- **Cryptographic lock-out:** future identity hardening must include auditable recovery/bypass paths before keys become operationally load-bearing.
+
+Execution and side effects:
 - **Side effects:** only governable when they pass through the runtime boundary.
 - **Per-action enforcement:** current runtime is request/task-level with action-class gates; per-tool-call gating is active future hardening.
 - **Wrapper/API boundary:** context propagation across ASGI, worker threads, background jobs, and external tools remains unresolved.
+
+Imported content and meaning:
 - **Indirect prompt injection:** future external-content importers must preserve the data/instruction boundary across hidden text, metadata, comments, retrieved snippets, and tool returns.
 - **RUNE matching edge cases:** current normalization is useful but not full Unicode/confusable defense; punctuation-heavy labels and apostrophe-like terms need tests or validation as the registry grows.
 - **RUNE synonym namespace:** synonyms are global today; multi-pack/domain collisions must be namespaced before domain packs can be composed freely.
 - **OATH consent duration:** duration is recorded today but not enforced as expiry unless/until v0.1.1 hardening changes that contract.
 - **OATH audit dual-failure gap:** if consent persistence fails and the failure callback/audit path also fails, the caller still receives refusal but TRACE may not record the failed consent attempt.
 - **OATH coercion check:** current coercion detection is a narrow keyword flag, not a full coercion-defense system.
+
+Persistence, audit, and Pact drift:
 - **External audit anchoring:** cold verification exists, but signing/timestamp anchoring is Phase H.
-- **Cryptographic lock-out:** future identity hardening must include auditable recovery/bypass paths before keys become operationally load-bearing.
 - **Pact drift:** Section 0 integrity is protected today; full-Pact hash verification and reverse Pact-to-code extraction remain future hardening.
+
+Public surface:
 - **Terminology drift:** formal Pact vocabulary is useful internally, but reviewer/product surfaces should translate it instead of making "Council" language carry more architecture than exists in code.
 - **Demo maturity:** demo quality must not outrun governance integrity.
 

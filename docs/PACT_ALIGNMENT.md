@@ -228,6 +228,12 @@ SEAL external attribution policy:
 - SEAL has an external advisor attribution scanner that rejects authoring/authority attribution patterns rather than bare name mentions.
 - The scanner needs adversarial coverage so the canonization surface does not accept laundered external model authorship.
 
+Amendment planning hygiene:
+- The Pact text candidate list below is an inventory, not a ratification order.
+- Before the v0.1.1 amendment ceremony begins, create a short amendment plan that groups candidates by Pact section and orders them by dependency.
+- The plan should distinguish code-backed amendments, wording-only clarifications, deferred candidates, and rejected/no-change decisions.
+- This prevents the eventual ceremony from becoming a freeform rewrite session after the candidate list has grown past easy working memory.
+
 Pact text candidates:
 - The kernel already enforces immutable SCOPE envelopes through frozen dataclasses and tuple fields; Pact alignment should stay explicit where this law lives.
 - OATH revocation persistence symmetry is stronger than a generic "authorize/revoke must persist" statement; future Pact wording should name both phantom grants and phantom revocations as forbidden split-brain states.
@@ -286,6 +292,7 @@ Before v0.1.1:
 - Design the T-0 recovery/lock-out posture before adding cryptographic identity gates: keys should attest authority, not become the only way the sovereign operator can recover the system.
 - Add or schedule full-Pact integrity checks, reverse Pact-reference extraction, and pre-commit/CI drift gates.
 - Preserve the vocabulary rule: keep "seat" as the authority-surface term, prefer operational/constitutional seat classes over broad Council language, and translate formal Pact language for external readers.
+- Before any v0.1.1 amendment ceremony, prepare a section-ordered amendment plan so the long candidate list is reviewed deliberately rather than edited from memory.
 - Decide the standard seat-interface question for SCOPE/RUNE.
 - Add or schedule tests for WARD hook protected-field coverage, CYCLE fail-closed internal errors, SEAL external attribution bypasses, and RUNE confidence/edge-token behavior.
 - Keep this file aligned with any new tests that prove additional Pact clauses.
