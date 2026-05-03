@@ -203,7 +203,8 @@ def _load_events(conn: sqlite3.Connection,
     return events
 
 
-def _verify_chain_links(events: List[Dict[str, Any]]) -> Dict[str, Any]:
+def _verify_chain_links(events: List[Dict[str, Any]],
+                        allow_initial_parent: bool = False) -> Dict[str, Any]:
     """Walk the events in order and verify chain linkage.
     Returns a result dict describing the outcome in detail.
 
@@ -227,12 +228,25 @@ def _verify_chain_links(events: List[Dict[str, Any]]) -> Dict[str, Any]:
             "break_details": None,
         }
 
-    # First event should have parent_hash = None (or NULL in SQLite)
-    if events[0]["parent_hash"] is not None:
-        # Not necessarily a failure if this is a filtered subset — the first
-        # event of a filtered view may legitimately have a non-None parent_hash
-        # pointing to an unfiltered predecessor. The caller knows the context.
-        pass
+    # Full-chain verification must start at the chain head. Filtered container
+    # views can start mid-chain, so callers may allow an initial parent hash.
+    if events[0]["parent_hash"] is not None and not allow_initial_parent:
+        return {
+            "verified": False,
+            "reason": "initial parent_hash present",
+            "event_count": len(events),
+            "first_break_at_index": 0,
+            "break_details": {
+                "previous_event": None,
+                "current_event": {
+                    "id": events[0]["id"],
+                    "event_code": events[0]["event_code"],
+                    "parent_hash": events[0]["parent_hash"],
+                },
+                "expected_parent_hash": None,
+                "actual_parent_hash": events[0]["parent_hash"],
+            },
+        }
 
     for i in range(1, len(events)):
         prev = events[i - 1]
@@ -310,11 +324,11 @@ def verify_trace_file(db_path: str,
 
     Args:
         db_path: Path to the .db file to verify. File is opened read-only.
-        help='Optional container_id exact-boundary filter (matches artifact_id == container_id or container_id + ":")',
-            provided, only events whose artifact_id contains this string are
-            loaded and verified. Useful for container-scoped audits (§6.10.5).
-            Note: a filtered subset is not guaranteed to form an unbroken
-            chain — this is a view, not the canonical chain.
+        container_filter: Optional container_id exact-boundary filter. When
+            provided, only events whose artifact_id matches the container id
+            boundary are loaded and verified. Useful for container-scoped
+            audits (§6.10.5). Note: a filtered subset is not guaranteed to
+            form an unbroken chain — this is a view, not the canonical chain.
         registry: Optional EVENT_CODES-style dict for known-code validation.
             When provided, unknown codes are reported in the result stats.
             Pass `trace_export.EVENT_CODES` for full coverage.
@@ -339,7 +353,10 @@ def verify_trace_file(db_path: str,
     try:
         _assert_trace_schema(conn)
         events = _load_events(conn, container_filter=container_filter)
-        chain_result = _verify_chain_links(events)
+        chain_result = _verify_chain_links(
+            events,
+            allow_initial_parent=container_filter is not None,
+        )
         stats = _compute_stats(events, registry=registry)
         schema_version = _read_schema_version(conn)
 
@@ -428,16 +445,22 @@ def _format_human_report(result: Dict[str, Any]) -> str:
 
     if not result["verified"] and result["break_details"]:
         d = result["break_details"]
+        prev = d.get("previous_event")
+        expected = d.get("expected_parent_hash")
+        actual = d.get("actual_parent_hash")
         lines.append("")
         lines.append("BREAK DETAILS:")
         lines.append(f"  First break at index:  {result['first_break_at_index']}")
-        lines.append(f"  Previous event id:     {d['previous_event']['id']}")
-        lines.append(f"  Previous event code:   {d['previous_event']['event_code']}")
-        lines.append(f"  Previous content_hash: {d['previous_event']['content_hash'][:16]}...")
+        if prev is None:
+            lines.append("  Previous event:        (missing from full chain)")
+        else:
+            lines.append(f"  Previous event id:     {prev['id']}")
+            lines.append(f"  Previous event code:   {prev['event_code']}")
+            lines.append(f"  Previous content_hash: {prev['content_hash'][:16]}...")
         lines.append(f"  Current event id:      {d['current_event']['id']}")
         lines.append(f"  Current event code:    {d['current_event']['event_code']}")
-        lines.append(f"  Expected parent_hash:  {d['expected_parent_hash'][:16]}...")
-        lines.append(f"  Actual parent_hash:    {(d['actual_parent_hash'] or '(null)')[:16]}...")
+        lines.append(f"  Expected parent_hash:  {(expected or '(null)')[:16]}...")
+        lines.append(f"  Actual parent_hash:    {(actual or '(null)')[:16]}...")
 
     stats = result["stats"]
     lines.append("")

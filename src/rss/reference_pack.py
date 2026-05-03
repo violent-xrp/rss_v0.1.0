@@ -4,7 +4,7 @@
 # ==============================================================================
 """Shared demo/reference data for CLI, examples, and tests.
 
-Keep the *code* in src/reference_pack.py.
+Keep the *code* in src/rss/reference_pack.py.
 Keep narrative / operator docs for it under docs/demo/.
 """
 from __future__ import annotations

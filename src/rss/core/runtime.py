@@ -764,7 +764,12 @@ class Runtime:
         1. External name filtering — flag advisor self-identification
         2. REDLINE leak detection — scan for REDLINE content in output
         3. Governance data suppression — strip internal artifacts
-        Returns cleaned response. Logs violations to TRACE."""
+        Returns cleaned response. Logs violations to TRACE.
+
+        This is a downstream sanitation layer, not the primary REDLINE defense.
+        The authoritative boundary is upstream: SCOPE/PAV exclude REDLINE before
+        advisor exposure, and OATH/SCOPE decide authority before the model runs.
+        """
         import re as _re
         violations = []
 

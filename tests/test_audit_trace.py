@@ -726,6 +726,37 @@ def test_s6_cold_verifier():
             if os.path.exists(p):
                 os.unlink(p)
 
+    # Scenario 2b: Head truncation (first row deleted) must fail in full-chain mode.
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+        rss.process_request("quote", use_llm=False)
+        rss.process_request("RFI", use_llm=False)
+        rss.persistence.close()
+
+        raw = sqlite3.connect(path)
+        raw.execute("DELETE FROM trace_events WHERE id = (SELECT MIN(id) FROM trace_events)")
+        raw.commit()
+        raw.close()
+
+        result = verify_trace_file(path)
+        check(result["verified"] is False,
+              "head-truncated DB: verified=False")
+        check(result["first_break_at_index"] == 0,
+              "head-truncated DB: first break is the first surviving row")
+        check(result["reason"] == "initial parent_hash present",
+              "head-truncated DB: reason identifies missing chain head")
+        check(result["break_details"]["previous_event"] is None,
+              "head-truncated DB: break details show missing predecessor")
+        check(result["break_details"]["actual_parent_hash"] is not None,
+              "head-truncated DB: first surviving row still points to deleted parent")
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
     # ── Scenario 3: Missing file ──
     bogus_path = "/tmp/this-rss-db-does-not-exist-" + str(id(object())) + ".db"
     raised = False

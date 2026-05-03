@@ -14,7 +14,7 @@ state_machine.py       100.0%
 audit/migrate.py       100.0%
 scribe.py              100.0%
 reference_pack.py      100.0%
-trace_verify.py         94.7%
+trace_verify.py         94.3%
 trace_export.py         94.8%
 tecton.py               94.8%
 cycle.py                94.2%

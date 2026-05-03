@@ -78,7 +78,7 @@ Section 3 / execution law:
 - Runtime-created TTLs are bounded internally by intent class (`HIGH_RISK`, `CONSTITUTIONAL`, `REQUEST`), and Stage 4 validates expiration before OATH/CYCLE/PAV/LLM. Externally constructed `ExecutionIntent` objects with far-future TTLs are not rejected by an upper-bound policy yet.
 - `UNAUTHORIZED_INGRESS` is a real pre-pipeline architectural rejection for non-GLOBAL container spoofing without the TECTON sentinel. It is tested and TRACE-recorded, but it is not yet named in the Pact's Section 3 stage or halt-condition tables.
 - Sustained audit-write failure is stronger in code than the current Section 3 wording: a single write-ahead failure aborts the operation, while repeated failures crossing `audit_failure_threshold` enter persistent Safe-Stop.
-- LLM response validation implements external-name replacement, REDLINE leak flagging, and governance artifact suppression. This remains a downstream sanitation layer; upstream SCOPE/PAV/OATH boundaries remain the real enforcement surface.
+- LLM response validation implements external-name replacement, REDLINE leak flagging, and governance artifact suppression. The code now states this is downstream sanitation; upstream SCOPE/PAV/OATH boundaries remain the real enforcement surface.
 
 Section 4 / hub topology and data governance:
 - Hubs are represented as typed governance locations, not ordinary folders: `HubEntry` carries hub, original hub, REDLINE state, purge state, timestamp, version, and provenance.
@@ -107,6 +107,7 @@ Section 6 / persistence and audit:
 - Append-only discipline is enforced at the governed application/interface layer. Local file-system or raw SQLite authority remains outside v0.1.0's mechanical boundary until Phase H anchoring/signing work.
 - The hash chain rule is mechanically represented by `parent_hash == previous.content_hash`; live verification, boot verification, cold verification, and export paths all preserve that chain posture.
 - v0.1.0 cold verification proves internal chain consistency, schema readability, insertion-order linkage, optional container-filtered views, and optional registry coverage. It does not yet prove payload-inclusive external recomputability because raw canonical payloads are not exported.
+- Cold verification now treats a non-null first parent hash as a full-chain failure, so deleting the head row is detected. Filtered container views still allow an initial parent because they may legitimately begin mid-chain.
 - The runtime `_log()` method is the handoff between Section 3 execution and Section 6 audit: if durable TRACE persistence fails, the operation aborts rather than quietly degrading.
 - Consecutive audit-write failures are tracked through `audit_failure_threshold` and escalate to persistent Safe-Stop when the threshold is crossed. The default threshold is 3; `production_mode=True` forces the threshold to 1.
 - `production_mode` is a real single switch in `RSSConfig.__post_init__`: it forces strict event-code validation, lowers audit failure threshold to 1, disables console logging, and requires the Genesis file.
