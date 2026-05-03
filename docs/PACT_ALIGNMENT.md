@@ -62,6 +62,16 @@ Section 2 / meaning law:
 - Runtime contextual reinjection is present: canonical `label: definition` term pairs are sent through the LLM adapter's `terms` parameter.
 - MED and LOW synonym confidence are not yet behaviorally distinct in the returned `TermStatus`; both become AMBIGUOUS with the same confirmation wording.
 
+Section 3 / execution law:
+- Runtime stage tracking matches the Pact's execution pipeline: Stage 0 Safe-Stop through Stage 9 TRACE use stable `stage` and `stage_name` fields on structured halts.
+- The main halt codes named by the Pact are represented in runtime behavior: `SAFE_STOP_ACTIVE`, `GENESIS_FAILURE`, `DISALLOWED_TERM`, `CONSENT_REQUIRED`, `RATE_LIMITED`, and `UNEXPECTED_ERROR`.
+- Intent classification checks HIGH_RISK verbs before CONSTITUTIONAL verbs, matching the Pact's most-restrictive ordering for mixed-risk requests.
+- Execution intents carry a SHA-256 `payload_hash` of the original text. In v0.1.0 this is receipt metadata; the runtime does not yet perform a later re-hash comparison before execution.
+- Runtime-created TTLs are bounded internally by intent class (`HIGH_RISK`, `CONSTITUTIONAL`, `REQUEST`), and Stage 4 validates expiration before OATH/CYCLE/PAV/LLM. Externally constructed `ExecutionIntent` objects with far-future TTLs are not rejected by an upper-bound policy yet.
+- `UNAUTHORIZED_INGRESS` is a real pre-pipeline architectural rejection for non-GLOBAL container spoofing without the TECTON sentinel. It is tested and TRACE-recorded, but it is not yet named in the Pact's Section 3 stage or halt-condition tables.
+- Sustained audit-write failure is stronger in code than the current Section 3 wording: a single write-ahead failure aborts the operation, while repeated failures crossing `audit_failure_threshold` enter persistent Safe-Stop.
+- LLM response validation implements external-name replacement, REDLINE leak flagging, and governance artifact suppression. This remains a downstream sanitation layer; upstream SCOPE/PAV/OATH boundaries remain the real enforcement surface.
+
 ## Known Alignment Gaps
 
 T-0 mechanical identity:
@@ -93,6 +103,12 @@ OATH consent semantics:
 - `DENIED` as an explicit consent state, consent-source reporting, and stronger coercion handling remain v0.1.1 candidates.
 - OATH `handle({"action": "authorize"})` now fails closed when `requester` is missing or blank instead of defaulting to T-0. Current proof verifies no consent record is created on missing identity and explicit requester flow still works.
 
+Execution-law gaps:
+- `ExecutionIntent.payload_hash` is computed but not currently re-verified before runtime execution. If the Pact keeps the tamper-detection claim, v0.1.1 should either add a re-hash guard or clarify that the hash is an audit receipt.
+- TTL upper bounds are implicit because the runtime creates short-lived intents itself; `ExecutionStateMachine.validate()` does not reject far-future TTLs on externally constructed intents.
+- `UNAUTHORIZED_INGRESS` should be added to Section 3's halt-condition/stage language or explicitly fenced as a pre-pipeline architectural rejection below the constitutional stage table.
+- Section 3 should eventually name the sustained-audit-failure threshold as Constitutional Drift / Safe-Stop behavior, because the kernel already implements it.
+
 Seat interface:
 - WARD's protocol expects seats to expose `status()` and `handle(task)`.
 - CYCLE, OATH, SCRIBE, SEAL, and WARD currently expose both.
@@ -113,11 +129,17 @@ Pact text candidates:
 - TRACE full-envelope hashing is stronger than generic hash chaining; future Pact wording should preserve that specificity.
 - Runtime-mediated callbacks should be named as allowed only when the runtime, not a peer seat, bridges the event.
 - Typed fault taxonomy should eventually distinguish global halt, container halt, structured concern, and recoverable drift while preserving fail-closed defaults.
+- Section 3 should remove or clarify duplicated §3.3.1 language during the next Pact text pass.
+- Section 3's implementation verification table should move to this alignment/evidence layer, or be marked as snapshot-only; Pact law should not carry drifting test-count numbers unless mechanically generated.
+- Section 3 should clarify WARD's bootstrap relationship: seven domain/operational seats register with WARD, while WARD remains the routing/enforcement infrastructure rather than a peer in the execution sequence.
+- Section 3 should acknowledge LLM invocation states more precisely: disabled, available-and-called, unavailable/failed with governed fallback.
+- Operational configuration values that T-0 may change without Pact amendment (verb lists, TTL windows, model/timeout settings, audit-failure threshold) should be exposed in an evidence doc or generated snapshot rather than hidden only in `config.py`.
 
 ## Version Watch
 
 Before v0.1.1:
 - The S0-S2 pre-tag mechanical OATH/RUNE gaps listed in `ROADMAP.md` are closed; keep future work version-sensitive rather than silently amending the Pact.
+- Resolve the Section 3 payload-hash and TTL-upper-bound questions as code changes or explicit Pact/claim clarifications.
 - Decide the standard seat-interface question for SCOPE/RUNE.
 - Add or schedule tests for WARD hook protected-field coverage, CYCLE fail-closed internal errors, SEAL external attribution bypasses, and RUNE confidence/edge-token behavior.
 - Keep this file aligned with any new tests that prove additional Pact clauses.
