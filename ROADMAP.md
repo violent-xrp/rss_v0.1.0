@@ -15,6 +15,7 @@ Historical receipts live in supporting docs:
 - testing layout and runner discipline: `docs/TESTING.md`
 - demo handoff and artifact usage: `docs/demo/DEMO_HANDOFF.md`
 - external vocabulary / reviewer map: `docs/EXTERNAL_MAP.md`
+- Pact-to-kernel alignment map: `docs/PACT_ALIGNMENT.md`
 - claim traceability: `docs/claim_matrix.md`
 
 ---
@@ -43,6 +44,7 @@ Optional local checks:
 ```bash
 python run_coverage.py
 python docs/build_claim_matrix.py
+python docs/sync_baseline.py --check --require-clean
 python examples/demo_suite.py --offline --artifacts demo_artifacts
 ```
 
@@ -55,6 +57,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 ### Now
 - **Release-boundary polish:** keep the v0.1.0 claim surface aligned with the closed Phase G coverage floor and remaining known limits.
 - **Connector-proof planning:** keep future browser/email/document/RAG/tool-return import tests mapped before adding real external adapters.
+- **RUNE/OATH pre-tag hardening map:** close the small authority/meaning-law issues that are cheap, mechanical, and directly tied to the release boundary.
 
 ### Next
 - Decide whether the current demo artifact set is enough for the v0.1.0 release tag.
@@ -65,9 +68,16 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - API/wrapper ingress boundary and caller identity propagation.
 - Per-action/tool-call enforcement before real side effects execute.
 - Mechanical T-0 identity gate for Safe-Stop clearing.
+- OATH consent-source reporting, explicit DENY semantics, and duration policy.
+- RUNE per-pack synonym namespaces and synonym confidence semantics.
+- Seat interface decision for SCOPE/RUNE: add WARD-compatible adapters or document a deliberate direct-law exception.
+- WARD hook protected-field audit as governance-relevant task/result fields grow.
+- CYCLE fail-closed proof for internal error paths, not only strict-mode unknown domains.
+- SEAL external attribution scanner adversarial tests before amendment/canon claims expand.
 - Governed pack selection/versioning once multiple demo worlds or tenant-specific packs exist.
 - Runner JSON verdict export for independent tooling / CI cross-checks.
 - External vocabulary map maintenance as reviewer-facing language evolves.
+- Pact alignment map maintenance before Pact wording, v0.1.1, or v0.2.0 changes.
 - Seat load-bearing audit after v0.1.0.
 
 ### Future Watch
@@ -90,7 +100,7 @@ Do not diffuse effort equally across all future phases. Keep the current checkpo
 Before tagging v0.1.0, RSS should have:
 - one clean acceptance run at the current or higher assertion count
 - current coverage and claim matrix regenerated
-- ROADMAP, README, Truth Register, Claim Discipline, Contributing, Changelog, and Threat Model synced to the same baseline
+- `python docs/sync_baseline.py --check --require-clean` exits 0, proving current-facing baseline docs are synced and the runner is clean
 - demo artifact flow documented and runnable
 - remaining known limitations disclosed clearly
 - no public claim that exceeds the current proof surface
@@ -171,6 +181,10 @@ Threat-hardening note:
 
 Open in Phase G:
 - decide whether the current demo artifact set is enough for the v0.1.0 tag
+- close the pre-tag RUNE/OATH hardening items that are small enough to prove without widening the release surface:
+  - OATH `handle()` must fail closed when `requester` is missing instead of defaulting to T-0
+  - RUNE anti-trojan scanning must cover all term text that can reach an advisor, or tests/docs must prove `constraints` remain kernel-internal
+  - RUNE substring classification should prefer the longest matching sealed term so primary classification is order-independent
 - keep connector-specific indirect prompt-injection probes parked as required acceptance criteria for future external adapters
 
 ### v0.1.1 Candidate Hardening Queue
@@ -183,6 +197,16 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - runner JSON verdict export for independent verification and future CI
 - external-map refinement for public reviewers
 - post-v0.1.0 seat load-bearing audit: verify each seat owns a unique invariant as connectors and per-action gates arrive
+- RUNE per-pack/domain synonym namespace so construction, legal, medical, finance, and tenant packs can reuse common phrases without global collisions
+- RUNE synonym confidence cleanup: either collapse HIGH/MED/LOW into the states RSS actually uses or give LOW a distinct governed meaning
+- OATH structured `check()` result option that preserves the current string return while exposing consent source (`container_specific`, `global_fallback`, or absent) for audit/reviewer context
+- OATH duration decision: either enforce expiry through deterministic time semantics or document `ConsentRecord.duration` as metadata-only
+- OATH explicit `DENIED` consent status and `deny()` operation so a container-specific denial can override GLOBAL authorization
+- OATH coercion detection cleanup: rename the current keyword flag as limited, or build a real governed warning surface before claiming coercion defense
+- OATH nested consent inheritance only if TECTON grows parent/child container hierarchy
+- last-resort consent failure receipt if durable consent persistence and TRACE failure notification fail at the same time
+- mechanical T-0 gate ordering for Pact-reserved powers: Safe-Stop clearing, term/synonym/disallow authorization, seat changes, container lifecycle, and seal/amendment authority
+- Pact wording candidates after code proof: runtime-mediated callbacks, immutable envelopes, revocation split-brain symmetry, full-envelope TRACE hashing, and typed drift/fault response
 
 ### Phase H — External Trust Anchoring
 
@@ -203,6 +227,11 @@ Preview, not current blocker:
 - **Per-action enforcement:** current runtime is request/task-level with action-class gates; per-tool-call gating is active future hardening.
 - **Wrapper/API boundary:** context propagation across ASGI, worker threads, background jobs, and external tools remains unresolved.
 - **Indirect prompt injection:** future external-content importers must preserve the data/instruction boundary across hidden text, metadata, comments, retrieved snippets, and tool returns.
+- **RUNE matching edge cases:** current normalization is useful but not full Unicode/confusable defense; punctuation-heavy labels and apostrophe-like terms need tests or validation as the registry grows.
+- **RUNE synonym namespace:** synonyms are global today; multi-pack/domain collisions must be namespaced before domain packs can be composed freely.
+- **OATH consent duration:** duration is recorded today but not enforced as expiry unless/until v0.1.1 hardening changes that contract.
+- **OATH audit dual-failure gap:** if consent persistence fails and the failure callback/audit path also fails, the caller still receives refusal but TRACE may not record the failed consent attempt.
+- **OATH coercion check:** current coercion detection is a narrow keyword flag, not a full coercion-defense system.
 - **External audit anchoring:** cold verification exists, but signing/timestamp anchoring is Phase H.
 - **Demo maturity:** demo quality must not outrun governance integrity.
 

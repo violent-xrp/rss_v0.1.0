@@ -89,7 +89,7 @@ class AmendmentRecord:
     rationale: str
     ratified_at: datetime
     sovereign_override: bool = False
-    # Gemini fix: reviewer identity must survive into the final record
+    # Reviewer identity must survive into the final record.
     reviewer: Optional[str] = None
     review_notes: Optional[str] = None
 

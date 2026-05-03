@@ -35,10 +35,13 @@ Current project-snapshot baseline:
 - **22 source modules in `src/rss/` package tree** (R1 restructure complete)
 
 When metrics change:
-- update `ROADMAP.md` first
-- update the remaining docs from ROADMAP
+- run `python docs/sync_baseline.py`
 - do not let older numbers persist in public docs
 - if counts fall, explain why in plain language
+
+Before a release/tag gate:
+- run `python docs/sync_baseline.py --check --require-clean`
+- treat a stale-doc exit as a release blocker
 
 ## Repo-layout discipline
 Public-facing root docs stay at the root:

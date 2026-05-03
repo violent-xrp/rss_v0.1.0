@@ -95,13 +95,13 @@ _PIPELINE_STAGES: dict = {
 #   - No test rewrites: rss.hubs.add_entry(...) etc. continue to work because
 #     the property transparently returns whichever topology is currently active
 #
-# Explicitly NOT in scope for this pass (per ChatGPT's narrow-first framing):
+# Explicitly NOT in scope for this pass:
 #   - ACTIVE_CONTAINER_ID ContextVar (deferred to Phase F-0 API wrapper work)
 #   - Removing D-1 sentinel kwargs (unchanged; ContextVar supplements rather
 #     than replaces explicit kwarg threading)
 #   - Auto-prefixing artifact_id in audit_log (already handled by _log)
 #
-# Honest limitation: thread-boundary amnesia (Gemini's cascade hazard #1)
+# Honest limitation: thread-boundary amnesia
 # still applies. If any caller shunts work to asyncio.to_thread() without
 # explicitly copying context via contextvars.copy_context(), this ContextVar
 # will not follow across that boundary. There is no such pattern in RSS

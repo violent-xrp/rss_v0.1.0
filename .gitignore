@@ -2,10 +2,20 @@
 rss_v3.db
 rss_v3.db-shm
 rss_v3.db-wal
+error_run.txt
+*.log
 
 # Python cache folders
 __pycache__/
 *.pyc
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Local generated artifacts
+demo_artifacts/
+tmp_demo_artifacts*/
 *.db
 *.db-shm
 *.db-wal

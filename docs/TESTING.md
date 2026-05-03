@@ -32,6 +32,14 @@ Claim matrix:
 python docs/build_claim_matrix.py
 ```
 
+Baseline sync:
+
+```bash
+python docs/sync_baseline.py
+python docs/sync_baseline.py --check
+python docs/sync_baseline.py --check --require-clean
+```
+
 Demo artifact proof:
 
 ```bash
@@ -76,6 +84,7 @@ The modular split was mechanical and conservative:
 - Any count drop must be recorded in `docs/roadmap/ACCEPTANCE_HISTORY.md`.
 - Claim tags should stay beside the proof bodies.
 - Regenerate `docs/claim_matrix.md` after meaningful claim/test changes.
+- Run `python docs/sync_baseline.py` after changes that affect counts, coverage, or claim traceability.
 - Do not bury count-history logic inside the test runner itself.
 
 ## Future Cleanup

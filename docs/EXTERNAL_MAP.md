@@ -25,15 +25,17 @@ It does not rename the internal system. It maps the RSS terms to more familiar e
 
 ## Seat Load-Bearing View
 
-Some seats are already load-bearing in the current kernel:
+RSS has two seat rhythms. They differ by operating cadence, not by rank.
+
+Operational seats participate in governed request flow:
+- **WARD:** protects routing and dispatch surfaces.
 - **SCOPE:** without it, data exposure is not bounded.
 - **RUNE:** without it, meaning and disallowed terms drift.
 - **OATH:** without it, authority becomes implicit.
+- **CYCLE:** enforces cadence and rate limits.
 - **TRACE:** without it, the system cannot prove what happened.
 
-Other seats are lighter in v0.1.0 but still have a defined invariant:
-- **WARD:** protects routing and dispatch surfaces.
-- **CYCLE:** enforces cadence and rate limits.
+Constitutional seats participate in drafting, review, canonization, and amendment surfaces:
 - **SCRIBE:** keeps drafting separate from ratification.
 - **SEAL:** governs amendment and ratification ceremony.
 
@@ -60,6 +62,7 @@ Avoid absolute claims:
 If a reviewer asks where the proof lives, point them to:
 - `ROADMAP.md` for current truth and active work
 - `TRUTH_REGISTER.md` for what can and cannot be claimed
+- `docs/PACT_ALIGNMENT.md` for Pact-to-kernel alignment and known gaps
 - `docs/claim_matrix.md` for claim-to-test traceability
 - `docs/demo/DEMO_HANDOFF.md` for the demo artifact path
 - `tests/test_all.py` for the canonical acceptance runner

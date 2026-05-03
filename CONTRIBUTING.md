@@ -58,7 +58,7 @@ Every meaningful PR should say:
 - what changed in code
 - what changed in proof/tests
 - whether baseline counts changed
-- which docs were updated
+- whether `python docs/sync_baseline.py --check --require-clean` passes
 - which docs are still owed sync
 
 ## Safety / honesty rule

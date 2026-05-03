@@ -329,19 +329,19 @@ That navigation map matches how the Pact describes the system. Right now, the fl
 - If you are in the middle of Priority A hardening. Do not mix reorganization with behavioral changes. Finish Priority A green, then consider R1.
 - If the demo is imminent and you need the code as-is for a presentation.
 - If you do not have a clean green baseline to refactor against. Never refactor on a red suite.
-- If Claude Max is not yet active and the session budget is tight — this refactor is mechanical, but verification after the move will eat ~30-50 tool calls minimum.
+- If the available assistant/tool session budget is tight, wait. This refactor is mechanical, but verification after the move will eat ~30-50 tool calls minimum.
 
 ### The conservative alternative
 
 **Do nothing. Stay flat.** Solo projects have shipped further than RSS with flatter layouts. The current structure is not broken; it is just not scaling prep. If v0.1.0 is the only milestone on the immediate horizon and Phase G is months out, the refactor can wait.
 
-My honest read: **schedule R1 immediately after Priority A closure, defer R2/R3 until Phase G is imminent.** R1 is worth doing before public attention lands on the repo. R2 and R3 can wait for real pressure.
+Recommended scheduling: **schedule R1 immediately after Priority A closure, defer R2/R3 until Phase G is imminent.** R1 is worth doing before public attention lands on the repo. R2 and R3 can wait for real pressure.
 
 ---
 
 ## Concrete First Session Plan (if/when you proceed)
 
-Budget: 2-3 hours focused work, ideally with Claude Max session budget.
+Budget: 2-3 hours focused work, ideally with enough assistant/tool session budget to complete verification in one pass.
 
 1. Start on a clean green `126/955/0` baseline.
 2. Create branch: `git checkout -b R1-repo-structure`

@@ -28,6 +28,16 @@ RSS v0.1.0 should **not** be presented as:
 - Hard guarantees depend on meaningful side effects entering through the governed runtime boundary; universal per-action/tool-call enforcement remains future work.
 - Future browser, email, document, RAG, and tool-return connectors still require connector-specific indirect-prompt-injection tests before claims expand.
 
+## Architectural thesis
+
+RSS implements a specific architectural claim: AI governance must be enforced at the input boundary by structural type discipline, not at the output boundary by content filtering, and the system enforcing the governance must produce its own evidence of correctness via a reproducible runner-truth verdict and an independently verifiable audit chain.
+
+Everything in the repo is in service of that claim. The eight seats are the decomposition of where the boundary discipline lives. The Pact is the source of law the boundary enforces. The TRACE chain is the evidence layer that proves the law was enforced. The cold verifier is the independent verification that closes the loop. The runner-truth rule is the epistemological commitment that no claim outruns its proof. The discipline patterns (TRUTH_REGISTER, CLAIM_DISCIPLINE, the sync_baseline gate) are the meta-mechanism that prevents the claim from drifting into overclaim over time.
+
+The constitutional source starts at `pact/pact_section0_root_physics.md`. The current Pact-to-kernel alignment map lives in `docs/PACT_ALIGNMENT.md`; every proof claim should stay traceable through `docs/claim_matrix.md` and the acceptance runner.
+
+That description constrains what RSS can and cannot honestly be. Most positioning-style descriptions of governance products are category labels. This one is a thesis the system either upholds or fails. RSS lives or dies on whether the thesis is right; if it is, the repository is the proof.
+
 ## Operator's note
 
 I started building Rose Sigil Systems because the AI industry has built extraordinary engines, but an engine without a steering column is a liability. To deploy these systems safely into the enterprise, governance must evolve from written policy into hard runtime mechanics.
