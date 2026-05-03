@@ -107,6 +107,18 @@ Section 6 / persistence and audit:
 - REDLINE export sanitization is token-boundary based: known REDLINE entry IDs are replaced in artifact identifiers without over-redacting unrelated larger tokens. Cold export collects REDLINE IDs from both global and container hub tables.
 - Hub provenance, including `UNTRUSTED_IMPORT` receipts with source/wrapped SHA-256 digests, is persisted through the `provenance` JSON column for both global and container hub entries.
 
+Section 7 / amendment and evolution:
+- Section 7 separates constitutional amendment from ordinary code synchronization. Code can harden between checkpoints; Pact text gains constitutional standing only through proposal, review, ratification, and sealing.
+- SEAL implements the three-step ceremony: `propose_amendment()`, `review_amendment()`, and `ratify_amendment()`.
+- Protected Section 0 amendments require `sovereign_override=True` at proposal time, surfacing elevated gravity before review or ratification.
+- Review is a real gate: verdicts normalize to APPROVE/REJECT, blank reviewers are rejected, rejected proposals become terminal, and rejected proposals cannot be ratified.
+- Ratification requires explicit `t0_command=True`, an APPROVE review verdict, and a non-terminal proposal. Repeat ratification returns `ALREADY_RATIFIED` and does not duplicate amendment history.
+- Ratification flows through `seal()`, which runs the configured pre-seal integrity check and the external advisor attribution guard before canonizing the proposed text.
+- `AmendmentRecord` preserves the current required evidence surface: proposal ID, section ID, old/new versions, old/new hashes, rationale, ratification timestamp, sovereign override flag, reviewer, and review notes.
+- Section-level versions increment independently (`v1.0`, `v1.1`, etc.) as sections are sealed. This is separate from project/release versions such as `v0.1.0` and future `v0.1.1`.
+- The four ceremony event codes are registered in the TRACE export registry: `AMENDMENT_PROPOSED`, `AMENDMENT_REVIEWED`, `AMENDMENT_REJECTED`, and `AMENDMENT_RATIFIED`.
+- Amendment proposal state and queryable amendment history are in-memory in v0.1.0. TRACE events and canon artifacts provide evidence, but actionable proposals do not survive restart as first-class state yet.
+
 ## Known Alignment Gaps
 
 T-0 mechanical identity:
@@ -165,6 +177,17 @@ Persistence/audit gaps:
 - Dynamic event-code handling should stay registry-bound. `CONTAINER_REQUEST_*` is the only current dynamic prefix; adding any new family should require explicit T-0/registry ceremony.
 - Export sanitization currently targets REDLINE artifact-id leakage. It does not make REDLINE content externally recomputable or prove absence of other side channels without future export-policy hardening.
 
+Amendment/evolution gaps:
+- SEAL amendment TRACE emission currently flows through `_emit()`, which swallows trace callback failures. This means ceremony actions may continue even if amendment TRACE events fail to persist, which is weaker than Section 7's same-write-ahead-guarantee posture.
+- Proposal objects, review state, and queryable amendment history do not persist across restart. A reviewed-but-not-ratified proposal is lost on restart even though its TRACE review event may survive.
+- External advisor attribution is checked during `seal()` / ratification, not at proposal submission. A proposal containing forbidden attribution can exist until ratification attempts to seal it.
+- Reviewer identity is a string today. There is no reviewer credentialing, section-scoped reviewer authorization, signer binding, proposer/reviewer separation, or multi-reviewer quorum yet.
+- Proposal lifecycle states are minimal: PROPOSED, REVIEWED, RATIFIED, and REJECTED. There is no WITHDRAWN, DEFERRED, SUPERSEDED, EXPIRED, or stale-base state.
+- There is no read-only ratification preview/dry-run step that shows the exact diff, expected hashes, version transition, integrity result, and AmendmentRecord before T-0 commits.
+- Parallel amendments against the same section are not handled explicitly. A proposal reviewed against an older section version is not automatically marked stale if another amendment lands first.
+- Amendment records do not yet include byte-level diff content, affected Pact dependencies, code/test evidence snapshot, runtime environment, full pre-seal drift report, or post-ratification verification report.
+- There is no post-ratification self-test that proves the new canon hash, version counter, TRACE event, persistence state, and cold verifier posture all match the expected result.
+
 Seat interface:
 - WARD's protocol expects seats to expose `status()` and `handle(task)`.
 - CYCLE, OATH, SCRIBE, SEAL, and WARD currently expose both.
@@ -205,6 +228,13 @@ Pact text candidates:
 - Section 6 dynamic event-code wording should say that `CONTAINER_REQUEST_*` is the current dynamic pattern and that future patterns require explicit registration.
 - Section 6 export sanitization wording should enumerate what is sanitized today: REDLINE entry IDs in TRACE artifact identifiers for both live and cold exports, using token-boundary replacement.
 - Section 6 should preserve the distinction between cold verification, cold export, and future payload-inclusive external recomputability.
+- Section 7 should clarify the relationship between section-level versions and project/release versions: section versions increment per amended section, while project versions snapshot one or more sealed Pact changes plus code state.
+- Section 7 should decide whether external advisor attribution must be rejected at proposal submission, ratification, or both. Proposal-time rejection is cleaner for operator workflow.
+- Section 7 should make amendment persistence a priority before any large v0.1.1 Pact amendment pass, so the ceremony can span real work sessions without losing reviewed proposals.
+- Section 7 should align ceremony TRACE emission with the same write-ahead discipline claimed for governed runtime events, or explicitly fence ceremony TRACE emission as best-effort until hardened.
+- Section 7 should add lifecycle states for real governance queues: WITHDRAWN, DEFERRED, SUPERSEDED, EXPIRED, and a stale-base/conflict state if section versions advance under an open proposal.
+- Section 7 should add a ratification preview/dry-run concept and post-ratification verification report before TECTON exposes amendment ceremony in a product UI.
+- Section 7 AmendmentRecord structure should eventually include diff, dependency/evidence snapshot, environment snapshot, pre-seal drift report, and post-seal verification outcome.
 
 ## Version Watch
 
@@ -219,6 +249,10 @@ Before v0.1.1:
 - Keep Section 6 audit/export claims split between internal consistency, cold export, and future external recomputability.
 - Decide whether `UNTRUSTED_IMPORT` round-trip needs a dedicated global/container restore test beyond the current persistence-row proof.
 - Keep production-mode behavior in the generated or evidence docs if more flags join the one-switch posture.
+- Treat amendment persistence as a high-priority code hardening item before any substantial Pact v0.1.1 amendment ceremony.
+- Fix or explicitly fence SEAL amendment TRACE emission so ceremony events do not silently lose the write-ahead guarantee.
+- Decide the section-version versus project-version model before ratifying the first post-v0.1.0 Pact amendment batch.
+- Add a future structured amendment preview/report API as the substrate for a TECTON amendment UI.
 - Decide the standard seat-interface question for SCOPE/RUNE.
 - Add or schedule tests for WARD hook protected-field coverage, CYCLE fail-closed internal errors, SEAL external attribution bypasses, and RUNE confidence/edge-token behavior.
 - Keep this file aligned with any new tests that prove additional Pact clauses.

@@ -218,7 +218,11 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - Section 6 export/audit precision: keep cold verification, cold export, and future payload-inclusive external recomputability as separate claims
 - Section 6 production posture evidence: keep the one-switch `production_mode` behavior visible if more settings join that profile
 - Section 6 provenance proof: decide whether `UNTRUSTED_IMPORT` needs a dedicated full restore test beyond current SQLite row round-trip proof
-- Pact wording candidates after code proof: runtime-mediated callbacks, immutable envelopes, revocation split-brain symmetry, full-envelope TRACE hashing, typed drift/fault response, Section 5 permission status, Section 6 persistence boundaries, and dynamic TRACE event-code exceptions
+- Section 7 amendment persistence: persist proposals, review state, and ratified amendment records before relying on long-running amendment batches
+- Section 7 ceremony write-ahead: make amendment TRACE emission fail closed or explicitly fence it as best-effort until hardened
+- Section 7 version model: define how section-level versions (`v1.0`, `v1.1`) relate to project/release versions (`v0.1.0`, `v0.1.1`)
+- Section 7 operator ceremony API: future preview/dry-run, diff report, stale-base handling, and post-ratification verification report for TECTON UI readiness
+- Pact wording candidates after code proof: runtime-mediated callbacks, immutable envelopes, revocation split-brain symmetry, full-envelope TRACE hashing, typed drift/fault response, Section 5 permission status, Section 6 persistence boundaries, Section 7 amendment ceremony hardening, and dynamic TRACE event-code exceptions
 
 ### Phase H — External Trust Anchoring
 
