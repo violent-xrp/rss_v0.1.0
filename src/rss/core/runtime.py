@@ -982,6 +982,8 @@ class Runtime:
                     e.get("content", str(e)) for e in pav_view.entries
                 )
                 # Contextual reinjection (§2.9): inject canonical definitions, not just labels
+                # Constraints are kernel metadata in v0.1.0; do not send them
+                # to advisory prompts unless the anti-trojan contract expands.
                 terms_text = "\n".join(
                     f"{t['label']}: {t['definition']}"
                     for t in self.meaning.list_sealed()

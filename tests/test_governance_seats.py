@@ -700,7 +700,7 @@ def test_compound_detection():
 
 
 def test_contextual_reinjection():
-    # CLAIM: §2.9 — sealed term contextual reinjection format
+    # CLAIM: §2.9, §2.3 — sealed term contextual reinjection format; constraints stay kernel metadata
     section("Contextual Reinjection (§2.9)")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -710,13 +710,32 @@ def test_contextual_reinjection():
         rss = bootstrap(config)
 
         rss.hubs.add_entry("WORK", "Morrison quote: $245K")
+        constraint_token = "CONSTRAINT_ONLY_DELETE_TOKEN"
+        rss.save_term(Term(
+            "constraint-proof",
+            "constraint proof",
+            "Definition visible to advisor.",
+            [constraint_token],
+            "1.0",
+        ))
 
-        # Run with LLM (will use fallback since no Ollama)
+        captured = {}
+
+        class CaptureLLM:
+            def call(self, pav_text, terms, user_text=""):
+                captured["pav_text"] = pav_text
+                captured["terms"] = terms
+                captured["user_text"] = user_text
+                return "captured governed response"
+
+        rss.llm = CaptureLLM()
+
+        # Run with a capture adapter so the actual runtime prompt payload is proven.
         r = rss.process_request("What is the quote?", use_llm=True)
+        check(r.get("llm_response") == "captured governed response",
+              "runtime used capture LLM for contextual reinjection proof")
 
-        # In fallback mode, the response echoes the question
         # The key test is that the runtime sent definitions, not just labels
-        # We verify the terms_text format by checking the sealed term list
         terms = rss.meaning.list_sealed()
         check(all("definition" in t for t in terms),
               "sealed terms have definitions for reinjection")
@@ -727,6 +746,12 @@ def test_contextual_reinjection():
         expected_prefix = rss.config.default_term_definition_prefix.lower()
         check(expected_prefix in terms_text.lower(),
               "canonical config-driven definitions present in reinjection text")
+        check("constraint proof: Definition visible to advisor." in captured["terms"],
+              "runtime sends canonical label:definition pairs to advisor")
+        check(constraint_token in str(terms),
+              "term constraints remain present as kernel metadata")
+        check(constraint_token not in captured["terms"],
+              "term constraints are excluded from advisor prompt text")
 
         rss.persistence.close()
     finally:
@@ -996,6 +1021,40 @@ def test_oath_input_normalization_and_handle_edges():
     missing_action_class = oath.handle({"action": "check"})
     check(missing_action_class.get("error") == "MISSING_ACTION_CLASS",
           "handle returns structured error for missing action_class")
+
+    oath2 = Oath()
+    missing_requester = oath2.handle({
+        "action": "authorize",
+        "action_class": "EXECUTE",
+        "scope": "WORK",
+        "duration": "SESSION",
+    })
+    check(missing_requester.get("error") == "MISSING_REQUESTER",
+          "handle(authorize) fails closed when requester is missing")
+    check(oath2.check("EXECUTE") == "DENIED",
+          "missing requester does not create GLOBAL consent")
+
+    blank_requester = oath2.handle({
+        "action": "authorize",
+        "action_class": "EXECUTE",
+        "scope": "WORK",
+        "duration": "SESSION",
+        "requester": "   ",
+    })
+    check(blank_requester.get("error") == "MISSING_REQUESTER",
+          "handle(authorize) fails closed when requester is blank")
+    check(oath2.status()["total_records"] == 0,
+          "failed routed authorization leaves consent registry unchanged")
+
+    explicit_requester = oath2.handle({
+        "action": "authorize",
+        "action_class": "EXECUTE",
+        "scope": "WORK",
+        "duration": "SESSION",
+        "requester": "T-0",
+    })
+    check(explicit_requester.get("authorized") is True,
+          "handle(authorize) still permits explicit requester")
 
 
 def test_oath_additional_proof():

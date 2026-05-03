@@ -1,6 +1,6 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-05-02 23:05 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-05-03 01:55 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
@@ -134,6 +134,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_anti_trojan` — anti-trojan term-definition scanner
 - `test_anti_trojan_runtime` — anti-trojan in governed save path
+- `test_contextual_reinjection` — sealed term contextual reinjection format; constraints stay kernel metadata
 
 ## §2.3.3
 
@@ -164,7 +165,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §2.9
 
-- `test_contextual_reinjection` — sealed term contextual reinjection format
+- `test_contextual_reinjection` — sealed term contextual reinjection format; constraints stay kernel metadata
 
 ## §2.10.2
 

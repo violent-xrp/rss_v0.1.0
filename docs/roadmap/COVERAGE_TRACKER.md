@@ -27,10 +27,10 @@ scope.py                90.0%
 llm_adapter.py          90.1%
 audit_log.py            87.4%
 runtime.py              87.1%
-oath.py                 86.5%
+oath.py                 88.2%
 pav.py                  86.9%
 constitution.py         92.5%
-TOTAL                   92.3%
+TOTAL                   92.4%
 ```
 
 ## Current Targets

@@ -82,7 +82,7 @@ RUNE authorization surface:
 - RUNE currently enforces normalization, sealed terms, disallowed phrases, synonym handling, and anti-trojan scanning.
 - Pact-stated authority over term creation should eventually be paired with mechanical caller authority, not only trusted code paths.
 - Per-pack synonym namespaces remain future hardening before domain packs can compose freely.
-- Anti-trojan scanning currently checks definitions; constraints need either scanning or a proven invariant that constraints never reach advisor/model context.
+- Anti-trojan scanning currently checks definitions. Runtime proof now captures the actual advisor prompt payload and verifies constraints remain kernel metadata, not advisor/model context. If a future adapter reinjects constraints, the scanner contract must expand before that change lands.
 - Boundary-sensitive labels, including punctuation-heavy, apostrophe-like, internal-hyphen, combining-mark, and confusable inputs, need tests or validation as the registry grows.
 - MED/LOW confidence behavior needs resolution: preserve Pact shape with a distinct confirmation field, or amend future Pact text to collapse the confidence model.
 
@@ -90,7 +90,7 @@ OATH consent semantics:
 - OATH has write-ahead consent persistence and fail-closed namespace validation.
 - Duration is recorded but not yet enforced as expiry.
 - `DENIED` as an explicit consent state, consent-source reporting, and stronger coercion handling remain v0.1.1 candidates.
-- OATH `handle()` currently defaults missing `requester` to T-0. That is a pre-tag implementation bug because OATH must not invent sovereign authorization for a routed task.
+- OATH `handle({"action": "authorize"})` now fails closed when `requester` is missing or blank instead of defaulting to T-0. Current proof verifies no consent record is created on missing identity and explicit requester flow still works.
 
 Seat interface:
 - WARD's protocol expects seats to expose `status()` and `handle(task)`.
@@ -116,7 +116,7 @@ Pact text candidates:
 ## Version Watch
 
 Before v0.1.1:
-- Fix pre-tag mechanical OATH/RUNE gaps already listed in `ROADMAP.md`.
+- Fix remaining pre-tag mechanical RUNE gaps already listed in `ROADMAP.md`.
 - Decide the standard seat-interface question for SCOPE/RUNE.
 - Add or schedule tests for WARD hook protected-field coverage, CYCLE fail-closed internal errors, SEAL external attribution bypasses, and RUNE confidence/edge-token behavior.
 - Keep this file aligned with any new tests that prove additional Pact clauses.

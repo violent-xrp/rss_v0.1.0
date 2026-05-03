@@ -2,8 +2,8 @@
 
 Rose Sigil Systems (RSS) - "An AI that Waits" is a **domain-agnostic, application-layer zero-trust AI governance kernel**. It decides what a system may see, say, and do **before** the model runs, not after. Every request flows through a constitutional pipeline of typed seats with bounded authority. Scope is declared. Meaning is classified. Consent is checked. Rate limits are enforced. A Prepared Advisory View is built. TRACE is written before the result is allowed to stand.
 
-**Current verified project-snapshot baseline:** **139 test functions / 1171 assertions / 0 failures** via `python tests/test_all.py`.
-**Current coverage / traceability:** **92.3% statement coverage** via `python run_coverage.py`; `docs/claim_matrix.md` tracks **139 claims / 139 tests / 101 Pact sections**.
+**Current verified project-snapshot baseline:** **139 test functions / 1180 assertions / 0 failures** via `python tests/test_all.py`.
+**Current coverage / traceability:** **92.4% statement coverage** via `python run_coverage.py`; `docs/claim_matrix.md` tracks **139 claims / 139 tests / 101 Pact sections**.
 
 **Versioning posture:** RSS uses pre-release code snapshots while the v0.1.0 Pact/release line is hardening. Tags such as `v0.1.0-rc.1` mark reviewable code checkpoints; the final `v0.1.0` tag should only be cut when the release boundary is declared clean. The Pact remains the constitutional source for this line unless T-0 explicitly authorizes a Pact text change.
 
@@ -83,7 +83,7 @@ python tests/test_all.py
 ```
 Expected current final line:
 ```text
-RSS v0.1.0 - 139 test functions, 1171 assertions passed, 0 failed
+RSS v0.1.0 - 139 test functions, 1180 assertions passed, 0 failed
 ```
 
 ### Run the guided demo walkthrough

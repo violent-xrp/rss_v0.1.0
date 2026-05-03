@@ -296,9 +296,12 @@ class Oath:
         else:
             container_id = task.get("container_id", "GLOBAL")
         if action == "authorize":
+            requester = str(task.get("requester", "")).strip()
+            if not requester:
+                return {"error": "MISSING_REQUESTER", "action": action}
             return self.authorize(
                 action_class, task.get("scope", ""),
-                task.get("duration", ""), task.get("requester", "T-0"),
+                task.get("duration", ""), requester,
                 container_id,
             )
         if action == "check":
