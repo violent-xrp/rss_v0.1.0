@@ -22,3 +22,6 @@ tmp_demo_artifacts*/
 rss_trace_export.json
 rss_v3*
 rss_trace_export*
+
+# Local/private planning notes
+local/

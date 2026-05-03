@@ -94,6 +94,19 @@ Section 5 / tenant containers:
 - Container TRACE views are filtered from the unified chain using exact-boundary artifact matching (`container_id` or `container_id:` prefix), not split per-container chains.
 - `CONTAINER_REQUEST_*` dynamic event codes are accepted by TRACE/export categorization as the current dynamic-code exception for routed container requests.
 
+Section 6 / persistence and audit:
+- TRACE remains evidentiary rather than interpretive: events are recorded, retrieved, exported, and verified literally. The audit layer does not summarize, decide, or silently rewrite meaning.
+- Append-only discipline is enforced at the governed application/interface layer. Local file-system or raw SQLite authority remains outside v0.1.0's mechanical boundary until Phase H anchoring/signing work.
+- The hash chain rule is mechanically represented by `parent_hash == previous.content_hash`; live verification, boot verification, cold verification, and export paths all preserve that chain posture.
+- v0.1.0 cold verification proves internal chain consistency, schema readability, insertion-order linkage, optional container-filtered views, and optional registry coverage. It does not yet prove payload-inclusive external recomputability because raw canonical payloads are not exported.
+- The runtime `_log()` method is the handoff between Section 3 execution and Section 6 audit: if durable TRACE persistence fails, the operation aborts rather than quietly degrading.
+- Consecutive audit-write failures are tracked through `audit_failure_threshold` and escalate to persistent Safe-Stop when the threshold is crossed. The default threshold is 3; `production_mode=True` forces the threshold to 1.
+- `production_mode` is a real single switch in `RSSConfig.__post_init__`: it forces strict event-code validation, lowers audit failure threshold to 1, disables console logging, and requires the Genesis file.
+- SQLite persistence uses WAL mode, `check_same_thread=False`, and a process-local `RLock` around persistence operations. This is a single-process/threaded posture, not a distributed database guarantee.
+- Cold export exists through `export_from_db()` and includes `chain_valid`, event summary, REDLINE artifact-id sanitization, JSON/text output, and SQLite source labeling.
+- REDLINE export sanitization is token-boundary based: known REDLINE entry IDs are replaced in artifact identifiers without over-redacting unrelated larger tokens. Cold export collects REDLINE IDs from both global and container hub tables.
+- Hub provenance, including `UNTRUSTED_IMPORT` receipts with source/wrapped SHA-256 digests, is persisted through the `provenance` JSON column for both global and container hub entries.
+
 ## Known Alignment Gaps
 
 T-0 mechanical identity:
@@ -144,6 +157,14 @@ Tenant-container gaps:
 - OATH consent fallback source is not yet surfaced in the runtime response or TRACE as container-specific versus GLOBAL fallback. Future structured consent checks should make the source auditable.
 - Dynamic TRACE event-code exceptions should remain tightly enumerated. `CONTAINER_REQUEST_*` is the current accepted dynamic prefix; any future dynamic prefix should be a deliberate registry change.
 
+Persistence/audit gaps:
+- Cold verification and cold export prove chain consistency and export hygiene, not full payload-inclusive external recomputability. Phase H needs signed/timestamped payload receipts or export bundles before that stronger claim is made.
+- Direct SQLite replacement, rollback, backup restoration, or file deletion can still bypass local persistence truth. External anchoring is the boundary that makes off-box rollback detectable.
+- Sustained audit failure is already treated as a Safe-Stop condition in code. Future Pact wording should explicitly connect this to Constitutional Drift rather than leaving it only as operational persistence failure.
+- Thread safety is currently single-process with WAL plus a process-local `RLock`. Multi-process and distributed persistence remain future posture, not current proof.
+- Dynamic event-code handling should stay registry-bound. `CONTAINER_REQUEST_*` is the only current dynamic prefix; adding any new family should require explicit T-0/registry ceremony.
+- Export sanitization currently targets REDLINE artifact-id leakage. It does not make REDLINE content externally recomputable or prove absence of other side channels without future export-policy hardening.
+
 Seat interface:
 - WARD's protocol expects seats to expose `status()` and `handle(task)`.
 - CYCLE, OATH, SCRIBE, SEAL, and WARD currently expose both.
@@ -179,6 +200,11 @@ Pact text candidates:
 - Section 5 should distinguish enforced permissions from declared metadata and should name `risk_tier` as not load-bearing until a runtime decision point exists.
 - Section 5 / Section 6 event-code language should enumerate dynamic TRACE prefixes rather than allowing open-ended dynamic event classes.
 - Section 5 consent wording should eventually require an auditable consent source when OATH resolves through GLOBAL fallback instead of a container-specific grant.
+- Section 6 should explicitly cross-reference sustained audit-write failure threshold escalation to Section 0 Constitutional Drift / Safe-Stop logic.
+- Section 6 should describe the current thread-safety mechanism concretely: WAL, `check_same_thread=False`, process-local lock, and single-process boundary.
+- Section 6 dynamic event-code wording should say that `CONTAINER_REQUEST_*` is the current dynamic pattern and that future patterns require explicit registration.
+- Section 6 export sanitization wording should enumerate what is sanitized today: REDLINE entry IDs in TRACE artifact identifiers for both live and cold exports, using token-boundary replacement.
+- Section 6 should preserve the distinction between cold verification, cold export, and future payload-inclusive external recomputability.
 
 ## Version Watch
 
@@ -190,6 +216,9 @@ Before v0.1.1:
 - Keep the Section 5 permission map current as fields move from declared metadata to enforced behavior.
 - Decide whether non-positive container rate limits should be rejected at profile creation/mutation instead of falling back to default CYCLE behavior.
 - Add consent-source reporting if OATH check responses become structured.
+- Keep Section 6 audit/export claims split between internal consistency, cold export, and future external recomputability.
+- Decide whether `UNTRUSTED_IMPORT` round-trip needs a dedicated global/container restore test beyond the current persistence-row proof.
+- Keep production-mode behavior in the generated or evidence docs if more flags join the one-switch posture.
 - Decide the standard seat-interface question for SCOPE/RUNE.
 - Add or schedule tests for WARD hook protected-field coverage, CYCLE fail-closed internal errors, SEAL external attribution bypasses, and RUNE confidence/edge-token behavior.
 - Keep this file aligned with any new tests that prove additional Pact clauses.

@@ -215,7 +215,10 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - TECTON permission-enforcement map: keep `can_draft`, `can_request_seal`, `can_call_advisors`, `can_access_system_hub`, `max_requests_per_minute`, and `risk_tier` visibly split between enforced behavior and declared metadata
 - TECTON rate-limit input validation: decide whether non-positive `max_requests_per_minute` values should fail at profile creation/mutation instead of falling back to default CYCLE behavior
 - TECTON/OATH consent-source auditability: expose whether authorization came from container-specific consent or GLOBAL fallback if OATH check responses become structured
-- Pact wording candidates after code proof: runtime-mediated callbacks, immutable envelopes, revocation split-brain symmetry, full-envelope TRACE hashing, typed drift/fault response, Section 5 permission status, and dynamic TRACE event-code exceptions
+- Section 6 export/audit precision: keep cold verification, cold export, and future payload-inclusive external recomputability as separate claims
+- Section 6 production posture evidence: keep the one-switch `production_mode` behavior visible if more settings join that profile
+- Section 6 provenance proof: decide whether `UNTRUSTED_IMPORT` needs a dedicated full restore test beyond current SQLite row round-trip proof
+- Pact wording candidates after code proof: runtime-mediated callbacks, immutable envelopes, revocation split-brain symmetry, full-envelope TRACE hashing, typed drift/fault response, Section 5 permission status, Section 6 persistence boundaries, and dynamic TRACE event-code exceptions
 
 ### Phase H — External Trust Anchoring
 
