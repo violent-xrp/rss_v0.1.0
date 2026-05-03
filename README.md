@@ -5,6 +5,8 @@ Rose Sigil Systems (RSS) - "An AI that Waits" is a **domain-agnostic, applicatio
 **Current verified project-snapshot baseline:** **139 test functions / 1171 assertions / 0 failures** via `python tests/test_all.py`.
 **Current coverage / traceability:** **92.3% statement coverage** via `python run_coverage.py`; `docs/claim_matrix.md` tracks **139 claims / 139 tests / 101 Pact sections**.
 
+**Versioning posture:** RSS uses pre-release code snapshots while the v0.1.0 Pact/release line is hardening. Tags such as `v0.1.0-rc.1` mark reviewable code checkpoints; the final `v0.1.0` tag should only be cut when the release boundary is declared clean. The Pact remains the constitutional source for this line unless T-0 explicitly authorizes a Pact text change.
+
 ## What RSS is
 
 RSS v0.1.0 can honestly be presented as:

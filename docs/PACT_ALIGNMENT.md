@@ -6,6 +6,8 @@ The Pact remains the constitutional source. This file is a review surface: it re
 
 Pact edits are version-sensitive project events. Do not rewrite Pact language during ordinary implementation work unless T-0 explicitly authorizes that change.
 
+RSS uses pre-release code checkpoints before the final v0.1.0 tag. Code may harden through `v0.1.0-rc.N` snapshots while the v0.1.0 Pact/release line remains intact. The final `v0.1.0` tag should mark a stable reference snapshot, not every hardening commit on `main`.
+
 ## Constitutional Source
 
 The root constitutional source starts at `pact/pact_section0_root_physics.md`.

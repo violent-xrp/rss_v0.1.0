@@ -2,6 +2,12 @@
 
 Release target: **v0.1.0**
 
+Versioning posture:
+- use standard pre-release tags (`v0.1.0-rc.1`, `v0.1.0-rc.2`, etc.) for reviewable code checkpoints before the final v0.1.0 tag
+- keep `main` moving through hardening commits between checkpoints
+- treat the final `v0.1.0` tag as the stable reference snapshot for the v0.1.0 release boundary
+- treat Pact wording changes as version-sensitive project events authorized by T-0, not ordinary implementation cleanup
+
 This is the current command document for RSS. It should answer four questions quickly:
 - what is true now
 - what is active now
@@ -60,7 +66,8 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **RUNE/OATH pre-tag hardening map:** close the small authority/meaning-law issues that are cheap, mechanical, and directly tied to the release boundary.
 
 ### Next
-- Decide whether the current demo artifact set is enough for the v0.1.0 release tag.
+- After the current pre-tag mechanical fixes, decide whether the next clean checkpoint becomes `v0.1.0-rc.1`.
+- Decide whether the current demo artifact set is enough for the final v0.1.0 release tag.
 - Keep tightening the reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
 - Decide what is required for the v0.1.0 release tag vs what moves to v0.1.1.
 
@@ -97,7 +104,7 @@ Do not diffuse effort equally across all future phases. Keep the current checkpo
 
 ## v0.1.0 Exit Criteria
 
-Before tagging v0.1.0, RSS should have:
+Before tagging final v0.1.0, RSS should have:
 - one clean acceptance run at the current or higher assertion count
 - current coverage and claim matrix regenerated
 - `python docs/sync_baseline.py --check --require-clean` exits 0, proving current-facing baseline docs are synced and the runner is clean
