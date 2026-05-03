@@ -212,7 +212,10 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - OATH nested consent inheritance only if TECTON grows parent/child container hierarchy
 - last-resort consent failure receipt if durable consent persistence and TRACE failure notification fail at the same time
 - mechanical T-0 gate ordering for Pact-reserved powers: Safe-Stop clearing, term/synonym/disallow authorization, seat changes, container lifecycle, and seal/amendment authority
-- Pact wording candidates after code proof: runtime-mediated callbacks, immutable envelopes, revocation split-brain symmetry, full-envelope TRACE hashing, and typed drift/fault response
+- TECTON permission-enforcement map: keep `can_draft`, `can_request_seal`, `can_call_advisors`, `can_access_system_hub`, `max_requests_per_minute`, and `risk_tier` visibly split between enforced behavior and declared metadata
+- TECTON rate-limit input validation: decide whether non-positive `max_requests_per_minute` values should fail at profile creation/mutation instead of falling back to default CYCLE behavior
+- TECTON/OATH consent-source auditability: expose whether authorization came from container-specific consent or GLOBAL fallback if OATH check responses become structured
+- Pact wording candidates after code proof: runtime-mediated callbacks, immutable envelopes, revocation split-brain symmetry, full-envelope TRACE hashing, typed drift/fault response, Section 5 permission status, and dynamic TRACE event-code exceptions
 
 ### Phase H — External Trust Anchoring
 

@@ -82,6 +82,18 @@ Section 4 / hub topology and data governance:
 - LEDGER exclusion is mechanical in standard PAV construction; brainstorming inclusion exists as a `PAVBuilder.build(..., brainstorming=True)` parameter, not as a first-class SCOPE envelope field.
 - Untrusted imported content now adds `UNTRUSTED_IMPORT` provenance with source and wrapped SHA-256 digests; this is a kernel improvement beyond the older provenance event list.
 
+Section 5 / tenant containers:
+- Tenant data isolation is object-level, not tag-level: each `TenantContainer` owns a distinct `HubTopology` instance, while the shared runtime law remains global.
+- Execution isolation uses `ACTIVE_HUBS: ContextVar` and token-based reset. `Runtime.hubs` is getter-only, so the old `runtime.hubs = c.hubs` global-mutation hazard is no longer the governing path.
+- The current proof is honestly bounded: thread-level isolation, exception-safe restore, and main-thread fallback are tested; full async/server/thread-hop context propagation remains Phase F/H deployment work.
+- ACTIVE profile immutability is mechanically enforced. `ContainerProfile` and nested `ContainerPermissions` lock on activation, `scope_policy` is wrapped in `MappingProxyType`, and sanctioned mutations go through `mutate_active_profile()` with a mandatory reason and `PROFILE_MUTATED` event.
+- Container request lifecycle checks run before seat routing. SUSPENDED, ARCHIVED, DESTROYED, and other non-ACTIVE states return `CONTAINER_NOT_ACTIVE` before OATH or downstream seat logic.
+- The sigil registry contains the eight canonical seat sigils and supports reverse resolution from sigil to seat name. Invalid sigils are rejected before delegation.
+- Current permission enforcement is explicit by field: `can_draft` gates SCRIBE, `can_request_seal` gates SEAL, `can_call_advisors` gates LLM/advisor invocation, `can_access_system_hub` composes with SCOPE allowed sources, and positive `max_requests_per_minute` values feed CYCLE.
+- `risk_tier` is serialized profile metadata today; it is not yet a runtime decision point.
+- Container TRACE views are filtered from the unified chain using exact-boundary artifact matching (`container_id` or `container_id:` prefix), not split per-container chains.
+- `CONTAINER_REQUEST_*` dynamic event codes are accepted by TRACE/export categorization as the current dynamic-code exception for routed container requests.
+
 ## Known Alignment Gaps
 
 T-0 mechanical identity:
@@ -125,6 +137,13 @@ Data-governance gaps:
 - REDLINE exclusion IDs are not carried in the PAV object; this is the right privacy posture for advisor-facing surfaces, but future Pact wording should make clear where excluded-entry identity may appear for audit.
 - LEDGER brainstorming support is builder-level today. Moving it into a first-class envelope field remains a future design decision.
 
+Tenant-container gaps:
+- ACTIVE profile mutation has structural immutability, reason enforcement, and audit emission, but the actor is still T-0 by trusted code path/convention rather than mechanical identity.
+- Permission fields should stay visibly split between enforced and declared. `risk_tier` is declared metadata today; future policy must decide whether and how it affects runtime outcomes.
+- Non-positive `max_requests_per_minute` values are tolerated and do not become a container override; they fall back to CYCLE's existing domain behavior instead of failing validation.
+- OATH consent fallback source is not yet surfaced in the runtime response or TRACE as container-specific versus GLOBAL fallback. Future structured consent checks should make the source auditable.
+- Dynamic TRACE event-code exceptions should remain tightly enumerated. `CONTAINER_REQUEST_*` is the current accepted dynamic prefix; any future dynamic prefix should be a deliberate registry change.
+
 Seat interface:
 - WARD's protocol expects seats to expose `status()` and `handle(task)`.
 - CYCLE, OATH, SCRIBE, SEAL, and WARD currently expose both.
@@ -155,6 +174,11 @@ Pact text candidates:
 - Section 4 should specify REDLINE behavior by output boundary: PAV-only/enumeration helpers may return raw entries to governed callers; boundary-output helpers must exclude REDLINE before exposure.
 - Section 4 should state that PAV carries REDLINE exclusion counts and contributing hubs, not REDLINE entry IDs.
 - Section 4's section-boundary style is a useful model for later Pact amendments: name the constitutional surface, then name exactly what the current reference implementation enforces and what remains non-end-to-end.
+- Section 5 already uses the stronger later-section style. Future edits should preserve its "current proof / not yet proven" concurrency boundary instead of flattening it into a generic isolation claim.
+- Section 5 should keep token-based ContextVar reset as the named proven mechanism for container delegation, because direct value reassignment does not carry the same nested-context safety.
+- Section 5 should distinguish enforced permissions from declared metadata and should name `risk_tier` as not load-bearing until a runtime decision point exists.
+- Section 5 / Section 6 event-code language should enumerate dynamic TRACE prefixes rather than allowing open-ended dynamic event classes.
+- Section 5 consent wording should eventually require an auditable consent source when OATH resolves through GLOBAL fallback instead of a container-specific grant.
 
 ## Version Watch
 
@@ -163,6 +187,9 @@ Before v0.1.1:
 - Resolve the Section 3 payload-hash and TTL-upper-bound questions as code changes or explicit Pact/claim clarifications.
 - Carry Section 4's output-boundary rule into future API/operator/connector work before adding raw hub-returning public surfaces.
 - Decide whether LEDGER brainstorming belongs in SCOPE as a first-class envelope field or remains a PAV-builder-only expert mode.
+- Keep the Section 5 permission map current as fields move from declared metadata to enforced behavior.
+- Decide whether non-positive container rate limits should be rejected at profile creation/mutation instead of falling back to default CYCLE behavior.
+- Add consent-source reporting if OATH check responses become structured.
 - Decide the standard seat-interface question for SCOPE/RUNE.
 - Add or schedule tests for WARD hook protected-field coverage, CYCLE fail-closed internal errors, SEAL external attribution bypasses, and RUNE confidence/edge-token behavior.
 - Keep this file aligned with any new tests that prove additional Pact clauses.
