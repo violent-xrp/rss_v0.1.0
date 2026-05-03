@@ -144,12 +144,28 @@ class Seal:
         self._trace_callback = callback
 
     def _emit(self, code: str, artifact_id: str, content: str) -> None:
-        """S7: Emit a TRACE event if callback is wired."""
+        """S7: Emit a TRACE event if callback is wired.
+
+        When Runtime wires this to _log(), the callback carries the §6
+        write-ahead guarantee. Failure must block ceremony state mutation.
+        """
         if self._trace_callback is not None:
             try:
                 self._trace_callback(code, artifact_id, content)
-            except Exception:
-                pass  # Don't let trace failure block ceremony
+            except Exception as exc:
+                raise SealError(
+                    f"TRACE emission failed for {code}: "
+                    f"{type(exc).__name__}: {exc}"
+                ) from exc
+
+    def _trace_failure(self, stage: str, event_code: str, exc: SealError) -> dict:
+        """Return a structured fail-closed ceremony error."""
+        return {
+            "error": "AMENDMENT_TRACE_FAILED",
+            "stage": stage,
+            "event_code": event_code,
+            "reason": str(exc),
+        }
 
     # ── S7: Amendment Ceremony ──
 
@@ -189,9 +205,13 @@ class Seal:
             proposed_at=datetime.now(UTC),
             sovereign_override=sovereign_override,
         )
+        try:
+            self._emit("AMENDMENT_PROPOSED", proposal_id,
+                       f"Amendment proposed for {section_id}: {rationale[:100]}")
+        except SealError as exc:
+            return self._trace_failure("proposal", "AMENDMENT_PROPOSED", exc)
+
         self._proposals[proposal_id] = proposal
-        self._emit("AMENDMENT_PROPOSED", proposal_id,
-                    f"Amendment proposed for {section_id}: {rationale[:100]}")
         return {"proposed": True, "proposal_id": proposal_id, "section_id": section_id}
 
     def review_amendment(self, proposal_id: str, reviewer: str,
@@ -215,19 +235,22 @@ class Seal:
         if not reviewer:
             return {"error": "REVIEWER_REQUIRED"}
 
+        event_code = "AMENDMENT_REJECTED" if verdict == "REJECT" else "AMENDMENT_REVIEWED"
+        event_content = (
+            f"Rejected by {reviewer}: {notes[:100]}"
+            if verdict == "REJECT"
+            else f"Reviewed by {reviewer}: {verdict}. {notes[:100]}"
+        )
+        try:
+            self._emit(event_code, proposal_id, event_content)
+        except SealError as exc:
+            return self._trace_failure("review", event_code, exc)
+
         proposal.reviewer = reviewer
         proposal.review_verdict = verdict
         proposal.review_notes = notes
         proposal.reviewed_at = datetime.now(UTC)
-        proposal.status = "REVIEWED"
-
-        self._emit("AMENDMENT_REVIEWED", proposal_id,
-                    f"Reviewed by {reviewer}: {verdict}. {notes[:100]}")
-
-        if verdict == "REJECT":
-            proposal.status = "REJECTED"
-            self._emit("AMENDMENT_REJECTED", proposal_id,
-                        f"Rejected by {reviewer}: {notes[:100]}")
+        proposal.status = "REJECTED" if verdict == "REJECT" else "REVIEWED"
 
         return {"reviewed": True, "proposal_id": proposal_id,
                 "verdict": verdict, "reviewer": reviewer}
@@ -266,20 +289,18 @@ class Seal:
         old_version = old_canon.version if old_canon else None
         old_hash = old_canon.hash if old_canon else None
 
-        # Seal the amendment through the existing seal() ceremony
         packet = SealPacket(
             section_id=proposal.section_id,
             rewrite_id=0,
             doc_id=f"amendment-{proposal_id}",
             draft_text=proposal.proposed_text,
         )
-        seal_result = self.seal(packet, review_complete=True, t0_command=True)
+        seal_error = self._validate_seal_request(packet, review_complete=True,
+                                                 t0_command=True)
+        if seal_error:
+            return {"error": "SEAL_FAILED", "detail": seal_error}
+        seal_result = self._build_artifact(packet)
 
-        # seal() returns a CanonArtifact on success, or a dict on failure
-        if isinstance(seal_result, dict):
-            return {"error": "SEAL_FAILED", "detail": seal_result}
-
-        # Record the amendment
         record = AmendmentRecord(
             proposal_id=proposal_id,
             section_id=proposal.section_id,
@@ -293,12 +314,17 @@ class Seal:
             reviewer=proposal.reviewer,
             review_notes=proposal.review_notes,
         )
+
+        try:
+            self._emit("AMENDMENT_RATIFIED", proposal_id,
+                       f"Ratified: {proposal.section_id} {old_version or 'new'} → "
+                       f"{seal_result.version}. Reason: {proposal.rationale[:80]}")
+        except SealError as exc:
+            return self._trace_failure("ratification", "AMENDMENT_RATIFIED", exc)
+
+        self._canon_index[proposal.section_id] = seal_result
         self._amendment_history.append(record)
         proposal.status = "RATIFIED"
-
-        self._emit("AMENDMENT_RATIFIED", proposal_id,
-                    f"Ratified: {proposal.section_id} {old_version or 'new'} → "
-                    f"{seal_result.version}. Reason: {proposal.rationale[:80]}")
 
         return {
             "ratified": True,
@@ -329,7 +355,9 @@ class Seal:
                  "status": p.status, "rationale": p.rationale[:80]}
                 for p in proposals]
 
-    def seal(self, packet: SealPacket, review_complete: bool, t0_command: bool):
+    def _validate_seal_request(self, packet: SealPacket,
+                               review_complete: bool,
+                               t0_command: bool) -> Optional[dict]:
         if not review_complete:
             return {"error": "NO_REVIEW_ATTESTATION"}
         if not t0_command:
@@ -349,14 +377,24 @@ class Seal:
         if ext_issue:
             return ext_issue
 
+        return None
+
+    def _build_artifact(self, packet: SealPacket) -> CanonArtifact:
         version = self._next_version(packet.section_id)
-        artifact = CanonArtifact(
+        return CanonArtifact(
             section_id=packet.section_id,
             version=version,
             text=packet.draft_text,
             hash=hashlib.sha256(packet.draft_text.encode()).hexdigest(),
             timestamp=datetime.now(UTC),
         )
+
+    def seal(self, packet: SealPacket, review_complete: bool, t0_command: bool):
+        issue = self._validate_seal_request(packet, review_complete, t0_command)
+        if issue:
+            return issue
+
+        artifact = self._build_artifact(packet)
         self._canon_index[packet.section_id] = artifact
         return artifact
 

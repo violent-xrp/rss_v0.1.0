@@ -1253,6 +1253,42 @@ def test_seal_ceremony_additional_proof():
     check(r1["record"].reviewer == "r1" and r2["record"].reviewer == "r2",
           "reviewer identity survives into ordered amendment history records")
 
+    def failing_trace(code, artifact_id, content):
+        raise RuntimeError("trace down")
+
+    trace_fail = Seal()
+    trace_fail.set_trace_callback(failing_trace)
+    blocked_proposal = trace_fail.propose_amendment("S2", "r", "t")
+    check(blocked_proposal.get("error") == "AMENDMENT_TRACE_FAILED",
+          "proposal fails closed when amendment TRACE emission fails")
+    check(blocked_proposal.get("stage") == "proposal",
+          "proposal TRACE failure reports proposal stage")
+    check(trace_fail.list_proposals() == [],
+          "proposal TRACE failure creates no proposal state")
+
+    trace_review = Seal()
+    p = trace_review.propose_amendment("S2", "r", "t")
+    trace_review.set_trace_callback(failing_trace)
+    blocked_review = trace_review.review_amendment(p["proposal_id"], "reviewer", "APPROVE")
+    check(blocked_review.get("error") == "AMENDMENT_TRACE_FAILED",
+          "review fails closed when amendment TRACE emission fails")
+    check(trace_review.get_proposal(p["proposal_id"]).status == "PROPOSED",
+          "review TRACE failure leaves proposal in PROPOSED state")
+
+    trace_ratify = Seal()
+    p = trace_ratify.propose_amendment("S2", "r", "t")
+    trace_ratify.review_amendment(p["proposal_id"], "reviewer", "APPROVE")
+    trace_ratify.set_trace_callback(failing_trace)
+    blocked_ratify = trace_ratify.ratify_amendment(p["proposal_id"], t0_command=True)
+    check(blocked_ratify.get("error") == "AMENDMENT_TRACE_FAILED",
+          "ratification fails closed when amendment TRACE emission fails")
+    check(trace_ratify.get_proposal(p["proposal_id"]).status == "REVIEWED",
+          "ratification TRACE failure leaves proposal reviewed but unratified")
+    check(trace_ratify.get_canon("S2") is None,
+          "ratification TRACE failure does not update canon")
+    check(trace_ratify.amendment_history("S2") == [],
+          "ratification TRACE failure does not append amendment history")
+
 
 if __name__ == "__main__":
     run_module(globals())

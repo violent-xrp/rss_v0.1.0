@@ -6,8 +6,8 @@ This file preserves the count history and verification receipts that used to liv
 
 ## Current Baseline
 
-- **139 test functions / 1190 assertions / 0 failures**
-- **92.4% statement coverage**
+- **139 test functions / 1199 assertions / 0 failures**
+- **92.5% statement coverage**
 - **139 claims / 139 tests / 101 Pact sections**
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
@@ -100,7 +100,7 @@ Verified after the untrusted import hash-binding proof:
 
 ## Public Doc Sync
 
-All public-facing docs were synced to the current **139 / 1190 / 0** baseline on 2026-04-29:
+All public-facing docs were synced to the current **139 / 1199 / 0** baseline on 2026-04-29:
 - `README.md`
 - `TRUTH_REGISTER.md`
 - `CLAIM_DISCIPLINE.md`
@@ -109,8 +109,8 @@ All public-facing docs were synced to the current **139 / 1190 / 0** baseline on
 - `THREAT_MODEL.md`
 
 Current synced public numbers:
-- **139 / 1190 / 0**
-- **92.4%** coverage
+- **139 / 1199 / 0**
+- **92.5%** coverage
 - **139 claims / 139 tests / 101 Pact sections**
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.

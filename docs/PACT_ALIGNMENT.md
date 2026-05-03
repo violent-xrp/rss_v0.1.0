@@ -123,6 +123,7 @@ Section 7 / amendment and evolution:
 - Review is a real gate: verdicts normalize to APPROVE/REJECT, blank reviewers are rejected, rejected proposals become terminal, and rejected proposals cannot be ratified.
 - Ratification requires explicit `t0_command=True`, an APPROVE review verdict, and a non-terminal proposal. Repeat ratification returns `ALREADY_RATIFIED` and does not duplicate amendment history.
 - Amendment proposals now run the external advisor attribution guard before proposal state is created, and ratification still flows through `seal()` with the same guard before canonizing the proposed text.
+- When a TRACE callback is wired, proposal, review, and ratification emit the corresponding amendment event before mutating ceremony state. TRACE callback failure returns `AMENDMENT_TRACE_FAILED` and leaves proposal/canon/history state unchanged for that step.
 - `AmendmentRecord` preserves the current required evidence surface: proposal ID, section ID, old/new versions, old/new hashes, rationale, ratification timestamp, sovereign override flag, reviewer, and review notes.
 - Section-level versions increment independently (`v1.0`, `v1.1`, etc.) as sections are sealed. This is separate from project/release versions such as `v0.1.0` and future `v0.1.1`.
 - The four ceremony event codes are registered in the TRACE export registry: `AMENDMENT_PROPOSED`, `AMENDMENT_REVIEWED`, `AMENDMENT_REJECTED`, and `AMENDMENT_RATIFIED`.
@@ -193,7 +194,6 @@ Persistence/audit gaps:
 - Export sanitization currently targets REDLINE artifact-id leakage. It does not make REDLINE content externally recomputable or prove absence of other side channels without future export-policy hardening.
 
 Amendment/evolution gaps:
-- SEAL amendment TRACE emission currently flows through `_emit()`, which swallows trace callback failures. This means ceremony actions may continue even if amendment TRACE events fail to persist, which is weaker than Section 7's same-write-ahead-guarantee posture.
 - Proposal objects, review state, and queryable amendment history do not persist across restart. A reviewed-but-not-ratified proposal is lost on restart even though its TRACE review event may survive.
 - Reviewer identity is a string today. There is no reviewer credentialing, section-scoped reviewer authorization, signer binding, proposer/reviewer separation, or multi-reviewer quorum yet.
 - Proposal lifecycle states are minimal: PROPOSED, REVIEWED, RATIFIED, and REJECTED. There is no WITHDRAWN, DEFERRED, SUPERSEDED, EXPIRED, or stale-base state.

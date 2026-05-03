@@ -21,7 +21,7 @@ cycle.py                94.2%
 persistence.py          93.9%
 meaning_law.py          93.3%
 hub_topology.py         92.7%
-seal.py                 91.6%
+seal.py                 93.3%
 ward.py                 90.5%
 scope.py                90.0%
 llm_adapter.py          90.1%
@@ -30,7 +30,7 @@ runtime.py              87.1%
 oath.py                 88.2%
 pav.py                  86.9%
 constitution.py         92.5%
-TOTAL                   92.4%
+TOTAL                   92.5%
 ```
 
 ## Current Targets

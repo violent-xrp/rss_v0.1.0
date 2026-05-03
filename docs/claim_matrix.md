@@ -1,6 +1,6 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-05-03 22:47 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-05-03 22:59 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
