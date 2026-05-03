@@ -29,7 +29,7 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **139 test functions / 1180 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **139 test functions / 1182 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
 - **92.4% statement coverage** via `python run_coverage.py`
 - **139 claims / 139 tests / 101 Pact sections** in `docs/claim_matrix.md`
 - **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
@@ -38,7 +38,7 @@ Current code state:
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 139/1180 baseline
+- public docs are synced to the current 139/1182 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -63,7 +63,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 ### Now
 - **Release-boundary polish:** keep the v0.1.0 claim surface aligned with the closed Phase G coverage floor and remaining known limits.
 - **Connector-proof planning:** keep future browser/email/document/RAG/tool-return import tests mapped before adding real external adapters.
-- **RUNE pre-tag hardening map:** close the remaining meaning-law issue that is cheap, mechanical, and directly tied to the release boundary. OATH requester fallback and RUNE constraint-prompt proof are now closed.
+- **Pre-tag RUNE/OATH hardening map:** closed. OATH requester fallback, RUNE constraint-prompt proof, and RUNE longest bounded-match precedence are now proven.
 
 ### Next
 - After the current pre-tag mechanical fixes, decide whether the next clean checkpoint becomes `v0.1.0-rc.1`.
@@ -176,6 +176,7 @@ Landed:
 - untrusted import receipt hardening: source content SHA-256, wrapped content SHA-256, byte lengths, provenance persistence, TRACE payload binding, and mutation detection
 - OATH routed `authorize` now fails closed when `requester` is missing or blank instead of defaulting to T-0; proof verifies no consent record is created and explicit requester flow still works
 - RUNE contextual reinjection now has capture-adapter proof that sealed-term constraints remain kernel metadata and are excluded from advisor prompt text
+- RUNE primary substring classification now prefers the longest bounded sealed-term match so registration order cannot make a shorter term outrank a more specific phrase
 - Phase G coverage floor closed: `cycle.py` and `trace_verify.py` are both above 94% and every package module is at or above 85%
 - demo handoff now names the fast reviewer path, artifact review order, proof signals, and release boundary
 - external vocabulary map added for engineers/reviewers who do not know RSS terms yet
@@ -190,8 +191,6 @@ Threat-hardening note:
 
 Open in Phase G:
 - decide whether the current demo artifact set is enough for the v0.1.0 tag
-- close the remaining pre-tag RUNE hardening item that is small enough to prove without widening the release surface:
-  - RUNE substring classification should prefer the longest matching sealed term so primary classification is order-independent
 - keep connector-specific indirect prompt-injection probes parked as required acceptance criteria for future external adapters
 
 ### v0.1.1 Candidate Hardening Queue

@@ -694,6 +694,15 @@ def test_compound_detection():
     check(s.compound_terms is not None and len(s.compound_terms) == 2,
           "primary classify attaches compound_terms when multiple found")
 
+    rune2 = MeaningLaw()
+    rune2.create_term(Term("change", "change", "Generic change", [], "1.0"), force=True)
+    rune2.create_term(Term("change-order", "change order", "Formal scope change", [], "1.0"), force=True)
+    s2 = rune2.classify("Approve the change order today")
+    check(s2.term_id == "change-order",
+          "primary classify prefers longest bounded sealed term over registration order")
+    check(s2.compound_terms is not None and "change" in s2.compound_terms and "change-order" in s2.compound_terms,
+          "compound metadata still records both shorter and longer bounded terms")
+
     # No false compound from substrings
     matches = rune.classify_all("morbid unquoted text")
     check(len(matches) == 0, "no false positives in compound detection (word boundary)")

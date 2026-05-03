@@ -19,7 +19,7 @@ trace_export.py         94.8%
 tecton.py               94.8%
 cycle.py                94.2%
 persistence.py          93.9%
-meaning_law.py          93.1%
+meaning_law.py          93.3%
 hub_topology.py         92.7%
 seal.py                 91.4%
 ward.py                 90.5%

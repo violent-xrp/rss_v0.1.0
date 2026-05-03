@@ -175,15 +175,21 @@ class MeaningLaw:
                 )
 
         # 3. Scan for sealed terms WITHIN natural language (word-boundary, §2.1.1)
+        # Prefer the most specific bounded match so registration order cannot
+        # make "change" outrank "change order" in the same phrase.
+        substring_matches = []
         for term in self._registry.values():
             label = term.label if case_sensitive else term.label.lower()
             if label != compare and self._word_boundary_match(label, compare):
-                compounds = self._detect_compounds(compare, case_sensitive)
-                return TermStatus(
-                    phrase, "SEALED",
-                    f"Contains sealed term: {term.label}", term.id,
-                    compound_terms=compounds if len(compounds) > 1 else None,
-                )
+                substring_matches.append((len(label), term))
+        if substring_matches:
+            _length, term = max(substring_matches, key=lambda item: item[0])
+            compounds = self._detect_compounds(compare, case_sensitive)
+            return TermStatus(
+                phrase, "SEALED",
+                f"Contains sealed term: {term.label}", term.id,
+                compound_terms=compounds if len(compounds) > 1 else None,
+            )
 
         # 4. Synonym match — check normalized form against synonym keys
         if compare in self._synonyms:

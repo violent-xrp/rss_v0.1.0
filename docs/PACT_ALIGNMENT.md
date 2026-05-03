@@ -83,6 +83,7 @@ RUNE authorization surface:
 - Pact-stated authority over term creation should eventually be paired with mechanical caller authority, not only trusted code paths.
 - Per-pack synonym namespaces remain future hardening before domain packs can compose freely.
 - Anti-trojan scanning currently checks definitions. Runtime proof now captures the actual advisor prompt payload and verifies constraints remain kernel metadata, not advisor/model context. If a future adapter reinjects constraints, the scanner contract must expand before that change lands.
+- Primary substring classification now prefers the longest bounded sealed-term match, so registration order cannot make a shorter term outrank a more specific phrase.
 - Boundary-sensitive labels, including punctuation-heavy, apostrophe-like, internal-hyphen, combining-mark, and confusable inputs, need tests or validation as the registry grows.
 - MED/LOW confidence behavior needs resolution: preserve Pact shape with a distinct confirmation field, or amend future Pact text to collapse the confidence model.
 
@@ -116,7 +117,7 @@ Pact text candidates:
 ## Version Watch
 
 Before v0.1.1:
-- Fix remaining pre-tag mechanical RUNE gaps already listed in `ROADMAP.md`.
+- The S0-S2 pre-tag mechanical OATH/RUNE gaps listed in `ROADMAP.md` are closed; keep future work version-sensitive rather than silently amending the Pact.
 - Decide the standard seat-interface question for SCOPE/RUNE.
 - Add or schedule tests for WARD hook protected-field coverage, CYCLE fail-closed internal errors, SEAL external attribution bypasses, and RUNE confidence/edge-token behavior.
 - Keep this file aligned with any new tests that prove additional Pact clauses.
