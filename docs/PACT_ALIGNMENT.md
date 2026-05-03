@@ -263,9 +263,9 @@ Pact text candidates:
 - Section 6 export sanitization wording should enumerate what is sanitized today: REDLINE entry IDs in TRACE artifact identifiers for both live and cold exports, using token-boundary replacement.
 - Section 6 should preserve the distinction between cold verification, cold export, and future payload-inclusive external recomputability.
 - Section 7 should clarify the relationship between section-level versions and project/release versions: section versions increment per amended section, while project versions snapshot one or more sealed Pact changes plus code state.
-- Section 7 should decide whether external advisor attribution must be rejected at proposal submission, ratification, or both. Proposal-time rejection is cleaner for operator workflow.
+- Section 7 should reflect the current code-backed dual guard for external advisor attribution: proposal-time rejection creates no actionable proposal state, and ratification still flows through SEAL's seal guard.
 - Section 7 should make amendment persistence a priority before any large v0.1.1 Pact amendment pass, so the ceremony can span real work sessions without losing reviewed proposals.
-- Section 7 should align ceremony TRACE emission with the same write-ahead discipline claimed for governed runtime events, or explicitly fence ceremony TRACE emission as best-effort until hardened.
+- Section 7 should reflect the current code-backed ceremony write-ahead discipline: proposal, review, and ratification state do not mutate when wired TRACE emission fails.
 - Section 7 should add lifecycle states for real governance queues: WITHDRAWN, DEFERRED, SUPERSEDED, EXPIRED, and a stale-base/conflict state if section versions advance under an open proposal.
 - Section 7 should add a ratification preview/dry-run concept and post-ratification verification report before TECTON exposes amendment ceremony in a product UI.
 - Section 7 AmendmentRecord structure should eventually include diff, dependency/evidence snapshot, environment snapshot, pre-seal drift report, and post-seal verification outcome.
@@ -278,7 +278,7 @@ Pact text candidates:
 
 Before v0.1.1:
 - The S0-S2 pre-tag mechanical OATH/RUNE gaps listed in `ROADMAP.md` are closed; keep future work version-sensitive rather than silently amending the Pact.
-- Resolve the Section 3 payload-hash and TTL-upper-bound questions as code changes or explicit Pact/claim clarifications.
+- Section 3 execution-intent hardening is closed in code: HIGH_RISK precedence is proven, payload hashes are re-verified during validation, and far-future TTLs are rejected on externally constructed intents.
 - Carry Section 4's output-boundary rule into future API/operator/connector work before adding raw hub-returning public surfaces.
 - Decide whether LEDGER brainstorming belongs in SCOPE as a first-class envelope field or remains a PAV-builder-only expert mode.
 - Keep the Section 5 permission map current as fields move from declared metadata to enforced behavior.
@@ -288,7 +288,7 @@ Before v0.1.1:
 - Decide whether `UNTRUSTED_IMPORT` round-trip needs a dedicated global/container restore test beyond the current persistence-row proof.
 - Keep production-mode behavior in the generated or evidence docs if more flags join the one-switch posture.
 - Treat amendment persistence as a high-priority code hardening item before any substantial Pact v0.1.1 amendment ceremony.
-- Fix or explicitly fence SEAL amendment TRACE emission so ceremony events do not silently lose the write-ahead guarantee.
+- Keep the amendment-persistence implementation aligned with the proven SEAL ceremony ordering: TRACE emission first, durable proposal/history write second, in-memory mutation last.
 - Decide the section-version versus project-version model before ratifying the first post-v0.1.0 Pact amendment batch.
 - Add a future structured amendment preview/report API as the substrate for a TECTON amendment UI.
 - Design the T-0 recovery/lock-out posture before adding cryptographic identity gates: keys should attest authority, not become the only way the sovereign operator can recover the system.

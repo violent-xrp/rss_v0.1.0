@@ -67,11 +67,11 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **Code-first Pact posture:** let kernel hardening move where it makes RSS more true; only narrow Section 7 / recovery-authority Pact edits should enter the v0.1.0 line after code proof shows they belong there.
 
 ### Next
-- After the current pre-tag mechanical fixes, decide whether the next clean checkpoint becomes `v0.1.0-rc.1`.
-- Split the remaining candidate cloud explicitly: v0.1.0 only absorbs code-proven ceremony/recovery fixes and small natural edits; broader Pact refinements wait for v0.1.1 ceremony.
-- Decide whether the current demo artifact set is enough for the final v0.1.0 release tag.
+- Finish the pre-Section-0 cleanup pass: ROADMAP and PACT_ALIGNMENT current, `docs/PACT_VOICE.md` drafted as a non-authoritative editing rail, and no Pact text changed by implementation cleanup.
+- Decide whether the current demo artifact set is enough for the `v0.1.0-rc.1` checkpoint.
+- After a clean acceptance/sync/claim-matrix pass, prepare `v0.1.0-rc.1` as the next reviewable release checkpoint.
+- Keep final v0.1.0 gates explicit: T-0 recovery authority clause, amendment persistence, and final acceptance proof.
 - Keep tightening the reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
-- Decide what is required for the v0.1.0 release tag vs what moves to v0.1.1.
 
 ### Keep Warm
 - API/wrapper ingress boundary and caller identity propagation.
@@ -115,23 +115,54 @@ belongs on this side of the tag only if it must exist before RSS can trust its
 own release or amendment path. Default destination for everything else is the
 v0.1.1 ceremony queue.
 
-Mandatory before `v0.1.0-rc.1` / final tag:
-- one current acceptance pass with synced docs and no public claim beyond proof
-- completion of small pre-tag mechanical hardening already mapped in Phase G
-- Section 7 ceremony viability fixes that are code-proven and narrow enough to
-  keep outside a broad Pact rewrite
-- T-0 recovery authority Pact clause drafted by T-0 before final v0.1.0,
-  likely in Section 0 or Section 1 with a Section 7 cross-reference; this is
-  constitutional text, not a side planning note
-- amendment persistence is required before final `v0.1.0`, but it is allowed to
-  follow `v0.1.0-rc.1` if rc.1 otherwise proves the release boundary
+Mandatory before `v0.1.0-rc.1`:
+- CLOSED: S0-S2 mechanical OATH/RUNE hardening is proven: OATH requester
+  fallback closed, RUNE constraint-prompt exclusion proven, and longest
+  bounded-match precedence implemented.
+- CLOSED: Section 3 verification audits are resolved in code. HIGH_RISK
+  classification wins over CONSTITUTIONAL when both appear, payload hashes are
+  re-verified during intent validation, and externally constructed far-future
+  TTLs are rejected.
+- CLOSED: cold verifier full-chain head truncation detection is implemented and
+  tested; filtered container views still allow a non-null first parent hash.
+- CLOSED: stale top-level `src/pav.py` and `src/reference_pack.py` shims are
+  removed, with no bare-module imports remaining.
+- CLOSED: README architectural thesis language is in project voice rather than
+  first-person reviewer commentary.
+- CLOSED: Section 7 proposal attribution and ceremony write-ahead hardening are
+  code-proven. Proposal-time external attribution creates no actionable state,
+  and proposal/review/ratification mutation fails closed if TRACE emission
+  fails.
+- REQUIRED: `docs/PACT_VOICE.md` exists as a non-authoritative rail before T-0
+  begins the Section 0, Section 1, and Section 2 voice/structure cleanup.
+- REQUIRED: Section 0-2 voice consistency work is framed before rewriting
+  begins: match the Section 4 and Section 5 "rule / current proof / boundary"
+  style, and keep substantive additions such as T-0 recovery authority owned by
+  T-0 rather than implementation cleanup.
+- REQUIRED: one current acceptance pass with synced docs, clean claim matrix,
+  and no public claim beyond proof.
+- REQUIRED: decide whether the current demo artifact set is enough for the
+  `v0.1.0-rc.1` checkpoint.
+
+Mandatory before final `v0.1.0`:
+- T-0 recovery authority Pact clause drafted by T-0 before final v0.1.0, likely
+  in Section 0 or Section 1 with a Section 7 cross-reference; this is
+  constitutional text, not a side planning note.
+- Amendment persistence is required before final `v0.1.0`, but it is allowed to
+  follow `v0.1.0-rc.1` if `v0.1.0-rc.1` otherwise proves the release boundary.
+  Preserve the ordering now proven for ceremony state: TRACE emission, then
+  durable write, then in-memory mutation.
+- Final acceptance/sync/claim-matrix pass after any post-`v0.1.0-rc.1`
+  persistence or recovery-authority work.
 
 Held for v0.1.1 ceremony unless a release-gate review proves otherwise:
 - broad Pact wording cleanup and Council/vocabulary sweep
 - full-Pact integrity extension and reverse Pact-reference extraction
 - internal advisor layer / multi-voice amendment design
 - TECTON product UI and operator-surface design
-- accumulated section-level Pact refinements from `docs/PACT_ALIGNMENT.md`
+- accumulated section-level Pact refinements. `docs/PACT_ALIGNMENT.md` is the
+  canonical candidate inventory; ROADMAP tracks sequencing, not the full text
+  queue.
 
 ---
 
@@ -266,7 +297,7 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - Local enforcement hooks: add pre-commit/CI checks for baseline sync, claim matrix drift, and Pact-reference extraction once the commands are stable
 - Vocabulary/register pass: keep "seat" as the authority-surface term, prefer operational/constitutional seat classes over broad Council language, and translate Pact vocabulary in reviewer/product docs
 - Amendment planning pass: group the accumulated `docs/PACT_ALIGNMENT.md` Pact text candidates by section before the v0.1.1 ceremony begins
-- Pact wording candidates after code proof: runtime-mediated callbacks, immutable envelopes, revocation split-brain symmetry, full-envelope TRACE hashing, typed drift/fault response, Section 5 permission status, Section 6 persistence boundaries, Section 7 amendment ceremony hardening, T-0 recovery authority, full-Pact integrity, formal vocabulary/register cleanup, and dynamic TRACE event-code exceptions
+- Pact wording candidates after code proof: use `docs/PACT_ALIGNMENT.md` as the canonical inventory; ROADMAP should only summarize release sequencing and amendment-plan timing.
 
 Pre-v0.1.0 scope rule:
 - Code can continue to harden before the tag where the work improves enforcement, proof, or release honesty.
