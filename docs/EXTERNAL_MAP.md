@@ -4,6 +4,16 @@ This is a plain-English bridge for engineers and reviewers who are new to the RS
 
 It does not rename the internal system. It maps the RSS terms to more familiar engineering concepts so reviewers can evaluate the mechanics without first learning the full project dialect.
 
+## Register Rule
+
+The Pact can use constitutional language because it is the constitutional document. Reviewer-facing and product-facing surfaces should translate that language into engineering terms when the formal register adds friction.
+
+In particular:
+- **Seat** should stay. It means a fixed authority surface whose responsibility survives code changes.
+- **Council** should not be used as a general external label unless a specific Pact context requires it. There is no separate Council runtime actor, class, or vote path today.
+- Prefer **the eight seats**, **operational seats**, **constitutional seats**, **authority surfaces**, or **governance modules** depending on audience.
+- Product copy should say **operator**, **system owner**, **amendment workflow**, and **authority module** where those are clearer than sovereign/ceremony/seat language.
+
 ## Core Translation
 
 | RSS term | Engineering translation | Current role |
@@ -40,6 +50,8 @@ Constitutional seats participate in drafting, review, canonization, and amendmen
 - **SEAL:** governs amendment and ratification ceremony.
 
 The post-v0.1.0 audit question is not "can these names be merged?" It is "does each seat continue to own a unique invariant as connectors, per-action gates, and external trust anchoring arrive?"
+
+Avoid implying that all seats act as one collective body. In ordinary governed requests, operational seats carry runtime work. In Pact/amendment work, constitutional seats carry drafting and sealing while TRACE records. The precision matters because it keeps the public architecture closer to the code.
 
 ## Public Positioning
 

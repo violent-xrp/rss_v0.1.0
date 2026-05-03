@@ -49,6 +49,12 @@ Domain agnosticism:
 - Construction, legal, medical, and finance appear as demo/reference packs, not constitutional limits.
 - Future tenant/domain packs must preserve the same Pact-to-kernel boundary.
 
+Terminology/register boundary:
+- "Seat" is doing useful architectural work: it names a fixed authority surface whose role survives implementation changes.
+- "Council" is not a runtime actor today. There is no Council class, vote, or collective execution path; the operative structure is the eight seats, grouped by operational and constitutional rhythm.
+- External-facing docs should translate formal Pact vocabulary into engineering language where useful: authority surface, governance module, routing boundary, amendment workflow, operator, and system owner.
+- The Pact can keep its constitutional register, but reviewer/product surfaces should not require readers to learn every internal metaphor before they can evaluate the mechanics.
+
 Section 1 / seat law:
 - Fail-closed seat behavior is broadly represented through typed errors and structured halt/refusal returns.
 - TRACE's dual role is implemented intentionally: runtime audit writes can reach TRACE directly so WARD failure cannot prevent audit recording.
@@ -126,6 +132,12 @@ T-0 mechanical identity:
 - v0.1.0 discloses that some T-0 gates are convention/docstring boundaries rather than cryptographic or identity-checked mechanics.
 - Priority examples: Safe-Stop clearing, term/synonym/disallow authorization, seat creation/modification, container lifecycle authority, and seal/amendment authorization.
 
+T-0 recovery and lock-out risk:
+- Future cryptographic identity must not make T-0 sovereign authority unrecoverable through key loss, hardware-token failure, or credential-rotation mistakes.
+- Cryptographic gates should be treated as attestation hardening, not as the only possible access path for the system owner.
+- Any manual recovery or bypass path should be explicit, hard to invoke accidentally, and more auditable than a normal command, with reason and recovery context preserved in TRACE.
+- This needs design before Phase H identity hardening, because a governance system that can permanently lock out its sovereign operator is not operationally honest.
+
 Persistence versus external anchoring:
 - Safe-Stop and TRACE persistence are real inside the current runtime store.
 - A local attacker with file-system authority can still delete or replace local persistence artifacts.
@@ -188,6 +200,20 @@ Amendment/evolution gaps:
 - Amendment records do not yet include byte-level diff content, affected Pact dependencies, code/test evidence snapshot, runtime environment, full pre-seal drift report, or post-ratification verification report.
 - There is no post-ratification self-test that proves the new canon hash, version counter, TRACE event, persistence state, and cold verifier posture all match the expected result.
 
+Pact embedding / reverse traceability gaps:
+- The claim matrix maps Pact sections to tests, and code comments cite Pact clauses, but the reverse map from kernel modules back to Pact sections is not yet mechanically generated.
+- Section 0 integrity is mechanically checked; full-Pact integrity across Sections 1-7 is not yet treated as the same boot/request-time invariant.
+- Amendment pre-seal integrity should eventually verify the whole Pact surface, not only the root Genesis artifact, before new law is sealed.
+- A generated implementation map should answer two questions: which Pact sections have no kernel references, and which kernel modules introduce governance behavior without Pact references.
+- A pre-commit or CI gate should eventually run baseline sync, claim-matrix generation/checks, and Pact-reference extraction so drift is caught before review rather than after publication.
+
+Internal advisor layer / Tier 2.5 gap:
+- RSS currently treats external models as Tier 3: they may inform but cannot authorize, grant scope, create consent, seal law, or execute side effects.
+- A future internal advisor layer could translate external model analysis into structured, auditable advisory packets before the kernel or T-0 sees it.
+- Internal advisors should be modules, not seats: no constitutional authority, no direct command power, domain-bounded input/output contracts, TRACE-recorded invocations, and hash-bound outputs.
+- This preserves the useful multi-voice review instinct while keeping external model output outside the authority boundary.
+- If this layer becomes real, later Pact work should decide where it sits in the tier model, how advisor output enters amendment/review workflows, and which advisor classes are required for protected-section changes.
+
 Seat interface:
 - WARD's protocol expects seats to expose `status()` and `handle(task)`.
 - CYCLE, OATH, SCRIBE, SEAL, and WARD currently expose both.
@@ -235,6 +261,10 @@ Pact text candidates:
 - Section 7 should add lifecycle states for real governance queues: WITHDRAWN, DEFERRED, SUPERSEDED, EXPIRED, and a stale-base/conflict state if section versions advance under an open proposal.
 - Section 7 should add a ratification preview/dry-run concept and post-ratification verification report before TECTON exposes amendment ceremony in a product UI.
 - Section 7 AmendmentRecord structure should eventually include diff, dependency/evidence snapshot, environment snapshot, pre-seal drift report, and post-seal verification outcome.
+- Section 7 / Phase H identity wording should guarantee that T-0 recovery authority cannot be destroyed by technical identity failure. Cryptographic proof should strengthen attestation while preserving auditable recovery paths.
+- Future Pact wording should extend integrity protection beyond Section 0: all Pact sections should be hash-checked, and amendment ceremony should refuse to seal new law while any section's integrity is uncertain.
+- Future Pact wording should distinguish internal advisors from seats and external models if a Tier 2.5 advisory layer is introduced. Advisors translate and structure evidence; they do not hold authority.
+- Future Pact wording should reduce or reserve "Council" as a general collective term and instead use "the eight seats," "operational seats," or "constitutional seats" where those are more exact. Seats stay; Council should not imply a runtime actor that does not exist.
 
 ## Version Watch
 
@@ -253,6 +283,9 @@ Before v0.1.1:
 - Fix or explicitly fence SEAL amendment TRACE emission so ceremony events do not silently lose the write-ahead guarantee.
 - Decide the section-version versus project-version model before ratifying the first post-v0.1.0 Pact amendment batch.
 - Add a future structured amendment preview/report API as the substrate for a TECTON amendment UI.
+- Design the T-0 recovery/lock-out posture before adding cryptographic identity gates: keys should attest authority, not become the only way the sovereign operator can recover the system.
+- Add or schedule full-Pact integrity checks, reverse Pact-reference extraction, and pre-commit/CI drift gates.
+- Preserve the vocabulary rule: keep "seat" as the authority-surface term, prefer operational/constitutional seat classes over broad Council language, and translate formal Pact language for external readers.
 - Decide the standard seat-interface question for SCOPE/RUNE.
 - Add or schedule tests for WARD hook protected-field coverage, CYCLE fail-closed internal errors, SEAL external attribution bypasses, and RUNE confidence/edge-token behavior.
 - Keep this file aligned with any new tests that prove additional Pact clauses.
@@ -261,6 +294,7 @@ Before v0.1.1:
 Before v0.2.0:
 - Revisit whether Pact wording should be updated after the kernel has mechanical T-0 identity gates, stronger connector boundaries, and a more mature external anchoring posture.
 - Enumerate which T-0 powers have mechanical gates, which are still convention-bound, and which require external trust anchoring.
+- Decide whether an internal advisor layer belongs in v0.2.0: structured, auditable, non-authoritative modules that translate external model analysis into governed packets for operator review.
 - Treat Pact text changes as a deliberate version step, not as routine documentation cleanup.
 
 ## Rule

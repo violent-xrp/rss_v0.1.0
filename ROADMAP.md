@@ -86,6 +86,8 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - External vocabulary map maintenance as reviewer-facing language evolves.
 - Pact alignment map maintenance before Pact wording, v0.1.1, or v0.2.0 changes.
 - Seat load-bearing audit after v0.1.0.
+- T-0 recovery/lock-out design before cryptographic identity becomes load-bearing.
+- Full-Pact integrity and reverse Pact-reference extraction so code/law drift is visible in both directions.
 
 ### Future Watch
 - indirect prompt-injection probes against imported web, email, document, RAG, and tool-return content
@@ -97,6 +99,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - confusables/homoglyph hardening beyond current normalization
 - larger-event-count TRACE verification characterization
 - product/operator console structure that does not outrun kernel truth
+- internal advisor layer design: structured, auditable, non-authoritative advisors between external models and the kernel/operator
 
 Do not diffuse effort equally across all future phases. Keep the current checkpoint sharp.
 
@@ -222,7 +225,19 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - Section 7 ceremony write-ahead: make amendment TRACE emission fail closed or explicitly fence it as best-effort until hardened
 - Section 7 version model: define how section-level versions (`v1.0`, `v1.1`) relate to project/release versions (`v0.1.0`, `v0.1.1`)
 - Section 7 operator ceremony API: future preview/dry-run, diff report, stale-base handling, and post-ratification verification report for TECTON UI readiness
-- Pact wording candidates after code proof: runtime-mediated callbacks, immutable envelopes, revocation split-brain symmetry, full-envelope TRACE hashing, typed drift/fault response, Section 5 permission status, Section 6 persistence boundaries, Section 7 amendment ceremony hardening, and dynamic TRACE event-code exceptions
+- T-0 recovery authority: design auditable manual recovery so future cryptographic identity strengthens attestation without creating permanent lock-out risk
+- Full-Pact integrity: extend hash verification and pre-seal integrity beyond Section 0, and generate reverse maps from code references back to Pact sections
+- Local enforcement hooks: add pre-commit/CI checks for baseline sync, claim matrix drift, and Pact-reference extraction once the commands are stable
+- Vocabulary/register pass: keep "seat" as the authority-surface term, prefer operational/constitutional seat classes over broad Council language, and translate Pact vocabulary in reviewer/product docs
+- Pact wording candidates after code proof: runtime-mediated callbacks, immutable envelopes, revocation split-brain symmetry, full-envelope TRACE hashing, typed drift/fault response, Section 5 permission status, Section 6 persistence boundaries, Section 7 amendment ceremony hardening, T-0 recovery authority, full-Pact integrity, formal vocabulary/register cleanup, and dynamic TRACE event-code exceptions
+
+### v0.2.0 / TECTON Candidate Queue
+
+These are product/substrate directions, not v0.1.0 blockers:
+- internal advisor layer: domain-bounded modules that translate external model analysis into structured, auditable advisory packets without becoming seats or authority holders
+- multi-voice amendment review: advisor packets can inform T-0 during amendment review, while T-0 and SEAL remain the authority path
+- TECTON operator surfaces for amendment queues, ratification previews, drift indicators, cold-verifier reports, consent-source views, and recovery/bypass receipts
+- public vocabulary translation table for product copy: Pact terms remain precise internally, while UI language uses operator, authority module, amendment workflow, and system owner where those are clearer
 
 ### Phase H — External Trust Anchoring
 
@@ -232,6 +247,7 @@ Preview, not current blocker:
 - stronger off-box audit posture
 - chain-version migration ceremony when `CHAIN_HASH_VERSION` changes
 - genuine ingress authentication beyond architectural single-process discipline
+- recovery-key and bypass ceremony that cannot strand T-0 outside the system
 
 ---
 
@@ -249,6 +265,9 @@ Preview, not current blocker:
 - **OATH audit dual-failure gap:** if consent persistence fails and the failure callback/audit path also fails, the caller still receives refusal but TRACE may not record the failed consent attempt.
 - **OATH coercion check:** current coercion detection is a narrow keyword flag, not a full coercion-defense system.
 - **External audit anchoring:** cold verification exists, but signing/timestamp anchoring is Phase H.
+- **Cryptographic lock-out:** future identity hardening must include auditable recovery/bypass paths before keys become operationally load-bearing.
+- **Pact drift:** Section 0 integrity is protected today; full-Pact hash verification and reverse Pact-to-code extraction remain future hardening.
+- **Terminology drift:** formal Pact vocabulary is useful internally, but reviewer/product surfaces should translate it instead of making "Council" language carry more architecture than exists in code.
 - **Demo maturity:** demo quality must not outrun governance integrity.
 
 ---
