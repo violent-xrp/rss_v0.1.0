@@ -64,9 +64,11 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **Release-boundary polish:** keep the v0.1.0 claim surface aligned with the closed Phase G coverage floor and remaining known limits.
 - **Connector-proof planning:** keep future browser/email/document/RAG/tool-return import tests mapped before adding real external adapters.
 - **Pre-tag RUNE/OATH hardening map:** closed. OATH requester fallback, RUNE constraint-prompt proof, and RUNE longest bounded-match precedence are now proven.
+- **Code-first Pact posture:** let kernel hardening move where it makes RSS more true; only narrow Section 7 / recovery-authority Pact edits should enter the v0.1.0 line after code proof shows they belong there.
 
 ### Next
 - After the current pre-tag mechanical fixes, decide whether the next clean checkpoint becomes `v0.1.0-rc.1`.
+- Split the remaining candidate cloud explicitly: v0.1.0 only absorbs code-proven ceremony/recovery fixes and small natural edits; broader Pact refinements wait for v0.1.1 ceremony.
 - Decide whether the current demo artifact set is enough for the final v0.1.0 release tag.
 - Keep tightening the reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
 - Decide what is required for the v0.1.0 release tag vs what moves to v0.1.1.
@@ -128,6 +130,7 @@ v0.1.0 does **not** require:
 - external signing or timestamp anchoring
 - distributed multi-node TECTON
 - polished end-user product UX
+- broad Pact rewrite, vocabulary sweep, internal advisor layer, or product UI work
 
 ---
 
@@ -232,6 +235,11 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - Vocabulary/register pass: keep "seat" as the authority-surface term, prefer operational/constitutional seat classes over broad Council language, and translate Pact vocabulary in reviewer/product docs
 - Amendment planning pass: group the accumulated `docs/PACT_ALIGNMENT.md` Pact text candidates by section before the v0.1.1 ceremony begins
 - Pact wording candidates after code proof: runtime-mediated callbacks, immutable envelopes, revocation split-brain symmetry, full-envelope TRACE hashing, typed drift/fault response, Section 5 permission status, Section 6 persistence boundaries, Section 7 amendment ceremony hardening, T-0 recovery authority, full-Pact integrity, formal vocabulary/register cleanup, and dynamic TRACE event-code exceptions
+
+Pre-v0.1.0 scope rule:
+- Code can continue to harden before the tag where the work improves enforcement, proof, or release honesty.
+- Pact text should not be broadly rewritten before the tag. If code proof naturally requires a pre-tag Pact edit, keep it narrow: Section 7 ceremony viability, T-0 recovery authority, and immediately adjacent wording only.
+- Everything else in this queue waits for v0.1.1 ceremony unless a release-gate review shows the current v0.1.0 claim would otherwise be false.
 
 ### v0.2.0 / TECTON Candidate Queue
 

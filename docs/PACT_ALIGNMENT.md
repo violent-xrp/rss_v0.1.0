@@ -8,6 +8,8 @@ Pact edits are version-sensitive project events. Do not rewrite Pact language du
 
 RSS uses pre-release code checkpoints before the final v0.1.0 tag. Code may harden through `v0.1.0-rc.N` snapshots while the v0.1.0 Pact/release line remains intact. The final `v0.1.0` tag should mark a stable reference snapshot, not every hardening commit on `main`.
 
+Pre-v0.1.0 discipline: code may keep improving where it makes the kernel more faithful, bounded, and provable. The Pact should not be treated as a brake on hardening, but Pact text edits before the tag should stay narrow. If code proof naturally requires a pre-tag Pact change, limit it to Section 7 ceremony viability, T-0 recovery authority, or immediately adjacent wording. Broader vocabulary cleanup, full-Pact integrity language, and accumulated section refinements belong in the v0.1.1 amendment plan unless a release-gate review proves v0.1.0 would otherwise be false.
+
 ## Constitutional Source
 
 The root constitutional source starts at `pact/pact_section0_root_physics.md`.
