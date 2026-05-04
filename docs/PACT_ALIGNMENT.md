@@ -257,6 +257,7 @@ Pact text candidates:
 - Section 5 should distinguish enforced permissions from declared metadata and should name `risk_tier` as not load-bearing until a runtime decision point exists.
 - Section 5 / Section 6 event-code language should enumerate dynamic TRACE prefixes rather than allowing open-ended dynamic event classes.
 - Section 5 consent wording should eventually require an auditable consent source when OATH resolves through GLOBAL fallback instead of a container-specific grant.
+- Section 5 product-vs-constitutional distinction: container ownership is operational authority within a deployment, not constitutional authority over the kernel. Future Pact wording should make explicit that container owners (deployment T-0-equivalents) hold authority over their container's data, permissions, and lifecycle, but do not have authority over the kernel's law. Coordinate with the Section 0 RSS-and-Products fence.
 - Section 6 should explicitly cross-reference sustained audit-write failure threshold escalation to Section 0 Constitutional Drift / Safe-Stop logic.
 - Section 6 should describe the current thread-safety mechanism concretely: WAL, `check_same_thread=False`, process-local lock, and single-process boundary.
 - Section 6 dynamic event-code wording should say that `CONTAINER_REQUEST_*` is the current dynamic pattern and that future patterns require explicit registration.
@@ -269,10 +270,11 @@ Pact text candidates:
 - Section 7 should add lifecycle states for real governance queues: WITHDRAWN, DEFERRED, SUPERSEDED, EXPIRED, and a stale-base/conflict state if section versions advance under an open proposal.
 - Section 7 should add a ratification preview/dry-run concept and post-ratification verification report before TECTON exposes amendment ceremony in a product UI.
 - Section 7 AmendmentRecord structure should eventually include diff, dependency/evidence snapshot, environment snapshot, pre-seal drift report, and post-seal verification outcome.
+- Section 7 amendment authority belongs to constitutional T-0: future Pact wording should clarify that amendment ceremony authority is reserved to Pact T-0 (constitutional sovereign), not deployment-level operational ownership. A customer running TECTON cannot amend the Pact through their deployment. Coordinate with the Section 0 product fence.
 - Section 7 / Phase H identity wording should guarantee that T-0 recovery authority cannot be destroyed by technical identity failure. Cryptographic proof should strengthen attestation while preserving auditable recovery paths.
 - Future Pact wording should extend integrity protection beyond Section 0: all Pact sections should be hash-checked, and amendment ceremony should refuse to seal new law while any section's integrity is uncertain.
 - Future Pact wording should distinguish internal advisors from seats and external models if a Tier 2.5 advisory layer is introduced. Advisors translate and structure evidence; they do not hold authority.
-- Future Pact wording should reduce or reserve "Council" as a general collective term and instead use "the eight seats," "operational seats," or "constitutional seats" where those are more exact. Seats stay; Council should not imply a runtime actor that does not exist.
+- Council vocabulary strip across all sections: scheduled as the first v0.1.1 amendment ceremony test case. Reduces or reserves "Council" as a general collective term; replaces with "the eight seats", "operational seats", or "constitutional seats" where more exact. Coordinated cross-section change appropriate for ceremony rather than pre-canonization editorial pass. Will exercise amendment persistence and ceremony machinery end-to-end with bounded scope.
 
 ## Version Watch
 

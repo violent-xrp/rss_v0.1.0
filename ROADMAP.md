@@ -133,6 +133,10 @@ Mandatory before `v0.1.0-rc.1`:
   code-proven. Proposal-time external attribution creates no actionable state,
   and proposal/review/ratification mutation fails closed if TRACE emission
   fails.
+- REQUIRED: Section 0 voice cleanup is scoped to ten substantive additions,
+  including the product-vs-constitutional T-0 distinction and Pact-level
+  recovery authority clause. Council vocabulary is preserved verbatim in this
+  pass; the strip is deferred to the first v0.1.1 ceremony amendment.
 - REQUIRED: `docs/PACT_VOICE.md` exists as a non-authoritative rail before T-0
   begins the Section 0, Section 1, and Section 2 voice/structure cleanup.
 - REQUIRED: Section 0-2 voice consistency work is framed before rewriting
@@ -157,6 +161,12 @@ Mandatory before final `v0.1.0`:
 
 Held for v0.1.1 ceremony unless a release-gate review proves otherwise:
 - broad Pact wording cleanup and Council/vocabulary sweep
+- Council vocabulary strip across all eight Pact sections as the first v0.1.1
+  amendment ceremony test case. This coordinated cross-section vocabulary
+  change replaces "Council" with "the eight seats", "operational seats", or
+  "constitutional seats" as exact context requires. It exercises amendment
+  persistence and ceremony machinery with bounded, low-risk scope before larger
+  v0.1.1 candidates run through ceremony.
 - full-Pact integrity extension and reverse Pact-reference extraction
 - internal advisor layer / multi-voice amendment design
 - TECTON product UI and operator-surface design
