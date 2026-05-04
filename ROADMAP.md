@@ -134,9 +134,10 @@ Mandatory before `v0.1.0-rc.1`:
   and proposal/review/ratification mutation fails closed if TRACE emission
   fails.
 - REQUIRED: Section 0 voice cleanup is scoped to ten substantive additions,
-  including the product-vs-constitutional T-0 distinction and Pact-level
-  recovery authority clause. Council vocabulary is preserved verbatim in this
-  pass; the strip is deferred to the first v0.1.1 ceremony amendment.
+  including the constitutional T-0 vs product operational ownership distinction
+  and Pact-level recovery authority clause. Council vocabulary is preserved
+  verbatim in this pass; the strip is deferred to the first v0.1.1 ceremony
+  amendment.
 - REQUIRED: `docs/PACT_VOICE.md` exists as a non-authoritative rail before T-0
   begins the Section 0, Section 1, and Section 2 voice/structure cleanup.
 - REQUIRED: Section 0-2 voice consistency work is framed before rewriting
