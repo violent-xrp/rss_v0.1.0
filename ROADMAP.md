@@ -31,16 +31,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **139 test functions / 1202 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **140 test functions / 1216 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
 - **92.5% statement coverage** via `python run_coverage.py`
-- **139 claims / 139 tests / 101 Pact sections** in `docs/claim_matrix.md`
+- **140 claims / 140 tests / 103 Pact sections** in `docs/claim_matrix.md`
 - **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 139/1202 baseline
+- public docs are synced to the current 140/1216 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -74,7 +74,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - After a clean acceptance/sync/claim-matrix pass, prepare `v0.1.0-rc.1` as the next reviewable release checkpoint.
 - Keep final v0.1.0 gates explicit: T-0 recovery authority clause, amendment persistence, and final acceptance proof.
 - Keep tightening the reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
-- Parallel code/proof lane while Section 0 drafting continues: audit §0.8.4 round-trip coverage, review demo artifacts, and prepare amendment persistence without broad Pact rewrites.
+- Parallel code/proof lane while Section 0 drafting continues: §0.8.4 round-trip coverage is closed for the current reference persistence path; next, review demo artifacts and prepare amendment persistence without broad Pact rewrites.
 
 ### Keep Warm
 - API/wrapper ingress boundary and caller identity propagation.
@@ -136,6 +136,11 @@ Mandatory before `v0.1.0-rc.1`:
   code-proven. Proposal-time external attribution creates no actionable state,
   and proposal/review/ratification mutation fails closed if TRACE emission
   fails.
+- CLOSED: Section 0 §0.8.4 governed-state bootstrap round-trip is proven in
+  acceptance. Terms, synonyms, disallowed terms, hub entries, consent records,
+  TRACE events, container state, container hub entries, Safe-Stop/system state,
+  and schema version restore after restart. Container state proof uses the
+  current explicit TECTON `save_to(...)` persistence path.
 - IN PROGRESS: Section 0 voice cleanup is scoped to ten substantive additions,
   including the constitutional T-0 vs product operational ownership distinction
   and Pact-level recovery authority clause. Council vocabulary is preserved
@@ -148,7 +153,7 @@ Mandatory before `v0.1.0-rc.1`:
   begins: match the Section 4 and Section 5 "rule / current proof / boundary"
   style, and keep substantive additions such as T-0 recovery authority owned by
   T-0 rather than implementation cleanup.
-- CURRENT: one acceptance/sync pass is clean at 139 tests, 1202 assertions, and
+- CURRENT: one acceptance/sync pass is clean at 140 tests, 1216 assertions, and
   92.5% coverage after the Section 0 drafting-rail updates. Rerun immediately
   before any `v0.1.0-rc.1` tag.
 - REQUIRED: decide whether the current demo artifact set is enough for the

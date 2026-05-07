@@ -33,6 +33,7 @@ Section 0 integrity and Safe-Stop:
 - Section 0 integrity is mechanically checked during constitution loading.
 - Safe-Stop is persistent across restart in the current single-process SQLite-backed runtime.
 - Safe-Stop clearing is T-0 by convention/docstring today; the mechanical identity gate remains future hardening.
+- Section 0 §0.8.4 bootstrap round-trip is code-proven for the current SQLite reference path: terms, synonyms, disallowed terms, global hub entries, consent records, TRACE events, TECTON container state, container hub entries, Safe-Stop/system state, and schema version restore through fresh bootstrap. Container persistence currently uses TECTON's explicit `save_to(...)` path before automatic restore; auto-save-on-mutation remains a future product/hardening decision, not part of the current claim.
 
 Typed authority and directionality:
 - The eight-seat model is represented in code as separate governance surfaces with bounded responsibilities.
@@ -285,7 +286,7 @@ Pact text candidates:
 Before v0.1.1:
 - The S0-S2 pre-tag mechanical OATH/RUNE gaps listed in `ROADMAP.md` are closed; keep future work version-sensitive rather than silently amending the Pact.
 - Section 3 execution-intent hardening is closed in code: HIGH_RISK precedence is proven, payload hashes are re-verified during validation, and far-future TTLs are rejected on externally constructed intents.
-- Audit Section 0 §0.8.4 round-trip coverage: confirm every governed-state item listed there survives restart in current tests; if any item does not, either fix the kernel or keep the Pact wording fenced as current-reference/partial coverage.
+- CLOSED: Section 0 §0.8.4 round-trip coverage is proven for the current reference persistence path. Keep future lifecycle auto-save semantics explicit if TECTON changes from explicit `save_to(...)` to automatic persistence.
 - Carry Section 4's output-boundary rule into future API/operator/connector work before adding raw hub-returning public surfaces.
 - Decide whether LEDGER brainstorming belongs in SCOPE as a first-class envelope field or remains a PAV-builder-only expert mode.
 - Keep the Section 5 permission map current as fields move from declared metadata to enforced behavior.

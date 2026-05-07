@@ -173,6 +173,118 @@ def test_persistence_roundtrip():
                 os.unlink(path + suffix)
 
 
+def test_s0_8_4_governed_state_bootstrap_roundtrip():
+    # CLAIM: §0.8.4, §6.9.1 — every listed governed-state category restores on bootstrap
+    section("S0/S6: Governed State Bootstrap Round-Trip (§0.8.4)")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+
+        # Session 1: create each governed-state category named by §0.8.4.
+        rss1 = bootstrap(config)
+
+        term = Term(
+            "TERM-S084",
+            "audit packet",
+            "Evidence bundle for governed review",
+            ["review"],
+            "1.0",
+        )
+        rss1.save_term(term)
+        rss1.save_synonym("review bundle", "TERM-S084", "HIGH")
+        rss1.save_disallowed("forbidden packet", "test disallow survives restart")
+
+        hub_entry = rss1.save_hub_entry("WORK", "S084 global hub payload")
+        redline_entry = rss1.save_hub_entry("PERSONAL", "S084 private payload", redline=True)
+
+        consent = rss1.oath.authorize(
+            "EXPORT", "WORK", "SESSION", "T-0", container_id="S084-CONTAINER"
+        )
+        check(consent.get("authorized") is True, "setup consent persisted before restart")
+
+        container = rss1.tecton.create_container("S084 Tenant", "T-0")
+        rss1.tecton.activate_container(container.container_id)
+        container_entry = rss1.tecton.add_container_entry(
+            container.container_id,
+            "WORK",
+            "S084 container hub payload",
+            redline=True,
+        )
+        saved = rss1.tecton.save_to(rss1.persistence)
+        check(saved >= 1, "setup container state saved through TECTON persistence path")
+
+        rss1.enter_safe_stop("S084 persistent system state proof")
+        event_count_1 = rss1.persistence.event_count()
+        check(event_count_1 > 0, "setup trace events persisted before restart")
+        rss1.persistence.close()
+
+        # Session 2: fresh runtime restores from SQLite during bootstrap.
+        rss2 = bootstrap(config, restore=True)
+
+        term_ids = {t["id"] for t in rss2.meaning.list_sealed()}
+        check("TERM-S084" in term_ids, "§0.8.4 terms restore on bootstrap")
+
+        synonym_status = rss2.meaning.classify("review bundle")
+        check(
+            synonym_status.status == "SOFT"
+            and synonym_status.term_id == "TERM-S084",
+            "§0.8.4 synonyms restore on bootstrap",
+        )
+
+        disallowed_status = rss2.meaning.classify("forbidden packet")
+        check(
+            disallowed_status.status == "DISALLOWED",
+            "§0.8.4 disallowed terms restore on bootstrap",
+        )
+
+        work_ids = {e.id for e in rss2.hubs.list_hub("WORK")}
+        personal_ids = {e.id for e in rss2.hubs.list_hub("PERSONAL")}
+        check(hub_entry.id in work_ids, "§0.8.4 hub entries restore on bootstrap")
+        check(redline_entry.id in personal_ids, "§0.8.4 REDLINE hub entry restores on bootstrap")
+
+        check(
+            rss2.oath.check("EXPORT", "S084-CONTAINER") == "AUTHORIZED",
+            "§0.8.4 consent records restore on bootstrap",
+        )
+
+        check(
+            len(rss2.trace.all_events()) >= event_count_1,
+            "§0.8.4 trace events restore into memory on bootstrap",
+        )
+
+        restored_container = rss2.tecton.get_container(container.container_id)
+        check(restored_container.state == "ACTIVE", "§0.8.4 container state restores on bootstrap")
+
+        restored_container_ids = {
+            e.id for e in rss2.tecton.get_container_hubs(container.container_id, "WORK")
+        }
+        check(
+            container_entry.id in restored_container_ids,
+            "§0.8.4 container hub entries restore on bootstrap",
+        )
+
+        system_state = rss2.is_safe_stopped()
+        check(
+            system_state.get("active") is True
+            and system_state.get("reason") == "S084 persistent system state proof",
+            "§0.8.4 persistent system state restores on bootstrap",
+        )
+        check(
+            rss2.persistence.get_schema_version() is not None,
+            "§0.8.4 schema version remains in persistent system state",
+        )
+
+        rss2.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
 def test_s4_personal_scope_guard():
     """§4.2.3 — PERSONAL hub default SCOPE guard"""
     # CLAIM: §4.2.3 — PERSONAL hub requires sovereign=True

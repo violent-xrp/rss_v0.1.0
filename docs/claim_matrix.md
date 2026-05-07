@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-05-03 23:39 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-05-07 15:34 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 101 distinct Pact sections referenced across 139 claim tags on 139 test functions.
+**Coverage:** 103 distinct Pact sections referenced across 140 claim tags on 140 test functions.
 
 ---
 
@@ -64,6 +64,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_pre_seal_drift_check` — pre-seal drift guard
 - `test_write_ahead_guarantee` — audit write-ahead guarantee
 - `test_phase_d_regression_battery` — UUID ingress, scope-on-permission, OATH persistence-failure visibility
+
+## §0.8.4
+
+- `test_s0_8_4_governed_state_bootstrap_roundtrip` — every listed governed-state category restores on bootstrap
 
 ## §0.9
 
@@ -467,6 +471,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_s6_schema_migrated_event` — SCHEMA_MIGRATED event on legacy row migration
 - `test_s6_chain_hash_migration_scaffold` — chain-hash migration scaffold refuses silent CHAIN_HASH_VERSION drift
+
+## §6.9.1
+
+- `test_s0_8_4_governed_state_bootstrap_roundtrip` — every listed governed-state category restores on bootstrap
 
 ## §6.9.2
 
