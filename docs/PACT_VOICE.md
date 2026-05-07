@@ -36,7 +36,7 @@ explicit boundary or future-work language third.
 
 - Section 0: T-0 recovery authority clause drafted by T-0. Technical identity
   mechanisms should strengthen attestation without making sovereign recovery
-  impossible; recovery or bypass usage should be auditable.
+  impossible; recovery or bypass usage should be auditable through TRACE.
 - Section 1: operational vs constitutional seat distinction; runtime-mediated
   callbacks; hook protected fields; immutable envelope boundaries where the
   code already proves them.
