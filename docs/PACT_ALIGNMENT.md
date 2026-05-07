@@ -244,6 +244,7 @@ Pact text candidates:
 - TRACE full-envelope hashing is stronger than generic hash chaining; future Pact wording should preserve that specificity.
 - Runtime-mediated callbacks should be named as allowed only when the runtime, not a peer seat, bridges the event.
 - Typed fault taxonomy should eventually distinguish global halt, container halt, structured concern, and recoverable drift while preserving fail-closed defaults.
+- Section 0 Foundational Failure examples should be explicit as illustrative, not exhaustive: any future root-physics violation that fits the definition should be classified as Foundational Failure and trigger Safe-Stop even if the example list has not yet been amended.
 - Section 3 should remove or clarify duplicated §3.3.1 language during the next Pact text pass.
 - Section 3's implementation verification table should move to this alignment/evidence layer, or be marked as snapshot-only; Pact law should not carry drifting test-count numbers unless mechanically generated.
 - Section 3 should clarify WARD's bootstrap relationship: seven domain/operational seats register with WARD, while WARD remains the routing/enforcement infrastructure rather than a peer in the execution sequence.
@@ -283,6 +284,7 @@ Pact text candidates:
 Before v0.1.1:
 - The S0-S2 pre-tag mechanical OATH/RUNE gaps listed in `ROADMAP.md` are closed; keep future work version-sensitive rather than silently amending the Pact.
 - Section 3 execution-intent hardening is closed in code: HIGH_RISK precedence is proven, payload hashes are re-verified during validation, and far-future TTLs are rejected on externally constructed intents.
+- Audit Section 0 §0.8.4 round-trip coverage: confirm every governed-state item listed there survives restart in current tests; if any item does not, either fix the kernel or keep the Pact wording fenced as current-reference/partial coverage.
 - Carry Section 4's output-boundary rule into future API/operator/connector work before adding raw hub-returning public surfaces.
 - Decide whether LEDGER brainstorming belongs in SCOPE as a first-class envelope field or remains a PAV-builder-only expert mode.
 - Keep the Section 5 permission map current as fields move from declared metadata to enforced behavior.
