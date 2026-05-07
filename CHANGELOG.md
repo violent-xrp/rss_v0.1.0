@@ -1,5 +1,7 @@
 # Changelog
 
+_License: AGPLv3 documentation terms; see `LICENSE/README.md`._
+
 ## v0.1.0
 
 ### Current verified snapshot

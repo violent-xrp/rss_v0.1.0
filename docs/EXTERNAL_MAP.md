@@ -1,5 +1,7 @@
 # RSS External Map
 
+_License: AGPLv3 documentation terms; see `../LICENSE/README.md`._
+
 This is a plain-English bridge for engineers and reviewers who are new to the RSS vocabulary.
 
 It does not rename the internal system. It maps the RSS terms to more familiar engineering concepts so reviewers can evaluate the mechanics without first learning the full project dialect.

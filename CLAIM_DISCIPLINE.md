@@ -1,5 +1,7 @@
 # RSS v0.1.0 — Claim Discipline
 
+_License: CC BY-ND 4.0 discipline material; see `LICENSE/CC BY-ND 4.0.md` and `pact/LICENSE_pact.md`._
+
 ## Core rule
 **Describe only what the current code and proof surface actually support.**
 

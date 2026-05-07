@@ -168,8 +168,11 @@ The demo and offline fallback are intentionally governed, not theatrical. The se
 ## Licensing
 
 This repo uses a split licensing posture:
-- **Code:** AGPLv3, with commercial/contractor exception language carried in-file where applicable.
-- **Pact text and constitutional material:** licensed separately from the kernel code. See `pact/LICENSE_pact.md` for current terms.
+- **Kernel code:** AGPLv3 (full text at `LICENSE/AGPLv3.md`). Network use is distribution under AGPLv3 — see in-file headers.
+- **Commercial / contractor exception:** available by signed agreement only. See `LICENSE/COMMERCIAL_LICENSE.md` for the inquiry path. There is no implicit grant.
+- **Pact and constitutional material:** licensed separately under CC BY-ND 4.0. See `pact/LICENSE_pact.md` for terms. The Pact may be quoted, shared, and discussed but not published in modified form.
+
+The split is intentional: the engine is collaborative, the constitution is sovereign.
 
 ## Positioning rule
 

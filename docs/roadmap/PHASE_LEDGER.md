@@ -1,5 +1,7 @@
 # RSS Phase Ledger
 
+_License: AGPLv3 documentation terms; see `../../LICENSE/README.md`._
+
 This file preserves the landed-work ledger that used to live in `ROADMAP.md`.
 
 `ROADMAP.md` should stay current/future-facing. This ledger records how the system got here.

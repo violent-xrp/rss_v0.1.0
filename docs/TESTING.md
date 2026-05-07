@@ -1,5 +1,7 @@
 # RSS Testing Guide
 
+_License: AGPLv3 documentation terms; see `../LICENSE/README.md`._
+
 This file preserves test-layout and runner details that used to live in `ROADMAP.md`.
 
 ## Canonical Runner

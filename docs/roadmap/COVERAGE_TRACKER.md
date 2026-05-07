@@ -1,5 +1,7 @@
 # RSS Coverage Tracker
 
+_License: AGPLv3 documentation terms; see `../../LICENSE/README.md`._
+
 This file preserves coverage detail that used to live in `ROADMAP.md`.
 
 `ROADMAP.md` should name only the current coverage headline and active gaps. This file holds the module table and target history.

@@ -1,5 +1,7 @@
 # RSS v0.1.0 — Roadmap
 
+_License: AGPLv3 documentation terms; see `LICENSE/README.md`._
+
 Release target: **v0.1.0**
 
 Versioning posture:

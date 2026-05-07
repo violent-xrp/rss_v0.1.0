@@ -1,5 +1,7 @@
 # RSS v0.1.0 — Repo Structure Proposal
 
+_License: AGPLv3 documentation terms; see `LICENSE/README.md`._
+
 **Status:** Proposal only. Not tracked in ROADMAP. Not scheduled. Operator will decide when and whether to execute.
 **Author anchor:** Built from Grok's flat-vs-nested analysis + April 20 full-module review findings + current kernel truth.
 **Primary goal:** Prepare the repo to scale cleanly into Phase G (wrapper/API) and Phase H (product/workspace layer) without fighting the current flat layout.

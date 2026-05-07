@@ -5,7 +5,7 @@ Copyright (c) 2025-2026 Christian Robert Rose (T-0 Sovereign)
 
 Licensed under Creative Commons Attribution-NoDerivatives 4.0 International
 (CC BY-ND 4.0). You may share this document with attribution, but you may not
-distribute modified versions. See /pact/LICENSE.md for full terms.
+distribute modified versions. See /pact/LICENSE_pact.md for full terms.
 ================================================================================
 -->
 
@@ -319,6 +319,6 @@ This section is part of **The Pact v0.1.0**, the constitutional document of Rose
 
 **Copyright © 2025-2026 Christian Robert Rose (T-0 Sovereign).**
 
-Licensed under **CC BY-ND 4.0**. You may share and quote with attribution. You may not distribute modified versions. See `/pact/LICENSE.md` for full terms.
+Licensed under **CC BY-ND 4.0**. You may share and quote with attribution. You may not distribute modified versions. See `/pact/LICENSE_pact.md` for full terms.
 
 ---

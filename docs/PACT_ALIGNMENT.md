@@ -1,5 +1,7 @@
 # RSS Pact Alignment Map
 
+_License: CC BY-ND 4.0 discipline material; see `../LICENSE/CC BY-ND 4.0.md` and `../pact/LICENSE_pact.md`._
+
 This document tracks how the current kernel aligns with The Pact without amending The Pact itself.
 
 The Pact remains the constitutional source. This file is a review surface: it records what the code currently enforces, what is disclosed as future hardening, and which gaps should be revisited before a Pact text update, v0.1.1, or v0.2.0.

@@ -1,5 +1,7 @@
 # RSS Demo Handoff
 
+_License: AGPLv3 documentation terms; see `../../LICENSE/README.md`._
+
 This file is the operator/engineer handoff for the Phase G governed demo.
 
 It explains how to run the demo, what artifacts it emits, and what the proof means.
