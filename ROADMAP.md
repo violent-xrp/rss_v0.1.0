@@ -69,11 +69,12 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **Code-first Pact posture:** let kernel hardening move where it makes RSS more true; only narrow Section 7 / recovery-authority Pact edits should enter the v0.1.0 line after code proof shows they belong there.
 
 ### Next
-- Finish the pre-Section-0 cleanup pass: ROADMAP and PACT_ALIGNMENT current, `docs/PACT_VOICE.md` drafted as a non-authoritative editing rail, and no Pact text changed by implementation cleanup.
-- Decide whether the current demo artifact set is enough for the `v0.1.0-rc.1` checkpoint.
+- Keep the Section 0 drafting lane narrow: T-0 works from the local classification/additions docs; Codex may keep hardening code and public proof docs without editing the Pact.
+- Decide whether the current demo artifact set is enough for the `v0.1.0-rc.1` checkpoint, or refresh the demo artifact proof once before the checkpoint.
 - After a clean acceptance/sync/claim-matrix pass, prepare `v0.1.0-rc.1` as the next reviewable release checkpoint.
 - Keep final v0.1.0 gates explicit: T-0 recovery authority clause, amendment persistence, and final acceptance proof.
 - Keep tightening the reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
+- Parallel code/proof lane while Section 0 drafting continues: audit §0.8.4 round-trip coverage, review demo artifacts, and prepare amendment persistence without broad Pact rewrites.
 
 ### Keep Warm
 - API/wrapper ingress boundary and caller identity propagation.
@@ -135,19 +136,21 @@ Mandatory before `v0.1.0-rc.1`:
   code-proven. Proposal-time external attribution creates no actionable state,
   and proposal/review/ratification mutation fails closed if TRACE emission
   fails.
-- REQUIRED: Section 0 voice cleanup is scoped to ten substantive additions,
+- IN PROGRESS: Section 0 voice cleanup is scoped to ten substantive additions,
   including the constitutional T-0 vs product operational ownership distinction
   and Pact-level recovery authority clause. Council vocabulary is preserved
   verbatim in this pass; the strip is deferred to the first v0.1.1 ceremony
-  amendment.
-- REQUIRED: `docs/PACT_VOICE.md` exists as a non-authoritative rail before T-0
+  amendment. Local classification/additions docs are private drafting rails;
+  the Pact itself remains unchanged until T-0 applies the pass.
+- CLOSED: `docs/PACT_VOICE.md` exists as a non-authoritative rail before T-0
   begins the Section 0, Section 1, and Section 2 voice/structure cleanup.
-- REQUIRED: Section 0-2 voice consistency work is framed before rewriting
+- CLOSED: Section 0-2 voice consistency work is framed before rewriting
   begins: match the Section 4 and Section 5 "rule / current proof / boundary"
   style, and keep substantive additions such as T-0 recovery authority owned by
   T-0 rather than implementation cleanup.
-- REQUIRED: one current acceptance pass with synced docs, clean claim matrix,
-  and no public claim beyond proof.
+- CURRENT: one acceptance/sync pass is clean at 139 tests, 1202 assertions, and
+  92.5% coverage after the Section 0 drafting-rail updates. Rerun immediately
+  before any `v0.1.0-rc.1` tag.
 - REQUIRED: decide whether the current demo artifact set is enough for the
   `v0.1.0-rc.1` checkpoint.
 
