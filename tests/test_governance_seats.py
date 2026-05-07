@@ -1289,6 +1289,105 @@ def test_seal_ceremony_additional_proof():
     check(trace_ratify.amendment_history("S2") == [],
           "ratification TRACE failure does not append amendment history")
 
+    def failing_persistence(*args):
+        raise RuntimeError("persistence boom")
+
+    persist_proposal = Seal()
+    persist_proposal.set_persistence_callbacks(failing_persistence, failing_persistence)
+    blocked_persist_proposal = persist_proposal.propose_amendment("S2", "r", "t")
+    check(blocked_persist_proposal.get("error") == "AMENDMENT_PERSISTENCE_FAILED",
+          "proposal fails closed when amendment persistence write fails")
+    check(persist_proposal.list_proposals() == [],
+          "proposal persistence failure creates no actionable proposal state")
+
+    persist_review = Seal()
+    p = persist_review.propose_amendment("S2", "r", "t")
+    persist_review.set_persistence_callbacks(failing_persistence, failing_persistence)
+    blocked_persist_review = persist_review.review_amendment(
+        p["proposal_id"], "reviewer", "APPROVE"
+    )
+    check(blocked_persist_review.get("error") == "AMENDMENT_PERSISTENCE_FAILED",
+          "review fails closed when amendment persistence write fails")
+    check(persist_review.get_proposal(p["proposal_id"]).status == "PROPOSED",
+          "review persistence failure leaves proposal in PROPOSED state")
+
+    persist_ratify = Seal()
+    p = persist_ratify.propose_amendment("S2", "r", "t")
+    persist_ratify.review_amendment(p["proposal_id"], "reviewer", "APPROVE")
+    persist_ratify.set_persistence_callbacks(lambda proposal: None, failing_persistence)
+    blocked_persist_ratify = persist_ratify.ratify_amendment(
+        p["proposal_id"], t0_command=True
+    )
+    check(blocked_persist_ratify.get("error") == "AMENDMENT_PERSISTENCE_FAILED",
+          "ratification fails closed when amendment persistence write fails")
+    check(persist_ratify.get_proposal(p["proposal_id"]).status == "REVIEWED",
+          "ratification persistence failure leaves proposal reviewed but unratified")
+    check(persist_ratify.get_canon("S2") is None,
+          "ratification persistence failure does not update canon")
+    check(persist_ratify.amendment_history("S2") == [],
+          "ratification persistence failure does not append amendment history")
+
+
+def test_s7_amendment_persistence_roundtrip():
+    # CLAIM: §7.11.1, §6.9.1 — amendment proposal/review state and ratified history survive restart
+    """S7.11.1: amendment ceremony state persists across bootstrap."""
+    section("S7: Amendment Persistence Round-Trip")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss1 = bootstrap(config)
+        proposed = rss1.seal.propose_amendment(
+            "S2",
+            "Persist reviewed proposal across restart",
+            "S2 persistent amendment text",
+        )
+        check("proposal_id" in proposed, "proposal created before restart")
+        proposal_id = proposed["proposal_id"]
+        reviewed = rss1.seal.review_amendment(
+            proposal_id,
+            "reviewer",
+            "APPROVE",
+            notes="ready after restart",
+        )
+        check(reviewed.get("reviewed") is True, "proposal reviewed before restart")
+        rss1.persistence.close()
+
+        rss2 = bootstrap(config, restore=True)
+        restored = rss2.seal.get_proposal(proposal_id)
+        check(restored is not None, "reviewed proposal restored after restart")
+        check(restored.status == "REVIEWED", "review status restored after restart")
+        check(restored.reviewer == "reviewer", "reviewer restored after restart")
+        ratified = rss2.seal.ratify_amendment(proposal_id, t0_command=True)
+        check(ratified.get("ratified") is True,
+              "restored reviewed proposal can be ratified")
+        check(ratified.get("new_version") == "v1.0",
+              "restored proposal ratifies with first section version")
+        history = rss2.seal.amendment_history("S2")
+        check(len(history) == 1, "ratified amendment record exists before second restart")
+        canon = rss2.seal.get_canon("S2")
+        check(canon is not None and canon.text == "S2 persistent amendment text",
+              "canon updates after ratifying restored proposal")
+        rss2.persistence.close()
+
+        rss3 = bootstrap(config, restore=True)
+        restored_done = rss3.seal.get_proposal(proposal_id)
+        check(restored_done is not None and restored_done.status == "RATIFIED",
+              "ratified proposal status restores after restart")
+        history2 = rss3.seal.amendment_history("S2")
+        check(len(history2) == 1, "amendment history restores after restart")
+        check(history2[0].review_notes == "ready after restart",
+              "review notes restore into AmendmentRecord")
+        canon2 = rss3.seal.get_canon("S2")
+        check(canon2 is not None and canon2.version == "v1.0",
+              "canon index reconstructs from persisted amendment record")
+        check(canon2.hash == history2[0].new_hash,
+              "reconstructed canon hash matches AmendmentRecord")
+        rss3.persistence.close()
+    finally:
+        _cleanup_db(path)
+
 
 if __name__ == "__main__":
     run_module(globals())

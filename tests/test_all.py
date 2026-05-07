@@ -76,6 +76,7 @@ from test_governance_seats import (
     test_oath_additional_proof,
     test_seal_extended_edges,
     test_seal_ceremony_additional_proof,
+    test_s7_amendment_persistence_roundtrip,
 )
 
 from test_hubs_persistence import (
@@ -324,6 +325,7 @@ TESTS = [
     test_trace_verify_human_report_branches,
     test_trace_export_additional_proof,
     test_seal_ceremony_additional_proof,
+    test_s7_amendment_persistence_roundtrip,
     test_genesis_binding_and_offline_fallback,
     test_demo_world_seed_and_container_isolation,
     test_phase_g_demo_suite_operator_flow,

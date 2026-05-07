@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-05-07 15:43 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-05-07 15:53 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 103 distinct Pact sections referenced across 140 claim tags on 140 test functions.
+**Coverage:** 104 distinct Pact sections referenced across 141 claim tags on 141 test functions.
 
 ---
 
@@ -474,6 +474,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §6.9.1
 
+- `test_s7_amendment_persistence_roundtrip` — amendment proposal/review state and ratified history survive restart
 - `test_s0_8_4_governed_state_bootstrap_roundtrip` — every listed governed-state category restores on bootstrap
 
 ## §6.9.2
@@ -525,6 +526,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §7.4
 
 - `test_s7_amendment_ceremony` — S7 propose → review → ratify ceremony, S0 sovereign override, versioning
+
+## §7.11.1
+
+- `test_s7_amendment_persistence_roundtrip` — amendment proposal/review state and ratified history survive restart
 
 ## §E-1
 

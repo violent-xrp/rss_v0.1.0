@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, UTC
 from typing import Callable, Dict, List, Optional
 
@@ -130,6 +130,8 @@ class Seal:
     _proposals: Dict[str, AmendmentProposal] = field(default_factory=dict)
     _amendment_history: List[AmendmentRecord] = field(default_factory=list)
     _trace_callback: Optional[Callable] = field(default=None)
+    _proposal_persistence_callback: Optional[Callable] = field(default=None)
+    _ratified_persistence_callback: Optional[Callable] = field(default=None)
     # S7: Sections requiring sovereign override for amendment
     _protected_sections: tuple = ("S0",)
 
@@ -142,6 +144,12 @@ class Seal:
         """S7: Wire TRACE emission for amendment ceremony events.
         Signature: callback(code: str, artifact_id: str, content: str)"""
         self._trace_callback = callback
+
+    def set_persistence_callbacks(self, save_proposal: Callable,
+                                  save_ratified: Callable) -> None:
+        """S7.11.1: Wire durable amendment proposal/history persistence."""
+        self._proposal_persistence_callback = save_proposal
+        self._ratified_persistence_callback = save_ratified
 
     def _emit(self, code: str, artifact_id: str, content: str) -> None:
         """S7: Emit a TRACE event if callback is wired.
@@ -166,6 +174,36 @@ class Seal:
             "event_code": event_code,
             "reason": str(exc),
         }
+
+    def _persistence_failure(self, stage: str, exc: Exception) -> dict:
+        """Return a structured fail-closed ceremony persistence error."""
+        return {
+            "error": "AMENDMENT_PERSISTENCE_FAILED",
+            "stage": stage,
+            "reason": f"{type(exc).__name__}: {exc}",
+        }
+
+    def _persist_proposal(self, stage: str, proposal: AmendmentProposal) -> Optional[dict]:
+        """Persist proposal state before exposing it as in-memory state."""
+        if self._proposal_persistence_callback is None:
+            return None
+        try:
+            self._proposal_persistence_callback(proposal)
+        except Exception as exc:
+            return self._persistence_failure(stage, exc)
+        return None
+
+    def _persist_ratified(self, proposal: AmendmentProposal,
+                          record: AmendmentRecord) -> Optional[dict]:
+        """Persist ratified proposal + record before mutating canon/history."""
+        try:
+            if self._ratified_persistence_callback is not None:
+                self._ratified_persistence_callback(proposal, record)
+            elif self._proposal_persistence_callback is not None:
+                self._proposal_persistence_callback(proposal)
+        except Exception as exc:
+            return self._persistence_failure("ratification", exc)
+        return None
 
     # ── S7: Amendment Ceremony ──
 
@@ -211,6 +249,10 @@ class Seal:
         except SealError as exc:
             return self._trace_failure("proposal", "AMENDMENT_PROPOSED", exc)
 
+        persistence_error = self._persist_proposal("proposal", proposal)
+        if persistence_error:
+            return persistence_error
+
         self._proposals[proposal_id] = proposal
         return {"proposed": True, "proposal_id": proposal_id, "section_id": section_id}
 
@@ -246,11 +288,19 @@ class Seal:
         except SealError as exc:
             return self._trace_failure("review", event_code, exc)
 
-        proposal.reviewer = reviewer
-        proposal.review_verdict = verdict
-        proposal.review_notes = notes
-        proposal.reviewed_at = datetime.now(UTC)
-        proposal.status = "REJECTED" if verdict == "REJECT" else "REVIEWED"
+        updated_proposal = replace(
+            proposal,
+            reviewer=reviewer,
+            review_verdict=verdict,
+            review_notes=notes,
+            reviewed_at=datetime.now(UTC),
+            status="REJECTED" if verdict == "REJECT" else "REVIEWED",
+        )
+        persistence_error = self._persist_proposal("review", updated_proposal)
+        if persistence_error:
+            return persistence_error
+
+        self._proposals[proposal_id] = updated_proposal
 
         return {"reviewed": True, "proposal_id": proposal_id,
                 "verdict": verdict, "reviewer": reviewer}
@@ -322,9 +372,14 @@ class Seal:
         except SealError as exc:
             return self._trace_failure("ratification", "AMENDMENT_RATIFIED", exc)
 
+        ratified_proposal = replace(proposal, status="RATIFIED")
+        persistence_error = self._persist_ratified(ratified_proposal, record)
+        if persistence_error:
+            return persistence_error
+
         self._canon_index[proposal.section_id] = seal_result
         self._amendment_history.append(record)
-        proposal.status = "RATIFIED"
+        self._proposals[proposal_id] = ratified_proposal
 
         return {
             "ratified": True,
@@ -341,6 +396,68 @@ class Seal:
         if section_id:
             return [r for r in self._amendment_history if r.section_id == section_id]
         return list(self._amendment_history)
+
+    @staticmethod
+    def _parse_datetime(value: Optional[str]) -> Optional[datetime]:
+        return datetime.fromisoformat(value) if value else None
+
+    def restore_amendments(self, proposals: List[dict],
+                           records: List[dict]) -> dict:
+        """S7.11.1: Restore proposal lifecycle and ratified history from rows."""
+        restored_proposals: Dict[str, AmendmentProposal] = {}
+        for row in proposals:
+            proposal = AmendmentProposal(
+                proposal_id=row["proposal_id"],
+                section_id=row["section_id"],
+                rationale=row["rationale"],
+                proposed_text=row["proposed_text"],
+                proposed_at=self._parse_datetime(row.get("proposed_at")) or datetime.now(UTC),
+                status=row.get("status", "PROPOSED"),
+                reviewer=row.get("reviewer"),
+                review_verdict=row.get("review_verdict"),
+                review_notes=row.get("review_notes"),
+                reviewed_at=self._parse_datetime(row.get("reviewed_at")),
+                sovereign_override=bool(row.get("sovereign_override", False)),
+            )
+            restored_proposals[proposal.proposal_id] = proposal
+
+        restored_records: List[AmendmentRecord] = []
+        for row in records:
+            record = AmendmentRecord(
+                proposal_id=row["proposal_id"],
+                section_id=row["section_id"],
+                old_version=row.get("old_version"),
+                new_version=row["new_version"],
+                old_hash=row.get("old_hash"),
+                new_hash=row["new_hash"],
+                rationale=row["rationale"],
+                ratified_at=self._parse_datetime(row.get("ratified_at")) or datetime.now(UTC),
+                sovereign_override=bool(row.get("sovereign_override", False)),
+                reviewer=row.get("reviewer"),
+                review_notes=row.get("review_notes"),
+            )
+            restored_records.append(record)
+
+        self._proposals = restored_proposals
+        self._amendment_history = restored_records
+        self._canon_index = {}
+        for record in restored_records:
+            proposal = restored_proposals.get(record.proposal_id)
+            if proposal is None:
+                continue
+            self._canon_index[record.section_id] = CanonArtifact(
+                section_id=record.section_id,
+                version=record.new_version,
+                text=proposal.proposed_text,
+                hash=record.new_hash,
+                timestamp=record.ratified_at,
+            )
+
+        return {
+            "proposals": len(restored_proposals),
+            "records": len(restored_records),
+            "canon": len(self._canon_index),
+        }
 
     def get_proposal(self, proposal_id: str) -> Optional[AmendmentProposal]:
         """S7 — Retrieve a proposal by ID."""

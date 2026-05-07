@@ -192,6 +192,10 @@ class Runtime:
         # S7: Wire SEAL trace callback so amendment ceremony events flow
         # into the unified TRACE chain with write-ahead persistence.
         self.seal.set_trace_callback(self._log)
+        self.seal.set_persistence_callbacks(
+            self.persistence.save_amendment_proposal,
+            self.persistence.save_ratified_amendment,
+        )
 
         # Register Council Seats with WARD (Pact §0.3.1)
         # WARD itself is the router — 7 other seats register here.
@@ -485,6 +489,7 @@ class Runtime:
     _STATE_CRITICALITY = {
         "trace_events": "CRITICAL",    # Audit chain — must be trustworthy
         "containers":   "CRITICAL",    # Tenant isolation
+        "amendments":   "CRITICAL",    # Constitutional proposal/history state
         "consents":     "CRITICAL",    # Consent records — authorization state
         "sealed_terms": "CRITICAL",    # Meaning registry — affects RUNE classification
         "hub_entries":  "CRITICAL",    # Data governance — affects SCOPE/PAV output
@@ -523,9 +528,9 @@ class Runtime:
     def restore_from_db(self):
         """
         Load saved state from SQLite on bootstrap.
-        Terms, synonyms, disallowed, hub entries, consents, AND the historical
-        TRACE chain are restored into memory. This is the persistence
-        round-trip: save on write, load on boot.
+        Terms, synonyms, disallowed, hub entries, consents, amendment state,
+        and the historical TRACE chain are restored into memory. This is the
+        persistence round-trip: save on write, load on boot.
 
         §6.3.5 / §6.11.3 — TRACE events are loaded into self.trace._events BEFORE
         boot-time chain verification runs so that verify_boot_chain() walks the
@@ -536,6 +541,7 @@ class Runtime:
         restored = {
             "terms": 0, "synonyms": 0, "disallowed": 0, "hub_entries": 0,
             "trace_events": 0, "consents": 0,
+            "amendment_proposals": 0, "amendment_records": 0,
         }
 
         # Restore historical TRACE chain FIRST. Boot-time chain verification
@@ -680,6 +686,22 @@ class Runtime:
         except Exception as e:
             self._handle_restore_failure("containers", e)
             restored["containers"] = 0
+
+        # S7.11.1 — Restore amendment proposal/review state and ratified
+        # history so amendment ceremonies can span process restarts.
+        try:
+            saved_proposals = self.persistence.load_amendment_proposals()
+            saved_records = self.persistence.load_amendment_records()
+            restored_amendments = self.seal.restore_amendments(
+                saved_proposals,
+                saved_records,
+            )
+            restored["amendment_proposals"] = restored_amendments["proposals"]
+            restored["amendment_records"] = restored_amendments["records"]
+        except Exception as e:
+            self._handle_restore_failure("amendments", e)
+            restored["amendment_proposals"] = 0
+            restored["amendment_records"] = 0
 
         return restored
 

@@ -49,7 +49,7 @@ from rss.audit.log import TraceEvent
 # On bootstrap, a mismatch between stored version and this constant triggers
 # migration + a SCHEMA_MIGRATED TRACE event (emitted by Runtime, not Persistence,
 # because Persistence is constructed before Runtime has a TRACE log).
-CURRENT_SCHEMA_VERSION = 1
+CURRENT_SCHEMA_VERSION = 2
 
 
 class Persistence:
@@ -161,10 +161,38 @@ class Persistence:
                 provenance TEXT DEFAULT '[]',
                 PRIMARY KEY (container_id, id)
             )""",
+            """CREATE TABLE IF NOT EXISTS amendment_proposals (
+                proposal_id TEXT PRIMARY KEY,
+                section_id TEXT,
+                rationale TEXT,
+                proposed_text TEXT,
+                proposed_at TEXT,
+                status TEXT,
+                reviewer TEXT,
+                review_verdict TEXT,
+                review_notes TEXT,
+                reviewed_at TEXT,
+                sovereign_override INTEGER DEFAULT 0
+            )""",
+            """CREATE TABLE IF NOT EXISTS amendment_records (
+                proposal_id TEXT PRIMARY KEY,
+                section_id TEXT,
+                old_version TEXT,
+                new_version TEXT,
+                old_hash TEXT,
+                new_hash TEXT,
+                rationale TEXT,
+                ratified_at TEXT,
+                sovereign_override INTEGER DEFAULT 0,
+                reviewer TEXT,
+                review_notes TEXT
+            )""",
             "CREATE INDEX IF NOT EXISTS idx_trace_code ON trace_events(event_code)",
             "CREATE INDEX IF NOT EXISTS idx_trace_artifact ON trace_events(artifact_id)",
             "CREATE INDEX IF NOT EXISTS idx_hub_hub ON hub_entries(hub)",
             "CREATE INDEX IF NOT EXISTS idx_container_hub ON container_hub_entries(container_id, hub)",
+            "CREATE INDEX IF NOT EXISTS idx_amendment_proposal_status ON amendment_proposals(status)",
+            "CREATE INDEX IF NOT EXISTS idx_amendment_record_section ON amendment_records(section_id)",
         ]
 
         with self._lock, self.conn:
@@ -406,6 +434,117 @@ class Persistence:
                     "provenance": prov,
                 })
             return results
+
+    # -----------------------------------------------------
+    # AMENDMENTS (S7.11.1 — proposal/review/history persistence)
+    # -----------------------------------------------------
+    def save_amendment_proposal(self, proposal) -> None:
+        """Persist a SEAL amendment proposal lifecycle object."""
+        with self._lock, self.conn:
+            self.conn.execute(
+                "INSERT OR REPLACE INTO amendment_proposals VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                (
+                    proposal.proposal_id,
+                    proposal.section_id,
+                    proposal.rationale,
+                    proposal.proposed_text,
+                    proposal.proposed_at.isoformat(),
+                    proposal.status,
+                    proposal.reviewer,
+                    proposal.review_verdict,
+                    proposal.review_notes,
+                    proposal.reviewed_at.isoformat() if proposal.reviewed_at else None,
+                    int(proposal.sovereign_override),
+                ),
+            )
+
+    def save_ratified_amendment(self, proposal, record) -> None:
+        """Persist ratified proposal state and AmendmentRecord atomically."""
+        with self._lock, self.conn:
+            self.conn.execute(
+                "INSERT OR REPLACE INTO amendment_proposals VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                (
+                    proposal.proposal_id,
+                    proposal.section_id,
+                    proposal.rationale,
+                    proposal.proposed_text,
+                    proposal.proposed_at.isoformat(),
+                    proposal.status,
+                    proposal.reviewer,
+                    proposal.review_verdict,
+                    proposal.review_notes,
+                    proposal.reviewed_at.isoformat() if proposal.reviewed_at else None,
+                    int(proposal.sovereign_override),
+                ),
+            )
+            self.conn.execute(
+                "INSERT OR REPLACE INTO amendment_records VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                (
+                    record.proposal_id,
+                    record.section_id,
+                    record.old_version,
+                    record.new_version,
+                    record.old_hash,
+                    record.new_hash,
+                    record.rationale,
+                    record.ratified_at.isoformat(),
+                    int(record.sovereign_override),
+                    record.reviewer,
+                    record.review_notes,
+                ),
+            )
+
+    def load_amendment_proposals(self) -> List[dict]:
+        """Load all SEAL amendment proposal lifecycle objects."""
+        with self._lock:
+            cur = self.conn.execute(
+                """SELECT proposal_id, section_id, rationale, proposed_text,
+                          proposed_at, status, reviewer, review_verdict,
+                          review_notes, reviewed_at, sovereign_override
+                   FROM amendment_proposals ORDER BY proposed_at"""
+            )
+            return [
+                {
+                    "proposal_id": r[0],
+                    "section_id": r[1],
+                    "rationale": r[2],
+                    "proposed_text": r[3],
+                    "proposed_at": r[4],
+                    "status": r[5],
+                    "reviewer": r[6],
+                    "review_verdict": r[7],
+                    "review_notes": r[8],
+                    "reviewed_at": r[9],
+                    "sovereign_override": bool(r[10]),
+                }
+                for r in cur.fetchall()
+            ]
+
+    def load_amendment_records(self) -> List[dict]:
+        """Load all ratified amendment records."""
+        with self._lock:
+            cur = self.conn.execute(
+                """SELECT proposal_id, section_id, old_version, new_version,
+                          old_hash, new_hash, rationale, ratified_at,
+                          sovereign_override, reviewer, review_notes
+                   FROM amendment_records ORDER BY ratified_at"""
+            )
+            return [
+                {
+                    "proposal_id": r[0],
+                    "section_id": r[1],
+                    "old_version": r[2],
+                    "new_version": r[3],
+                    "old_hash": r[4],
+                    "new_hash": r[5],
+                    "rationale": r[6],
+                    "ratified_at": r[7],
+                    "sovereign_override": bool(r[8]),
+                    "reviewer": r[9],
+                    "review_notes": r[10],
+                }
+                for r in cur.fetchall()
+            ]
 
     # -----------------------------------------------------
     # TERMS

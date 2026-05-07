@@ -645,6 +645,7 @@ def test_s6_cold_verifier():
     section("S6: Cold TRACE Verifier (§6.11.4)")
 
     from rss.audit.verify import verify_trace_file, read_safe_stop_state, ColdVerifyError
+    from rss.persistence.sqlite import CURRENT_SCHEMA_VERSION
 
     # ── Scenario 1: Happy path ──
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -665,8 +666,8 @@ def test_s6_cold_verifier():
               "clean DB: no break index")
         check(result["break_details"] is None,
               "clean DB: no break details")
-        check(result["schema_version"] == 1,
-              "clean DB: schema_version=1 recovered from system_state")
+        check(result["schema_version"] == CURRENT_SCHEMA_VERSION,
+              f"clean DB: schema_version={CURRENT_SCHEMA_VERSION} recovered from system_state")
         check("BOOT_CHAIN_VERIFIED" in result["stats"]["by_code"],
               "clean DB: BOOT_CHAIN_VERIFIED event visible in stats")
         check("SCHEMA_VERSION_SET" in result["stats"]["by_code"],

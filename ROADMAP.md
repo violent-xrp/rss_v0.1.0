@@ -31,16 +31,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **140 test functions / 1217 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **92.5% statement coverage** via `python run_coverage.py`
-- **140 claims / 140 tests / 103 Pact sections** in `docs/claim_matrix.md`
+- **141 test functions / 1239 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **92.4% statement coverage** via `python run_coverage.py`
+- **141 claims / 141 tests / 104 Pact sections** in `docs/claim_matrix.md`
 - **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 140/1217 baseline
+- public docs are synced to the current 141/1239 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -72,9 +72,9 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - Keep the Section 0 drafting lane narrow: T-0 works from the local classification/additions docs; Codex may keep hardening code and public proof docs without editing the Pact.
 - Generate a fresh offline demo artifact bundle before the `v0.1.0-rc.1` checkpoint and inspect `demo_summary.md`, `demo_report.json`, and `demo_trace.json` from that run.
 - After a clean acceptance/sync/claim-matrix pass, prepare `v0.1.0-rc.1` as the next reviewable release checkpoint.
-- Keep final v0.1.0 gates explicit: T-0 recovery authority clause, amendment persistence, and final acceptance proof.
+- Keep final v0.1.0 gates explicit: T-0 recovery authority clause and final acceptance proof.
 - Keep tightening the reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
-- Parallel code/proof lane while Section 0 drafting continues: §0.8.4 round-trip coverage is closed for the current reference persistence path; next, review demo artifacts and prepare amendment persistence without broad Pact rewrites.
+- Parallel code/proof lane while Section 0 drafting continues: §0.8.4 round-trip coverage, demo artifact honesty, and amendment persistence are closed in code; keep public proof docs synced while T-0 finishes Section 0 drafting.
 
 ### Keep Warm
 - API/wrapper ingress boundary and caller identity propagation.
@@ -136,6 +136,10 @@ Mandatory before `v0.1.0-rc.1`:
   code-proven. Proposal-time external attribution creates no actionable state,
   and proposal/review/ratification mutation fails closed if TRACE emission
   fails.
+- CLOSED: Section 7 amendment persistence is implemented and code-proven.
+  Proposal objects, review state, ratified amendment records, reconstructed
+  canon state, and queryable amendment history survive restart. Persistence
+  failure leaves proposal/canon/history state unchanged after the failed step.
 - CLOSED: Section 0 §0.8.4 governed-state bootstrap round-trip is proven in
   acceptance. Terms, synonyms, disallowed terms, hub entries, consent records,
   TRACE events, container state, container hub entries, Safe-Stop/system state,
@@ -153,8 +157,8 @@ Mandatory before `v0.1.0-rc.1`:
   begins: match the Section 4 and Section 5 "rule / current proof / boundary"
   style, and keep substantive additions such as T-0 recovery authority owned by
   T-0 rather than implementation cleanup.
-- CURRENT: one acceptance/sync pass is clean at 140 tests, 1216 assertions, and
-  92.5% coverage after the Section 0 drafting-rail updates. Rerun immediately
+- CURRENT: one acceptance/sync pass is clean at 141 tests, 1239 assertions, and
+  92.4% coverage after amendment persistence. Rerun immediately
   before any `v0.1.0-rc.1` tag.
 - CLOSED: demo artifact decision is made for `v0.1.0-rc.1`: do not rely on a
   stale artifact bundle. Generate fresh offline artifacts immediately before
@@ -166,12 +170,8 @@ Mandatory before final `v0.1.0`:
 - T-0 recovery authority Pact clause drafted by T-0 before final v0.1.0, likely
   in Section 0 or Section 1 with a Section 7 cross-reference; this is
   constitutional text, not a side planning note.
-- Amendment persistence is required before final `v0.1.0`, but it is allowed to
-  follow `v0.1.0-rc.1` if `v0.1.0-rc.1` otherwise proves the release boundary.
-  Preserve the ordering now proven for ceremony state: TRACE emission, then
-  durable write, then in-memory mutation.
-- Final acceptance/sync/claim-matrix pass after any post-`v0.1.0-rc.1`
-  persistence or recovery-authority work.
+- Final acceptance/sync/claim-matrix pass after recovery-authority work and
+  before final tag.
 
 Held for v0.1.1 ceremony unless a release-gate review proves otherwise:
 - broad Pact wording cleanup and Council/vocabulary sweep
@@ -313,7 +313,7 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - Section 6 export/audit precision: keep cold verification, cold export, and future payload-inclusive external recomputability as separate claims
 - Section 6 production posture evidence: keep the one-switch `production_mode` behavior visible if more settings join that profile
 - Section 6 provenance proof: decide whether `UNTRUSTED_IMPORT` needs a dedicated full restore test beyond current SQLite row round-trip proof
-- Section 7 amendment persistence: persist proposals, review state, and ratified amendment records before final v0.1.0; preserve TRACE emission -> durable write -> in-memory mutation ordering
+- CLOSED: Section 7 amendment persistence now persists proposals, review state, ratified amendment records, reconstructed canon state, and queryable history across restart
 - Section 7 version model: define how section-level versions (`v1.0`, `v1.1`) relate to project/release versions (`v0.1.0`, `v0.1.1`)
 - Section 7 operator ceremony API: future preview/dry-run, diff report, stale-base handling, and post-ratification verification report for TECTON UI readiness
 - T-0 recovery authority: design auditable manual recovery so future cryptographic identity strengthens attestation without creating permanent lock-out risk

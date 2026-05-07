@@ -5,9 +5,9 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 ## v0.1.0
 
 ### Current verified snapshot
-- **140 test functions / 1217 assertions / 0 failures** via `python tests/test_all.py`
-- **92.5% statement coverage** via `python run_coverage.py`
-- **140 claims / 140 tests / 103 Pact sections** in `docs/claim_matrix.md`
+- **141 test functions / 1239 assertions / 0 failures** via `python tests/test_all.py`
+- **92.4% statement coverage** via `python run_coverage.py`
+- **141 claims / 141 tests / 104 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -17,6 +17,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - TECTON tenant isolation, lifecycle logging, and context-bound hub isolation
 - OATH write-ahead consent semantics and persistence-failure surfacing
 - SEAL amendment ceremony support and ceremony hardening
+- SEAL amendment persistence for proposal lifecycle, review state, ratified records, reconstructed canon state, and queryable history
 - config-driven default term packs and definition prefixes
 - deterministic governed offline fallback in `llm_adapter.py`
 - live LLM prompt posture now permits normal general conversation while binding tenant/project/user/private facts to governed PAV evidence
@@ -54,6 +55,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - SCRIBE edge coverage
 - cold verifier CLI/error/safe-stop coverage
 - extended OATH, SEAL, TRACE export, verifier, and demo-world coverage
+- Section 7 amendment persistence proof for reviewed-proposal restart, post-restart ratification, history/canon reconstruction, and fail-closed persistence failures
 - Phase G normal-advisor boundary proof for prompt posture and SYSTEM-only demo scope
 - Phase G reference-pack v2 proof for cross-domain packs, explicit metadata, and schema compatibility
 - Phase G demo-pack validation proof for fail-loud schema checks, no partial seeding, legacy tuple compatibility, and inactive container reuse

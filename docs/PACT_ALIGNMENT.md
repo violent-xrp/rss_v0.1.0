@@ -127,11 +127,12 @@ Section 7 / amendment and evolution:
 - Ratification requires explicit `t0_command=True`, an APPROVE review verdict, and a non-terminal proposal. Repeat ratification returns `ALREADY_RATIFIED` and does not duplicate amendment history.
 - Amendment proposals now run the external advisor attribution guard before proposal state is created, and ratification still flows through `seal()` with the same guard before canonizing the proposed text.
 - When a TRACE callback is wired, proposal, review, and ratification emit the corresponding amendment event before mutating ceremony state. TRACE callback failure returns `AMENDMENT_TRACE_FAILED` and leaves proposal/canon/history state unchanged for that step.
+- Amendment persistence is implemented for the Runtime-wired SEAL path: proposal objects, review state, ratified amendment records, queryable amendment history, and reconstructed canon state survive restart. The durable ordering is TRACE emission first, amendment persistence second, and in-memory mutation last; persistence failure returns `AMENDMENT_PERSISTENCE_FAILED` and leaves proposal/canon/history state unchanged for the failed step.
 - Rejected amendment reviews emit `AMENDMENT_REJECTED` as the terminal review event rather than emitting both `AMENDMENT_REVIEWED` and `AMENDMENT_REJECTED`; audit queries that count reviewed proposals should count both event families.
 - `AmendmentRecord` preserves the current required evidence surface: proposal ID, section ID, old/new versions, old/new hashes, rationale, ratification timestamp, sovereign override flag, reviewer, and review notes.
 - Section-level versions increment independently (`v1.0`, `v1.1`, etc.) as sections are sealed. This is separate from project/release versions such as `v0.1.0` and future `v0.1.1`.
 - The four ceremony event codes are registered in the TRACE export registry: `AMENDMENT_PROPOSED`, `AMENDMENT_REVIEWED`, `AMENDMENT_REJECTED`, and `AMENDMENT_RATIFIED`.
-- Amendment proposal state and queryable amendment history are in-memory in v0.1.0. TRACE events and canon artifacts provide evidence, but actionable proposals do not survive restart as first-class state yet.
+- The current amendment persistence proof reconstructs canon from the persisted ratified proposal text and AmendmentRecord. It does not yet add byte-level diff/evidence snapshots or post-ratification verifier reports.
 
 ## Known Alignment Gaps
 
@@ -196,13 +197,11 @@ Persistence/audit gaps:
 - Export sanitization currently targets REDLINE artifact-id leakage. It does not make REDLINE content externally recomputable or prove absence of other side channels without future export-policy hardening.
 
 Amendment/evolution gaps:
-- Proposal objects, review state, and queryable amendment history do not persist across restart. A reviewed-but-not-ratified proposal is lost on restart even though its TRACE review event may survive.
-- When amendment persistence lands, it must preserve the same ordering now proven for in-memory ceremony state: TRACE emission first, durable proposal/history write second, in-memory mutation last.
+- Amendment persistence now survives restart, but the persisted record remains intentionally lean: it does not yet include byte-level diff content, dependency/evidence snapshots, runtime environment, full pre-seal drift report, or post-ratification verification report.
 - Reviewer identity is a string today. There is no reviewer credentialing, section-scoped reviewer authorization, signer binding, proposer/reviewer separation, or multi-reviewer quorum yet.
 - Proposal lifecycle states are minimal: PROPOSED, REVIEWED, RATIFIED, and REJECTED. There is no WITHDRAWN, DEFERRED, SUPERSEDED, EXPIRED, or stale-base state.
 - There is no read-only ratification preview/dry-run step that shows the exact diff, expected hashes, version transition, integrity result, and AmendmentRecord before T-0 commits.
 - Parallel amendments against the same section are not handled explicitly. A proposal reviewed against an older section version is not automatically marked stale if another amendment lands first.
-- Amendment records do not yet include byte-level diff content, affected Pact dependencies, code/test evidence snapshot, runtime environment, full pre-seal drift report, or post-ratification verification report.
 - There is no post-ratification self-test that proves the new canon hash, version counter, TRACE event, persistence state, and cold verifier posture all match the expected result.
 
 Pact embedding / reverse traceability gaps:
@@ -269,7 +268,7 @@ Pact text candidates:
 - Section 6 should preserve the distinction between cold verification, cold export, and future payload-inclusive external recomputability.
 - Section 7 should clarify the relationship between section-level versions and project/release versions: section versions increment per amended section, while project versions snapshot one or more sealed Pact changes plus code state.
 - Section 7 should reflect the current code-backed dual guard for external advisor attribution: proposal-time rejection creates no actionable proposal state, and ratification still flows through SEAL's seal guard.
-- Section 7 should make amendment persistence a priority before any large v0.1.1 Pact amendment pass, so the ceremony can span real work sessions without losing reviewed proposals.
+- Section 7 should reflect the current code-backed amendment persistence: proposals, review state, ratified records, queryable history, and reconstructed canon state survive restart.
 - Section 7 should reflect the current code-backed ceremony write-ahead discipline: proposal, review, and ratification state do not mutate when wired TRACE emission fails.
 - Section 7 should add lifecycle states for real governance queues: WITHDRAWN, DEFERRED, SUPERSEDED, EXPIRED, and a stale-base/conflict state if section versions advance under an open proposal.
 - Section 7 should add a ratification preview/dry-run concept and post-ratification verification report before TECTON exposes amendment ceremony in a product UI.
@@ -295,8 +294,7 @@ Before v0.1.1:
 - Keep Section 6 audit/export claims split between internal consistency, cold export, and future external recomputability.
 - Decide whether `UNTRUSTED_IMPORT` round-trip needs a dedicated global/container restore test beyond the current persistence-row proof.
 - Keep production-mode behavior in the generated or evidence docs if more flags join the one-switch posture.
-- Treat amendment persistence as a high-priority code hardening item before any substantial Pact v0.1.1 amendment ceremony.
-- Keep the amendment-persistence implementation aligned with the proven SEAL ceremony ordering: TRACE emission first, durable proposal/history write second, in-memory mutation last.
+- CLOSED: amendment persistence landed before any substantial Pact v0.1.1 amendment ceremony. Keep future enhancements aligned with the proven SEAL ceremony ordering: TRACE emission first, durable proposal/history write second, in-memory mutation last.
 - Decide the section-version versus project-version model before ratifying the first post-v0.1.0 Pact amendment batch.
 - Add a future structured amendment preview/report API as the substrate for a TECTON amendment UI.
 - Design the T-0 recovery/lock-out posture before adding cryptographic identity gates: keys should attest authority, not become the only way the sovereign operator can recover the system.
