@@ -1,34 +1,14 @@
-# Rose Sigil Systems — RSS v0.1.0
+# Rose Sigil Systems
 
-Rose Sigil Systems (RSS) - "An AI that Waits" is a **domain-agnostic, application-layer zero-trust AI governance kernel**. It decides what a system may see, say, and do **before** the model runs, not after. Every request flows through a constitutional pipeline of typed seats with bounded authority. Scope is declared. Meaning is classified. Consent is checked. Rate limits are enforced. A Prepared Advisory View is built. TRACE is written before the result is allowed to stand.
+*An AI that Waits.*
 
-**Current verified project-snapshot baseline:** **139 test functions / 1202 assertions / 0 failures** via `python tests/test_all.py`.
-**Current coverage / traceability:** **92.5% statement coverage** via `python run_coverage.py`; `docs/claim_matrix.md` tracks **139 claims / 139 tests / 101 Pact sections**.
+**RSS v0.1.0** is a domain-agnostic, application-layer zero-trust AI governance kernel. It decides what a system may see, say, and do **before** the model runs, not after.
 
-**Versioning posture:** RSS uses pre-release code snapshots while the v0.1.0 Pact/release line is hardening. Tags such as `v0.1.0-rc.1` mark reviewable code checkpoints; the final `v0.1.0` tag should only be cut when the release boundary is declared clean. The Pact remains the constitutional source for this line unless T-0 explicitly authorizes a Pact text change.
+Every request flows through a constitutional pipeline of typed seats with bounded authority. Scope is declared, meaning is classified, consent is checked, cadence is bounded. A Prepared Advisory View is built and an audit record is written before any result is allowed to stand.
 
-## What RSS is
+**Verified baseline:** 139 test functions, 1202 assertions, 0 failures, 92.5% coverage. Traceability: 139 claims mapped to 139 tests across 101 Pact sections.
 
-RSS v0.1.0 can honestly be presented as:
-- a domain-agnostic governance kernel
-- a constitutional middleware architecture with typed seat separation
-- a pre-model governance pipeline
-- a system with scoped data access, governed consent, hash-chained audit, cold verification, persistent Safe-Stop, and tenant isolation
-- an honest alpha/MVP
-
-RSS v0.1.0 should **not** be presented as:
-- a full deployment-layer zero-trust stack
-- cryptographically immutable end to end
-- fully async-safe across future wrappers/APIs
-- per-action/tool-call enforced for every future side effect
-- distributed or enterprise-complete
-- a polished end-user application
-
-### Known current limits
-- Ingress identity is architectural inside the current single-process runtime; it is not cryptographic caller authentication yet.
-- `clear_safe_stop()` is T-0 only by convention and docstring today; the mechanical sovereign-identity gate remains future hardening.
-- Hard guarantees depend on meaningful side effects entering through the governed runtime boundary; universal per-action/tool-call enforcement remains future work.
-- Future browser, email, document, RAG, and tool-return connectors still require connector-specific indirect-prompt-injection tests before claims expand.
+Reproduce with `python tests/test_all.py` and `python run_coverage.py`. Claim mapping at `docs/claim_matrix.md`.
 
 ## Architectural thesis
 
@@ -40,6 +20,35 @@ The constitutional source starts at `pact/pact_section0_root_physics.md`. The cu
 
 That description constrains what RSS can and cannot honestly be. Most positioning-style descriptions of governance products are category labels. This one is a thesis the system either upholds or fails. RSS lives or dies on whether the thesis is right; if it is, the repository is the proof.
 
+## What RSS is
+
+RSS v0.1.0 can honestly be presented as:
+- a domain-agnostic governance kernel
+- a constitutional middleware architecture with typed seat separation
+- a pre-model governance pipeline
+- an honest alpha/MVP
+
+Specific properties currently proven:
+- scoped data access with sovereign gating for protected hubs
+- governed consent with write-ahead persistence
+- hash-chained audit with cold verification
+- persistent Safe-Stop with sovereign-only recovery
+- tenant isolation through TECTON containers
+
+RSS v0.1.0 should **not** be presented as:
+- a full deployment-layer zero-trust stack
+- cryptographically immutable end to end
+- fully async-safe across future wrappers/APIs
+- per-action/tool-call enforced for every future side effect
+- distributed or enterprise-complete
+- a polished end-user application
+
+## Known current limits
+- Ingress identity is architectural inside the current single-process runtime; it is not cryptographic caller authentication yet.
+- `clear_safe_stop()` is T-0 only by convention and docstring today; the mechanical sovereign-identity gate remains future hardening.
+- Hard guarantees depend on meaningful side effects entering through the governed runtime boundary; universal per-action/tool-call enforcement remains future work.
+- Future browser, email, document, RAG, and tool-return connectors still require connector-specific indirect-prompt-injection tests before claims expand.
+
 ## Operator's note
 
 I started building Rose Sigil Systems because the AI industry has built extraordinary engines, but an engine without a steering column is a liability. To deploy these systems safely into the enterprise, governance must evolve from written policy into hard runtime mechanics.
@@ -50,7 +59,7 @@ At its core, this architecture treats uncertainty as a first-class state. If the
 
 This project is being built in public and in motion. It is not yet a finished, end-to-end enterprise product. What exists right now is the mechanically tested kernel: scoped data access, typed authority, governed consent, REDLINE exclusion, persistent Safe-Stop, and a TRACE chain that can be verified cold.
 
-If you are an engineer, researcher, or builder who sees the need for deterministic safety in a probabilistic world, there is a place for you here. The direction is simple: build ambitiously, describe conservatively, and prove the boundary before asking anyone to trust the machine inside it.
+If you are an engineer, researcher, or builder working on the seam between probabilistic models and deterministic guarantees, there is a place for you here.
 
 ## Where help is wanted
 
@@ -62,6 +71,8 @@ RSS is public-alpha kernel work. The most valuable contributions are boundary-ha
 - **Security review:** threat-model pressure testing around ingress, indirect prompt injection, REDLINE leakage, container isolation, replay, and capability revocation.
 
 Contributions should preserve the core posture: current claims stay conservative, future work stays named, and every meaningful safety claim should gain a proof path.
+
+**Versioning posture:** RSS uses pre-release code snapshots while the v0.1.0 Pact/release line is hardening. Tags such as `v0.1.0-rc.1` mark reviewable code checkpoints; the final `v0.1.0` tag should only be cut when the release boundary is declared clean. The Pact remains the constitutional source for this line unless T-0 explicitly authorizes a Pact text change.
 
 ## Quick start
 
@@ -81,10 +92,7 @@ pip install -r requirements.txt
 ```bash
 python tests/test_all.py
 ```
-Expected current final line:
-```text
-RSS v0.1.0 - 139 test functions, 1202 assertions passed, 0 failed
-```
+The acceptance run prints `RSS v0.1.0 - 139 test functions, 1202 assertions passed, 0 failed` as its final line.
 
 ### Run the guided demo walkthrough
 ```bash
@@ -112,21 +120,22 @@ python src/main.py demo
 python src/main.py demo-suite
 ```
 
-> **Repo layout note:** kernel modules live under `src/rss/` (subpackages `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`). The CLI entry point at `src/main.py` handles commands, while `tests/test_all.py` remains the canonical acceptance runner over the split domain test modules in `tests/`. Individual split test files can also be run directly while working locally.
->
-> Testing and count-history details live in `docs/TESTING.md` and `docs/roadmap/ACCEPTANCE_HISTORY.md`; the current work lane stays in `ROADMAP.md`.
+**Repo layout:** kernel modules live under `src/rss/` (subpackages `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`). The CLI entry point is at `src/main.py`; the canonical acceptance runner is `tests/test_all.py`.
+
+**For deeper detail:** testing conventions in `docs/TESTING.md`. Current work lane in `ROADMAP.md`. Acceptance count history in `docs/roadmap/ACCEPTANCE_HISTORY.md`.
 
 ## Architecture at a glance
 
-RSS is governed by eight typed seats:
-- **WARD** — route or halt
-- **SCOPE** — define bounded data access
-- **RUNE** — classify meaning under sealed law
-- **OATH** — authorize or deny action
-- **CYCLE** — limit cadence and runaway behavior
-- **SCRIBE** — drafting and revision staging
-- **SEAL** — canonization and amendment ceremony
-- **TRACE** — evidentiary record and verification
+RSS distributes its governance work across eight typed seats. Each seat has a single bounded responsibility; no seat may exercise another's authority.
+
+- **WARD** — routes requests, halts on integrity failure
+- **SCOPE** — declares bounded data access for each task
+- **RUNE** — classifies meaning against a registered term registry
+- **OATH** — authorizes or denies action based on consent
+- **CYCLE** — limits cadence and detects runaway behavior
+- **SCRIBE** — drafts and stages constitutional revisions
+- **SEAL** — performs ratification and amendment ceremony
+- **TRACE** — records evidence and supports verification
 
 The practical request path is:
 
@@ -134,38 +143,18 @@ The practical request path is:
 
 ## What is implemented now
 
-### Governance / runtime
-- Section 0 integrity verification and Safe-Stop
-- scoped envelopes with sovereign gating for PERSONAL
-- sealed-term registry, synonyms, disallowed terms, anti-trojan scanning, normalization hardening, and word-boundary classification
-- consent checks with write-ahead persistence semantics
-- rate limiting and container-aware cadence
-- tenant isolation via TECTON containers
-- hash-chained TRACE with cold verification and schema/version scaffolding
-- amendment ceremony support in SEAL
+Current capabilities at the v0.1.0 alpha line:
+- Constitutional pipeline with all eight seats functioning
+- Section 0 integrity verification at boot and on every request
+- Hash-chained audit log with cold verification
+- Tenant isolation through TECTON containers
+- Persistent Safe-Stop with sovereign-only recovery
+- REDLINE fail-closed exclusion across all output paths
+- Indirect-prompt-injection defense with structural data-only markers
+- Runner-truth acceptance harness as canonical verdict surface
+- Amendment ceremony scaffolding in SEAL
 
-### Hardening already landed
-- exact-boundary container TRACE filtering
-- REDLINE fail-closed query behavior and export sanitization
-- runner-truth hardening so the acceptance harness is the canonical verdict
-- config-driven term packs and config-driven default term definitions
-- deterministic offline fallback that summarizes governed data instead of echoing user input
-- shared reference pack and seeded demo world for examples/tests
-- ingress posture surfaced explicitly as architectural, not cryptographic
-- TECTON destructive transitions (`suspend`, `archive`, `destroy`, `reactivate`) now require a non-empty `reason`, logged into the lifecycle audit record
-- `clear_safe_stop()` is idempotent — returns `NO_OP` when not halted, emits no false audit events
-- `load_constitution()` is directly tested across all branches (file-not-found, hash mismatch, missing marker, happy path)
-- PAV `_sanitize` raises `ValueError` on unknown policy names rather than silently defaulting
-- PAV honors `forbidden_sources` during advisory-view construction even when a source is also listed as allowed
-- indirect prompt-injection proof now treats poisoned retrieved content as scoped data, not authority
-- `save_untrusted_content()` gives future browser/email/document/RAG/tool connectors a canonical data-only import boundary with provenance, source/wrapped SHA-256 receipts, byte lengths, mutation detection, and TRACE
-- CYCLE `check_rate_limit` supports `strict=True` mode to reject unregistered domains loudly
-- LLM availability-check timeout is config-driven (`llm_availability_check_timeout`) rather than hardcoded
-- `archive_entry()` returns the archived `HubEntry` for lifecycle-method parity
-- OATH consent namespaces normalize action classes/requesters/container IDs and fail closed on malformed delimiter-bearing bindings
-- SCRIBE error states, promotion paths, and dispatch surfaces are covered to the current proof floor
-- chain-hash migration helpers now warn explicitly when `CHAIN_HASH_VERSION` would change rather than allowing silent version drift
-- Phase G demo suite now runs the live RSS-bound LLM path by default, keeps `--offline` for deterministic proof, and proves useful retrieval, REDLINE exclusion, tenant isolation, consent recovery, Safe-Stop restart recovery, and cold TRACE verification
+Detailed change history at `CHANGELOG.md`. Section-level coverage at `docs/claim_matrix.md`.
 
 ## Demo / operator posture
 
@@ -178,9 +167,9 @@ The demo and offline fallback are intentionally governed, not theatrical. The se
 
 ## Licensing
 
-This repo uses a split posture:
-- **Code:** AGPLv3, with the commercial/contractor exception language carried in-file where applicable
-- **Pact text and constitutional material:** keep the repository’s chosen licensing language explicit and separate from the code license
+This repo uses a split licensing posture:
+- **Code:** AGPLv3, with commercial/contractor exception language carried in-file where applicable.
+- **Pact text and constitutional material:** licensed separately from the kernel code. See `pact/LICENSE_pact.md` for current terms.
 
 ## Positioning rule
 
