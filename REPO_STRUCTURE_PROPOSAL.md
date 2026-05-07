@@ -1,6 +1,6 @@
 # RSS v0.1.0 — Repo Structure Proposal
 
-_License: AGPLv3 documentation terms; see `LICENSE/README.md`._
+_Licensed under AGPLv3; see `LICENSE/README.md`._
 
 **Status:** Proposal only. Not tracked in ROADMAP. Not scheduled. Operator will decide when and whether to execute.
 **Author anchor:** Built from Grok's flat-vs-nested analysis + April 20 full-module review findings + current kernel truth.

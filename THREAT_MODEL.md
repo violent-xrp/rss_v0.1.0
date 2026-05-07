@@ -1,6 +1,6 @@
 # RSS v0.1.0 — Threat Model
 
-_License: AGPLv3 documentation terms; see `LICENSE/README.md`._
+_Licensed under AGPLv3; see `LICENSE/README.md`._
 
 ## Scope
 RSS is an **application-layer governance kernel**. It is designed to constrain what data an AI system may access and what governed paths are allowed before the model runs.

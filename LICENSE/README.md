@@ -4,8 +4,8 @@ This directory contains licensing terms for the RSS codebase and supporting
 documentation.
 
 - `AGPLv3.md` — full text of the GNU Affero General Public License v3.0, the
-  default license for kernel code and operational/code-adjacent documentation
-  unless another file states otherwise.
+  license applied to kernel code and the operational/code-adjacent documentation
+  files designated in this repository unless a file states otherwise.
 - `COMMERCIAL_LICENSE.md` — commercial/contractor exception path for
   deployments where AGPLv3 terms do not fit. No exception is granted without a
   signed agreement.

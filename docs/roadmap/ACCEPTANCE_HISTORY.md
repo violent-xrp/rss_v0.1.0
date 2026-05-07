@@ -1,6 +1,6 @@
 # RSS Acceptance History
 
-_License: AGPLv3 documentation terms; see `../../LICENSE/README.md`._
+_Licensed under AGPLv3; see `../../LICENSE/README.md`._
 
 This file preserves the count history and verification receipts that used to live in `ROADMAP.md`.
 

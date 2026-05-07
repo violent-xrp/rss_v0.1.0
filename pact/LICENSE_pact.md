@@ -67,9 +67,9 @@ The Rose Sigil Systems codebase (Python modules) is licensed separately under AG
 | Asset | License |
 |---|---|
 | Python code and package modules | AGPLv3 + Commercial / Contractor License Exception |
-| Operational/code-adjacent docs (README, ROADMAP, CHANGELOG, CONTRIBUTING, THREAT_MODEL, testing/demo/roadmap docs) | AGPLv3 documentation terms unless a file states otherwise |
+| Operational/code-adjacent docs (README, ROADMAP, CHANGELOG, CONTRIBUTING, THREAT_MODEL, testing/demo/roadmap docs) | AGPLv3 unless a file states otherwise |
 | The Pact (Sections 0–7) | CC BY-ND 4.0 |
-| Constitutional/discipline docs (TRUTH_REGISTER, CLAIM_DISCIPLINE, PACT_ALIGNMENT) | CC BY-ND 4.0 |
+| Constitutional/discipline docs (TRUTH_REGISTER, CLAIM_DISCIPLINE, PACT_ALIGNMENT, PACT_VOICE) | CC BY-ND 4.0 |
 
 The code may be modified and redistributed under AGPLv3 terms, subject to the separate commercial exception path. The Pact may not be redistributed in modified form. This split is intentional: the engine is collaborative; the constitution is sovereign.
 
