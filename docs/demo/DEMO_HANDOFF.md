@@ -63,13 +63,22 @@ Includes:
 Use this when another engineer wants to inspect proof flags directly.
 
 Primary fields to inspect:
-- `proof` for boolean proof flags
-- `global_questions_answered`
-- `container_questions_answered`
-- `domain_pack_count`
-- `flow_count`
-- `cold_chain_verified`
-- `cold_event_count`
+- `verification.mode`
+- `verification.global_success`
+- `verification.container_success`
+- `verification.domain_count`
+- `verification.flow_count`
+- `verification.redline_global_refused`
+- `verification.redline_container_refused`
+- `verification.isolation_refused`
+- `verification.consent_denied`
+- `verification.consent_recovered`
+- `verification.safe_stop_persisted`
+- `verification.safe_stop_recovered`
+- `verification.trace_chain_valid`
+- `verification.cold_chain_verified`
+- `verification.cold_event_count`
+- `verification.artifacts.trace_event_count`
 
 ### `demo_summary.md`
 
@@ -93,6 +102,8 @@ Primary lines to inspect:
 - isolation status
 - recovery status
 - limits / not-proven claims
+
+`Proof status: PASS` requires the full useful-retrieval counts, refusal/isolation/recovery flags, live TRACE validity, cold TRACE verification, and a non-empty cold event count. If any required signal is missing, the summary reports `ATTENTION`.
 
 ### `demo_trace.json`
 

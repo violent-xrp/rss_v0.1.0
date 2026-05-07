@@ -401,6 +401,11 @@ def test_phase_g_demo_suite_operator_flow():
               "demo report JSON records emitted artifact paths in the transcript")
         check("Proof status: PASS" in summary_text and "Limits To Say Out Loud" in summary_text,
               "demo summary gives an operator-readable proof status and limits")
+        incomplete_proof = dict(artifact_report["verification"])
+        incomplete_proof["global_success"] = 0
+        attention_summary = demo_suite.build_operator_summary({"verification": incomplete_proof})
+        check("Proof status: ATTENTION" in attention_summary,
+              "demo summary cannot pass when useful retrieval proof is incomplete")
         check(trace_json["chain_valid"] is True,
               "demo TRACE artifact preserves chain-valid status")
         check(trace_json["event_count"] == artifact_report["verification"]["cold_event_count"],

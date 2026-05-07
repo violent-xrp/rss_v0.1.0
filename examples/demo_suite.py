@@ -84,6 +84,8 @@ def _cleanup_db(path: str) -> None:
 
 
 def _proof_status(verification: dict) -> str:
+    expected_global = len(DEMO_QUESTIONS)
+    expected_container = sum(len(spec["questions"]) for spec in DEMO_CONTAINERS)
     required = (
         "redline_global_refused",
         "redline_container_refused",
@@ -95,7 +97,19 @@ def _proof_status(verification: dict) -> str:
         "trace_chain_valid",
         "cold_chain_verified",
     )
-    return "PASS" if all(verification.get(key) for key in required) else "ATTENTION"
+    required_counts = (
+        verification.get("global_success") == expected_global,
+        verification.get("container_success") == expected_container,
+        verification.get("cold_event_count", 0) > 0,
+    )
+    artifact_trace_count = verification.get("artifacts", {}).get("trace_event_count")
+    if artifact_trace_count is not None:
+        required_counts = required_counts + (
+            artifact_trace_count == verification.get("cold_event_count"),
+        )
+    flags_ok = all(verification.get(key) for key in required)
+    counts_ok = all(required_counts)
+    return "PASS" if flags_ok and counts_ok else "ATTENTION"
 
 
 def build_operator_summary(report: dict) -> str:

@@ -5,7 +5,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 ## v0.1.0
 
 ### Current verified snapshot
-- **140 test functions / 1216 assertions / 0 failures** via `python tests/test_all.py`
+- **140 test functions / 1217 assertions / 0 failures** via `python tests/test_all.py`
 - **92.5% statement coverage** via `python run_coverage.py`
 - **140 claims / 140 tests / 103 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)

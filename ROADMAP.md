@@ -31,7 +31,7 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **140 test functions / 1216 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **140 test functions / 1217 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
 - **92.5% statement coverage** via `python run_coverage.py`
 - **140 claims / 140 tests / 103 Pact sections** in `docs/claim_matrix.md`
 - **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
@@ -40,7 +40,7 @@ Current code state:
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 140/1216 baseline
+- public docs are synced to the current 140/1217 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -70,7 +70,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 
 ### Next
 - Keep the Section 0 drafting lane narrow: T-0 works from the local classification/additions docs; Codex may keep hardening code and public proof docs without editing the Pact.
-- Decide whether the current demo artifact set is enough for the `v0.1.0-rc.1` checkpoint, or refresh the demo artifact proof once before the checkpoint.
+- Generate a fresh offline demo artifact bundle before the `v0.1.0-rc.1` checkpoint and inspect `demo_summary.md`, `demo_report.json`, and `demo_trace.json` from that run.
 - After a clean acceptance/sync/claim-matrix pass, prepare `v0.1.0-rc.1` as the next reviewable release checkpoint.
 - Keep final v0.1.0 gates explicit: T-0 recovery authority clause, amendment persistence, and final acceptance proof.
 - Keep tightening the reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
@@ -156,8 +156,11 @@ Mandatory before `v0.1.0-rc.1`:
 - CURRENT: one acceptance/sync pass is clean at 140 tests, 1216 assertions, and
   92.5% coverage after the Section 0 drafting-rail updates. Rerun immediately
   before any `v0.1.0-rc.1` tag.
-- REQUIRED: decide whether the current demo artifact set is enough for the
-  `v0.1.0-rc.1` checkpoint.
+- CLOSED: demo artifact decision is made for `v0.1.0-rc.1`: do not rely on a
+  stale artifact bundle. Generate fresh offline artifacts immediately before
+  the checkpoint. The summary `PASS` status now requires full useful-retrieval
+  counts, refusal/isolation/recovery flags, live TRACE validity, cold TRACE
+  verification, and a non-empty cold event count.
 
 Mandatory before final `v0.1.0`:
 - T-0 recovery authority Pact clause drafted by T-0 before final v0.1.0, likely
@@ -282,7 +285,7 @@ Threat-hardening note:
 - **Still not proven:** RSS has not implemented real browser, email, document, RAG, or tool-return connectors. Each future connector needs hidden-text, metadata, comment, retrieved-snippet, and tool-output tests before public claims expand.
 
 Open in Phase G:
-- decide whether the current demo artifact set is enough for the v0.1.0 tag
+- generate and inspect a fresh offline demo artifact bundle before the v0.1.0 tag
 - keep connector-specific indirect prompt-injection probes parked as required acceptance criteria for future external adapters
 
 ### v0.1.1 Candidate Hardening Queue
