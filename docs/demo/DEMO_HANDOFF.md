@@ -33,6 +33,10 @@ python examples/demo_suite.py --offline
 
 This forces deterministic governed offline fallback. It proves the current retrieval/refusal/recovery story without depending on local LLM availability.
 
+The older `python examples/demo_llm.py` wrapper and `python src/main.py demo-suite`
+entry both route to the same canonical suite so public demo entry points do not
+maintain separate proof logic.
+
 ## Run With Handoff Artifacts
 
 ```bash
@@ -55,8 +59,11 @@ Machine-readable proof bundle.
 Includes:
 - full transcript
 - verification flags
+- per-question proof rows
 - mode
 - domain/flow counts
+- expected-evidence hit counts
+- TRACE-bound task ID counts
 - cold verifier status
 - artifact paths
 
@@ -65,7 +72,11 @@ Use this when another engineer wants to inspect proof flags directly.
 Primary fields to inspect:
 - `verification.mode`
 - `verification.global_success`
+- `verification.global_evidence_hits`
+- `verification.global_evidence_expected`
 - `verification.container_success`
+- `verification.container_evidence_hits`
+- `verification.container_evidence_expected`
 - `verification.domain_count`
 - `verification.flow_count`
 - `verification.redline_global_refused`
@@ -75,10 +86,20 @@ Primary fields to inspect:
 - `verification.consent_recovered`
 - `verification.safe_stop_persisted`
 - `verification.safe_stop_recovered`
+- `verification.trace_bound_task_ids`
+- `verification.trace_bound_task_id_count`
+- `verification.successful_task_ids`
 - `verification.trace_chain_valid`
 - `verification.cold_chain_verified`
 - `verification.cold_event_count`
 - `verification.artifacts.trace_event_count`
+- `proof_rows.global`
+- `proof_rows.containers`
+
+The proof rows include each question, returned task ID, classification,
+PAV-entry count, expected evidence marker, evidence-found flag, refusal flag,
+and answer text. They are the machine-readable bridge between the transcript and
+the proof counters.
 
 ### `demo_summary.md`
 
@@ -87,10 +108,12 @@ Operator-readable summary.
 Includes:
 - proof status
 - global/container question counts
+- expected-evidence hit counts
 - REDLINE refusal flags
 - cross-container isolation flag
 - consent denial/recovery flag
 - Safe-Stop persistence/recovery flag
+- successful task-ID TRACE binding
 - live/cold TRACE verification status
 - limits to say out loud
 
@@ -98,12 +121,14 @@ Use this as the short handoff document.
 
 Primary lines to inspect:
 - proof status
+- expected-evidence status
+- TRACE-bound task-ID status
 - refusal status
 - isolation status
 - recovery status
 - limits / not-proven claims
 
-`Proof status: PASS` requires the full useful-retrieval counts, refusal/isolation/recovery flags, live TRACE validity, cold TRACE verification, and a non-empty cold event count. If any required signal is missing, the summary reports `ATTENTION`.
+`Proof status: PASS` requires the full useful-retrieval counts, expected governed-evidence markers, refusal/isolation/recovery flags, successful task IDs bound to TRACE artifacts, live TRACE validity, cold TRACE verification, and a non-empty cold event count. If any required signal is missing, the summary reports `ATTENTION`.
 
 ### `demo_trace.json`
 
@@ -138,10 +163,12 @@ Do not treat the transcript as the proof by itself. The proof is the combination
 Current Phase G demo proof covers:
 - useful global retrieval from governed data
 - tenant-scoped retrieval from TECTON containers
+- expected evidence markers for global and tenant-scoped retrieval
 - PERSONAL / REDLINE refusal
 - cross-container isolation
 - OATH consent denial and recovery
 - Safe-Stop entry, restart persistence, and T-0 recovery
+- successful task IDs bound to persisted TRACE artifacts
 - cold TRACE verification
 - normal live-advisor boundary that keeps ordinary chat separate from project/private data
 - cross-domain demo packs for construction, legal, medical, and finance
@@ -172,6 +199,10 @@ If the configured local LLM is available, general advisor questions run through 
 If the LLM is unavailable, use `--offline` for deterministic proof recordings.
 
 Live mode is for operator experience. Offline mode is the repeatable proof path.
+
+If live mode produces fluent answers without the expected governed evidence
+markers, that run should be treated as operator experience rather than proof.
+The repeatable proof path remains `--offline`.
 
 ## Good Handoff Command
 

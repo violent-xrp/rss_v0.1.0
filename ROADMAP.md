@@ -31,7 +31,7 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **141 test functions / 1239 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **141 test functions / 1250 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
 - **92.4% statement coverage** via `python run_coverage.py`
 - **141 claims / 141 tests / 104 Pact sections** in `docs/claim_matrix.md`
 - **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
@@ -40,7 +40,7 @@ Current code state:
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 141/1239 baseline
+- public docs are synced to the current 141/1250 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -71,6 +71,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 ### Next
 - Keep the Section 0 drafting lane narrow: T-0 works from the local classification/additions docs; Codex may keep hardening code and public proof docs without editing the Pact.
 - Generate a fresh offline demo artifact bundle before the `v0.1.0-rc.1` checkpoint and inspect `demo_summary.md`, `demo_report.json`, and `demo_trace.json` from that run.
+- Demo proof artifacts now need to stay evidence-bound: PASS requires expected seeded evidence markers and successful task IDs bound to TRACE, not just fluent non-error answers.
 - After a clean acceptance/sync/claim-matrix pass, prepare `v0.1.0-rc.1` as the next reviewable release checkpoint.
 - Keep final v0.1.0 gates explicit: T-0 recovery authority clause and final acceptance proof.
 - Keep tightening the reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
@@ -274,6 +275,7 @@ Landed:
 - SEAL ceremony TRACE emission now fails closed when a trace callback is wired: proposal, review, and ratification do not mutate ceremony state if amendment audit emission fails
 - Phase G coverage floor closed: `cycle.py` and `trace_verify.py` are both above 94% and every package module is at or above 85%
 - demo handoff now names the fast reviewer path, artifact review order, proof signals, and release boundary
+- demo artifact proof now records per-question proof rows, expected governed-evidence markers, and successful task IDs bound to TRACE artifacts so useful retrieval cannot pass on fluent but ungrounded answers
 - external vocabulary map added for engineers/reviewers who do not know RSS terms yet
 - artifact export bundle from a single governed run:
   - `demo_report.json`
@@ -286,6 +288,7 @@ Threat-hardening note:
 
 Open in Phase G:
 - generate and inspect a fresh offline demo artifact bundle before the v0.1.0 tag
+- live-advisor quality evaluation remains separate from proof: a governed live model can be constrained correctly and still under-answer PAV-backed questions, so future demo/product work needs a live-eval harness before claiming production-level answer quality
 - keep connector-specific indirect prompt-injection probes parked as required acceptance criteria for future external adapters
 
 ### v0.1.1 Candidate Hardening Queue
@@ -296,6 +299,7 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - structured authority-spoof probes: imported JSON/YAML/tool-return text cannot become consent, scope, or side-effect authorization
 - connector IPI acceptance matrix for PDF metadata/hidden text, HTML hidden spans/alt text, email MIME parts, RAG neighbor chunks, tool returns, and Unicode invisible/confusable text
 - runner JSON verdict export for independent verification and future CI
+- live LLM evaluation harness for governed usefulness under PAV constraints: score whether live adapters answer from expected evidence markers while preserving refusal/isolation boundaries
 - external-map refinement for public reviewers
 - post-v0.1.0 seat load-bearing audit: verify each seat owns a unique invariant as connectors and per-action gates arrive
 - RUNE per-pack/domain synonym namespace so construction, legal, medical, finance, and tenant packs can reuse common phrases without global collisions

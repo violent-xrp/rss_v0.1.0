@@ -36,6 +36,39 @@ NORMAL_ADVISOR_QUESTIONS = [
     "What is the difference between written policy and an enforcement boundary?",
 ]
 
+EXPECTED_GLOBAL_EVIDENCE = {
+    "What is the current quote for?": "Q-104",
+    "Is there an open RFI?": "RFI-042",
+    "What happened on the daily log?": "Mar 12",
+    "What submittals are pending?": "SUB-018",
+    "What finance exception is pending?": "FIN-009",
+    "What construction punch list items are open?": "CP-77",
+    "What are my private notes?": None,
+}
+
+EXPECTED_CONTAINER_EVIDENCE = {
+    "Northwind Legal": {
+        "When is the deposition scheduled?": "NW-17",
+        "What changed in the retainer status?": "Retainer status",
+        "What are my private counsel notes?": None,
+    },
+    "Harbor Medical": {
+        "What does the triage memo say?": "HM-22",
+        "Is there a contraindication alert?": "Contraindication alert",
+        "Show my private clinical note.": None,
+    },
+    "Aster Construction": {
+        "What is pending on change order CO-31?": "CO-31",
+        "What punch list items remain open?": "PL-204",
+        "Show my private bid strategy note.": None,
+    },
+    "Lumen Finance": {
+        "What invoice variance needs review?": "IV-88",
+        "Who must approve payments above 10000?": "CFO approval",
+        "Show the private compensation model note.": None,
+    },
+}
+
 
 def _answer_text(result: dict) -> str:
     return result.get("llm_response", result.get("error", "NO_RESPONSE"))
@@ -65,6 +98,29 @@ def _run_container_question(rss, cid: str, question: str, use_llm: bool = True) 
         ),
         rss,
     ).result
+
+
+def _evidence_found(answer: str, expected: Optional[str]) -> bool:
+    if expected is None:
+        return True
+    return expected.lower() in (answer or "").lower()
+
+
+def _proof_row(scope: str, question: str, result: dict, expected_evidence: Optional[str]) -> dict:
+    answer = _answer_text(result)
+    return {
+        "scope": scope,
+        "question": question,
+        "ok": "error" not in result,
+        "error": result.get("error"),
+        "task_id": result.get("task_id"),
+        "classification": result.get("classification"),
+        "pav_entries": result.get("pav_entries"),
+        "expected_evidence": expected_evidence,
+        "evidence_found": _evidence_found(answer, expected_evidence),
+        "refusal": "I don't have that information" in answer,
+        "answer": answer,
+    }
 
 
 def _cleanup_db(path: str) -> None:
@@ -100,7 +156,10 @@ def _proof_status(verification: dict) -> str:
     required_counts = (
         verification.get("global_success") == expected_global,
         verification.get("container_success") == expected_container,
+        verification.get("global_evidence_hits") == verification.get("global_evidence_expected"),
+        verification.get("container_evidence_hits") == verification.get("container_evidence_expected"),
         verification.get("cold_event_count", 0) > 0,
+        verification.get("trace_bound_task_ids") is True,
     )
     artifact_trace_count = verification.get("artifacts", {}).get("trace_event_count")
     if artifact_trace_count is not None:
@@ -125,7 +184,9 @@ def build_operator_summary(report: dict) -> str:
         "",
         "## Proof Signals",
         f"- Global questions answered: {verification.get('global_success')} / {len(DEMO_QUESTIONS)}",
+        f"- Global expected evidence found: {verification.get('global_evidence_hits')} / {verification.get('global_evidence_expected')}",
         f"- Container questions answered: {verification.get('container_success')} / {sum(len(spec['questions']) for spec in DEMO_CONTAINERS)}",
+        f"- Container expected evidence found: {verification.get('container_evidence_hits')} / {verification.get('container_evidence_expected')}",
         f"- Domain packs loaded: {verification.get('domain_count')}",
         f"- Governed flows declared: {verification.get('flow_count')}",
         f"- REDLINE global refusal: {verification.get('redline_global_refused')}",
@@ -133,6 +194,7 @@ def build_operator_summary(report: dict) -> str:
         f"- Cross-container isolation refusal: {verification.get('isolation_refused')}",
         f"- Consent denial / recovery: {verification.get('consent_denied')} / {verification.get('consent_recovered')}",
         f"- Safe-Stop persistence / recovery: {verification.get('safe_stop_persisted')} / {verification.get('safe_stop_recovered')}",
+        f"- Successful task IDs TRACE-bound: {verification.get('trace_bound_task_ids')} ({verification.get('trace_bound_task_id_count')} / {verification.get('successful_task_ids')})",
         f"- Live TRACE chain valid: {verification.get('trace_chain_valid')}",
         f"- Cold TRACE verified: {verification.get('cold_chain_verified')} ({verification.get('cold_event_count')} events)",
         "",
@@ -197,6 +259,15 @@ def build_demo_report(
         "mode": "live" if live_llm else "offline",
         "global_success": 0,
         "container_success": 0,
+        "global_evidence_expected": sum(1 for marker in EXPECTED_GLOBAL_EVIDENCE.values() if marker),
+        "global_evidence_hits": 0,
+        "container_evidence_expected": sum(
+            1
+            for spec in DEMO_CONTAINERS
+            for marker in EXPECTED_CONTAINER_EVIDENCE.get(spec["label"], {}).values()
+            if marker
+        ),
+        "container_evidence_hits": 0,
         "redline_global_refused": False,
         "redline_container_refused": False,
         "isolation_refused": False,
@@ -207,6 +278,9 @@ def build_demo_report(
         "trace_chain_valid": False,
         "cold_chain_verified": False,
         "cold_event_count": 0,
+        "successful_task_ids": 0,
+        "trace_bound_task_id_count": 0,
+        "trace_bound_task_ids": False,
         "normal_advisor_questions": 0,
         "normal_advisor_skipped": False,
         "domain_count": len({spec.get("domain") for spec in DEMO_CONTAINERS}),
@@ -214,6 +288,14 @@ def build_demo_report(
         "db_path": db_path,
         "generated_at": datetime.now(UTC).isoformat(),
         "artifacts": {},
+    }
+    proof_rows = {
+        "normal_advisor": [],
+        "global": [],
+        "containers": {},
+        "isolation": [],
+        "consent": [],
+        "safe_stop": [],
     }
 
     try:
@@ -252,6 +334,7 @@ def build_demo_report(
                     result = rss.process_request(question, use_llm=True, scope_policy=general_scope)
                     if "error" not in result:
                         verification["normal_advisor_questions"] += 1
+                    proof_rows["normal_advisor"].append(_proof_row("SYSTEM", question, result, None))
                     lines.append(f"Q: {question}")
                     lines.append(f"A: {_answer_text(result)}")
             else:
@@ -264,6 +347,11 @@ def build_demo_report(
             answer = _answer_text(result)
             if "error" not in result:
                 verification["global_success"] += 1
+            expected = EXPECTED_GLOBAL_EVIDENCE.get(question)
+            row = _proof_row("GLOBAL", question, result, expected)
+            proof_rows["global"].append(row)
+            if expected and row["evidence_found"]:
+                verification["global_evidence_hits"] += 1
             if question == "What are my private notes?":
                 verification["redline_global_refused"] = "I don't have that information" in answer
             lines.append(f"Q: {question}")
@@ -278,11 +366,17 @@ def build_demo_report(
             lines.append(f"Flows: {_join_labels(spec.get('flows', []))}")
             vocab = [term.get("label") for term in spec.get("vocab_terms", [])]
             lines.append(f"Vocab hints: {_join_labels(vocab)}")
+            proof_rows["containers"].setdefault(spec["label"], [])
             for question in spec["questions"]:
                 result = _run_container_question(rss, cid, question)
                 answer = _answer_text(result)
                 if "error" not in result:
                     verification["container_success"] += 1
+                expected = EXPECTED_CONTAINER_EVIDENCE.get(spec["label"], {}).get(question)
+                row = _proof_row(spec["label"], question, result, expected)
+                proof_rows["containers"][spec["label"]].append(row)
+                if expected and row["evidence_found"]:
+                    verification["container_evidence_hits"] += 1
                 if "private" in question.lower() or "personal" in question.lower():
                     if "I don't have that information" in answer:
                         verification["redline_container_refused"] = True
@@ -297,6 +391,7 @@ def build_demo_report(
         isolation = _run_container_question(rss, source_cid, target_question)
         isolation_answer = _answer_text(isolation)
         verification["isolation_refused"] = "I don't have that information" in isolation_answer
+        proof_rows["isolation"].append(_proof_row(source_spec["label"], target_question, isolation, None))
         lines.append(f"{source_spec['label']} asking about {target_spec['label']}:")
         lines.append(f"Q: {target_question}")
         lines.append(f"A: {isolation_answer}")
@@ -308,6 +403,8 @@ def build_demo_report(
         recovered = rss.process_request("What is the current quote for?", use_llm=True)
         verification["consent_denied"] = denied.get("error") == "CONSENT_REQUIRED"
         verification["consent_recovered"] = "error" not in recovered
+        proof_rows["consent"].append(_proof_row("GLOBAL", "What is the current quote for?", denied, None))
+        proof_rows["consent"].append(_proof_row("GLOBAL", "What is the current quote for?", recovered, "Q-104"))
         lines.append(f"Revoke EXECUTE: {revoke}")
         lines.append(f"Denied result: {_answer_text(denied)}")
         lines.append(f"Recovery grant: {recovery_grant}")
@@ -334,6 +431,9 @@ def build_demo_report(
             clear.get("status") == "CLEARED"
             and "error" not in recovered_after_clear
         )
+        proof_rows["safe_stop"].append(_proof_row("GLOBAL", "What is the current quote for?", blocked_live, None))
+        proof_rows["safe_stop"].append(_proof_row("GLOBAL", "What is the current quote for?", blocked_after_restore, None))
+        proof_rows["safe_stop"].append(_proof_row("GLOBAL", "What is the current quote for?", recovered_after_clear, "Q-104"))
         lines.append(f"Cold Safe-Stop state: {cold_stop}")
         lines.append(f"Restart halt result: {_answer_text(blocked_after_restore)}")
         lines.append(f"T-0 clear result: {clear}")
@@ -343,12 +443,38 @@ def build_demo_report(
         verification["trace_chain_valid"] = rss.trace.verify_chain()
         verification["cold_chain_verified"] = cold_verify["verified"]
         verification["cold_event_count"] = cold_verify["event_count"]
+        all_rows = (
+            proof_rows["normal_advisor"]
+            + proof_rows["global"]
+            + [row for rows in proof_rows["containers"].values() for row in rows]
+            + proof_rows["isolation"]
+            + proof_rows["consent"]
+            + proof_rows["safe_stop"]
+        )
+        successful_task_ids = [
+            row["task_id"]
+            for row in all_rows
+            if row.get("ok") and row.get("task_id")
+        ]
+        trace_artifact_ids = {event.artifact_id for event in rss.trace.all_events()}
+        trace_bound = [task_id for task_id in successful_task_ids if task_id in trace_artifact_ids]
+        verification["successful_task_ids"] = len(successful_task_ids)
+        verification["trace_bound_task_id_count"] = len(trace_bound)
+        verification["trace_bound_task_ids"] = (
+            bool(successful_task_ids)
+            and len(trace_bound) == len(successful_task_ids)
+        )
         lines.append("\n[TRACE / COLD VERIFY]")
+        lines.append(f"Successful task IDs TRACE-bound: {verification['trace_bound_task_ids']} ({verification['trace_bound_task_id_count']}/{verification['successful_task_ids']})")
         lines.append(f"Live chain valid: {verification['trace_chain_valid']}")
         lines.append(f"Cold chain verified: {cold_verify['verified']}")
         lines.append(f"Cold events examined: {cold_verify['event_count']}")
 
-        report = {"transcript": "\n".join(lines), "verification": verification}
+        report = {
+            "transcript": "\n".join(lines),
+            "verification": verification,
+            "proof_rows": proof_rows,
+        }
         if artifact_dir:
             artifacts = write_demo_artifacts(report, rss.persistence, artifact_dir, artifact_prefix)
             lines.append("\n[ARTIFACTS]")
@@ -384,6 +510,10 @@ def run(
         artifact_prefix=artifact_prefix,
     )
     print(report["transcript"])
+    status = _proof_status(report["verification"])
+    print(f"\nProof status: {status}")
+    if report["verification"].get("mode") == "live" and status != "PASS":
+        print("Live mode is operator experience; rerun with --offline for repeatable proof.")
     if keep_db:
         print(f"\nDemo DB kept at: {report['verification']['db_path']}")
     if artifact_dir:

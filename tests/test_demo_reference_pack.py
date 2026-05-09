@@ -364,7 +364,12 @@ def test_phase_g_demo_suite_operator_flow():
           "interactive demo keeps WORK/PERSONAL closed for normal chat")
     check(main_module.demo_scope_policy_for("What is the current quote for?") is None,
           "interactive demo opens default governed data path for obvious seeded-data questions")
+    main_demo_source = inspect.getsource(main_module.run_demo_suite)
+    check("examples.demo_suite" in main_demo_source and "build_demo_report" in main_demo_source,
+          "CLI demo-suite entry delegates to the canonical proof suite")
     check(proof["global_success"] == len(DEMO_QUESTIONS), "demo global workflow answers every seeded global question")
+    check(proof["global_evidence_hits"] == proof["global_evidence_expected"],
+          "demo proof requires expected global evidence markers, not only non-error responses")
     check("Submittal SUB-018" in transcript, "demo retrieves the submittal row for the plural submittals question")
     check("Finance exception FIN-009" in transcript, "demo retrieves the global finance exception row")
     check("Construction punch list CP-77" in transcript, "demo retrieves the global construction punch-list row")
@@ -372,6 +377,8 @@ def test_phase_g_demo_suite_operator_flow():
     check("Invoice variance IV-88" in transcript, "demo retrieves the finance container row")
     check(proof["container_success"] == sum(len(spec["questions"]) for spec in DEMO_CONTAINERS),
           "demo container workflow answers every seeded tenant question")
+    check(proof["container_evidence_hits"] == proof["container_evidence_expected"],
+          "demo proof requires expected container evidence markers, not only non-error responses")
     check(proof["redline_global_refused"], "demo refuses global PERSONAL/REDLINE requests")
     check(proof["redline_container_refused"], "demo refuses container PERSONAL/REDLINE requests")
     check(proof["isolation_refused"], "demo proves cross-container isolation with a negative query")
@@ -382,6 +389,20 @@ def test_phase_g_demo_suite_operator_flow():
     check(proof["trace_chain_valid"], "demo live TRACE chain remains valid")
     check(proof["cold_chain_verified"], "demo cold verifier validates the persisted TRACE chain")
     check(proof["cold_event_count"] > 0, "demo cold verifier examines persisted TRACE events")
+    check(proof["trace_bound_task_ids"], "demo proof binds successful task IDs to TRACE artifacts")
+    check(proof["trace_bound_task_id_count"] == proof["successful_task_ids"] and proof["successful_task_ids"] > 0,
+          "demo proof counts every successful task ID as TRACE-bound")
+    global_rows = report["proof_rows"]["global"]
+    check(all(row["evidence_found"] for row in global_rows if row["expected_evidence"]),
+          "demo report rows preserve global expected-evidence proof")
+    container_rows = [
+        row
+        for rows in report["proof_rows"]["containers"].values()
+        for row in rows
+        if row["expected_evidence"]
+    ]
+    check(all(row["evidence_found"] for row in container_rows),
+          "demo report rows preserve container expected-evidence proof")
     artifact_dir = tempfile.mkdtemp(prefix="rss_demo_artifacts_")
     try:
         artifact_report = demo_suite.build_demo_report(live_llm=False, artifact_dir=artifact_dir)
@@ -397,15 +418,26 @@ def test_phase_g_demo_suite_operator_flow():
             trace_json = json.load(f)
         check(report_json["verification"]["cold_chain_verified"] is True,
               "demo report JSON preserves cold verification proof flags")
+        check(report_json["verification"]["trace_bound_task_ids"] is True,
+              "demo report JSON preserves TRACE-bound task proof")
+        check("proof_rows" in report_json and report_json["proof_rows"]["global"],
+              "demo report JSON includes per-question proof rows")
         check("[ARTIFACTS]" in report_json["transcript"],
               "demo report JSON records emitted artifact paths in the transcript")
-        check("Proof status: PASS" in summary_text and "Limits To Say Out Loud" in summary_text,
-              "demo summary gives an operator-readable proof status and limits")
+        check("Proof status: PASS" in summary_text and "Global expected evidence found" in summary_text,
+              "demo summary reports expected-evidence proof status")
+        check("Successful task IDs TRACE-bound: True" in summary_text and "Limits To Say Out Loud" in summary_text,
+              "demo summary reports TRACE binding and limits")
         incomplete_proof = dict(artifact_report["verification"])
         incomplete_proof["global_success"] = 0
         attention_summary = demo_suite.build_operator_summary({"verification": incomplete_proof})
         check("Proof status: ATTENTION" in attention_summary,
               "demo summary cannot pass when useful retrieval proof is incomplete")
+        incomplete_proof = dict(artifact_report["verification"])
+        incomplete_proof["trace_bound_task_ids"] = False
+        attention_summary = demo_suite.build_operator_summary({"verification": incomplete_proof})
+        check("Proof status: ATTENTION" in attention_summary,
+              "demo summary cannot pass when successful task IDs are not TRACE-bound")
         check(trace_json["chain_valid"] is True,
               "demo TRACE artifact preserves chain-valid status")
         check(trace_json["event_count"] == artifact_report["verification"]["cold_event_count"],

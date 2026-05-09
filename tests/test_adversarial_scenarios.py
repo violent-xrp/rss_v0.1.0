@@ -1086,8 +1086,13 @@ def test_phase_e_regression_battery():
             demo_src = f.read()
         check("rss.hubs.add_entry(" not in demo_src,
               "E-2: demo_llm.py no longer uses bypass rss.hubs.add_entry()")
-        check(("rss.save_hub_entry(" in demo_src) or ("load_reference_pack(rss)" in demo_src) or ("seed_demo_world(rss)" in demo_src),
-              "E-2: demo_llm.py uses a governed shared-reference loading path")
+        check(
+            ("rss.save_hub_entry(" in demo_src)
+            or ("load_reference_pack(rss)" in demo_src)
+            or ("seed_demo_world(rss)" in demo_src)
+            or ("from demo_suite import run" in demo_src),
+            "E-2: demo_llm.py uses a governed shared-reference loading path",
+        )
 
     # E-3: Container restore is part of default boot path
     fd, path = tempfile.mkstemp(suffix=".db")

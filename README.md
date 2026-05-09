@@ -6,7 +6,7 @@
 
 Every request flows through a constitutional pipeline of typed seats with bounded authority. Scope is declared, meaning is classified, consent is checked, cadence is bounded. A Prepared Advisory View is built and an audit record is written before any result is allowed to stand.
 
-**Verified baseline:** 141 test functions, 1239 assertions, 0 failures, 92.5% coverage. Traceability: 139 claims mapped to 139 tests across 101 Pact sections.
+**Verified baseline:** 141 test functions, 1250 assertions, 0 failures, 92.4% coverage. Traceability: 141 claims mapped to 141 tests across 104 Pact sections.
 
 Reproduce with `python tests/test_all.py` and `python run_coverage.py`. Claim mapping at `docs/claim_matrix.md`.
 
@@ -92,7 +92,7 @@ pip install -r requirements.txt
 ```bash
 python tests/test_all.py
 ```
-The acceptance run prints `RSS v0.1.0 - 141 test functions, 1239 assertions passed, 0 failed` as its final line.
+The acceptance run prints `RSS v0.1.0 - 141 test functions, 1250 assertions passed, 0 failed` as its final line.
 
 ### Run the guided demo walkthrough
 ```bash

@@ -5,7 +5,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 ## v0.1.0
 
 ### Current verified snapshot
-- **141 test functions / 1239 assertions / 0 failures** via `python tests/test_all.py`
+- **141 test functions / 1250 assertions / 0 failures** via `python tests/test_all.py`
 - **92.4% statement coverage** via `python run_coverage.py`
 - **141 claims / 141 tests / 104 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
@@ -26,6 +26,8 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - reference-pack v2 with construction, legal, medical, and finance packs, explicit entry metadata, governed flows, vocab hints, and non-REDLINE PERSONAL support
 - reference/demo-pack validation now fails loud on malformed hub, flow, vocab, entry, and REDLINE metadata before runtime seeding mutates state
 - Phase G demo suite can emit a handoff artifact bundle: `demo_report.json`, `demo_summary.md`, and `demo_trace.json`
+- Phase G demo artifacts now include per-question proof rows, expected governed-evidence markers, and TRACE-bound successful task counts so proof status cannot pass on fluent but ungrounded answers
+- legacy `examples/demo_llm.py` and `src/main.py demo-suite` now route through the canonical governed demo suite instead of maintaining weaker duplicate walkthrough logic
 - ROADMAP has been consolidated into a current/future command document, with acceptance history, coverage tracking, phase ledger, testing guidance, and demo handoff detail moved under `docs/`
 - Threat Model now names indirect prompt injection through retrieved/imported content as a first-class external-content risk.
 - PAV now honors `forbidden_sources` while constructing advisory views, closing an overlap/misconfiguration gap where forbidden sources were recorded but not enforced at PAV collection time.
@@ -59,7 +61,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - Phase G normal-advisor boundary proof for prompt posture and SYSTEM-only demo scope
 - Phase G reference-pack v2 proof for cross-domain packs, explicit metadata, and schema compatibility
 - Phase G demo-pack validation proof for fail-loud schema checks, no partial seeding, legacy tuple compatibility, and inactive container reuse
-- Phase G demo artifact proof for report JSON, operator summary, persisted TRACE JSON, proof-status wording, and trace event-count parity
+- Phase G demo artifact proof for report JSON, operator summary, persisted TRACE JSON, proof-status wording, expected-evidence counters, TRACE-bound task IDs, per-question proof rows, and trace event-count parity
 - indirect prompt-injection proof for poisoned retrieved content remaining scoped data, with import provenance, TRACE, REDLINE/PERSONAL exclusion, and OATH immutability preserved
 - untrusted import hash-binding proof for source/wrapped SHA-256 receipts, byte lengths, TRACE digest payload, persistence, mutation detection, and source URI newline rejection
 - Phase G coverage-floor proof for CYCLE strict/handle routing and cold-verifier broken-chain reporting branches

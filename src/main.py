@@ -38,6 +38,7 @@ Usage:
   python main.py export-trace      Export TRACE audit log to file
 """
 import sys
+from pathlib import Path
 from rss.core.config import RSSConfig, RSS_VERSION
 from rss.core.runtime import bootstrap
 from rss.governance.seats.rune import Term
@@ -132,33 +133,17 @@ def run_demo(rss):
 
 
 def run_demo_suite(rss):
-    """Deterministic governed walkthrough."""
-    seeded = seed_demo_world(rss)
-    print(f"  Demo world: {seeded['global_inserted']} global rows, {seeded['created']} containers created, {seeded['entries_inserted']} container rows inserted")
-    print(f"  Ingress posture: {rss.ingress_posture_note()}")
+    """Deterministic governed walkthrough using the canonical proof suite."""
+    repo_root = Path(__file__).resolve().parents[1]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
 
-    print("\n  [Global workflow]")
-    for text in DEMO_QUESTIONS:
-        result = rss.process_request(text, use_llm=True)
-        answer = result.get("llm_response", result.get("error", "NO_RESPONSE"))
-        print(f"    Q: {text}")
-        print(f"    A: {answer}")
+    from examples.demo_suite import build_demo_report, _proof_status
 
-    print("\n  [Container workflows]")
-    from rss.hubs.tecton import ContainerRequest, SEAT_SIGILS
-    for spec in DEMO_CONTAINERS:
-        cid = seeded["containers"][spec["label"]]
-        print(f"\n    Container: {spec['label']} ({cid})")
-        print(f"      Domain pack: {spec.get('domain')} ({spec.get('pack_version')})")
-        print(f"      Flows: {', '.join(spec.get('flows', []))}")
-        for text in spec["questions"]:
-            result = rss.tecton.process_request(
-                ContainerRequest(cid, SEAT_SIGILS["RUNE"], {"text": text, "use_llm": True}),
-                rss,
-            ).result
-            answer = result.get("llm_response", result.get("error", "NO_RESPONSE"))
-            print(f"      Q: {text}")
-            print(f"      A: {answer}")
+    report = build_demo_report(live_llm=False)
+    print(report["transcript"])
+    print(f"\n  Proof status: {_proof_status(report['verification'])}")
+    print("  For handoff artifacts: python examples/demo_suite.py --offline --artifacts demo_artifacts")
 
 
 def show_status(rss):
