@@ -24,6 +24,7 @@ rss_v3*
 rss_trace_export*
 
 # Local/private planning notes
+.claude/
 local/
 docs/PACT_COUNCIL_STRIP_MAP.md
 docs/PACT_COUNCIL_STRIP*.md

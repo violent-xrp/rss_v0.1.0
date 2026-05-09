@@ -289,8 +289,24 @@ def rewrite_common(text: str, baseline: Baseline) -> str:
             baseline.claim_line,
             out,
         )
+        out = re.sub(
+            r"\b\d+ claims mapped to \d+ tests across \d+ Pact sections\b",
+            (
+                f"{baseline.claim_tags} claims mapped to "
+                f"{baseline.claim_tests} tests across "
+                f"{baseline.claim_sections} Pact sections"
+            ),
+            out,
+        )
 
     if baseline.coverage_text:
+        out = re.sub(
+            r"^(\*\*Verified baseline:\*\* \d+ test functions, \d+ assertions, "
+            r"\d+ failures, )\d{1,3}(?:\.\d+)?%( coverage\.)",
+            rf"\g<1>{baseline.coverage_text}\2",
+            out,
+            flags=re.MULTILINE,
+        )
         out = re.sub(
             r"^(\*\*Current coverage / traceability:\*\* \*\*)"
             r"\d{1,3}(?:\.\d+)?%( statement coverage)",
