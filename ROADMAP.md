@@ -158,8 +158,8 @@ Mandatory before `v0.1.0-rc.1`:
   begins: match the Section 4 and Section 5 "rule / current proof / boundary"
   style, and keep substantive additions such as T-0 recovery authority owned by
   T-0 rather than implementation cleanup.
-- CURRENT: one acceptance/sync pass is clean at 141 tests, 1239 assertions, and
-  92.4% coverage after amendment persistence. Rerun immediately
+- CURRENT: one acceptance/sync pass is clean at 141 tests, 1250 assertions, and
+  92.4% coverage after demo proof hardening. Rerun immediately
   before any `v0.1.0-rc.1` tag.
 - CLOSED: demo artifact decision is made for `v0.1.0-rc.1`: do not rely on a
   stale artifact bundle. Generate fresh offline artifacts immediately before

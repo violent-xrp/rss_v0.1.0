@@ -259,6 +259,12 @@ def rewrite_common(text: str, baseline: Baseline) -> str:
     )
 
     out = re.sub(
+        r"\b\d+ tests, \d+ assertions, and\b",
+        f"{baseline.test_functions} tests, {baseline.assertions} assertions, and",
+        out,
+    )
+
+    out = re.sub(
         r"\bcurrent \d+/\d+ baseline\b",
         f"current {baseline.compact_pair} baseline",
         out,
