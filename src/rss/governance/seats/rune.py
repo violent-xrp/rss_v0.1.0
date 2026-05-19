@@ -55,6 +55,13 @@ class MeaningError(Exception):
     """Raised when meaning-law operations fail."""
 
 
+def _task_bool(task: dict, key: str, default: bool = False) -> bool:
+    """Return True only for explicit boolean True in WARD-routed tasks."""
+    if key not in task:
+        return default
+    return task.get(key) is True
+
+
 @dataclass
 class Term:
     id: str
@@ -115,6 +122,7 @@ def _normalize_phrase(phrase: str) -> str:
 
 @dataclass
 class MeaningLaw:
+    name: str = "RUNE"
     _registry: Dict[str, Term] = field(default_factory=dict)
     _synonyms: Dict[str, dict] = field(default_factory=dict)
     _disallowed: Dict[str, str] = field(default_factory=dict)
@@ -319,3 +327,59 @@ class MeaningLaw:
 
     def get_term(self, term_id: str) -> Optional[Term]:
         return self._registry.get(term_id)
+
+    def status(self) -> dict:
+        """Seat status for WARD CNS snapshot (§1.1.2)."""
+        return {
+            "state": "ACTIVE",
+            "sealed_terms": len(self._registry),
+            "synonyms": len(self._synonyms),
+            "disallowed": len(self._disallowed),
+        }
+
+    def handle(self, task: dict) -> dict:
+        """WARD-compatible adapter for bounded RUNE actions (§1.1.2).
+
+        The runtime still calls RUNE directly on the request path; this adapter
+        exposes the standard seat interface without granting peer seats authority
+        to mutate meaning law outside governed runtime use.
+        """
+        action = task.get("action")
+        try:
+            if action == "classify":
+                result = self.classify(
+                    task.get("phrase", ""),
+                    case_sensitive=_task_bool(task, "case_sensitive", False),
+                )
+                return {
+                    "phrase": result.phrase,
+                    "status": result.status,
+                    "reason": result.reason,
+                    "term_id": result.term_id,
+                    "compound_terms": result.compound_terms,
+                }
+            if action == "classify_all":
+                return {"matches": self.classify_all(
+                    task.get("phrase", ""),
+                    case_sensitive=_task_bool(task, "case_sensitive", False),
+                )}
+            if action == "list_sealed":
+                return {"terms": self.list_sealed()}
+            if action == "get_term":
+                term = self.get_term(task.get("term_id", ""))
+                if term is None:
+                    return {"term": None}
+                return {
+                    "term": {
+                        "id": term.id,
+                        "label": term.label,
+                        "definition": term.definition,
+                        "constraints": term.constraints,
+                        "version": term.version,
+                    }
+                }
+            if action == "status":
+                return self.status()
+        except MeaningError as exc:
+            return {"error": str(exc)}
+        return {"error": f"Unknown action: {action}"}

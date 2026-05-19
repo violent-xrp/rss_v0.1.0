@@ -24,7 +24,7 @@
 # ==============================================================================
 """
 RSS v0.1.0 — Layer 5: SEAL (Canonization Engine)
-Seals drafts into canon. Verifies authority, checks for external names.
+Seals drafts into canon. Verifies authority, checks external attribution.
 """
 from __future__ import annotations
 
@@ -112,13 +112,19 @@ class CanonArtifact:
     timestamp: datetime
 
 
-# Patterns that indicate external advisor attribution (not just bare name mentions)
+# Patterns that indicate external advisor attribution (not just bare mentions)
+EXTERNAL_ACTOR_PATTERN = (
+    r"(?:an?\s+)?(?:external\s+)?"
+    r"(?:AI(?:\s+(?:assistant|advisor|model|agent|system|tool))?"
+    r"|artificial\s+intelligence|assistant|advisor|model|agent"
+    r"|automated\s+system|tool|bot|machine|software|intelligence)"
+)
+
 EXTERNAL_PATTERNS = [
-    r"\b(drafted|written|created|generated|produced|authored)\s+(by|with|using)\s+(Claude|ChatGPT|Gemini|Grok|Copilot)\b",
-    r"\b(according\s+to|per|as\s+stated\s+by)\s+(Claude|ChatGPT|Gemini|Grok|Copilot)\b",
-    r"\b(Claude|ChatGPT|Gemini|Grok|Copilot)\s+(said|suggested|recommended|advised|wrote)\b",
+    rf"\b(drafted|written|created|generated|produced|authored|provided|supplied|formulated|devised|curated)\s+(by|with|using|from|through)\s+{EXTERNAL_ACTOR_PATTERN}\b",
+    rf"\b(according\s+to|per|as\s+stated\s+by)\s+{EXTERNAL_ACTOR_PATTERN}\b",
+    rf"\b{EXTERNAL_ACTOR_PATTERN}\s+(said|suggested|recommended|advised|wrote)\b",
 ]
-EXTERNAL_NAMES = ["Claude", "ChatGPT", "Gemini", "Grok", "Copilot"]
 
 
 @dataclass
@@ -228,7 +234,7 @@ class Seal:
                     "reason": f"Section '{section_id}' is constitutionally protected. "
                               f"Amendment requires sovereign_override=True (§7.2.1)"}
 
-        ext_issue = self._check_external_names(proposed_text)
+        ext_issue = self._check_external_attribution(proposed_text)
         if ext_issue:
             ext_issue["stage"] = "proposal"
             return ext_issue
@@ -489,8 +495,8 @@ class Seal:
             if not check.get("verified", False):
                 return {"error": "INTEGRITY_CHECK_FAILED", "reason": check.get("reason", "Unknown")}
 
-        # Smart external name check (adjustment #5)
-        ext_issue = self._check_external_names(packet.draft_text)
+        # Smart external attribution check (adjustment #5)
+        ext_issue = self._check_external_attribution(packet.draft_text)
         if ext_issue:
             return ext_issue
 
@@ -515,8 +521,8 @@ class Seal:
         self._canon_index[packet.section_id] = artifact
         return artifact
 
-    def _check_external_names(self, text: str) -> Optional[dict]:
-        """Check for external advisor attribution patterns, not bare name mentions."""
+    def _check_external_attribution(self, text: str) -> Optional[dict]:
+        """Check for external advisor attribution patterns, not bare mentions."""
         for pattern in EXTERNAL_PATTERNS:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:

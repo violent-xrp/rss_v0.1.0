@@ -147,7 +147,7 @@ def test_safe_stop_persistent():
         check(r.get("error") == "SAFE_STOP_ACTIVE", "requests blocked after restart")
 
         # T-0 clears Safe-Stop (Pact §0.5.2)
-        rss2.clear_safe_stop()
+        rss2.clear_safe_stop(t0_command=True)
         ss = rss2.is_safe_stopped()
         check(ss["active"] == False, "T-0 cleared safe-stop")
 
@@ -1554,7 +1554,7 @@ def test_probe_safe_stop_recovery_ceremony():
               "Probe-G12: requests remain blocked after restart")
 
         # ── Act 4: T-0 clears Safe-Stop ──
-        rss2.clear_safe_stop()
+        rss2.clear_safe_stop(t0_command=True)
 
         ss_status_3 = rss2.is_safe_stopped()
         check(ss_status_3["active"] is False,

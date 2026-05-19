@@ -5,9 +5,9 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 ## v0.1.0
 
 ### Current verified snapshot
-- **141 test functions / 1250 assertions / 0 failures** via `python tests/test_all.py`
+- **141 test functions / 1281 assertions / 0 failures** via `python tests/test_all.py`
 - **92.4% statement coverage** via `python run_coverage.py`
-- **141 claims / 141 tests / 104 Pact sections** in `docs/claim_matrix.md`
+- **141 claims / 141 tests / 106 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -27,6 +27,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - reference/demo-pack validation now fails loud on malformed hub, flow, vocab, entry, and REDLINE metadata before runtime seeding mutates state
 - Phase G demo suite can emit a handoff artifact bundle: `demo_report.json`, `demo_summary.md`, and `demo_trace.json`
 - Phase G demo artifacts now include per-question proof rows, expected governed-evidence markers, and TRACE-bound successful task counts so proof status cannot pass on fluent but ungrounded answers
+- Phase G demo terminal output now repeats the "Limits To Say Out Loud" caveats so offline/scripted proof boundaries are visible without opening the artifact bundle
 - legacy `examples/demo_llm.py` and `src/main.py demo-suite` now route through the canonical governed demo suite instead of maintaining weaker duplicate walkthrough logic
 - ROADMAP has been consolidated into a current/future command document, with acceptance history, coverage tracking, phase ledger, testing guidance, and demo handoff detail moved under `docs/`
 - Threat Model now names indirect prompt injection through retrieved/imported content as a first-class external-content risk.
@@ -50,6 +51,11 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - OATH namespace hardening normalizes action/request/container inputs and fails closed on malformed delimiter-bearing bindings
 - SCRIBE proof and coverage density now covers duplicate drafts, missing write/promote paths, empty promotions, candidate editing, UAP/status, and dispatch
 - chain-hash migration scaffold now proves same-version no-op and version-change warning behavior
+- sustained audit-write failure proof now verifies threshold-triggered Safe-Stop persists across restart
+- CYCLE internal runtime-stage exceptions now have explicit fail-closed proof as `UNEXPECTED_ERROR` at Stage 6
+- SEAL external-attribution scanning now blocks generic external-advisor/model authorship or authority laundering, including common verb/preposition/actor evasions, while preserving bare non-authority mentions
+- SCOPE and RUNE now expose WARD-compatible `status()` / `handle(task)` adapters while preserving direct runtime request-path calls
+- WARD registration now fails fast for seats missing the standard `status()` / `handle(task)` interface, matching Section 1.1.2 before routing begins
 
 ### Proof growth
 - constitution loader edges
@@ -75,4 +81,5 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - ingress identity is still architectural, not cryptographic
 - wrapper/API maturity still trails single-process kernel maturity
 - external trust anchoring remains future work
+- TRACE cold verification proves stored chain continuity today; payload-inclusive third-party hash recomputation remains future export/verifier hardening requiring canonical proof material and privacy policy
 - per-action/tool-call enforcement is the next hardening target before broad external side effects move behind wrappers

@@ -415,7 +415,7 @@ if __name__ == "__main__":
     elif cmd == "clear-safe-stop":
         ss = rss.is_safe_stopped()
         if ss["active"]:
-            rss.clear_safe_stop()
+            rss.clear_safe_stop(t0_command=True)
             print(f"  Safe-Stop cleared. Reason was: {ss['reason']}")
             print(f"  System operational. T-0 authority exercised.")
         else:

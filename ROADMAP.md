@@ -31,16 +31,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **141 test functions / 1250 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **141 test functions / 1281 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
 - **92.4% statement coverage** via `python run_coverage.py`
-- **141 claims / 141 tests / 104 Pact sections** in `docs/claim_matrix.md`
+- **141 claims / 141 tests / 106 Pact sections** in `docs/claim_matrix.md`
 - **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 141/1250 baseline
+- public docs are synced to the current 141/1281 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -70,23 +70,27 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 
 ### Next
 - Keep the Section 0 drafting lane narrow: T-0 works from the local classification/additions docs; Codex may keep hardening code and public proof docs without editing the Pact.
-- Generate a fresh offline demo artifact bundle before the `v0.1.0-rc.1` checkpoint and inspect `demo_summary.md`, `demo_report.json`, and `demo_trace.json` from that run.
+- CLOSED FOR CURRENT PASS: fresh offline demo artifacts were regenerated and inspected from the current working tree. The ignored local bundle reports `PASS`, 22/22 successful task IDs bound to TRACE, cold verification over 169 events, and matching report/TRACE artifact counts. Rerun immediately before any `v0.1.0-rc.1` tag.
 - Demo proof artifacts now need to stay evidence-bound: PASS requires expected seeded evidence markers and successful task IDs bound to TRACE, not just fluent non-error answers.
 - After a clean acceptance/sync/claim-matrix pass, prepare `v0.1.0-rc.1` as the next reviewable release checkpoint.
 - Keep final v0.1.0 gates explicit: T-0 recovery authority clause and final acceptance proof.
 - Keep tightening the reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
+- Keep the zero-trust trajectory explicit without overclaiming v0.1.0: RSS is moving toward deployment-grade zero-trust through caller identity, per-action gates, least-privilege context, and external audit anchoring, but the current release remains a single-process governance kernel.
 - Parallel code/proof lane while Section 0 drafting continues: §0.8.4 round-trip coverage, demo artifact honesty, and amendment persistence are closed in code; keep public proof docs synced while T-0 finishes Section 0 drafting.
 
 ### Keep Warm
 - API/wrapper ingress boundary and caller identity propagation.
 - Per-action/tool-call enforcement before real side effects execute.
-- Mechanical T-0 identity gate for Safe-Stop clearing.
+- Structured Action Proposals: LLM output becomes a typed proposed task that must re-enter SCOPE, RUNE, Execution, OATH, and CYCLE before any side-effect broker acts.
+- Minimum proposal shape to evaluate later: `proposal_id`, `source_task_id`, `action_class`, `target_resource`, `payload`, `container_id`, `proposed_at`, and a payload hash/TTL binding. The broker boundary must emit proposal, rejection, authorization, and execution receipts before any external file, API, network, or tool side effect.
+- Cryptographic/mechanical T-0 identity gate for Safe-Stop clearing beyond the current soft `t0_command=True` fence.
+- Zero-trust hardening sequence: authenticated ingress, actor-bound request context, capability-scoped side-effect broker, per-action/tool-call authorization, signed TRACE exports, external timestamp anchoring, and auditable recovery/bypass paths.
 - OATH consent-source reporting, explicit DENY semantics, and duration policy.
 - RUNE per-pack synonym namespaces and synonym confidence semantics.
-- Seat interface decision for SCOPE/RUNE: add WARD-compatible adapters or document a deliberate direct-law exception.
+- CLOSED: Seat interface decision for SCOPE/RUNE resolved by adding WARD-compatible adapters while preserving direct runtime request-path calls.
 - WARD hook protected-field audit as governance-relevant task/result fields grow.
-- CYCLE fail-closed proof for internal error paths, not only strict-mode unknown domains.
-- SEAL external attribution scanner adversarial tests before amendment/canon claims expand.
+- CLOSED: CYCLE fail-closed proof now covers internal runtime-stage exceptions as `UNEXPECTED_ERROR` at Stage 6, in addition to strict-mode unknown-domain rejection.
+- CLOSED: SEAL external attribution scanner now blocks generic external-advisor/model authorship and authority-attribution phrases, including common verb/preposition/actor evasions, while still allowing bare non-authority mentions.
 - Governed pack selection/versioning once multiple demo worlds or tenant-specific packs exist.
 - Runner JSON verdict export for independent tooling / CI cross-checks.
 - External vocabulary map maintenance as reviewer-facing language evolves.
@@ -105,6 +109,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - cross-machine audit portability
 - confusables/homoglyph hardening beyond current normalization
 - larger-event-count TRACE verification characterization
+- payload-inclusive TRACE export / recomputable envelope verification so third-party cold verifiers can validate event hashes from canonical exported material, not only parent-link continuity; design must preserve REDLINE/privacy boundaries, version the proof envelope, define whether payload material lives in a sovereign-only sidecar/receipt bundle, and stay future-work until the verifier can recompute hashes from exported material
 - product/operator console structure that does not outrun kernel truth
 - internal advisor layer design: structured, auditable, non-authoritative advisors between external models and the kernel/operator
 
@@ -158,7 +163,7 @@ Mandatory before `v0.1.0-rc.1`:
   begins: match the Section 4 and Section 5 "rule / current proof / boundary"
   style, and keep substantive additions such as T-0 recovery authority owned by
   T-0 rather than implementation cleanup.
-- CURRENT: one acceptance/sync pass is clean at 141 tests, 1250 assertions, and
+- CURRENT: one acceptance/sync pass is clean at 141 tests, 1281 assertions, and
   92.4% coverage after demo proof hardening. Rerun immediately
   before any `v0.1.0-rc.1` tag.
 - CLOSED: demo artifact decision is made for `v0.1.0-rc.1`: do not rely on a
@@ -221,7 +226,7 @@ v0.1.0 does **not** require:
 
 ### Safe Claims Now
 RSS v0.1.0 can be presented as:
-- a domain-agnostic, application-layer zero-trust governance kernel
+- a domain-agnostic, application-layer governance kernel with a zero-trust trajectory
 - a constitutional middleware architecture with typed seat authority separation
 - a pre-model governance pipeline
 - a system with scoped data access, bounded advisory exposure, and governed consent
@@ -241,6 +246,7 @@ RSS v0.1.0 should not yet be described as:
 - cryptographically immutable
 - enterprise-complete
 - a full deployment-layer zero-trust stack
+- a complete zero-trust implementation
 - a production-ready end-user application
 - a polished natural-feeling offline assistant experience
 - cryptographically authenticated at ingress
@@ -273,6 +279,7 @@ Landed:
 - Section 3 execution validation now re-hashes `ExecutionIntent.raw_text` before execution and rejects far-future TTLs on externally constructed intents
 - SEAL amendment proposals now reject external advisor attribution before review or ratification, so forbidden authorship claims cannot sit in actionable proposal state
 - SEAL ceremony TRACE emission now fails closed when a trace callback is wired: proposal, review, and ratification do not mutate ceremony state if amendment audit emission fails
+- WARD registration now fails fast when a seat lacks the standard `status()` / `handle(task)` interface, so malformed routable seats cannot enter the registry.
 - Phase G coverage floor closed: `cycle.py` and `trace_verify.py` are both above 94% and every package module is at or above 85%
 - demo handoff now names the fast reviewer path, artifact review order, proof signals, and release boundary
 - demo artifact proof now records per-question proof rows, expected governed-evidence markers, and successful task IDs bound to TRACE artifacts so useful retrieval cannot pass on fluent but ungrounded answers
@@ -310,11 +317,11 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - OATH coercion detection cleanup: rename the current keyword flag as limited, or build a real governed warning surface before claiming coercion defense
 - OATH nested consent inheritance only if TECTON grows parent/child container hierarchy
 - last-resort consent failure receipt if durable consent persistence and TRACE failure notification fail at the same time
-- mechanical T-0 gate ordering for Pact-reserved powers: Safe-Stop clearing, term/synonym/disallow authorization, seat changes, container lifecycle, and seal/amendment authority
+- mechanical T-0 gate ordering for Pact-reserved powers: term/synonym/disallow authorization, seat changes, container lifecycle, and seal/amendment authority; Safe-Stop clearing now has a soft `t0_command=True` fence but still needs cryptographic/mechanical identity later
 - TECTON permission-enforcement map: keep `can_draft`, `can_request_seal`, `can_call_advisors`, `can_access_system_hub`, `max_requests_per_minute`, and `risk_tier` visibly split between enforced behavior and declared metadata
 - TECTON rate-limit input validation: decide whether non-positive `max_requests_per_minute` values should fail at profile creation/mutation instead of falling back to default CYCLE behavior
 - TECTON/OATH consent-source auditability: expose whether authorization came from container-specific consent or GLOBAL fallback if OATH check responses become structured
-- Section 6 export/audit precision: keep cold verification, cold export, and future payload-inclusive external recomputability as separate claims
+- Section 6 export/audit precision: keep cold verification, cold export, and future payload-inclusive external recomputability as separate claims; do not let Pact wording claim external recomputation until exported canonical proof material, privacy policy, and verifier tests exist
 - Section 6 production posture evidence: keep the one-switch `production_mode` behavior visible if more settings join that profile
 - Section 6 provenance proof: decide whether `UNTRUSTED_IMPORT` needs a dedicated full restore test beyond current SQLite row round-trip proof
 - CLOSED: Section 7 amendment persistence now persists proposals, review state, ratified amendment records, reconstructed canon state, and queryable history across restart
@@ -358,7 +365,7 @@ Grouped for scanning; the grouping does not reduce severity or remove any disclo
 
 Identity and authority:
 - **Ingress identity:** architectural in v0.1.0, not cryptographic.
-- **Safe-Stop clearing:** T-0 by convention/docstring today; mechanical identity gate remains future hardening.
+- **Safe-Stop clearing:** explicit `t0_command=True` soft sovereign gate today; cryptographic/mechanical identity gate remains future hardening.
 - **Cryptographic lock-out:** future identity hardening must include auditable recovery/bypass paths before keys become operationally load-bearing.
 
 Execution and side effects:
@@ -389,11 +396,13 @@ Public surface:
 - Build ambitiously. Describe conservatively. Prove aggressively.
 - Trust is earned by mechanism, not by language.
 - What is not proven is not promised.
+- If a claim is stronger than the code, either the code rises to meet it or the text steps down to current truth; no middle fog.
 - One law, many domains.
 - One verdict, not two.
 - ROADMAP is the return point after every meaningful pass.
 - Usefulness matters. Do not optimize only for refusal or rigidity.
 - Preserve the distinction between **current truth**, **future phase work**, **aspiration**, and **non-goals**.
+- Cold TRACE verification, cold export, and future payload-inclusive external recomputation are separate claims until canonical payload/export proof exists.
 - Product design may move forward as structure/spec before every kernel feature is fully complete. The kernel still holds final authority over what is lawful, bounded, auditable, and provable.
 
 ---

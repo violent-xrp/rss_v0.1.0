@@ -30,7 +30,7 @@ from test_support import *
 
 
 def test_ward():
-    # CLAIM: §1.2, §1.7 — WARD seat registration, routing, hooks
+    # CLAIM: §1.1.2, §1.2, §1.2.6 — WARD seat registration, routing, hooks
     section("Layer 2: WARD")
 
     ward = Ward()
@@ -42,6 +42,16 @@ def test_ward():
 
     ward.register_seat(FakeSeat())
     check("FAKE" in ward.list_seats(), "seat registered")
+
+    class NoHandleSeat:
+        name = "NO_HANDLE"
+        def status(self): return {"state": "BROKEN"}
+
+    try:
+        ward.register_seat(NoHandleSeat())
+        check(False, "should reject a seat without handle()")
+    except WardError as e:
+        check("§1.1.2" in str(e), "rejects seat missing standard interface")
 
     result = ward.route("FAKE", {"action": "test"})
     check(result["ok"] is True, "route works")
@@ -57,6 +67,94 @@ def test_ward():
         check(False, "should raise")
     except WardError:
         check(True, "rejects unknown seat")
+
+    rss = bootstrap(RSSConfig(db_path=":memory:"))
+    routed_scope = rss.ward.route(
+        "SCOPE",
+        {
+            "action": "declare",
+            "task_id": "WARD-SCOPE",
+            "allowed_sources": ["WORK"],
+            "forbidden_sources": ["PERSONAL"],
+            "redline_handling": "EXCLUDE",
+            "metadata_policy": "CONTENT_ONLY",
+        },
+    )
+    check(routed_scope.get("token", "").startswith("SCOPE-"),
+          "WARD routes to SCOPE standard adapter (§1.1.2)")
+    routed_scope_check = rss.ward.route(
+        "SCOPE",
+        {"action": "validate_access", "token": routed_scope["token"], "source": "WORK"},
+    )
+    check(routed_scope_check.get("allowed") is True,
+          "WARD-routed SCOPE validates allowed source")
+    routed_scope_forbidden = rss.ward.route(
+        "SCOPE",
+        {"action": "validate_access", "token": routed_scope["token"], "source": "PERSONAL"},
+    )
+    check(routed_scope_forbidden.get("allowed") is False,
+          "WARD-routed SCOPE preserves forbidden-source denial")
+    routed_scope_status = rss.ward.route("SCOPE", {"action": "status"})
+    check(routed_scope_status.get("state") == "ACTIVE",
+          "WARD-routed SCOPE status action works")
+    routed_scope_error = rss.ward.route(
+        "SCOPE",
+        {
+            "action": "declare",
+            "task_id": "WARD-SCOPE-BAD",
+            "allowed_sources": ["NOT_A_HUB"],
+            "forbidden_sources": [],
+        },
+    )
+    check("error" in routed_scope_error,
+          "WARD-routed SCOPE returns structured errors")
+    routed_scope_string_false = rss.ward.route(
+        "SCOPE",
+        {
+            "action": "declare",
+            "task_id": "WARD-SCOPE-SYSTEM",
+            "allowed_sources": ["SYSTEM"],
+            "forbidden_sources": [],
+            "can_access_system_hub": "False",
+        },
+    )
+    check("error" in routed_scope_string_false,
+          "WARD-routed SCOPE treats string false as non-authorizing")
+    routed_scope_unknown = rss.ward.route("SCOPE", {"action": "unknown"})
+    check("Unknown action" in routed_scope_unknown.get("error", ""),
+          "WARD-routed SCOPE unknown action returns structured error")
+
+    rss.save_term(Term("ward-term", "ward term", "WARD-routed term", [], "1.0"))
+    routed_rune = rss.ward.route("RUNE", {"action": "classify", "phrase": "ward term"})
+    check(routed_rune.get("status") == "SEALED",
+          "WARD routes to RUNE standard adapter (§1.1.2)")
+    routed_rune_string_false = rss.ward.route(
+        "RUNE",
+        {"action": "classify", "phrase": "WARD TERM", "case_sensitive": "False"},
+    )
+    check(routed_rune_string_false.get("status") == "SEALED",
+          "WARD-routed RUNE treats string false as non-case-sensitive")
+    routed_rune_all = rss.ward.route("RUNE", {"action": "classify_all", "phrase": "ward term"})
+    check(len(routed_rune_all.get("matches", [])) == 1,
+          "WARD-routed RUNE classify_all works")
+    routed_rune_terms = rss.ward.route("RUNE", {"action": "list_sealed"})
+    check(any(t["id"] == "ward-term" for t in routed_rune_terms.get("terms", [])),
+          "WARD-routed RUNE list_sealed works")
+    routed_rune_get = rss.ward.route("RUNE", {"action": "get_term", "term_id": "ward-term"})
+    check(routed_rune_get.get("term", {}).get("label") == "ward term",
+          "WARD-routed RUNE get_term works")
+    routed_rune_missing = rss.ward.route("RUNE", {"action": "get_term", "term_id": "missing"})
+    check(routed_rune_missing.get("term") is None,
+          "WARD-routed RUNE missing term returns None")
+    routed_rune_status = rss.ward.route("RUNE", {"action": "status"})
+    check(routed_rune_status.get("state") == "ACTIVE",
+          "WARD-routed RUNE status action works")
+    routed_rune_unknown = rss.ward.route("RUNE", {"action": "unknown"})
+    check("Unknown action" in routed_rune_unknown.get("error", ""),
+          "WARD-routed RUNE unknown action returns structured error")
+    cns = rss.ward.cns_tail()
+    check(cns["SCOPE"]["state"] == "ACTIVE" and cns["RUNE"]["state"] == "ACTIVE",
+          "CNS snapshot reports SCOPE and RUNE active")
 
 
 def test_scope():
@@ -80,6 +178,10 @@ def test_scope():
                             expiration=datetime.now(UTC) - timedelta(hours=1))
     ok, reason = scope.validate_access(expired.token, "WORK")
     check(not ok and "expired" in reason, "blocks expired envelope")
+
+    status = scope.status()
+    check(status["state"] == "ACTIVE" and status["envelope_count"] >= 2,
+          "SCOPE status exposes active envelope count")
 
 
 def test_meaning_law():
@@ -114,6 +216,10 @@ def test_meaning_law():
     check(t.version == "1.1", "version bumped")
 
     check(len(rune.list_sealed()) == 2, "list_sealed returns all")
+
+    status = rune.status()
+    check(status["state"] == "ACTIVE" and status["sealed_terms"] == 2,
+          "RUNE status exposes active sealed term count")
 
 
 def test_execution_word_boundary_hardening():
@@ -263,11 +369,11 @@ def test_seal():
     check(seal.seal(p, False, True).get("error") == "NO_REVIEW_ATTESTATION", "requires review attestation")
     check(seal.seal(p, True, False).get("error") == "NO_T0_COMMAND", "requires T-0")
 
-    clean = SealPacket("S1", 1, "DOC-3", "The Claude building on Main Street needs inspection.")
+    clean = SealPacket("S1", 1, "DOC-3", "The assistant superintendent needs inspection notes.")
     r = seal.seal(clean, True, True)
-    check(isinstance(r, CanonArtifact), "bare name mention allowed (adjustment #5)")
+    check(isinstance(r, CanonArtifact), "bare assistant mention allowed (adjustment #5)")
 
-    bad = SealPacket("S2", 1, "DOC-4", "This section was drafted by ChatGPT for review.")
+    bad = SealPacket("S2", 1, "DOC-4", "This section was drafted by an external assistant for review.")
     r = seal.seal(bad, True, True)
     check(isinstance(r, dict) and r.get("error") == "EXTERNAL_NAME_PRESENT",
           "attribution pattern blocked")
@@ -1199,7 +1305,7 @@ def test_seal_extended_edges():
     external = seal.propose_amendment(
         "S2",
         "rationale3",
-        "This section was drafted by Claude for review.",
+        "This section was drafted by an external advisor for review.",
     )
     check(external.get("error") == "EXTERNAL_NAME_PRESENT",
           "proposal rejects external advisor attribution before review")
@@ -1207,6 +1313,46 @@ def test_seal_extended_edges():
           "external attribution rejection identifies proposal stage")
     check("proposal_id" not in external,
           "external-attribution proposal does not create actionable proposal state")
+
+    external2 = seal.propose_amendment(
+        "S2",
+        "rationale4",
+        "Per an AI model, this clause should be canonized.",
+    )
+    check(external2.get("error") == "EXTERNAL_NAME_PRESENT",
+          "proposal rejects generic model authority attribution")
+
+    external3 = seal.propose_amendment(
+        "S2",
+        "rationale5",
+        "This policy was formulated through external software.",
+    )
+    check(external3.get("error") == "EXTERNAL_NAME_PRESENT",
+          "proposal rejects generic software authorship attribution")
+
+    external4 = seal.propose_amendment(
+        "S2",
+        "rationale6",
+        "This section was provided by a bot.",
+    )
+    check(external4.get("error") == "EXTERNAL_NAME_PRESENT",
+          "proposal rejects generic bot authorship attribution")
+
+    external5 = seal.propose_amendment(
+        "S2",
+        "rationale7",
+        "This clause was devised from artificial intelligence.",
+    )
+    check(external5.get("error") == "EXTERNAL_NAME_PRESENT",
+          "proposal rejects artificial-intelligence authorship attribution")
+
+    clean_mention = seal.propose_amendment(
+        "S2",
+        "rationale8",
+        "The assistant reviewer workflow remains non-authoritative.",
+    )
+    check("proposal_id" in clean_mention,
+          "proposal allows bare non-authority assistant mention")
 
     p2 = seal.propose_amendment("S2", "rationale2", "text2")
     seal.review_amendment(p2["proposal_id"], "reviewer", "REJECT", notes="no")

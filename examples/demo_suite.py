@@ -69,6 +69,13 @@ EXPECTED_CONTAINER_EVIDENCE = {
     },
 }
 
+DEMO_LIMITS = [
+    "Ingress identity remains architectural, not cryptographic.",
+    "Safe-Stop clearing requires a soft T-0 command flag today; cryptographic identity remains future hardening.",
+    "Side effects are only governable when they pass through the runtime boundary.",
+    "Live model fluency is not proof; governed data claims still need scoped PAV context and TRACE.",
+]
+
 
 def _answer_text(result: dict) -> str:
     return result.get("llm_response", result.get("error", "NO_RESPONSE"))
@@ -204,10 +211,7 @@ def build_operator_summary(report: dict) -> str:
         f"- Summary: {artifacts.get('summary_md', '(not exported)')}",
         "",
         "## Limits To Say Out Loud",
-        "- Ingress identity remains architectural, not cryptographic.",
-        "- Safe-Stop clearing is T-0 by convention/docstring until the mechanical identity gate lands.",
-        "- Side effects are only governable when they pass through the runtime boundary.",
-        "- Live model fluency is not proof; governed data claims still need scoped PAV context and TRACE.",
+        *[f"- {limit}" for limit in DEMO_LIMITS],
     ]
     return "\n".join(lines) + "\n"
 
@@ -421,7 +425,7 @@ def build_demo_report(
             _force_offline_llm(rss)
         cold_stop = read_safe_stop_state(db_path)
         blocked_after_restore = rss.process_request("What is the current quote for?", use_llm=True)
-        clear = rss.clear_safe_stop()
+        clear = rss.clear_safe_stop(t0_command=True)
         recovered_after_clear = rss.process_request("What is the current quote for?", use_llm=True)
         verification["safe_stop_persisted"] = (
             cold_stop.get("active") is True
@@ -512,6 +516,9 @@ def run(
     print(report["transcript"])
     status = _proof_status(report["verification"])
     print(f"\nProof status: {status}")
+    print("\nLimits to say out loud:")
+    for limit in DEMO_LIMITS:
+        print(f"  - {limit}")
     if report["verification"].get("mode") == "live" and status != "PASS":
         print("Live mode is operator experience; rerun with --offline for repeatable proof.")
     if keep_db:

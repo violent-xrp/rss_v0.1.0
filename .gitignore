@@ -26,6 +26,9 @@ rss_trace_export*
 # Local/private planning notes
 .claude/
 local/
+docs/agents/
+GEMINI.md
+GEMINI_REVIEW_LOG.md
 docs/PACT_COUNCIL_STRIP_MAP.md
 docs/PACT_COUNCIL_STRIP*.md
 docs/PACT_S0_ADDITIONS.md

@@ -226,7 +226,7 @@ def test_genesis_blocking():
         check(r.get("error") == "SAFE_STOP_ACTIVE", "genesis failure blocks all requests")
 
         # T-0 clears and fixes
-        rss.clear_safe_stop()
+        rss.clear_safe_stop(t0_command=True)
         with open(s0_path, "w") as f:
             f.write("SOVEREIGN ROOT")
 
@@ -358,7 +358,7 @@ def test_pre_seal_drift_check():
             f.write("TAMPERED CONTENT")
 
         # Clear safe-stop first (tampered genesis enters it)
-        rss.clear_safe_stop()
+        rss.clear_safe_stop(t0_command=True)
 
         packet3 = SealPacket("S-TEST3", 1, "DOC-TEST3", "Should be blocked.")
         result = rss.seal.seal(packet3, review_complete=True, t0_command=True)
@@ -366,7 +366,7 @@ def test_pre_seal_drift_check():
               "seal REFUSES when genesis is tampered (Pact §0.7.3)")
 
         # Fix genesis and seal again — should work
-        rss.clear_safe_stop()
+        rss.clear_safe_stop(t0_command=True)
         with open(s0_path, "w") as f:
             f.write("SOVEREIGN ROOT")
 
@@ -517,6 +517,19 @@ def test_pipeline_stage_tracking():
         check(r.get("stage") == 5, "CONSENT halt reports stage 5")
         check(r.get("stage_name") == "OATH", "CONSENT halt reports stage_name OATH")
 
+        # CYCLE internal failure — fail closed as a stage-6 unexpected error
+        rss.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0", container_id="GLOBAL")
+        original_cycle_check = rss.cycle.check_rate_limit
+        def broken_cycle_check(*args, **kwargs):
+            raise RuntimeError("simulated CYCLE internal failure")
+        rss.cycle.check_rate_limit = broken_cycle_check
+        r = rss.process_request("quote", use_llm=False)
+        check(r.get("error") == "UNEXPECTED_ERROR",
+              "CYCLE internal failure returns UNEXPECTED_ERROR")
+        check(r.get("stage_name") == "CYCLE",
+              "CYCLE internal failure reports stage_name CYCLE")
+        rss.cycle.check_rate_limit = original_cycle_check
+
         # SAFE_STOP halt — should report stage 0
         rss.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0")
         rss.enter_safe_stop("test stage tracking")
@@ -570,7 +583,7 @@ def test_safe_stop_inflight():
         check(r.get("error") == "SAFE_STOP_ACTIVE", "subsequent request sees SAFE_STOP_ACTIVE")
         check(r.get("stage") == 0, "Safe-Stop halt at stage 0")
 
-        rss.clear_safe_stop()
+        rss.clear_safe_stop(t0_command=True)
         rss.persistence.close()
     finally:
         if os.path.exists(path):
@@ -658,8 +671,8 @@ def test_llm_response_validation():
 
 
 def test_ward_hook_enforcement():
-    # CLAIM: §1.7 — WARD hooks cannot mutate protected governance keys
-    section("WARD Hook Enforcement (§1.7)")
+    # CLAIM: §1.2.6 — WARD hooks cannot mutate protected governance keys
+    section("WARD Hook Enforcement (§1.2.6)")
 
     ward = Ward()
 
@@ -690,8 +703,8 @@ def test_ward_hook_enforcement():
         ward2.route("TEST", {"action": "test", "classification": "REQUEST"})
         check(False, "should have blocked hook that alters classification")
     except WardError as e:
-        check("protected key" in str(e).lower() or "§1.7" in str(e),
-              "WardError cites §1.7 for protected key violation")
+        check("protected key" in str(e).lower() or "§1.2.6" in str(e),
+              "WardError cites §1.2.6 for protected key violation")
 
     # Malicious post-hook: tries to change error code (blocked)
     class ErrorSeat:
@@ -772,7 +785,10 @@ def test_clear_safe_stop_idempotence():
 
         # System is not halted — clear_safe_stop must return NO_OP without emitting an event
         before_count = len(rss.trace.all_events())
-        result = rss.clear_safe_stop()
+        blocked = rss.clear_safe_stop()
+        check(blocked.get("error") == "T0_COMMAND_REQUIRED",
+              "clear_safe_stop requires explicit T-0 command")
+        result = rss.clear_safe_stop(t0_command=True)
         after_count = len(rss.trace.all_events())
 
         check(result.get("status") == "NO_OP", "clear on non-halted runtime returns NO_OP")
@@ -780,14 +796,19 @@ def test_clear_safe_stop_idempotence():
         check(after_count == before_count, "no SAFE_STOP_CLEARED event emitted when not halted")
 
         # Calling again is also a no-op
-        result2 = rss.clear_safe_stop()
+        result2 = rss.clear_safe_stop(t0_command=True)
         check(result2.get("status") == "NO_OP", "second call on non-halted is also NO_OP")
         check(len(rss.trace.all_events()) == before_count, "event count unchanged after second no-op call")
 
         # Halt then clear — this time it should work and emit the event
         rss.enter_safe_stop("test halt for clear proof")
         halted_count = len(rss.trace.all_events())
-        result3 = rss.clear_safe_stop()
+        blocked_active = rss.clear_safe_stop()
+        check(blocked_active.get("error") == "T0_COMMAND_REQUIRED",
+              "clear_safe_stop blocks active halt without T-0 command")
+        check(rss.is_safe_stopped().get("active") is True,
+              "blocked clear leaves Safe-Stop active")
+        result3 = rss.clear_safe_stop(t0_command=True)
         check(result3.get("status") == "CLEARED", "clear on halted runtime returns CLEARED")
         check(len(rss.trace.all_events()) == halted_count + 1, "SAFE_STOP_CLEARED event emitted after real clear")
         check(not rss.is_safe_stopped().get("active"), "system is no longer halted after clear")

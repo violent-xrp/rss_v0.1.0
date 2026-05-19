@@ -28,6 +28,8 @@ Mechanical split from tests/test_all.py; proof bodies and # CLAIM tags are prese
 """
 import importlib.util
 import inspect
+import contextlib
+import io
 import shutil
 
 from test_support import *
@@ -96,7 +98,7 @@ def test_genesis_binding_and_offline_fallback():
         with open(s0_path, "w", encoding="utf-8") as f:
             f.write(section0_text + " tampered")
         check(rss.verify_genesis()["verified"] is False, "configured Genesis binding detects tamper against fixed expected hash")
-        rss.clear_safe_stop()
+        rss.clear_safe_stop(t0_command=True)
         with open(s0_path, "w", encoding="utf-8") as f:
             f.write(section0_text)
         check(rss.verify_genesis()["verified"] is True, "configured Genesis binding can be restored after tamper for follow-on operator flows")
@@ -428,6 +430,12 @@ def test_phase_g_demo_suite_operator_flow():
               "demo summary reports expected-evidence proof status")
         check("Successful task IDs TRACE-bound: True" in summary_text and "Limits To Say Out Loud" in summary_text,
               "demo summary reports TRACE binding and limits")
+        terminal_capture = io.StringIO()
+        with contextlib.redirect_stdout(terminal_capture):
+            demo_suite.run(live_llm=False)
+        terminal_text = terminal_capture.getvalue()
+        check("Limits to say out loud:" in terminal_text and "Live model fluency is not proof" in terminal_text,
+              "demo terminal output reports proof limits")
         incomplete_proof = dict(artifact_report["verification"])
         incomplete_proof["global_success"] = 0
         attention_summary = demo_suite.build_operator_summary({"verification": incomplete_proof})

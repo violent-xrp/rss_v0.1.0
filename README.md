@@ -2,11 +2,11 @@
 
 *An AI that Waits.*
 
-**RSS v0.1.0** is a domain-agnostic, application-layer zero-trust AI governance kernel. It decides what a system may see, say, and do **before** the model runs, not after.
+**RSS v0.1.0** is a domain-agnostic, application-layer AI governance kernel with a zero-trust trajectory. It governs what a system may see, say, and do primarily at the input boundary before the model runs, with a final sanitation gate for output consistency.
 
 Every request flows through a constitutional pipeline of typed seats with bounded authority. Scope is declared, meaning is classified, consent is checked, cadence is bounded. A Prepared Advisory View is built and an audit record is written before any result is allowed to stand.
 
-**Verified baseline:** 141 test functions, 1250 assertions, 0 failures, 92.4% coverage. Traceability: 141 claims mapped to 141 tests across 104 Pact sections.
+**Verified baseline:** 141 test functions, 1281 assertions, 0 failures, 92.4% coverage. Traceability: 141 claims mapped to 141 tests across 106 Pact sections.
 
 Reproduce with `python tests/test_all.py` and `python run_coverage.py`. Claim mapping at `docs/claim_matrix.md`.
 
@@ -32,7 +32,7 @@ Specific properties currently proven:
 - scoped data access with sovereign gating for protected hubs
 - governed consent with write-ahead persistence
 - hash-chained audit with cold verification
-- persistent Safe-Stop with sovereign-only recovery
+- persistent Safe-Stop with a T-0 recovery path
 - tenant isolation through TECTON containers
 
 RSS v0.1.0 should **not** be presented as:
@@ -45,7 +45,7 @@ RSS v0.1.0 should **not** be presented as:
 
 ## Known current limits
 - Ingress identity is architectural inside the current single-process runtime; it is not cryptographic caller authentication yet.
-- `clear_safe_stop()` is T-0 only by convention and docstring today; the mechanical sovereign-identity gate remains future hardening.
+- `clear_safe_stop()` requires an explicit `t0_command=True` soft sovereign gate today; cryptographic/mechanical sovereign identity remains future hardening.
 - Hard guarantees depend on meaningful side effects entering through the governed runtime boundary; universal per-action/tool-call enforcement remains future work.
 - Future browser, email, document, RAG, and tool-return connectors still require connector-specific indirect-prompt-injection tests before claims expand.
 
@@ -92,7 +92,7 @@ pip install -r requirements.txt
 ```bash
 python tests/test_all.py
 ```
-The acceptance run prints `RSS v0.1.0 - 141 test functions, 1250 assertions passed, 0 failed` as its final line.
+The acceptance run prints `RSS v0.1.0 - 141 test functions, 1281 assertions passed, 0 failed` as its final line.
 
 ### Run the guided demo walkthrough
 ```bash
@@ -148,8 +148,8 @@ Current capabilities at the v0.1.0 alpha line:
 - Section 0 integrity verification at boot and on every request
 - Hash-chained audit log with cold verification
 - Tenant isolation through TECTON containers
-- Persistent Safe-Stop with sovereign-only recovery
-- REDLINE fail-closed exclusion across all output paths
+- Persistent Safe-Stop with a T-0 recovery path
+- REDLINE exclusion from PAV/model-facing context
 - Indirect-prompt-injection defense with structural data-only markers
 - Runner-truth acceptance harness as canonical verdict surface
 - Amendment ceremony scaffolding in SEAL

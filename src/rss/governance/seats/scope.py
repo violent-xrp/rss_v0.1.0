@@ -45,6 +45,13 @@ class ScopeError(Exception):
     """Raised when scope operations fail."""
 
 
+def _task_bool(task: dict, key: str, default: bool = False) -> bool:
+    """Return True only for explicit boolean True in WARD-routed tasks."""
+    if key not in task:
+        return default
+    return task.get(key) is True
+
+
 @dataclass(frozen=True)
 class ScopeEnvelope:
     """Immutable SCOPE envelope (§4.5.7). All collection fields are tuples."""
@@ -61,6 +68,7 @@ class ScopeEnvelope:
 
 @dataclass
 class Scope:
+    name: str = "SCOPE"
     _envelopes: Dict[str, ScopeEnvelope] = field(default_factory=dict)
 
     def declare(
@@ -147,3 +155,51 @@ class Scope:
             return False, f"SCOPE_VIOLATION: source '{source}' not in allowed_sources."
 
         return True, "OK"
+
+    def status(self) -> dict:
+        """Seat status for WARD CNS snapshot (§1.1.2)."""
+        return {
+            "state": "ACTIVE",
+            "envelope_count": len(self._envelopes),
+        }
+
+    def handle(self, task: dict) -> dict:
+        """WARD-compatible adapter for bounded SCOPE actions (§1.1.2).
+
+        The runtime still calls SCOPE directly on the request path; this
+        adapter satisfies the standard seat interface for routing, snapshots,
+        and tests without broadening SCOPE authority.
+        """
+        action = task.get("action")
+        try:
+            if action == "declare":
+                envelope = self.declare(
+                    task_id=task.get("task_id", ""),
+                    allowed_sources=task.get("allowed_sources", ()),
+                    forbidden_sources=task.get("forbidden_sources", ()),
+                    redline_handling=task.get("redline_handling", "EXCLUDE"),
+                    metadata_policy=task.get("metadata_policy", "CONTENT_ONLY"),
+                    expiration=task.get("expiration"),
+                    container_id=task.get("container_id", "GLOBAL"),
+                    sovereign=_task_bool(task, "sovereign", False),
+                    can_access_system_hub=_task_bool(task, "can_access_system_hub", True),
+                )
+                return {
+                    "token": envelope.token,
+                    "task_id": envelope.task_id,
+                    "allowed_sources": list(envelope.allowed_sources),
+                    "forbidden_sources": list(envelope.forbidden_sources),
+                    "container_id": envelope.container_id,
+                    "sovereign": envelope.sovereign,
+                }
+            if action == "validate_access":
+                allowed, reason = self.validate_access(
+                    task.get("token", ""),
+                    task.get("source", ""),
+                )
+                return {"allowed": allowed, "reason": reason}
+            if action == "status":
+                return self.status()
+        except ScopeError as exc:
+            return {"error": str(exc)}
+        return {"error": f"Unknown action: {action}"}

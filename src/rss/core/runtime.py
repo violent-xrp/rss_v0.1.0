@@ -308,12 +308,17 @@ class Runtime:
         self.persistence.enter_safe_stop(reason)
         self._log("SAFE_STOP_ENTERED", "SYSTEM", reason)
 
-    def clear_safe_stop(self) -> dict:
+    def clear_safe_stop(self, t0_command: bool = False) -> dict:
         """Clear Safe-Stop. T-0 only. Pact §0.5.2
         Idempotent: if the system is not currently halted, returns NO_OP
         without emitting a SAFE_STOP_CLEARED event (avoids false audit records).
-        # TODO Phase F: gate behind sovereign identity verification — see oath.authorize() pattern
+
+        v0.1.0 uses the same soft sovereign-command fence as SEAL. This is
+        deliberate operator friction, not cryptographic identity proof.
         """
+        if not t0_command:
+            return {"error": "T0_COMMAND_REQUIRED",
+                    "reason": "Only T-0 may clear Safe-Stop (§0.5.2)"}
         if not self.persistence.is_safe_stopped().get("active"):
             return {"status": "NO_OP", "reason": "not_halted"}
         self.persistence.clear_safe_stop()
@@ -1082,7 +1087,7 @@ def bootstrap(config=None, restore: bool = False) -> Runtime:
     if ss["active"]:
         print(f"  *** SAFE-STOP ACTIVE: {ss['reason']} ***")
         print(f"  *** System halted since {ss.get('timestamp', 'unknown')} ***")
-        print(f"  *** Only T-0 can clear: runtime.clear_safe_stop() ***")
+        print(f"  *** Only T-0 can clear: runtime.clear_safe_stop(t0_command=True) ***")
 
     # Always register config-driven default terms.
     # Hardening: bootstrap must not bake in a legacy domain persona.

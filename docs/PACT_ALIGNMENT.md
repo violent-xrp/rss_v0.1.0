@@ -32,7 +32,7 @@ The current claim traceability surface is generated at `docs/claim_matrix.md`.
 Section 0 integrity and Safe-Stop:
 - Section 0 integrity is mechanically checked during constitution loading.
 - Safe-Stop is persistent across restart in the current single-process SQLite-backed runtime.
-- Safe-Stop clearing is T-0 by convention/docstring today; the mechanical identity gate remains future hardening.
+- Safe-Stop clearing requires explicit `t0_command=True` today; this is a soft sovereign-command gate, not cryptographic/mechanical identity. The mechanical identity gate remains future hardening.
 - Section 0 §0.8.4 bootstrap round-trip is code-proven for the current SQLite reference path: terms, synonyms, disallowed terms, global hub entries, consent records, TRACE events, TECTON container state, container hub entries, Safe-Stop/system state, and schema version restore through fresh bootstrap. Container persistence currently uses TECTON's explicit `save_to(...)` path before automatic restore; auto-save-on-mutation remains a future product/hardening decision, not part of the current claim.
 
 Typed authority and directionality:
@@ -64,6 +64,7 @@ Section 1 / seat law:
 - Fail-closed seat behavior is broadly represented through typed errors and structured halt/refusal returns.
 - TRACE's dual role is implemented intentionally: runtime audit writes can reach TRACE directly so WARD failure cannot prevent audit recording.
 - Runtime-mediated callbacks, such as OATH persistence-failure notification into TRACE, preserve the no-lateral-authority rule because the runtime bridges the concern; seats do not directly command each other.
+- WARD registration now rejects seats that do not expose callable `status()` and `handle(task)` methods, so malformed seats fail before entering the routable seat registry.
 - WARD hook protection is mechanically present for known protected task/result keys. This protection must be revisited whenever new governance-relevant fields are added.
 - Operational seats and constitutional seats differ by rhythm, not rank. WARD, SCOPE, RUNE, OATH, CYCLE, and TRACE participate in governed request flow; SCRIBE and SEAL participate in drafting, review, canonization, and amendment surfaces.
 
@@ -109,7 +110,7 @@ Section 6 / persistence and audit:
 - TRACE remains evidentiary rather than interpretive: events are recorded, retrieved, exported, and verified literally. The audit layer does not summarize, decide, or silently rewrite meaning.
 - Append-only discipline is enforced at the governed application/interface layer. Local file-system or raw SQLite authority remains outside v0.1.0's mechanical boundary until Phase H anchoring/signing work.
 - The hash chain rule is mechanically represented by `parent_hash == previous.content_hash`; live verification, boot verification, cold verification, and export paths all preserve that chain posture.
-- v0.1.0 cold verification proves internal chain consistency, schema readability, insertion-order linkage, optional container-filtered views, and optional registry coverage. It does not yet prove payload-inclusive external recomputability because raw canonical payloads are not exported.
+- v0.1.0 cold verification proves internal chain consistency, schema readability, insertion-order linkage, optional container-filtered views, and optional registry coverage. TRACE computes `content_hash` at write time from a canonical envelope, but cold verification does not yet prove payload-inclusive external recomputability because raw canonical payloads/proof envelopes are not exported for recomputation.
 - Cold verification now treats a non-null first parent hash as a full-chain failure, so deleting the head row is detected. Filtered container views still allow an initial parent because they may legitimately begin mid-chain.
 - The runtime `_log()` method is the handoff between Section 3 execution and Section 6 audit: if durable TRACE persistence fails, the operation aborts rather than quietly degrading.
 - Consecutive audit-write failures are tracked through `audit_failure_threshold` and escalate to persistent Safe-Stop when the threshold is crossed. The default threshold is 3; `production_mode=True` forces the threshold to 1.
@@ -138,8 +139,8 @@ Section 7 / amendment and evolution:
 
 T-0 mechanical identity:
 - The Pact assigns sovereign authority to T-0 for certain actions.
-- v0.1.0 discloses that some T-0 gates are convention/docstring boundaries rather than cryptographic or identity-checked mechanics.
-- Priority examples: Safe-Stop clearing, term/synonym/disallow authorization, seat creation/modification, container lifecycle authority, and seal/amendment authorization.
+- v0.1.0 discloses that some T-0 gates are soft command/convention boundaries rather than cryptographic or identity-checked mechanics.
+- Priority examples: term/synonym/disallow authorization, seat creation/modification, container lifecycle authority, and seal/amendment authorization. Safe-Stop clearing now has an explicit `t0_command=True` soft gate, but still lacks cryptographic identity proof.
 
 T-0 recovery and lock-out risk:
 - Future cryptographic identity must not make T-0 sovereign authority unrecoverable through key loss, hardware-token failure, or credential-rotation mistakes.
@@ -189,7 +190,9 @@ Tenant-container gaps:
 - Dynamic TRACE event-code exceptions should remain tightly enumerated. `CONTAINER_REQUEST_*` is the current accepted dynamic prefix; any future dynamic prefix should be a deliberate registry change.
 
 Persistence/audit gaps:
-- Cold verification and cold export prove chain consistency and export hygiene, not full payload-inclusive external recomputability. Phase H needs signed/timestamped payload receipts or export bundles before that stronger claim is made.
+- Cold verification and cold export prove chain consistency and export hygiene, not full payload-inclusive external recomputability. Any stronger claim requires exported canonical proof material that allows an independent verifier to recompute event hashes, plus REDLINE/privacy policy for what payload material may leave the runtime. Phase H needs signed/timestamped payload receipts or export bundles before that stronger claim is made.
+- The minimum future recomputation bundle would need the exact hash-envelope inputs: chain hash version, timestamp string, event code, authority, unsanitized artifact ID, normalized raw content payload, parent hash, and canonical JSON serialization rules. The current `trace_events` table and exports intentionally omit raw content payloads, so this is not a v0.1.0 proof claim.
+- Any payload-inclusive export mode must define a privacy boundary before implementation: sovereign-only export, split payload sidecar, hash-only payload receipts for protected events, or another policy that prevents REDLINE/protected content from leaking through proof material.
 - Direct SQLite replacement, rollback, backup restoration, or file deletion can still bypass local persistence truth. External anchoring is the boundary that makes off-box rollback detectable.
 - Sustained audit failure is already treated as a Safe-Stop condition in code. Future Pact wording should explicitly connect this to Constitutional Drift rather than leaving it only as operational persistence failure.
 - Thread safety is currently single-process with WAL plus a process-local `RLock`. Multi-process and distributed persistence remain future posture, not current proof.
@@ -218,19 +221,26 @@ Internal advisor layer / Tier 2.5 gap:
 - This preserves the useful multi-voice review instinct while keeping external model output outside the authority boundary.
 - If this layer becomes real, later Pact work should decide where it sits in the tier model, how advisor output enters amendment/review workflows, and which advisor classes are required for protected-section changes.
 
+Structured Action Proposal / side-effect broker gap:
+- v0.1.0 has no side-effect broker and makes no claim that model/advisor text can execute tools, files, APIs, network calls, or other external effects.
+- Future side-effect work should require a typed proposed-action object rather than free-text execution. Minimum fields to design around: proposal ID, source task ID, action class, target resource, payload or arguments, container binding, creation time, payload hash, and TTL/expiration.
+- Before any side effect executes, the proposed action should re-enter SCOPE, RUNE, execution validation, OATH, and CYCLE. Denial at any seat should produce a structured halt rather than a partial execution.
+- TRACE should record the proposal lifecycle separately from execution: proposed, rejected, authorized, executed, and failed. These event names are future design placeholders until the broker exists.
+- Tool-return or connector-result ingestion remains a separate indirect-prompt-injection surface; executed results must enter through governed untrusted-content import paths before advisory use.
+
 Seat interface:
 - WARD's protocol expects seats to expose `status()` and `handle(task)`.
-- CYCLE, OATH, SCRIBE, SEAL, and WARD currently expose both.
-- SCOPE and RUNE are used as direct law services today and do not expose the standard WARD-routed interface; decide whether to add adapters or document a deliberate exception.
+- CYCLE, OATH, SCRIBE, SEAL, SCOPE, RUNE, TRACE, and WARD currently expose both.
+- SCOPE and RUNE remain direct law services on the runtime request path, but now also expose conservative WARD-compatible adapters for standard routing and CNS snapshots. Direct runtime invocation remains an execution-path choice, not an interface exception.
 
 CYCLE fail-closed behavior:
 - CYCLE strict mode can fail loud on unregistered domains.
 - `handle({"action": "check_rate"})` uses the non-strict path today.
-- Internal-error behavior should be tested against the Pact rule that unchecked domains fail closed rather than silently permit.
+- Runtime-stage internal CYCLE failures are now tested: an injected `check_rate_limit()` exception returns `UNEXPECTED_ERROR` at Stage 6 / CYCLE rather than silently permitting the request.
 
 SEAL external attribution policy:
 - SEAL has an external advisor attribution scanner that rejects authoring/authority attribution patterns rather than bare name mentions.
-- The scanner needs adversarial coverage so the canonization surface does not accept laundered external model authorship.
+- The scanner now rejects generic external-advisor/model authorship and authority-attribution phrases at proposal and sealing surfaces, including common verb/preposition/actor evasions, while preserving bare non-authority mentions. More obfuscated or high-distance laundering patterns remain future hardening if the ceremony surface expands.
 
 Amendment planning hygiene:
 - The Pact text candidate list below is an inventory, not a ratification order.
@@ -254,6 +264,7 @@ Pact text candidates:
 - Section 4 should fence hard-purge irreversibility as store-local until Phase H external anchoring and backup/restore policy are in place.
 - Section 4 should specify REDLINE behavior by output boundary: PAV-only/enumeration helpers may return raw entries to governed callers; boundary-output helpers must exclude REDLINE before exposure.
 - Section 4 should state that PAV carries REDLINE exclusion counts and contributing hubs, not REDLINE entry IDs.
+- Section 4 should clarify any "advisory/model output" wording as advisory views, PAV, or model-facing inputs so it does not imply semantic/paraphrase-proof final-response protection. Stage 8 remains downstream heuristic sanitation; the deterministic guarantee is REDLINE omission before model-facing context is built.
 - Section 4's section-boundary style is a useful model for later Pact amendments: name the constitutional surface, then name exactly what the current reference implementation enforces and what remains non-end-to-end.
 - Section 5 already uses the stronger later-section style. Future edits should preserve its "current proof / not yet proven" concurrency boundary instead of flattening it into a generic isolation claim.
 - Section 5 should keep token-based ContextVar reset as the named proven mechanism for container delegation, because direct value reassignment does not carry the same nested-context safety.
@@ -265,7 +276,7 @@ Pact text candidates:
 - Section 6 should describe the current thread-safety mechanism concretely: WAL, `check_same_thread=False`, process-local lock, and single-process boundary.
 - Section 6 dynamic event-code wording should say that `CONTAINER_REQUEST_*` is the current dynamic pattern and that future patterns require explicit registration.
 - Section 6 export sanitization wording should enumerate what is sanitized today: REDLINE entry IDs in TRACE artifact identifiers for both live and cold exports, using token-boundary replacement.
-- Section 6 should preserve the distinction between cold verification, cold export, and future payload-inclusive external recomputability.
+- Section 6 should preserve the distinction between cold verification, cold export, and future payload-inclusive external recomputability. Pact wording should say the current verifier proves stored parent-link continuity; it should not claim third-party payload-inclusive recomputation until canonical export bundles, privacy policy, and verifier tests exist.
 - Section 7 should clarify the relationship between section-level versions and project/release versions: section versions increment per amended section, while project versions snapshot one or more sealed Pact changes plus code state.
 - Section 7 should reflect the current code-backed dual guard for external advisor attribution: proposal-time rejection creates no actionable proposal state, and ratification still flows through SEAL's seal guard.
 - Section 7 should reflect the current code-backed amendment persistence: proposals, review state, ratified records, queryable history, and reconstructed canon state survive restart.
@@ -301,8 +312,8 @@ Before v0.1.1:
 - Add or schedule full-Pact integrity checks, reverse Pact-reference extraction, and pre-commit/CI drift gates.
 - Preserve the vocabulary rule: keep "seat" as the authority-surface term, prefer operational/constitutional seat classes over broad Council language, and translate formal Pact language for external readers.
 - Before any v0.1.1 amendment ceremony, prepare a section-ordered amendment plan so the long candidate list is reviewed deliberately rather than edited from memory.
-- Decide the standard seat-interface question for SCOPE/RUNE.
-- Add or schedule tests for WARD hook protected-field coverage, CYCLE fail-closed internal errors, SEAL external attribution bypasses, and RUNE confidence/edge-token behavior.
+- CLOSED: SCOPE/RUNE now expose WARD-compatible `status()` and `handle(task)` adapters while remaining direct law services on the runtime request path.
+- Add or schedule tests for WARD hook protected-field coverage and RUNE confidence/edge-token behavior.
 - Keep this file aligned with any new tests that prove additional Pact clauses.
 - Do not expand README or release claims beyond `docs/claim_matrix.md` and the current acceptance runner.
 

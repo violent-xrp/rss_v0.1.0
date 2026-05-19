@@ -109,7 +109,7 @@ Includes:
 - proof status
 - global/container question counts
 - expected-evidence hit counts
-- REDLINE refusal flags
+- REDLINE-closed query flags
 - cross-container isolation flag
 - consent denial/recovery flag
 - Safe-Stop persistence/recovery flag
@@ -164,7 +164,7 @@ Current Phase G demo proof covers:
 - useful global retrieval from governed data
 - tenant-scoped retrieval from TECTON containers
 - expected evidence markers for global and tenant-scoped retrieval
-- PERSONAL / REDLINE refusal
+- PERSONAL refusal and REDLINE-closed query behavior
 - cross-container isolation
 - OATH consent denial and recovery
 - Safe-Stop entry, restart persistence, and T-0 recovery

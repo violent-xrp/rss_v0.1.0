@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-05-09 03:32 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-05-18 13:47 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 104 distinct Pact sections referenced across 141 claim tags on 141 test functions.
+**Coverage:** 106 distinct Pact sections referenced across 141 claim tags on 141 test functions.
 
 ---
 
@@ -73,8 +73,17 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
 
+## §1.1.2
+
+- `test_ward` — WARD seat registration, routing, hooks
+
 ## §1.2
 
+- `test_ward` — WARD seat registration, routing, hooks
+
+## §1.2.6
+
+- `test_ward_hook_enforcement` — WARD hooks cannot mutate protected governance keys
 - `test_ward` — WARD seat registration, routing, hooks
 
 ## §1.3
@@ -101,8 +110,6 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §1.7
 
-- `test_ward_hook_enforcement` — WARD hooks cannot mutate protected governance keys
-- `test_ward` — WARD seat registration, routing, hooks
 - `test_scribe_extended_edges` — SCRIBE extended edges: draft uniqueness, error states, UAP assembly, status, and handle dispatch
 
 ## §1.8

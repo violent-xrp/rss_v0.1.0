@@ -614,7 +614,7 @@ def test_idempotence_replay():
               "IDEM-R2b: first Safe-Stop reason preserved (not overwritten)")
 
         # R3: Repeated schema stamping
-        rss2.clear_safe_stop()
+        rss2.clear_safe_stop(t0_command=True)
         v1 = rss2.stamp_schema_version()
         v2 = rss2.stamp_schema_version()
         check(v1["new_version"] == v2["new_version"],
@@ -966,7 +966,7 @@ def test_scenario_high_liability_flow():
         r4 = rss.process_request("test", use_llm=False)
         check(r4.get("error") == "SAFE_STOP_ACTIVE",
               "SCEN-HL7: Safe-Stop blocks all requests")
-        rss.clear_safe_stop()
+        rss.clear_safe_stop(t0_command=True)
         r5 = rss.process_request("bid", use_llm=False)
         check("error" not in r5, "SCEN-HL8: system recovers after Safe-Stop clear")
 
@@ -1013,7 +1013,7 @@ def test_scenario_tamper_recovery():
               "SCEN-TR4: all requests blocked during Safe-Stop")
 
         # T-0 recovery
-        rss2.clear_safe_stop()
+        rss2.clear_safe_stop(t0_command=True)
         check(rss2.is_safe_stopped()["active"] is False,
               "SCEN-TR5: T-0 clears Safe-Stop")
 
@@ -1256,6 +1256,10 @@ def test_c_phase_regression_battery():
         check(rss.is_safe_stopped()["active"],
               "C-6: threshold consecutive failures → Safe-Stop")
         rss.persistence.close()
+        rss2 = bootstrap(RSSConfig(db_path=path))
+        check(rss2.is_safe_stopped()["active"],
+              "C-6: threshold Safe-Stop persists across restart")
+        rss2.persistence.close()
     finally:
         _cleanup_db(path)
 
