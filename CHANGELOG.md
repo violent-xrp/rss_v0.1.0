@@ -56,6 +56,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - SEAL external-attribution scanning now blocks generic external-advisor/model authorship or authority laundering, including common verb/preposition/actor evasions, while preserving bare non-authority mentions
 - SCOPE and RUNE now expose WARD-compatible `status()` / `handle(task)` adapters while preserving direct runtime request-path calls
 - WARD registration now fails fast for seats missing the standard `status()` / `handle(task)` interface, matching Section 1.1.2 before routing begins
+- README and `docs/AI_GOVERNANCE_PROJECT_BRIEF.md` now provide a plain-English adoption/GTM overview for outside readers while preserving the alpha and non-production boundaries
 
 ### Proof growth
 - constitution loader edges

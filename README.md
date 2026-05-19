@@ -2,13 +2,33 @@
 
 *An AI that Waits.*
 
-**RSS v0.1.0** is a domain-agnostic, application-layer AI governance kernel with a zero-trust trajectory. It governs what a system may see, say, and do primarily at the input boundary before the model runs, with a final sanitation gate for output consistency.
+Most AI systems run forward. They generate, decide, act, and only then do filters or monitors try to catch what went wrong. That is too late for workflows where a bad answer can expose private data, approve the wrong thing, or mutate a record that matters.
 
-Every request flows through a constitutional pipeline of typed seats with bounded authority. Scope is declared, meaning is classified, consent is checked, cadence is bounded. A Prepared Advisory View is built and an audit record is written before any result is allowed to stand.
+RSS runs differently. It sits in front of the model path and decides what the system is allowed to see, say, and do before governed context reaches the model, with a final sanitation gate before output delivery. Scope gets declared. Meaning gets classified. Consent gets checked. Cadence gets bounded. Audit evidence gets written.
+
+Think of it as brakes for AI in places where mistakes have consequences: legal review, financial operations, construction approvals, medical records, regulated documents, and internal tools where "mostly correct" is not good enough.
+
+I started building Rose Sigil Systems because I kept seeing the same failure pattern: powerful probabilistic systems entering workflows that needed deterministic boundaries. The safety conversation was mostly about training, prompting, and filtering. RSS is the structural layer I wanted to see at the input boundary.
+
+**RSS v0.1.0** is a domain-agnostic, application-layer AI governance kernel with a zero-trust trajectory. What exists now is alpha: the architecture works, the discipline is real, and the known limits are stated openly.
 
 **Verified baseline:** 141 test functions, 1281 assertions, 0 failures, 92.4% coverage. Traceability: 141 claims mapped to 141 tests across 106 Pact sections.
 
 Reproduce with `python tests/test_all.py` and `python run_coverage.py`. Claim mapping at `docs/claim_matrix.md`.
+
+## Who this is for
+
+RSS is for builders working near AI authority, compliance, auditability, and operational risk. If you are building AI into regulated or consequential workflows, RSS is meant to help you keep the model useful without giving it unbounded context or authority.
+
+If you are building a consumer chatbot, a general assistant, or a model wrapper where mistakes are low consequence, RSS is probably more structure than you need.
+
+## Why this matters for adoption
+
+Enterprise AI adoption is not only a model-quality problem. Teams also need to answer practical workflow questions: what data did the model see, who authorized the request, what happened when the system was uncertain, and what evidence exists after the fact.
+
+RSS treats those as product and workflow requirements. It shows how an AI workflow can keep useful model behavior while narrowing context, checking authority, logging evidence, and preserving human recovery paths. That matters for account research, lead qualification, customer-signal summaries, regulated records, and other workflows where automation has business value but unbounded authority creates risk.
+
+For a plain-English business overview, see `docs/AI_GOVERNANCE_PROJECT_BRIEF.md`.
 
 ## Architectural thesis
 
