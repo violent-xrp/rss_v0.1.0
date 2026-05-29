@@ -5,9 +5,9 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 ## v0.1.0
 
 ### Current verified snapshot
-- **141 test functions / 1281 assertions / 0 failures** via `python tests/test_all.py`
-- **92.4% statement coverage** via `python run_coverage.py`
-- **141 claims / 141 tests / 106 Pact sections** in `docs/claim_matrix.md`
+- **142 test functions / 1295 assertions / 0 failures** via `python tests/test_all.py`
+- **92.3% statement coverage** via `python run_coverage.py`
+- **142 claims / 142 tests / 107 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -57,6 +57,8 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - SCOPE and RUNE now expose WARD-compatible `status()` / `handle(task)` adapters while preserving direct runtime request-path calls
 - WARD registration now fails fast for seats missing the standard `status()` / `handle(task)` interface, matching Section 1.1.2 before routing begins
 - README and `docs/AI_GOVERNANCE_PROJECT_BRIEF.md` now provide a plain-English adoption/GTM overview for outside readers while preserving the alpha and non-production boundaries
+- ROADMAP future-hardening queue now parks capability leases, shadow connector harnesses, and CYCLE budget/anomaly tests without changing the v0.1.0 release boundary
+- Section 0 cleanup has been applied from the private drafting rail, with Genesis re-anchored to the current `pact/pact_section0_root_physics.md` hash
 
 ### Proof growth
 - constitution loader edges
@@ -77,6 +79,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - Priority B closures: PAV strict policy, CYCLE strict mode, STAGES constant, constitution coverage
 - Phase F coverage-honesty closure: every package module is at or above the 80% floor; `scribe.py` and `audit/migrate.py` are both at 100.0%
 - Phase G coverage-floor closure: every package module is now at or above the 85% floor; `cycle.py` and `trace_verify.py` both moved above 94%
+- default Genesis binding proof now verifies the live Section 0 path/hash, tamper-triggered Safe-Stop, and T-0 recovery after restoring the Section 0 artifact
 
 ### Known limitations preserved honestly
 - ingress identity is still architectural, not cryptographic

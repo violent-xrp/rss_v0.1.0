@@ -247,6 +247,82 @@ def test_genesis_blocking():
                 os.unlink(path + suffix)
 
 
+def test_default_genesis_binding_live_verify_and_recovery():
+    # CLAIM: §0.2.1, §0.5.6 — default Genesis binding verifies live Section 0, tamper Safe-Stops, and T-0 recovery resumes.
+    section("Default Genesis Binding Live Verify + Recovery")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    s0_copy = path + ".section0.md"
+    try:
+        config = RSSConfig(db_path=path)
+        check(config.section0_path == "pact/pact_section0_root_physics.md",
+              "default Genesis path points at current Pact Section 0")
+        check(os.path.exists(config.section0_path),
+              "default Genesis path resolves from repo root")
+
+        with open(config.section0_path, "r", encoding="utf-8") as f:
+            section0_text = f.read()
+        check(compute_hash(section0_text) == config.section0_hash,
+              "default Genesis hash matches current Section 0 bytes")
+
+        rss = bootstrap(config)
+        check(rss.section0_path == config.section0_path,
+              "runtime inherits default Genesis path")
+        check(rss.section0_hash == config.section0_hash,
+              "runtime inherits default Genesis hash")
+
+        genesis = rss.verify_genesis()
+        check(genesis["verified"] is True,
+              "default Genesis verifies live Section 0")
+        check(len(rss.trace.events_by_code("GENESIS_VERIFIED")) >= 1,
+              "default Genesis verification emits TRACE evidence")
+
+        # Tamper against a temporary copy so the real Pact file is never mutated.
+        with open(s0_copy, "w", encoding="utf-8") as f:
+            f.write(section0_text)
+        rss.section0_path = s0_copy
+        rss.section0_hash = config.section0_hash
+        check(rss.verify_genesis()["verified"] is True,
+              "Section 0 copy verifies against pinned hash")
+
+        with open(s0_copy, "w", encoding="utf-8") as f:
+            f.write(section0_text + "\nTAMPERED GENESIS")
+        tampered = rss.verify_genesis()
+        check(tampered["verified"] is False,
+              "tampered Section 0 copy fails Genesis hash")
+        check(rss.is_safe_stopped()["active"] is True,
+              "Genesis tamper enters persistent Safe-Stop")
+
+        blocked = rss.process_request("quote", use_llm=False)
+        check(blocked.get("error") == "SAFE_STOP_ACTIVE",
+              "Genesis Safe-Stop blocks requests before recovery")
+
+        denied = rss.clear_safe_stop()
+        check(denied.get("error") == "T0_COMMAND_REQUIRED",
+              "Genesis Safe-Stop recovery requires explicit T-0 command")
+
+        with open(s0_copy, "w", encoding="utf-8") as f:
+            f.write(section0_text)
+        cleared = rss.clear_safe_stop(t0_command=True)
+        check(cleared.get("status") == "CLEARED",
+              "T-0 recovery clears Genesis Safe-Stop")
+
+        restored = rss.verify_genesis()
+        check(restored["verified"] is True,
+              "restored Section 0 copy verifies after recovery")
+
+        resumed = rss.process_request("quote", use_llm=False)
+        check("error" not in resumed,
+              "pipeline resumes after Genesis recovery")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(s0_copy):
+            os.unlink(s0_copy)
+        _cleanup_db(path)
+
+
 def test_llm():
     # CLAIM: §3.7 — LLM adapter contract
     section("LLM Adapter")

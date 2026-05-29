@@ -29,8 +29,15 @@ The current claim traceability surface is generated at `docs/claim_matrix.md`.
 
 ## Current Kernel Alignment
 
+Section 0 editorial pass (v0.1.0 pre-canonization):
+- The Section 0 cleanup is now present in `pact/pact_section0_root_physics.md`.
+- Ten substantive additions landed: Section Scope, Constitutional vs. Implementation Language, Pact and Kernel Relationship, T-0 Recovery Authority, Internal Advisor Forward Fence, Pact as Living Document, Version Model, RSS and Products, the eleventh covenant principle "Recovery is Sovereign", and the Re-Founding aspirational acknowledgment.
+- Foundational Failure is now framed as a definition with illustrative examples rather than a closed list.
+- The Section 0 side of the T-0 recovery, internal advisor, product/kernel distinction, and version-model fences is in place; later sections may cross-reference or align with those fences without restating all of Section 0.
+
 Section 0 integrity and Safe-Stop:
 - Section 0 integrity is mechanically checked during constitution loading.
+- The default runtime config binds Genesis to `pact/pact_section0_root_physics.md` and the current Section 0 hash; acceptance proof now covers live default-path verification, tamper-triggered Safe-Stop, and T-0 recovery after restoring the Section 0 artifact.
 - Safe-Stop is persistent across restart in the current single-process SQLite-backed runtime.
 - Safe-Stop clearing requires explicit `t0_command=True` today; this is a soft sovereign-command gate, not cryptographic/mechanical identity. The mechanical identity gate remains future hardening.
 - Section 0 §0.8.4 bootstrap round-trip is code-proven for the current SQLite reference path: terms, synonyms, disallowed terms, global hub entries, consent records, TRACE events, TECTON container state, container hub entries, Safe-Stop/system state, and schema version restore through fresh bootstrap. Container persistence currently uses TECTON's explicit `save_to(...)` path before automatic restore; auto-save-on-mutation remains a future product/hardening decision, not part of the current claim.
@@ -143,10 +150,11 @@ T-0 mechanical identity:
 - Priority examples: term/synonym/disallow authorization, seat creation/modification, container lifecycle authority, and seal/amendment authorization. Safe-Stop clearing now has an explicit `t0_command=True` soft gate, but still lacks cryptographic identity proof.
 
 T-0 recovery and lock-out risk:
+- Section 0 now carries the constitutional recovery fence: T-0 sovereign authority cannot be destroyed by technical identity failure, and future cryptographic gates should attest authority rather than become the only possible recovery path.
 - Future cryptographic identity must not make T-0 sovereign authority unrecoverable through key loss, hardware-token failure, or credential-rotation mistakes.
 - Cryptographic gates should be treated as attestation hardening, not as the only possible access path for the system owner.
 - Any manual recovery or bypass path should be explicit, hard to invoke accidentally, and more auditable than a normal command, with reason and recovery context preserved in TRACE.
-- This needs design before Phase H identity hardening, because a governance system that can permanently lock out its sovereign operator is not operationally honest.
+- The remaining gap is mechanical design before Phase H identity hardening, because a governance system that can permanently lock out its sovereign operator is not operationally honest.
 
 Persistence versus external anchoring:
 - Safe-Stop and TRACE persistence are real inside the current runtime store.
@@ -216,7 +224,7 @@ Pact embedding / reverse traceability gaps:
 
 Internal advisor layer / Tier 2.5 gap:
 - RSS currently treats external models as Tier 3: they may inform but cannot authorize, grant scope, create consent, seal law, or execute side effects.
-- A future internal advisor layer could translate external model analysis into structured, auditable advisory packets before the kernel or T-0 sees it.
+- Section 0 now carries the Internal Advisor Forward Fence: future internal advisor modules may translate external model analysis into structured, auditable advisory packets before the kernel or T-0 sees it.
 - Internal advisors should be modules, not seats: no constitutional authority, no direct command power, domain-bounded input/output contracts, TRACE-recorded invocations, and hash-bound outputs.
 - This preserves the useful multi-voice review instinct while keeping external model output outside the authority boundary.
 - If this layer becomes real, later Pact work should decide where it sits in the tier model, how advisor output enters amendment/review workflows, and which advisor classes are required for protected-section changes.
@@ -254,7 +262,7 @@ Pact text candidates:
 - TRACE full-envelope hashing is stronger than generic hash chaining; future Pact wording should preserve that specificity.
 - Runtime-mediated callbacks should be named as allowed only when the runtime, not a peer seat, bridges the event.
 - Typed fault taxonomy should eventually distinguish global halt, container halt, structured concern, and recoverable drift while preserving fail-closed defaults.
-- Section 0 Foundational Failure examples should be explicit as illustrative, not exhaustive: any future root-physics violation that fits the definition should be classified as Foundational Failure and trigger Safe-Stop even if the example list has not yet been amended.
+- CLOSED for Section 0: Foundational Failure examples are now explicit as illustrative, not exhaustive. Any future root-physics violation that fits the definition is Foundational Failure and triggers Safe-Stop even if the example list has not yet been amended.
 - Section 3 should remove or clarify duplicated §3.3.1 language during the next Pact text pass.
 - Section 3's implementation verification table should move to this alignment/evidence layer, or be marked as snapshot-only; Pact law should not carry drifting test-count numbers unless mechanically generated.
 - Section 3 should clarify WARD's bootstrap relationship: seven domain/operational seats register with WARD, while WARD remains the routing/enforcement infrastructure rather than a peer in the execution sequence.
@@ -271,7 +279,7 @@ Pact text candidates:
 - Section 5 should distinguish enforced permissions from declared metadata and should name `risk_tier` as not load-bearing until a runtime decision point exists.
 - Section 5 / Section 6 event-code language should enumerate dynamic TRACE prefixes rather than allowing open-ended dynamic event classes.
 - Section 5 consent wording should eventually require an auditable consent source when OATH resolves through GLOBAL fallback instead of a container-specific grant.
-- Section 5 product-vs-constitutional distinction: container ownership is operational authority within a deployment, not constitutional authority over the kernel. Future Pact wording should make explicit that deployment owners or product role holders may hold authority over container data, permissions, and lifecycle, but do not have authority over the kernel's law. Coordinate with the Section 0 RSS-and-Products fence and avoid product role names that collide with constitutional T-0 through T-3.
+- Section 5 product-vs-constitutional distinction: container ownership is operational authority within a deployment, not constitutional authority over the kernel. The Section 0 side is now in place through RSS and Products: products must honor Pact invariants, may not amend the Pact, must keep operational role identifiers separate from constitutional tier vocabulary, and constitutional T-0 vs. operational ownership are distinct roles. Section 5 wording can align with that fence later.
 - Section 6 should explicitly cross-reference sustained audit-write failure threshold escalation to Section 0 Constitutional Drift / Safe-Stop logic.
 - Section 6 should describe the current thread-safety mechanism concretely: WAL, `check_same_thread=False`, process-local lock, and single-process boundary.
 - Section 6 dynamic event-code wording should say that `CONTAINER_REQUEST_*` is the current dynamic pattern and that future patterns require explicit registration.
@@ -286,9 +294,9 @@ Pact text candidates:
 - Section 7 AmendmentRecord structure should eventually include diff, dependency/evidence snapshot, environment snapshot, pre-seal drift report, and post-seal verification outcome.
 - Section 7 should be reconciled with Section 0's Sovereign Edit language: Section 0 changes require direct T-0 sovereign override, but the current protected-section model still expects SEAL/TRACE evidence rather than a silent shortcut. Future wording should preserve both truths.
 - Section 7 amendment authority belongs to constitutional T-0: future Pact wording should clarify that amendment ceremony authority is reserved to Pact T-0 (constitutional sovereign), not deployment-level operational ownership. A customer running TECTON cannot amend the Pact through their deployment. Coordinate with the Section 0 product fence.
-- Section 7 / Phase H identity wording should guarantee that T-0 recovery authority cannot be destroyed by technical identity failure. Cryptographic proof should strengthen attestation while preserving auditable recovery paths.
+- Section 7 / Phase H identity wording should cross-reference Section 0 recovery authority: cryptographic proof should strengthen attestation while preserving auditable recovery paths, and should not make T-0 recovery authority destructible by technical identity failure.
 - Future Pact wording should extend integrity protection beyond Section 0: all Pact sections should be hash-checked, and amendment ceremony should refuse to seal new law while any section's integrity is uncertain.
-- Future Pact wording should distinguish internal advisors from seats and external models if a Tier 2.5 advisory layer is introduced. Advisors translate and structure evidence; they do not hold authority.
+- CLOSED for Section 0: internal advisors are now fenced from seats and external models. If a Tier 2.5 advisory layer is introduced, later sections can elaborate how advisors translate and structure evidence without holding authority.
 - Council vocabulary strip across all sections: scheduled as the first v0.1.1 amendment ceremony test case. Reduces or reserves "Council" as a general collective term; replaces with "the eight seats", "operational seats", or "constitutional seats" where more exact. Coordinated cross-section change appropriate for ceremony rather than pre-canonization editorial pass. Will exercise amendment persistence and ceremony machinery end-to-end with bounded scope.
 
 ## Version Watch

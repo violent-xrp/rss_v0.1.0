@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-05-18 13:47 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-05-29 22:05 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 106 distinct Pact sections referenced across 141 claim tags on 141 test functions.
+**Coverage:** 107 distinct Pact sections referenced across 142 claim tags on 142 test functions.
 
 ---
 
@@ -22,6 +22,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_constitution_load_constitution` — load_constitution: file-not-found, hash-mismatch, missing-marker, and happy-path branches
 - `test_genesis_blocking` — genesis tamper blocks boot; production_mode enforcement
+- `test_default_genesis_binding_live_verify_and_recovery` — default Genesis binding verifies live Section 0, tamper Safe-Stops, and T-0 recovery resumes.
 - `test_genesis_binding_and_offline_fallback` — Genesis artifact bound from config; offline fallback summarizes governed data; shared reference pack is idempotent; ingress posture exposed
 
 ## §0.3
@@ -53,6 +54,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_c_phase_regression_battery` — canonical JSON, profile freezing, strict mode, threshold Safe-Stop, REDLINE sanitization
 - `test_safe_stop_persistent` — Safe-Stop persists across restart
+
+## §0.5.6
+
+- `test_default_genesis_binding_live_verify_and_recovery` — default Genesis binding verifies live Section 0, tamper Safe-Stops, and T-0 recovery resumes.
 
 ## §0.7.3
 

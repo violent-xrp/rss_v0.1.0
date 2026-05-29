@@ -31,16 +31,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **141 test functions / 1281 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **92.4% statement coverage** via `python run_coverage.py`
-- **141 claims / 141 tests / 106 Pact sections** in `docs/claim_matrix.md`
+- **142 test functions / 1295 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **92.3% statement coverage** via `python run_coverage.py`
+- **142 claims / 142 tests / 107 Pact sections** in `docs/claim_matrix.md`
 - **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 141/1281 baseline
+- public docs are synced to the current 142/1295 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -151,20 +151,20 @@ Mandatory before `v0.1.0-rc.1`:
   TRACE events, container state, container hub entries, Safe-Stop/system state,
   and schema version restore after restart. Container state proof uses the
   current explicit TECTON `save_to(...)` persistence path.
-- IN PROGRESS: Section 0 voice cleanup is scoped to ten substantive additions,
-  including the constitutional T-0 vs product operational ownership distinction
-  and Pact-level recovery authority clause. Council vocabulary is preserved
-  verbatim in this pass; the strip is deferred to the first v0.1.1 ceremony
-  amendment. Local classification/additions docs are private drafting rails;
-  the Pact itself remains unchanged until T-0 applies the pass.
+- WORKING TREE: Section 0 voice cleanup has been applied from the private
+  classification/additions rail, including the constitutional T-0 vs product
+  operational ownership distinction and Pact-level recovery authority clause.
+  Council vocabulary is preserved verbatim in this pass; the strip is deferred
+  to the first v0.1.1 ceremony amendment. This remains pending T-0 review,
+  gates, and commit before it is treated as a release checkpoint.
 - CLOSED: `docs/PACT_VOICE.md` exists as a non-authoritative rail before T-0
   begins the Section 0, Section 1, and Section 2 voice/structure cleanup.
 - CLOSED: Section 0-2 voice consistency work is framed before rewriting
   begins: match the Section 4 and Section 5 "rule / current proof / boundary"
   style, and keep substantive additions such as T-0 recovery authority owned by
   T-0 rather than implementation cleanup.
-- CURRENT: one acceptance/sync pass is clean at 141 tests, 1281 assertions, and
-  92.4% coverage after demo proof hardening. Rerun immediately
+- CURRENT: one acceptance/sync pass is clean at 142 tests, 1295 assertions, and
+  92.3% coverage after Section 0 cleanup landing. Rerun immediately
   before any `v0.1.0-rc.1` tag.
 - CLOSED: demo artifact decision is made for `v0.1.0-rc.1`: do not rely on a
   stale artifact bundle. Generate fresh offline artifacts immediately before
@@ -305,6 +305,9 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - entry-level PAV trust filters by provenance/source_type/instruction_status, not only hub name
 - structured authority-spoof probes: imported JSON/YAML/tool-return text cannot become consent, scope, or side-effect authorization
 - connector IPI acceptance matrix for PDF metadata/hidden text, HTML hidden spans/alt text, email MIME parts, RAG neighbor chunks, tool returns, and Unicode invisible/confusable text
+- shadow connector harness: fake browser/email/API/RAG/tool-return adapters that return poisoned, malformed, oversized, metadata-hidden, and authority-spoofing payloads before any live connector claims expand
+- capability leases for future side-effect work: short-lived, scoped, revocable authorization objects bound to actor/request, action class, target resource, container, TTL, budget, and payload hash
+- CYCLE budget/anomaly extension: prove bounded behavior for retry loops, repeated denied actions, abnormal bursts, and execution-budget exhaustion in addition to simple request cadence
 - runner JSON verdict export for independent verification and future CI
 - live LLM evaluation harness for governed usefulness under PAV constraints: score whether live adapters answer from expected evidence markers while preserving refusal/isolation boundaries
 - external-map refinement for public reviewers

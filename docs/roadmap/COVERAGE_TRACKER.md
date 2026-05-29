@@ -28,11 +28,11 @@ ward.py                 87.9%
 scope.py                92.6%
 llm_adapter.py          90.1%
 audit_log.py            87.4%
-runtime.py              86.3%
+runtime.py              85.2%
 oath.py                 88.2%
 pav.py                  86.9%
 constitution.py         92.5%
-TOTAL                   92.4%
+TOTAL                   92.3%
 ```
 
 ## Current Targets
