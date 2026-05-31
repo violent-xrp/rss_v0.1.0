@@ -31,16 +31,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **142 test functions / 1295 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **92.3% statement coverage** via `python run_coverage.py`
-- **142 claims / 142 tests / 107 Pact sections** in `docs/claim_matrix.md`
+- **144 test functions / 1307 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **92.2% statement coverage** via `python run_coverage.py`
+- **144 claims / 144 tests / 108 Pact sections** in `docs/claim_matrix.md`
 - **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 142/1295 baseline
+- public docs are synced to the current 144/1307 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -66,17 +66,18 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **Release-boundary polish:** keep the v0.1.0 claim surface aligned with the closed Phase G coverage floor and remaining known limits.
 - **Connector-proof planning:** keep future browser/email/document/RAG/tool-return import tests mapped before adding real external adapters.
 - **Pre-tag RUNE/OATH hardening map:** closed. OATH requester fallback, RUNE constraint-prompt proof, and RUNE longest bounded-match precedence are now proven.
-- **Code-first Pact posture:** let kernel hardening move where it makes RSS more true; only narrow Section 7 / recovery-authority Pact edits should enter the v0.1.0 line after code proof shows they belong there.
+- **Pact cleanup cadence:** Section 0 is landed and pushed. Continue cleanup section-by-section from the synced Roots worktree, land one accepted section at a time, push, then re-sync Roots before the next section.
+- **Code-first Pact posture:** let kernel hardening move where it makes RSS more true; keep Pact edits section-bounded, reviewed, and version-sensitive so cleanup does not bundle unrelated lanes.
 
 ### Next
-- Keep the Section 0 drafting lane narrow: T-0 works from the local classification/additions docs; Codex may keep hardening code and public proof docs without editing the Pact.
+- Start Section 1 cleanup from the synced Roots worktree: implementation-reference cleanup first, then decide the CYCLE "complexity" wording without broad vocabulary churn.
 - CLOSED FOR CURRENT PASS: fresh offline demo artifacts were regenerated and inspected from the current working tree. The ignored local bundle reports `PASS`, 22/22 successful task IDs bound to TRACE, cold verification over 169 events, and matching report/TRACE artifact counts. Rerun immediately before any `v0.1.0-rc.1` tag.
 - Demo proof artifacts now need to stay evidence-bound: PASS requires expected seeded evidence markers and successful task IDs bound to TRACE, not just fluent non-error answers.
 - After a clean acceptance/sync/claim-matrix pass, prepare `v0.1.0-rc.1` as the next reviewable release checkpoint.
-- Keep final v0.1.0 gates explicit: T-0 recovery authority clause and final acceptance proof.
+- Keep final v0.1.0 gates explicit: final acceptance proof, synced public docs, fresh demo artifacts, and no release claim beyond the current proof surface.
 - Keep tightening the reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
 - Keep the zero-trust trajectory explicit without overclaiming v0.1.0: RSS is moving toward deployment-grade zero-trust through caller identity, per-action gates, least-privilege context, and external audit anchoring, but the current release remains a single-process governance kernel.
-- Parallel code/proof lane while Section 0 drafting continues: §0.8.4 round-trip coverage, demo artifact honesty, and amendment persistence are closed in code; keep public proof docs synced while T-0 finishes Section 0 drafting.
+- Parallel code/proof lane while Pact cleanup continues: Section 0 is closed for the current pass; keep public proof docs synced as Section 1 and later sections move through the same section-by-section cadence.
 
 ### Keep Warm
 - API/wrapper ingress boundary and caller identity propagation.
@@ -86,7 +87,9 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - Cryptographic/mechanical T-0 identity gate for Safe-Stop clearing beyond the current soft `t0_command=True` fence.
 - Zero-trust hardening sequence: authenticated ingress, actor-bound request context, capability-scoped side-effect broker, per-action/tool-call authorization, signed TRACE exports, external timestamp anchoring, and auditable recovery/bypass paths.
 - OATH consent-source reporting, explicit DENY semantics, and duration policy.
-- RUNE per-pack synonym namespaces and synonym confidence semantics.
+- RUNE scale path: current classification is linear in active registry size and scans the global registry. Large-vocabulary support needs namespaced active registry partitions, a compiled multi-pattern matcher, and archived terms kept out of the hot path before RSS claims large-pack performance.
+- RUNE per-pack/domain term and synonym namespaces plus synonym confidence semantics, so construction, legal, medical, finance, and tenant packs can reuse common phrases without global collisions.
+- TECTON policy overlays: per-tenant overlays may tighten scope, terms, permissions, consent, and domain packs, but may not loosen or fork the global constitutional floor.
 - CLOSED: Seat interface decision for SCOPE/RUNE resolved by adding WARD-compatible adapters while preserving direct runtime request-path calls.
 - WARD hook protected-field audit as governance-relevant task/result fields grow.
 - CLOSED: CYCLE fail-closed proof now covers internal runtime-stage exceptions as `UNEXPECTED_ERROR` at Stage 6, in addition to strict-mode unknown-domain rejection.
@@ -98,7 +101,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - Section-ordered Pact amendment plan before the v0.1.1 ceremony; `docs/PACT_ALIGNMENT.md` is the inventory, not the execution order.
 - Seat load-bearing audit after v0.1.0.
 - T-0 recovery/lock-out design before cryptographic identity becomes load-bearing.
-- Full-Pact integrity and reverse Pact-reference extraction so code/law drift is visible in both directions.
+- Full-Pact integrity and generated reverse Pact-reference extraction so code/law drift is visible in both directions. The reverse map should be a generated doc such as `docs/pact_code_map.md`, separate from the hand-authored `docs/PACT_ALIGNMENT.md`.
 
 ### Future Watch
 - indirect prompt-injection probes against imported web, email, document, RAG, and tool-return content
@@ -112,6 +115,8 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - payload-inclusive TRACE export / recomputable envelope verification so third-party cold verifiers can validate event hashes from canonical exported material, not only parent-link continuity; design must preserve REDLINE/privacy boundaries, version the proof envelope, define whether payload material lives in a sovereign-only sidecar/receipt bundle, and stay future-work until the verifier can recompute hashes from exported material
 - product/operator console structure that does not outrun kernel truth
 - internal advisor layer design: structured, auditable, non-authoritative advisors between external models and the kernel/operator
+- advisory packet contract before advisor execution: typed evidence, concern kind, severity, source-advisor attribution, packet hash, authority set to none, and TRACE-recorded invocation/output
+- advise-to-act boundary: internal or personal advisor modules may read and advise, but may not mutate state, approve, call tools, or execute side effects until Structured Action Proposals, broker gates, and capability leases exist
 
 Do not diffuse effort equally across all future phases. Keep the current checkpoint sharp.
 
@@ -151,20 +156,20 @@ Mandatory before `v0.1.0-rc.1`:
   TRACE events, container state, container hub entries, Safe-Stop/system state,
   and schema version restore after restart. Container state proof uses the
   current explicit TECTON `save_to(...)` persistence path.
-- WORKING TREE: Section 0 voice cleanup has been applied from the private
-  classification/additions rail, including the constitutional T-0 vs product
-  operational ownership distinction and Pact-level recovery authority clause.
-  Council vocabulary is preserved verbatim in this pass; the strip is deferred
-  to the first v0.1.1 ceremony amendment. This remains pending T-0 review,
-  gates, and commit before it is treated as a release checkpoint.
+- CLOSED: Section 0 voice cleanup landed and was pushed in `0c9539a`. The
+  pass includes the constitutional T-0 vs product operational ownership
+  distinction, Pact-level recovery authority clause, internal advisor fence,
+  Section Scope cleanup, and Genesis re-anchor. Council vocabulary is preserved
+  verbatim in this pass; the strip is deferred to the first v0.1.1 ceremony
+  amendment.
 - CLOSED: `docs/PACT_VOICE.md` exists as a non-authoritative rail before T-0
   begins the Section 0, Section 1, and Section 2 voice/structure cleanup.
 - CLOSED: Section 0-2 voice consistency work is framed before rewriting
   begins: match the Section 4 and Section 5 "rule / current proof / boundary"
   style, and keep substantive additions such as T-0 recovery authority owned by
   T-0 rather than implementation cleanup.
-- CURRENT: one acceptance/sync pass is clean at 142 tests, 1295 assertions, and
-  92.3% coverage after Section 0 cleanup landing. Rerun immediately
+- CURRENT: one acceptance/sync pass is clean at 144 tests, 1307 assertions, and
+  92.2% coverage after the current hardening pass. Rerun immediately
   before any `v0.1.0-rc.1` tag.
 - CLOSED: demo artifact decision is made for `v0.1.0-rc.1`: do not rely on a
   stale artifact bundle. Generate fresh offline artifacts immediately before
@@ -173,11 +178,10 @@ Mandatory before `v0.1.0-rc.1`:
   verification, and a non-empty cold event count.
 
 Mandatory before final `v0.1.0`:
-- T-0 recovery authority Pact clause drafted by T-0 before final v0.1.0, likely
-  in Section 0 or Section 1 with a Section 7 cross-reference; this is
-  constitutional text, not a side planning note.
-- Final acceptance/sync/claim-matrix pass after recovery-authority work and
-  before final tag.
+- CLOSED: T-0 recovery authority is now carried in Section 0. Later sections
+  may add cross-references during v0.1.1 cleanup, but v0.1.0 no longer depends
+  on a separate recovery-authority drafting item.
+- Final acceptance/sync/claim-matrix pass before final tag.
 
 Held for v0.1.1 ceremony unless a release-gate review proves otherwise:
 - broad Pact wording cleanup and Council/vocabulary sweep
@@ -187,7 +191,10 @@ Held for v0.1.1 ceremony unless a release-gate review proves otherwise:
   "constitutional seats" as exact context requires. It exercises amendment
   persistence and ceremony machinery with bounded, low-risk scope before larger
   v0.1.1 candidates run through ceremony.
-- full-Pact integrity extension and reverse Pact-reference extraction
+- full-Pact integrity extension and generated reverse Pact-reference extraction
+- RUNE large-vocabulary hardening: namespace the active registry by pack/domain/container, replace global linear scans with a compiled multi-pattern matcher, and add active/archive lifecycle so retired terms leave the hot classifier path
+- tighten-only TECTON policy overlays for tenant/domain customization without tenant constitutional deltas
+- generated `docs/pact_code_map.md` reverse map from code references back to Pact sections, kept separate from generated `docs/claim_matrix.md` and hand-authored `docs/PACT_ALIGNMENT.md`
 - internal advisor layer / multi-voice amendment design
 - TECTON product UI and operator-surface design
 - accumulated section-level Pact refinements. `docs/PACT_ALIGNMENT.md` is the
@@ -312,7 +319,9 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - live LLM evaluation harness for governed usefulness under PAV constraints: score whether live adapters answer from expected evidence markers while preserving refusal/isolation boundaries
 - external-map refinement for public reviewers
 - post-v0.1.0 seat load-bearing audit: verify each seat owns a unique invariant as connectors and per-action gates arrive
-- RUNE per-pack/domain synonym namespace so construction, legal, medical, finance, and tenant packs can reuse common phrases without global collisions
+- RUNE registry namespace: partition active terms, synonyms, and disallowed phrases by pack/domain/container context so construction, legal, medical, finance, and tenant packs can reuse common phrases without global collisions
+- RUNE classification index: replace full-registry word-boundary scans with a compiled multi-pattern matcher that is rebuilt only on registry changes and searched per relevant namespace
+- RUNE term lifecycle: distinguish active and archived/retired terms so historical meaning remains auditable without keeping every retired term in the hot classification path
 - RUNE synonym confidence cleanup: either collapse HIGH/MED/LOW into the states RSS actually uses or give LOW a distinct governed meaning
 - OATH structured `check()` result option that preserves the current string return while exposing consent source (`container_specific`, `global_fallback`, or absent) for audit/reviewer context
 - OATH duration decision: either enforce expiry through deterministic time semantics or document `ConsentRecord.duration` as metadata-only
@@ -327,12 +336,18 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - Section 6 export/audit precision: keep cold verification, cold export, and future payload-inclusive external recomputability as separate claims; do not let Pact wording claim external recomputation until exported canonical proof material, privacy policy, and verifier tests exist
 - Section 6 production posture evidence: keep the one-switch `production_mode` behavior visible if more settings join that profile
 - Section 6 provenance proof: decide whether `UNTRUSTED_IMPORT` needs a dedicated full restore test beyond current SQLite row round-trip proof
+- CLOSED: Section 6 live export sanitizer hardening now aborts JSON/text exports if REDLINE ID collection from live hubs fails, rather than producing a silently trusted export
+- CLOSED: Restore visibility hardening now counts skipped persisted records in `restore_skips`, stores structured `runtime.restore_warnings`, and prints restore warnings for malformed or duplicate terms, synonyms, consents, and hub entries instead of silently swallowing them.
+- PAV/runtime skipped-source visibility: erroring hubs or skipped sources should be counted and surfaced without leaking protected content
 - CLOSED: Section 7 amendment persistence now persists proposals, review state, ratified amendment records, reconstructed canon state, and queryable history across restart
 - Section 7 version model: define how section-level versions (`v1.0`, `v1.1`) relate to project/release versions (`v0.1.0`, `v0.1.1`)
 - Section 7 operator ceremony API: future preview/dry-run, diff report, stale-base handling, and post-ratification verification report for TECTON UI readiness
 - T-0 recovery authority: design auditable manual recovery so future cryptographic identity strengthens attestation without creating permanent lock-out risk
-- Full-Pact integrity: extend hash verification and pre-seal integrity beyond Section 0, and generate reverse maps from code references back to Pact sections
+- Full-Pact integrity: extend hash verification and pre-seal integrity beyond Section 0, and generate `docs/pact_code_map.md` from code references back to Pact sections
+- Reverse Pact-code map: generate `docs/pact_code_map.md` from code comments/docstrings containing Pact section references; report both Pact sections with no code refs and governance code with no Pact refs
 - Local enforcement hooks: add pre-commit/CI checks for baseline sync, claim matrix drift, and Pact-reference extraction once the commands are stable
+- Genesis path cleanup: document or consolidate the two Genesis verification surfaces (`verify_genesis` runtime path and `load_constitution` loader path) so the canonical production path stays obvious
+- Execution law placeholder cleanup: remove dead `ExecutionStateMachine.execute()` code if it is truly obsolete, or mark it explicitly as a non-wired future-broker placeholder
 - Vocabulary/register pass: keep "seat" as the authority-surface term, prefer operational/constitutional seat classes over broad Council language, and translate Pact vocabulary in reviewer/product docs
 - Amendment planning pass: group the accumulated `docs/PACT_ALIGNMENT.md` Pact text candidates by section before the v0.1.1 ceremony begins
 - Pact wording candidates after code proof: use `docs/PACT_ALIGNMENT.md` as the canonical inventory; ROADMAP should only summarize release sequencing and amendment-plan timing.
@@ -346,6 +361,8 @@ Pre-v0.1.0 scope rule:
 
 These are product/substrate directions, not v0.1.0 blockers:
 - internal advisor layer: domain-bounded modules that translate external model analysis into structured, auditable advisory packets without becoming seats or authority holders
+- internal advisor packet schema: define the typed packet contract before any advisor/agent implementation, including evidence binding, concern kind, severity, source attribution, packet hash, and authority set to none
+- one law, many worlds: TECTON may support tighten-only tenant/domain policy overlays for terms, scope, consent, permissions, hubs, and packs, while the global Pact remains unforked and non-tenant-editable
 - multi-voice amendment review: advisor packets can inform T-0 during amendment review, while T-0 and SEAL remain the authority path
 - TECTON operator surfaces for amendment queues, ratification previews, drift indicators, cold-verifier reports, consent-source views, and recovery/bypass receipts
 - public vocabulary translation table for product copy: Pact terms remain precise internally, while UI language uses operator, authority module, amendment workflow, and system owner where those are clearer
@@ -378,6 +395,7 @@ Execution and side effects:
 
 Imported content and meaning:
 - **Indirect prompt injection:** future external-content importers must preserve the data/instruction boundary across hidden text, metadata, comments, retrieved snippets, and tool returns.
+- **RUNE registry scale:** classification is currently linear in active registry size and global unless a caller narrows context. Large vocabulary packs need namespacing, indexing, and lifecycle before RSS claims large-pack performance.
 - **RUNE matching edge cases:** current normalization is useful but not full Unicode/confusable defense; punctuation-heavy labels and apostrophe-like terms need tests or validation as the registry grows.
 - **RUNE synonym namespace:** synonyms are global today; multi-pack/domain collisions must be namespaced before domain packs can be composed freely.
 - **OATH consent duration:** duration is recorded today but not enforced as expiry unless/until v0.1.1 hardening changes that contract.
@@ -387,10 +405,12 @@ Imported content and meaning:
 Persistence, audit, and Pact drift:
 - **External audit anchoring:** cold verification exists, but signing/timestamp anchoring is Phase H.
 - **Pact drift:** Section 0 integrity is protected today; full-Pact hash verification and reverse Pact-to-code extraction remain future hardening.
+- **Reverse traceability:** `docs/claim_matrix.md` maps Pact-to-tests today; generated code-to-Pact mapping is still future work and should not be hand-maintained.
 
 Public surface:
 - **Terminology drift:** formal Pact vocabulary is useful internally, but reviewer/product surfaces should translate it instead of making "Council" language carry more architecture than exists in code.
 - **Demo maturity:** demo quality must not outrun governance integrity.
+- **Tenant customization:** product overlays must customize worlds, not fork the law. Tenant policy can tighten the global floor, never loosen it.
 
 ---
 
@@ -401,8 +421,10 @@ Public surface:
 - What is not proven is not promised.
 - If a claim is stronger than the code, either the code rises to meet it or the text steps down to current truth; no middle fog.
 - One law, many domains.
+- Customize the world; do not fork the law.
 - One verdict, not two.
 - ROADMAP is the return point after every meaningful pass.
+- Generated maps are regenerated, not hand-edited.
 - Usefulness matters. Do not optimize only for refusal or rigidity.
 - Preserve the distinction between **current truth**, **future phase work**, **aspiration**, and **non-goals**.
 - Cold TRACE verification, cold export, and future payload-inclusive external recomputation are separate claims until canonical payload/export proof exists.

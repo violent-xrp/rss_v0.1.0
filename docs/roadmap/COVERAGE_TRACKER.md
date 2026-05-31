@@ -8,7 +8,7 @@ This file preserves coverage detail that used to live in `ROADMAP.md`.
 
 ## Current Coverage Snapshot
 
-Verified on the April 29 untrusted import hash-binding pass.
+Verified on the current synced baseline pass.
 
 ```text
 config.py              100.0%
@@ -17,7 +17,7 @@ audit/migrate.py       100.0%
 scribe.py              100.0%
 reference_pack.py      100.0%
 trace_verify.py         94.3%
-trace_export.py         94.8%
+trace_export.py         95.5%
 tecton.py               94.8%
 cycle.py                94.2%
 persistence.py          94.4%
@@ -28,11 +28,11 @@ ward.py                 87.9%
 scope.py                92.6%
 llm_adapter.py          90.1%
 audit_log.py            87.4%
-runtime.py              85.2%
+runtime.py              85.1%
 oath.py                 88.2%
 pav.py                  86.9%
 constitution.py         92.5%
-TOTAL                   92.3%
+TOTAL                   92.2%
 ```
 
 ## Current Targets

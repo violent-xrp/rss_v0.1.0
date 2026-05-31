@@ -160,6 +160,7 @@ class Runtime:
         # Infra
         self.persistence = Persistence(self.config.db_path)
         self.llm = LLMAdapter(self.config)
+        self.restore_warnings = []
 
         # Phase D-0 — Unified TRACE: construct TECTON here and attach this
         # runtime so container lifecycle/request events flow through
@@ -530,6 +531,25 @@ class Runtime:
                 file=_sys.stderr,
             )
 
+    def _record_restore_skip(self, restored: dict, category: str,
+                             reason: str, record_id: str = "") -> None:
+        """Record a skipped persisted record so restore drift is visible."""
+        restored["restore_skips"] = restored.get("restore_skips", 0) + 1
+        warning = {
+            "category": category,
+            "reason": reason,
+            "record_id": record_id,
+        }
+        self.restore_warnings.append(warning)
+        import sys as _sys
+        suffix = f" record='{record_id}'" if record_id else ""
+        # Restore runs before boot verification completes, so skipped rows are
+        # exposed through structured warnings and stderr instead of mutating TRACE here.
+        print(
+            f"[RESTORE SKIP S6.9.7] {category}: {reason}{suffix}",
+            file=_sys.stderr,
+        )
+
     def restore_from_db(self):
         """
         Load saved state from SQLite on bootstrap.
@@ -543,10 +563,12 @@ class Runtime:
 
         §6.9.1 — All governed state categories (including consents) round-trip.
         """
+        self.restore_warnings = []
         restored = {
             "terms": 0, "synonyms": 0, "disallowed": 0, "hub_entries": 0,
             "trace_events": 0, "consents": 0,
             "amendment_proposals": 0, "amendment_records": 0,
+            "restore_skips": 0,
         }
 
         # Restore historical TRACE chain FIRST. Boot-time chain verification
@@ -583,8 +605,14 @@ class Runtime:
                 try:
                     self.meaning.create_term(term)
                     restored["terms"] += 1
-                except Exception:
-                    pass  # Skip duplicates silently
+                except Exception as exc:
+                    self._record_restore_skip(
+                        restored, "sealed_terms", type(exc).__name__, t.get("id", "")
+                    )
+            else:
+                self._record_restore_skip(
+                    restored, "sealed_terms", "duplicate_term_id", t.get("id", "")
+                )
 
         # Restore synonyms — NON_CRITICAL
         try:
@@ -597,8 +625,14 @@ class Runtime:
                 try:
                     self.meaning.add_synonym(s["phrase"], s["term_id"], s["confidence"])
                     restored["synonyms"] += 1
-                except Exception:
-                    pass
+                except Exception as exc:
+                    self._record_restore_skip(
+                        restored, "synonyms", type(exc).__name__, s.get("phrase", "")
+                    )
+            else:
+                self._record_restore_skip(
+                    restored, "synonyms", "duplicate_phrase", s.get("phrase", "")
+                )
 
         # Restore disallowed terms — NON_CRITICAL
         try:
@@ -608,8 +642,17 @@ class Runtime:
             saved_disallowed = []
         for d in saved_disallowed:
             if d["phrase"] not in self.meaning._disallowed:
-                self.meaning.disallow(d["phrase"], d["reason"])
-                restored["disallowed"] += 1
+                try:
+                    self.meaning.disallow(d["phrase"], d["reason"])
+                    restored["disallowed"] += 1
+                except Exception as exc:
+                    self._record_restore_skip(
+                        restored, "disallowed_terms", type(exc).__name__, d.get("phrase", "")
+                    )
+            else:
+                self._record_restore_skip(
+                    restored, "disallowed_terms", "duplicate_phrase", d.get("phrase", "")
+                )
 
         # Restore hub entries — CRITICAL (affects SCOPE/PAV output)
         for hub_name in ["WORK", "PERSONAL", "SYSTEM", "ARCHIVE", "LEDGER"]:
@@ -622,22 +665,33 @@ class Runtime:
                 # Check if entry already exists (avoid duplicates)
                 existing_ids = [e.id for e in self.hubs.list_hub(hub_name)]
                 if entry_data["id"] not in existing_ids:
-                    e = self.hubs.add_entry(
-                        hub_name,
-                        entry_data["content"],
-                        redline=entry_data["redline"],
-                        entry_id=entry_data["id"],  # F-2: preserve original ID
+                    try:
+                        e = self.hubs.add_entry(
+                            hub_name,
+                            entry_data["content"],
+                            redline=entry_data["redline"],
+                            entry_id=entry_data["id"],  # F-2: preserve original ID
+                        )
+                        # §4.4.3 — restore original_hub
+                        if entry_data.get("original_hub"):
+                            e.original_hub = entry_data["original_hub"]
+                        # §4.4.5 — restore purged flag
+                        if entry_data.get("purged"):
+                            e.purged = True
+                        # §4.3.4 — restore provenance
+                        if entry_data.get("provenance"):
+                            e.provenance = entry_data["provenance"]
+                        restored["hub_entries"] += 1
+                    except Exception as exc:
+                        self._record_restore_skip(
+                            restored, "hub_entries", type(exc).__name__,
+                            entry_data.get("id", "")
+                        )
+                else:
+                    self._record_restore_skip(
+                        restored, "hub_entries", "duplicate_entry_id",
+                        entry_data.get("id", "")
                     )
-                    # §4.4.3 — restore original_hub
-                    if entry_data.get("original_hub"):
-                        e.original_hub = entry_data["original_hub"]
-                    # §4.4.5 — restore purged flag
-                    if entry_data.get("purged"):
-                        e.purged = True
-                    # §4.3.4 — restore provenance
-                    if entry_data.get("provenance"):
-                        e.provenance = entry_data["provenance"]
-                    restored["hub_entries"] += 1
 
         # §6.9.2 — Restore persisted consent records into OATH. CRITICAL.
         # Phase A.2 fix: rehydrate BOTH AUTHORIZED and REVOKED records.
@@ -653,7 +707,10 @@ class Runtime:
         for c in saved_consents:
             status = c.get("status", "AUTHORIZED")
             if status not in ("AUTHORIZED", "REVOKED"):
-                continue  # Skip malformed or unknown statuses
+                self._record_restore_skip(
+                    restored, "consents", "unknown_status", c.get("key", "")
+                )
+                continue
             try:
                 # Authorize first (this creates the record in memory)
                 self.oath.authorize(
@@ -675,8 +732,10 @@ class Runtime:
                     if key in self.oath._consents:
                         self.oath._consents[key].status = "REVOKED"
                 restored["consents"] += 1
-            except Exception:
-                pass  # Skip duplicates or malformed records silently
+            except Exception as exc:
+                self._record_restore_skip(
+                    restored, "consents", type(exc).__name__, c.get("key", "")
+                )
 
         # Phase E-3 — Container restore is now part of default boot path.
         # Previously TECTON.restore_from() had to be called explicitly by the
@@ -1129,6 +1188,8 @@ def bootstrap(config=None, restore: bool = False) -> Runtime:
                   f"{restored['disallowed']} disallowed, "
                   f"{restored['hub_entries']} hub entries, "
                   f"{restored['trace_events']} prior trace events")
+            if restored.get("restore_skips", 0):
+                print(f"  Restore warnings: {restored['restore_skips']} skipped persisted records")
 
     # §6.9.2 — Phase A.2 fix: Default EXECUTE consent is ensured AFTER restore.
     # If a prior session's REVOKED record was loaded, this is a no-op (the

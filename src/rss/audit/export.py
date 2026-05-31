@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import json
 import re
+import sqlite3
 from datetime import datetime, UTC
 from typing import Dict, List, Optional
 
@@ -50,18 +51,24 @@ from rss.persistence.sqlite import Persistence
 REDLINE_REDACTED = "[REDLINE-REDACTED]"
 
 
+class TraceExportSanitizationError(RuntimeError):
+    """Raised when a TRACE export cannot prove REDLINE artifact sanitization."""
+
+
 def _collect_redline_ids_from_hubs(hub_topology) -> set:
     """§6.10.6 — Walk all five hubs, collect entry IDs flagged REDLINE."""
     if hub_topology is None:
         return set()
     redline_ids = set()
-    try:
-        for hub_name in ["WORK", "PERSONAL", "SYSTEM", "ARCHIVE", "LEDGER"]:
+    for hub_name in ["WORK", "PERSONAL", "SYSTEM", "ARCHIVE", "LEDGER"]:
+        try:
             for entry in hub_topology.list_hub(hub_name):
                 if getattr(entry, "redline", False):
                     redline_ids.add(entry.id)
-    except Exception:
-        pass  # Best-effort; sanitizer falls back to no redaction
+        except Exception as exc:
+            raise TraceExportSanitizationError(
+                f"REDLINE sanitizer failed while reading {hub_name}; export aborted."
+            ) from exc
     return redline_ids
 
 
@@ -88,10 +95,15 @@ def _collect_redline_ids_from_db(persistence) -> set:
                 )
                 for row in cur.fetchall():
                     redline_ids.add(row[0])
-            except Exception:
-                pass
-    except Exception:
-        pass
+            except sqlite3.OperationalError as exc:
+                # Older databases may not have container_hub_entries. That
+                # exact schema gap is allowed; other collection failures abort.
+                if "no such table: container_hub_entries" not in str(exc):
+                    raise
+    except Exception as exc:
+        raise TraceExportSanitizationError(
+            "REDLINE sanitizer failed while reading persisted hub rows; export aborted."
+        ) from exc
     return redline_ids
 
 

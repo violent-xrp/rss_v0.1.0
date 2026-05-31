@@ -29,7 +29,7 @@ python tests/test_all.py
 ```
 Current expected final line:
 ```text
-RSS v0.1.0 - 142 test functions, 1295 assertions passed, 0 failed
+RSS v0.1.0 - 144 test functions, 1307 assertions passed, 0 failed
 ```
 
 If `pytest` is installed, parity check:

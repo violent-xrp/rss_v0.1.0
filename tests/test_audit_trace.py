@@ -1693,6 +1693,48 @@ def test_trace_export_extended_edges():
             os.unlink(path2)
 
 
+def test_trace_export_sanitizer_failure_fails_closed():
+    # CLAIM: §6.10.6 — TRACE export aborts when REDLINE sanitizer cannot inspect live hubs
+    """Hardening: live exports fail closed if REDLINE ID collection fails."""
+    section("TRACE Export Sanitizer Failure Fails Closed")
+
+    class BrokenHubs:
+        def list_hub(self, hub_name):
+            raise RuntimeError(f"{hub_name} unavailable")
+
+    trace = AuditLog()
+    trace.record_event("TEST_RED", "TRACE", "TASK|ENTRY-red", "redline ref")
+
+    fd, json_path = tempfile.mkstemp(suffix=".json")
+    os.close(fd)
+    os.unlink(json_path)
+    fd2, text_path = tempfile.mkstemp(suffix=".txt")
+    os.close(fd2)
+    os.unlink(text_path)
+    try:
+        try:
+            export_trace_json(trace, json_path, hub_topology=BrokenHubs())
+            check(False, "JSON export should abort when REDLINE collection fails")
+        except TraceExportSanitizationError as exc:
+            check("REDLINE sanitizer failed" in str(exc),
+                  "JSON export reports sanitizer failure")
+        check(not os.path.exists(json_path),
+              "failed JSON export writes no trusted-looking artifact")
+
+        try:
+            export_trace_text(trace, text_path, hub_topology=BrokenHubs())
+            check(False, "text export should abort when REDLINE collection fails")
+        except TraceExportSanitizationError as exc:
+            check("REDLINE sanitizer failed" in str(exc),
+                  "text export reports sanitizer failure")
+        check(not os.path.exists(text_path),
+              "failed text export writes no trusted-looking artifact")
+    finally:
+        for pth in (json_path, text_path):
+            if os.path.exists(pth):
+                os.unlink(pth)
+
+
 def test_trace_export_token_boundary_sanitization():
     # CLAIM: §4.7.6 — REDLINE artifact_id sanitization uses token-boundary matching; non-REDLINE tokens survive
     """Hardening: REDLINE artifact sanitization should redact tokens, not substrings."""

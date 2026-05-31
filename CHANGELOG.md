@@ -5,9 +5,9 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 ## v0.1.0
 
 ### Current verified snapshot
-- **142 test functions / 1295 assertions / 0 failures** via `python tests/test_all.py`
-- **92.3% statement coverage** via `python run_coverage.py`
-- **142 claims / 142 tests / 107 Pact sections** in `docs/claim_matrix.md`
+- **144 test functions / 1307 assertions / 0 failures** via `python tests/test_all.py`
+- **92.2% statement coverage** via `python run_coverage.py`
+- **144 claims / 144 tests / 108 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -59,6 +59,8 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - README and `docs/AI_GOVERNANCE_PROJECT_BRIEF.md` now provide a plain-English adoption/GTM overview for outside readers while preserving the alpha and non-production boundaries
 - ROADMAP future-hardening queue now parks capability leases, shadow connector harnesses, and CYCLE budget/anomaly tests without changing the v0.1.0 release boundary
 - Section 0 cleanup has been applied from the private drafting rail, with Genesis re-anchored to the current `pact/pact_section0_root_physics.md` hash
+- TRACE live exports now fail closed when REDLINE sanitizer collection fails, aborting JSON/text export instead of producing a trusted-looking unsanitized artifact
+- Runtime restore now surfaces malformed or duplicate persisted rows through `restore_skips`, structured restore warnings, and stderr warnings instead of silently swallowing skipped records
 
 ### Proof growth
 - constitution loader edges
@@ -80,6 +82,8 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - Phase F coverage-honesty closure: every package module is at or above the 80% floor; `scribe.py` and `audit/migrate.py` are both at 100.0%
 - Phase G coverage-floor closure: every package module is now at or above the 85% floor; `cycle.py` and `trace_verify.py` both moved above 94%
 - default Genesis binding proof now verifies the live Section 0 path/hash, tamper-triggered Safe-Stop, and T-0 recovery after restoring the Section 0 artifact
+- TRACE export sanitizer failure proof covers both JSON and text live exports and verifies no trusted-looking artifact is written after sanitizer failure
+- restore skip visibility proof injects malformed or duplicate persisted terms, synonyms, consents, and hub entries, then verifies the runtime reports the skipped records
 
 ### Known limitations preserved honestly
 - ingress identity is still architectural, not cryptographic

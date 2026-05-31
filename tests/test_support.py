@@ -76,7 +76,7 @@ from rss.governance.seats.cycle import Cycle
 from rss.core.config import RSSConfig, RSS_VERSION
 from rss.persistence.sqlite import Persistence
 from rss.llm.adapter import LLMAdapter
-from rss.audit.export import export_trace_json, export_trace_text, export_from_db, EVENT_CODES, categorize_event, build_event_summary, _sanitize_artifact_id, REDLINE_REDACTED
+from rss.audit.export import export_trace_json, export_trace_text, export_from_db, EVENT_CODES, categorize_event, build_event_summary, _sanitize_artifact_id, REDLINE_REDACTED, TraceExportSanitizationError
 from rss.audit.migrate import migration_required, describe_migration_path
 from rss.reference_pack import load_reference_pack, load_demo_containers, seed_demo_world, REFERENCE_PACK, DEMO_CONTAINERS
 

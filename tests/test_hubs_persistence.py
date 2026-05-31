@@ -173,6 +173,81 @@ def test_persistence_roundtrip():
                 os.unlink(path + suffix)
 
 
+def test_restore_skipped_records_are_visible():
+    # CLAIM: §6.9.7 - restore reports skipped persisted records instead of swallowing them silently
+    section("Persistence Restore Skip Visibility")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss_seed = bootstrap(config)
+        default_term = next(iter(rss_seed.meaning._registry.values()))
+        rss_seed.persistence.close()
+
+        conn = sqlite3.connect(path)
+        try:
+            conn.execute(
+                "INSERT OR REPLACE INTO sealed_terms VALUES(?,?,?,?,?)",
+                (
+                    default_term.id,
+                    default_term.label,
+                    "duplicate persisted default term",
+                    json.dumps(["duplicate restore proof"]),
+                    default_term.version,
+                ),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO synonyms VALUES(?,?,?)",
+                ("orphan synonym", "TERM-DOES-NOT-EXIST", "HIGH"),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO consents VALUES(?,?,?,?,?,?)",
+                ("BAD-CONSENT", "EXECUTE", "GLOBAL", "T-0", "BROKEN", None),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO hub_entries VALUES(?,?,?,?,?,?,?,?,?)",
+                (
+                    "DUP-HUB-1",
+                    "WORK",
+                    "persisted duplicate hub payload",
+                    0,
+                    datetime.now(UTC).isoformat(),
+                    1,
+                    "WORK",
+                    0,
+                    "[]",
+                ),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        rss_restore = bootstrap(config, restore=False)
+        rss_restore.hubs.add_entry(
+            "WORK",
+            "already-present hub payload",
+            entry_id="DUP-HUB-1",
+        )
+
+        restored = rss_restore.restore_from_db()
+        check(restored["restore_skips"] >= 4, "restore skip count is reported")
+
+        categories = {warning["category"] for warning in rss_restore.restore_warnings}
+        reasons = {warning["reason"] for warning in rss_restore.restore_warnings}
+        check("sealed_terms" in categories, "duplicate sealed term is visible")
+        check("synonyms" in categories, "malformed synonym is visible")
+        check("consents" in categories, "malformed consent status is visible")
+        check("hub_entries" in categories, "duplicate hub entry is visible")
+        check("duplicate_term_id" in reasons, "duplicate term reason preserved")
+        check("unknown_status" in reasons, "unknown consent status reason preserved")
+        check("duplicate_entry_id" in reasons, "duplicate hub entry reason preserved")
+
+        rss_restore.persistence.close()
+    finally:
+        _cleanup_db(path)
+
+
 def test_s0_8_4_governed_state_bootstrap_roundtrip():
     # CLAIM: §0.8.4, §6.9.1 — every listed governed-state category restores on bootstrap
     section("S0/S6: Governed State Bootstrap Round-Trip (§0.8.4)")

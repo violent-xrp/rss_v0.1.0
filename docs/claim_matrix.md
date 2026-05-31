@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-05-29 22:05 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-05-30 01:32 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 107 distinct Pact sections referenced across 142 claim tags on 142 test functions.
+**Coverage:** 108 distinct Pact sections referenced across 144 claim tags on 144 test functions.
 
 ---
 
@@ -494,6 +494,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
 - `test_phase_d_regression_battery` — UUID ingress, scope-on-permission, OATH persistence-failure visibility
 
+## §6.9.7
+
+- `test_restore_skipped_records_are_visible` — Â§6.9.7 â€” restore reports skipped persisted records instead of swallowing them silently
+
 ## §6.10
 
 - `test_trace_export` — TRACE export format and REDLINE sanitization
@@ -506,6 +510,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_c_phase_regression_battery` — canonical JSON, profile freezing, strict mode, threshold Safe-Stop, REDLINE sanitization
 - `test_trace_export_cold_container_redline_sanitization` — cold TRACE export sanitizes REDLINE artifact IDs from container hub rows as well as global rows
 - `test_trace_export_extended_edges` — TRACE export exact-boundary container prefix filter and REDLINE sanitization in text export
+- `test_trace_export_sanitizer_failure_fails_closed` — TRACE export aborts when REDLINE sanitizer cannot inspect live hubs
 
 ## §6.11
 

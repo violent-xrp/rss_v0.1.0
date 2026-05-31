@@ -125,6 +125,8 @@ Section 6 / persistence and audit:
 - SQLite persistence uses WAL mode, `check_same_thread=False`, and a process-local `RLock` around persistence operations. This is a single-process/threaded posture, not a distributed database guarantee.
 - Cold export exists through `export_from_db()` and includes `chain_valid`, event summary, REDLINE artifact-id sanitization, JSON/text output, and SQLite source labeling.
 - REDLINE export sanitization is token-boundary based: known REDLINE entry IDs are replaced in artifact identifiers without over-redacting unrelated larger tokens. Cold export collects REDLINE IDs from both global and container hub tables.
+- Live TRACE exports now fail closed with `TraceExportSanitizationError` if REDLINE ID collection from hub topology fails, rather than falling back to an empty redaction set and producing a trusted-looking export.
+- Runtime restore now reports skipped persisted records through `restore_skips`, structured `runtime.restore_warnings`, and stderr warnings, so malformed or duplicate restored terms, synonyms, consents, and hub entries are visible rather than silently swallowed.
 - Hub provenance, including `UNTRUSTED_IMPORT` receipts with source/wrapped SHA-256 digests, is persisted through the `provenance` JSON column for both global and container hub entries.
 
 Section 7 / amendment and evolution:
