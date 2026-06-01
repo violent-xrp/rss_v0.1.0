@@ -498,6 +498,26 @@ def test_cycle_extended_edges():
           "handle unknown action returns structured error")
 
 
+def test_cycle_per_domain_load_metrics():
+    # CLAIM: §1.7.2 — CYCLE reports per-domain load metrics and preserves aggregate counts
+    section("CYCLE Per-Domain Load Metrics")
+
+    cycle = Cycle()
+    cycle.check_rate_limit("WORK")
+    cycle.check_rate_limit("WORK")
+    cycle.check_rate_limit("PERSONAL")
+
+    metrics = cycle.complexity_meter()
+    per_domain = metrics.get("per_domain")
+    check(isinstance(per_domain, dict), "per_domain load metrics are present")
+    check(per_domain.get("WORK") == 2, "WORK domain load count is correct")
+    check(per_domain.get("PERSONAL") == 1, "PERSONAL domain load count is correct")
+    check(metrics["total_recent_calls"] == sum(per_domain.values()),
+          "aggregate total equals sum of per-domain load")
+    check(metrics["domains_tracked"] == len(per_domain),
+          "domains_tracked remains aligned with per-domain keys")
+
+
 def test_vocabulary_management():
     # CLAIM: §2.4, §2.4.4 — vocabulary add/update/remove persistence
     section("Vocabulary Management")

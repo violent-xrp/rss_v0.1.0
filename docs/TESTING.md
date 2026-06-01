@@ -15,7 +15,7 @@ python tests/test_all.py
 Current expected final line:
 
 ```text
-RSS v0.1.0 - 144 test functions, 1307 assertions passed, 0 failed
+RSS v0.1.0 - 145 test functions, 1312 assertions passed, 0 failed
 ```
 
 This custom runner is the local source of truth for the current Windows environment.

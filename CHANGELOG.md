@@ -5,9 +5,9 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 ## v0.1.0
 
 ### Current verified snapshot
-- **144 test functions / 1307 assertions / 0 failures** via `python tests/test_all.py`
+- **145 test functions / 1312 assertions / 0 failures** via `python tests/test_all.py`
 - **92.2% statement coverage** via `python run_coverage.py`
-- **144 claims / 144 tests / 108 Pact sections** in `docs/claim_matrix.md`
+- **145 claims / 145 tests / 109 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -62,6 +62,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - TRACE live exports now fail closed when REDLINE sanitizer collection fails, aborting JSON/text export instead of producing a trusted-looking unsanitized artifact
 - Runtime restore now surfaces malformed or duplicate persisted rows through `restore_skips`, structured restore warnings, and stderr warnings instead of silently swallowing skipped records
 - Section 1 cleanup corrected TRACE/RUNE implementation references to current module paths and stepped CYCLE wording down from "system complexity" to per-domain request load to match `cycle.py`
+- CYCLE `complexity_meter()` now reports a per-domain load breakdown in addition to aggregate counts, making Section 1.7.2 per-domain load metrics code-true
 
 ### Proof growth
 - constitution loader edges

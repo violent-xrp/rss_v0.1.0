@@ -105,10 +105,17 @@ class Cycle:
                     "max": record.max_per_minute}
 
     def complexity_meter(self) -> dict:
-        """Return current complexity metrics for all domains."""
+        """Return current aggregate and per-domain load metrics."""
         with self._global_lock:
-            total = sum(len(r.timestamps) for r in self._domains.values())
-            return {"domains_tracked": len(self._domains), "total_recent_calls": total}
+            per_domain = {
+                domain: len(record.timestamps)
+                for domain, record in self._domains.items()
+            }
+            return {
+                "domains_tracked": len(self._domains),
+                "total_recent_calls": sum(per_domain.values()),
+                "per_domain": per_domain,
+            }
 
     def status(self) -> dict:
         """Return module status overview."""

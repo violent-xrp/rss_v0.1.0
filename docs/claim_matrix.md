@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-05-30 01:32 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-06-01 02:29 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 108 distinct Pact sections referenced across 144 claim tags on 144 test functions.
+**Coverage:** 109 distinct Pact sections referenced across 145 claim tags on 145 test functions.
 
 ---
 
@@ -116,6 +116,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §1.7
 
 - `test_scribe_extended_edges` — SCRIBE extended edges: draft uniqueness, error states, UAP assembly, status, and handle dispatch
+
+## §1.7.2
+
+- `test_cycle_per_domain_load_metrics` — CYCLE reports per-domain load metrics and preserves aggregate counts
 
 ## §1.8
 
@@ -496,7 +500,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §6.9.7
 
-- `test_restore_skipped_records_are_visible` — Â§6.9.7 â€” restore reports skipped persisted records instead of swallowing them silently
+- `test_restore_skipped_records_are_visible` — §6.9.7 - restore reports skipped persisted records instead of swallowing them silently
 
 ## §6.10
 

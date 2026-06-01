@@ -31,16 +31,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **144 test functions / 1307 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **145 test functions / 1312 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
 - **92.2% statement coverage** via `python run_coverage.py`
-- **144 claims / 144 tests / 108 Pact sections** in `docs/claim_matrix.md`
+- **145 claims / 145 tests / 109 Pact sections** in `docs/claim_matrix.md`
 - **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 144/1307 baseline
+- public docs are synced to the current 145/1312 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -168,7 +168,7 @@ Mandatory before `v0.1.0-rc.1`:
   begins: match the Section 4 and Section 5 "rule / current proof / boundary"
   style, and keep substantive additions such as T-0 recovery authority owned by
   T-0 rather than implementation cleanup.
-- CURRENT: one acceptance/sync pass is clean at 144 tests, 1307 assertions, and
+- CURRENT: one acceptance/sync pass is clean at 145 tests, 1312 assertions, and
   92.2% coverage after the current hardening pass. Rerun immediately
   before any `v0.1.0-rc.1` tag.
 - CLOSED: demo artifact decision is made for `v0.1.0-rc.1`: do not rely on a

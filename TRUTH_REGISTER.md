@@ -5,9 +5,9 @@ _License: CC BY-ND 4.0 discipline material; see `LICENSE/CC BY-ND 4.0.md` and `p
 Release: **v0.1.0**
 
 ## Current verified state
-- **144 test functions / 1307 assertions / 0 failures** via `python tests/test_all.py`
+- **145 test functions / 1312 assertions / 0 failures** via `python tests/test_all.py`
 - **92.2% statement coverage** via `python run_coverage.py`
-- **144 claims / 144 tests / 108 Pact sections** in `docs/claim_matrix.md`
+- **145 claims / 145 tests / 109 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (subpackages: `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`) + `src/main.py` CLI entry point
 - demo/reference-pack v2, pack validation, demo artifact export, governed offline fallback, live normal-advisor boundary, interactive SYSTEM-only normal-chat containment, and untrusted import hash-binding are implemented in the current code snapshot
 
@@ -62,7 +62,7 @@ RSS v0.1.0 does **not** yet implement:
 - `clear_safe_stop()` requires an explicit `t0_command=True` soft sovereign gate, not a cryptographic/mechanical identity check; the mechanical identity gate remains future perimeter hardening, not a current v0.1.0 claim
 - hard guarantees depend on meaningful side effects entering through the governed runtime boundary
 - future browser, email, document, RAG, and tool-return connectors still need connector-specific indirect-prompt-injection tests before public claims expand
-- public docs are synchronized to the 144/1307 baseline as of this update; ROADMAP remains the working truth source going forward
+- public docs are synchronized to the 145/1312 baseline as of this update; ROADMAP remains the working truth source going forward
 
 ---
 

@@ -247,6 +247,7 @@ CYCLE fail-closed behavior:
 - CYCLE strict mode can fail loud on unregistered domains.
 - `handle({"action": "check_rate"})` uses the non-strict path today.
 - Runtime-stage internal CYCLE failures are now tested: an injected `check_rate_limit()` exception returns `UNEXPECTED_ERROR` at Stage 6 / CYCLE rather than silently permitting the request.
+- CYCLE load reporting now includes both aggregate counts (`domains_tracked`, `total_recent_calls`) and a `per_domain` load breakdown. Real anomaly, budget-exhaustion, retry-loop, or entropy-style complexity metrics remain future hardening, not a v0.1.0 claim.
 
 SEAL external attribution policy:
 - SEAL has an external advisor attribution scanner that rejects authoring/authority attribution patterns rather than bare name mentions.
