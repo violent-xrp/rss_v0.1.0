@@ -61,6 +61,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - Section 0 cleanup has been applied from the private drafting rail, with Genesis re-anchored to the current `pact/pact_section0_root_physics.md` hash
 - TRACE live exports now fail closed when REDLINE sanitizer collection fails, aborting JSON/text export instead of producing a trusted-looking unsanitized artifact
 - Runtime restore now surfaces malformed or duplicate persisted rows through `restore_skips`, structured restore warnings, and stderr warnings instead of silently swallowing skipped records
+- Section 1 cleanup corrected TRACE/RUNE implementation references to current module paths and stepped CYCLE wording down from "system complexity" to per-domain request load to match `cycle.py`
 
 ### Proof growth
 - constitution loader edges

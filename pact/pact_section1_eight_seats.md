@@ -141,7 +141,7 @@ The default rule is structural transformation only.
 
 **Sigil:** 🔍
 **Authority Type:** Evidentiary (record/verify)
-**Current Implementation:** `audit_log.py` + `persistence.py`
+**Current Implementation:** `audit/` + `persistence/`
 
 ### **1.3.1 Mandate**
 
@@ -245,7 +245,7 @@ If SCOPE cannot declare an envelope, it raises ScopeError. If SCOPE cannot valid
 
 **Sigil:** ᚱ
 **Authority Type:** Interpretive (classify/bind)
-**Current Implementation:** `meaning_law.py`
+**Current Implementation:** `rune.py`
 
 ### **1.5.1 Mandate**
 
@@ -356,7 +356,7 @@ OATH checks consent in order: container-specific first, then GLOBAL. This allows
 
 ### **1.7.1 Mandate**
 
-CYCLE enforces rate limits per domain and tracks system complexity. It prevents runaway loops and resource exhaustion. CYCLE deals only in numbers: counts, timestamps, thresholds, and bounded capacity. It does not judge content or ethics.
+CYCLE enforces rate limits per domain and tracks per-domain request load. It prevents runaway loops and resource exhaustion. CYCLE deals only in numbers: counts, timestamps, thresholds, and bounded capacity. It does not judge content or ethics.
 
 ### **1.7.2 Allowed Operations**
 
@@ -365,7 +365,7 @@ CYCLE may:
 * Register domains with configurable rate limits
 * Track timestamps of requests within rolling windows
 * Check rate limits and return OK or RATE_LIMITED
-* Report complexity metrics across tracked domains
+* Report per-domain load metrics across tracked domains
 * Auto-register unknown domains on first access with defaults
 * Operate safely under the reference thread model
 
@@ -384,7 +384,7 @@ CYCLE may not:
 CYCLE must be able to produce:
 
 * Rate-check result with status, domain, count, and max
-* Complexity report across tracked domains
+* Load report across tracked domains
 
 ### **1.7.5 Failure Mode**
 
