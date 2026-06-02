@@ -61,8 +61,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - Section 0 cleanup has been applied from the private drafting rail, with Genesis re-anchored to the current `pact/pact_section0_root_physics.md` hash
 - TRACE live exports now fail closed when REDLINE sanitizer collection fails, aborting JSON/text export instead of producing a trusted-looking unsanitized artifact
 - Runtime restore now surfaces malformed or duplicate persisted rows through `restore_skips`, structured restore warnings, and stderr warnings instead of silently swallowing skipped records
-- Section 1 cleanup corrected TRACE/RUNE implementation references to current module paths and stepped CYCLE wording down from "system complexity" to per-domain request load to match `cycle.py`
-- CYCLE `complexity_meter()` now reports a per-domain load breakdown in addition to aggregate counts, making Section 1.7.2 per-domain load metrics code-true
+- Section 1/CYCLE cleanup corrected TRACE/RUNE implementation references, replaced CYCLE "system complexity" wording with per-domain request load, and extended `complexity_meter()` with a `per_domain` breakdown so Section 1.7.2 is code-true while real anomaly/budget complexity remains v0.1.1 future hardening
 - Section 3 cleanup removed duplicate Section 3.3.1 text, corrected Section 3.1.4 to word-boundary verb detection and Section 3.7.4 to the governed-data fallback, fenced `UNAUTHORIZED_INGRESS` and sustained-audit-failure Safe-Stop behavior, and replaced the Section 3.8 test-count table with a `docs/claim_matrix.md` pointer
 
 ### Proof growth

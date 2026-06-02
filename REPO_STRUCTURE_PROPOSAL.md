@@ -3,7 +3,7 @@
 _Licensed under AGPLv3; see `LICENSE/README.md`._
 
 **Status:** Proposal only. Not tracked in ROADMAP. Not scheduled. Operator will decide when and whether to execute.
-**Author anchor:** Built from Grok's flat-vs-nested analysis + April 20 full-module review findings + current kernel truth.
+**Author anchor:** Built from external flat-vs-nested analysis + April 20 full-module review findings + current kernel truth.
 **Primary goal:** Prepare the repo to scale cleanly into Phase G (wrapper/API) and Phase H (product/workspace layer) without fighting the current flat layout.
 **Non-goal:** Changing kernel behavior. This is a reorganization, not a rewrite.
 
@@ -176,7 +176,7 @@ rss_v0.1.0/
 
 ### Intentionally Do NOT Rename
 
-- **`pav.py` stays `pav.py`.** Grok suggested `sanitization.py`. Disagree — "PAV" (Prepared Advisory View) is Pact terminology with a specific semantic meaning; `sanitization.py` is generic and loses the constitutional link. If the filename is unclear to a new reader, the docstring fixes it, not a rename.
+- **`pav.py` stays `pav.py`.** Renaming it to `sanitization.py` was rejected because "PAV" (Prepared Advisory View) is Pact terminology with a specific semantic meaning; `sanitization.py` is generic and loses the constitutional link. If the filename is unclear to a new reader, the docstring fixes it, not a rename.
 - **`state_machine.py` stays `state_machine.py`.** Describes what it is; no subpackage rename helps.
 - **`config.py` stays `config.py`.** Universal convention.
 - **`tecton.py` stays `tecton.py`.** Same reason as PAV — constitutional term.
@@ -367,7 +367,7 @@ Budget: 2-3 hours focused work, ideally with enough assistant/tool session budge
 
 ## Rejected Alternatives
 
-**Grok suggested:**
+**Rejected outside suggestions:**
 - Renaming `pav.py` to `sanitization.py` → rejected, loses Pact terminology.
 - Creating `governance/pact.py` as a living constitution file → rejected, the Pact already lives as `.md` documents in `pact/`; creating a `.py` would duplicate truth sources.
 - Moving `reference_pack.py` into a subpackage → rejected, it is shared demo data, not a layer.

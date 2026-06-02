@@ -45,6 +45,17 @@ Before a release/tag gate:
 - run `python docs/sync_baseline.py --check --require-clean`
 - treat a stale-doc exit as a release blocker
 
+## Narrative coherence discipline
+Automated sync catches stale counts, not contradictory prose. After each Pact section landing or code/proof hardening lane, read `CHANGELOG.md`, `ROADMAP.md`, and `docs/PACT_ALIGNMENT.md` together.
+
+Confirm they tell one consistent story about:
+- what changed
+- why it changed
+- whether text stepped down to current code, code rose to meet text, or both happened in sequence
+- what remains future work
+
+Do not leave adjacent docs implying opposite narratives, such as "claim weakened to match code" beside "code strengthened to satisfy claim" without the bridge between them.
+
 ## Repo-layout discipline
 Public-facing root docs stay at the root:
 - `README.md`

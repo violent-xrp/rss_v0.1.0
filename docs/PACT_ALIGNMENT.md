@@ -79,7 +79,7 @@ Section 2 / meaning law:
 - RUNE's classification order matches the Pact: DISALLOWED, direct, substring, synonym, default.
 - RUNE defaults unknown phrases to AMBIGUOUS and does not produce SEALED without registry/synonym membership.
 - Runtime contextual reinjection is present: canonical `label: definition` term pairs are sent through the LLM adapter's `terms` parameter.
-- MED and LOW synonym confidence are not yet behaviorally distinct in the returned `TermStatus`; both become AMBIGUOUS with the same confirmation wording.
+- MED and LOW synonym confidence are not yet behaviorally distinct in the returned `TermStatus`; both become AMBIGUOUS with the same confirmation wording. Distinct MED/LOW confirmation semantics are v0.1.1 design work, not a v0.1.0 claim.
 
 Section 3 / execution law:
 - Runtime stage tracking matches the Pact's execution pipeline: Stage 0 Safe-Stop through Stage 9 TRACE use stable `stage` and `stage_name` fields on structured halts.
@@ -176,7 +176,7 @@ RUNE authorization surface:
 - Anti-trojan scanning currently checks definitions. Runtime proof now captures the actual advisor prompt payload and verifies constraints remain kernel metadata, not advisor/model context. If a future adapter reinjects constraints, the scanner contract must expand before that change lands.
 - Primary substring classification now prefers the longest bounded sealed-term match, so registration order cannot make a shorter term outrank a more specific phrase.
 - Boundary-sensitive labels, including punctuation-heavy, apostrophe-like, internal-hyphen, combining-mark, and confusable inputs, need tests or validation as the registry grows.
-- MED/LOW confidence behavior needs resolution: preserve Pact shape with a distinct confirmation field, or amend future Pact text to collapse the confidence model.
+- MED/LOW confidence behavior needs v0.1.1 resolution: preserve the Pact shape by adding explicit confirmation metadata/semantics, or amend future Pact text to collapse the confidence model to the states RSS actually uses.
 
 OATH consent semantics:
 - OATH has write-ahead consent persistence and fail-closed namespace validation.
