@@ -26,11 +26,6 @@ As with Sections 1 and 2 (§1.0.1): unless otherwise noted, clauses define const
 The execution state machine and the runtime pipeline are Tier 2 subsystems (§0.4.1). They serve seats but possess no constitutional authority of their own. They may be refactored or replaced by T-0 without amending Section 0 or Section 1, provided the constitutional requirements defined in this section are preserved.
 
 ### 3.1 Intent Classification
-### 3.3.1 Pipeline as Constitutional Requirement
-
-The governed pipeline defines the governance checks that every request must pass through. Each stage listed below represents a constitutional requirement: the system must perform these checks on every request. No stage may be removed or bypassed without amending this section.
-
-The ordering of stages is a current reference implementation reflecting the v0.1.0 security posture (check safety before meaning, check meaning before consent, check consent before resources). The ordering may evolve as the runtime matures, provided the following invariants hold: Safe-Stop and Genesis checks precede all other stages, RUNE classification precedes consent and rate checks, and TRACE records the final outcome.
 ### 3.1.2 Intent Classes
 Every request is classified into exactly one of three intent classes:
 REQUEST — Standard operational query. No high-risk or constitutional verbs detected. This is the vast majority of runtime traffic: "What is the Morrison quote?", "List all RFIs", "Show the contract summary." These examples use construction terminology; the classification logic is domain-agnostic.
@@ -40,8 +35,8 @@ CONSTITUTIONAL — Request contains verbs that touch Pact governance (seal, amen
 Verb lists are configurable. The config.py maintains the authoritative high_risk_verbs list (delete, remove, destroy, override, bypass, terminate, revoke, cancel, purge, wipe, export, run, display). The runtime passes config.high_risk_verbs to the state machine at initialization, ensuring a single source of truth. Constitutional verbs (seal, amend, rewrite, canonize) are maintained in state_machine.py.
 The constitutional requirement is that verb lists used for classification must be explicit, auditable, and modifiable only by T-0.
 ### 3.1.4 Detection Mechanics
-Classification uses case-insensitive substring detection against the verb lists. The first matching verb determines the class. Detection order: HIGH_RISK verbs checked first, then CONSTITUTIONAL verbs. If no match, the request is classified REQUEST.
-Note: unlike RUNE's word-boundary matching (§2.1.1), the state machine uses substring detection for verbs. This is acceptable because verb stems are less prone to false positives than sealed terms. If false positives emerge in practice, word-boundary matching should be adopted. T-0 may mandate this change without amending the Pact.
+Classification uses case-insensitive whole-word detection against the verb lists. A verb matches only as a discrete bounded token, not as a fragment of a larger word, so "display" does not match inside "displayed" and "run" does not match inside "running". The first matching verb determines the class. Detection order: HIGH_RISK verbs checked first, then CONSTITUTIONAL verbs. If no match, the request is classified REQUEST.
+This mirrors RUNE's word-boundary discipline (§2.1.1): verb detection must not fire on fragmented words. The constitutional requirement is bounded-token matching; the current reference implementation enforces it with word-boundary matching in the execution state machine.
 ### 3.1.5 Payload Hashing
 Every classified intent includes a SHA-256 hash of the original request text. This provides tamper detection: if the text is modified between classification and execution, the hash mismatch reveals it. The hash is computed at classification time and stored in the ExecutionIntent.
 ### 3.1.6 The Decision Chain
@@ -66,13 +61,13 @@ CONSTITUTIONAL (Tier 3): 2 minutes
 TTL windows are implementation details and may be adjusted by T-0 without amending this section. The constitutional requirement is that every intent must have a finite TTL, and expired intents must be rejected unconditionally.
 ### 3.2.3 TTL Enforcement
 When validate() is called on an intent, the first check is TTL expiry. If now > ttl_expiry, the result is {valid: False, reason: "TTL expired"}. No further validation occurs. The pipeline treats this as a halt condition.
-3.2.4 No Indefinite Intents
+### 3.2.4 No Indefinite Intents
 An intent with no TTL, or with a TTL set to an unreasonably distant future, is invalid. Every classified intent must expire. This prevents stale intents from being replayed after conditions have changed.
 
 ### 3.3 The Governed Pipeline
 ### 3.3.1 Pipeline as Constitutional Requirement
 The governed pipeline defines the governance checks that every request must pass through. Each stage listed below represents a constitutional requirement: the system must perform these checks on every request. No stage may be removed or bypassed without amending this section.
-The ordering of stages is a current reference implementation reflecting the ERA-3 security model (check safety before meaning, check meaning before consent, check consent before resources). The ordering may evolve as the runtime matures, provided the following invariants hold: Safe-Stop and Genesis checks precede all other stages, RUNE classification precedes consent and rate checks, and TRACE records the final outcome.
+The ordering of stages is a current reference implementation reflecting the v0.1.0 security posture (check safety before meaning, check meaning before consent, check consent before resources). The ordering may evolve as the runtime matures, provided the following invariants hold: Safe-Stop and Genesis checks precede all other stages, RUNE classification precedes consent and rate checks, and TRACE records the final outcome.
 T-0 may add new stages to the pipeline without amending Section 0. New stages must be documented in this section or its successors. New stages must declare their position relative to existing stages, specify their halt condition and error code, be registered with TRACE for audit logging, and not bypass or weaken any existing stage. Removing or reordering existing stages requires a Pact amendment.
 ### 3.3.2 Pipeline Stages
 Every request to process_request() flows through these stages:
@@ -158,6 +153,8 @@ Any unhandled exception
 Any stage
 Request rejected. Error logged best-effort.
 
+Pre-pipeline architectural rejection: a request that asserts a non-GLOBAL container identity without the required tenant-ingress authority is rejected with UNAUTHORIZED_INGRESS before Stage 0, so it never enters the governed stage sequence. This is an architectural boundary below the stage table rather than a pipeline-stage halt; it is auditable and TRACE-recorded. Container ingress rules are governed by Section 5.
+
 ### 3.4.2 Halt Logging
 Every halt condition is logged by TRACE before the error response is returned to the caller. The sole exception is Stage 0 (Safe-Stop check): if the system is in Safe-Stop, TRACE logging is not attempted because the system is frozen. All other halts are logged with event code, task_id, and halt reason.
 ### 3.4.3 Halt Response Structure
@@ -175,6 +172,7 @@ Path 2 — Write-Ahead RuntimeError. If TRACE cannot persist an audit record, a 
 Path 3 — Generic Exception. Any other unhandled exception is caught, logged to TRACE best-effort as PIPELINE_ERROR with the failing stage identified, and returned as {error: "UNEXPECTED_ERROR"} with stage tracking. The pipeline does not crash on unexpected errors — it contains them and reports.
 ### 3.5.2 Write-Ahead Guarantee
 The _log() method enforces §0.8.3: every event is first recorded in the in-memory TRACE chain, then persisted to SQLite. If SQLite persistence fails, a RuntimeError is raised and the operation aborts. No governance event may occur without a durable audit record. Persistence mechanics are governed fully by Section 6.
+A single write-ahead failure aborts the operation that generated the event. Sustained audit-write failure is stronger: when consecutive failures cross the configured audit-failure threshold, the runtime enters persistent Safe-Stop. Sustained inability to record audit evidence is treated as Constitutional Drift (§0.7.2), not a recoverable operational error.
 ### 3.5.3 Best-Effort Logging
 During Safe-Stop entry and unexpected errors, TRACE logging is attempted but failure is tolerated. This prevents a logging failure from masking the original error. The Safe-Stop state itself is persisted independently of TRACE (via persistence.enter_safe_stop()), so the halt survives even if audit logging fails.
 
@@ -213,7 +211,7 @@ State explicitly when data is insufficient rather than hallucinate
 Be concise and professional
 These constraints are advisory to the model (it is a probabilistic system and may not comply perfectly). The real enforcement is upstream: the PAV ensures the model only sees governed data, and RUNE ensures terms have canonical meaning regardless of what the model thinks they mean.
 ### 3.7.4 Fallback Mode
-If the LLM is unavailable (Ollama not running, API timeout, connection error), the adapter returns a fallback response that echoes the user's input with a clear [RSS FALLBACK] prefix. Fallback mode is not silent — the caller knows no model was consulted. No governance is weakened in fallback mode; the pipeline still runs all stages up to and including PAV construction.
+If the LLM is unavailable (model not running, API timeout, connection error), the adapter returns a deterministic offline fallback. The fallback does not echo or act on the user's raw input; it summarizes only the governed PAV data the pipeline already prepared, reports how many governed entries were consulted, refuses privacy-marked queries, and declines to answer when the governed data does not contain the answer. Fallback mode is not silent — the response states that the offline fallback was engaged, so the caller knows no model was consulted. No governance is weakened in fallback mode; the pipeline still runs all stages up to and including PAV construction, and the fallback never reaches beyond scoped governed data.
 ### 3.7.5 Timeout Governance
 The LLM adapter enforces a configurable timeout on API calls (config.llm_timeout, default: 30 seconds). If the model does not respond within the timeout, the call fails gracefully and fallback mode activates. The timeout prevents a hung model from blocking the entire pipeline. T-0 may adjust the timeout for different models or network conditions without modifying adapter code.
 ### 3.7.6 Model Swappability
@@ -226,47 +224,11 @@ Governance data suppression: The response is scanned for internal governance art
 Violations are logged to TRACE. The cleaned response is returned to the caller. This gate does not modify pipeline governance — it is a final integrity check ensuring the system's internals do not leak through the model's output.
 
 ### 3.8 Implementation Verification
-All constitutional requirements in this section are implemented and tested except where noted.
-Requirement
-Section
-Tests
-Status
-Config-driven verb lists
-§3.1.3
-5 tests (config verbs used, narrower config changes behavior)
-Verified
-Pipeline stage tracking
-§3.3.4
-7 tests (DISALLOWED→stage 3, CONSENT→stage 5, SAFE_STOP→stage 0)
-Verified
-SAFE_STOP_INFLIGHT
-§3.4.4
-6 tests (genesis failure→stage 1, subsequent→stage 0)
-Verified
-Event code taxonomy
-§3.4.5
-12 tests (uppercase format, namespaced, no spaces)
-Verified
-Configurable LLM timeout
-§3.7.5
-4 tests (default 30s, custom accepted, adapter uses config)
-Verified
-LLM response validation
-§3.7.7
-8 tests (name strip, REDLINE leak flag, governance redact, clean passthrough)
-Verified
-Seal review_complete
-§1.9.2
-3 tests (works, error code renamed, T-0 still required)
-Verified
-WARD hook enforcement
-§1.2.6
-6 tests (protected keys, violation raises WardError citing §1.7)
-Verified
-Tier 2 validation level
-§3.2.1
-—
-Reserved (future)
+The constitutional requirements in this section are implemented and tested in the current reference runtime, including config-driven verb lists (§3.1.3), pipeline stage tracking (§3.3.4), SAFE_STOP_INFLIGHT recording (§3.4.4), the event-code taxonomy (§3.4.5), configurable LLM timeout (§3.7.5), and LLM response validation (§3.7.7).
+
+Per-requirement test mappings and current proof counts are not carried in this constitutional text, because they are volatile and drift between releases (§2.13). The authoritative, generated traceability surface is `docs/claim_matrix.md`, with current proof totals held in the Truth Register and release documentation.
+
+Tier 2 validation (§3.2.1) is reserved and not yet implemented; it carries no current proof claim until T-0 defines its triggers.
 
 ---
 

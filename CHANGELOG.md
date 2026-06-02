@@ -63,6 +63,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - Runtime restore now surfaces malformed or duplicate persisted rows through `restore_skips`, structured restore warnings, and stderr warnings instead of silently swallowing skipped records
 - Section 1 cleanup corrected TRACE/RUNE implementation references to current module paths and stepped CYCLE wording down from "system complexity" to per-domain request load to match `cycle.py`
 - CYCLE `complexity_meter()` now reports a per-domain load breakdown in addition to aggregate counts, making Section 1.7.2 per-domain load metrics code-true
+- Section 3 cleanup removed duplicate Section 3.3.1 text, corrected Section 3.1.4 to word-boundary verb detection and Section 3.7.4 to the governed-data fallback, fenced `UNAUTHORIZED_INGRESS` and sustained-audit-failure Safe-Stop behavior, and replaced the Section 3.8 test-count table with a `docs/claim_matrix.md` pointer
 
 ### Proof growth
 - constitution loader edges

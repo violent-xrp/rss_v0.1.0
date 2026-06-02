@@ -85,10 +85,12 @@ Section 3 / execution law:
 - Runtime stage tracking matches the Pact's execution pipeline: Stage 0 Safe-Stop through Stage 9 TRACE use stable `stage` and `stage_name` fields on structured halts.
 - The main halt codes named by the Pact are represented in runtime behavior: `SAFE_STOP_ACTIVE`, `GENESIS_FAILURE`, `DISALLOWED_TERM`, `CONSENT_REQUIRED`, `RATE_LIMITED`, and `UNEXPECTED_ERROR`.
 - Intent classification checks HIGH_RISK verbs before CONSTITUTIONAL verbs, matching the Pact's most-restrictive ordering for mixed-risk requests.
+- Intent verb detection now matches Section 3.1.4: the execution state machine uses word-boundary / whole-word matching, not substring matching.
 - Execution intents carry a SHA-256 `payload_hash` of the original text, and validation re-hashes `raw_text` before execution so tampered intent payloads fail closed.
 - Runtime-created TTLs are bounded internally by intent class (`HIGH_RISK`, `CONSTITUTIONAL`, `REQUEST`), and Stage 4 validates both expiration and unreasonably distant TTLs before OATH/CYCLE/PAV/LLM.
-- `UNAUTHORIZED_INGRESS` is a real pre-pipeline architectural rejection for non-GLOBAL container spoofing without the TECTON sentinel. It is tested and TRACE-recorded, but it is not yet named in the Pact's Section 3 stage or halt-condition tables.
-- Sustained audit-write failure is stronger in code than the current Section 3 wording: a single write-ahead failure aborts the operation, while repeated failures crossing `audit_failure_threshold` enter persistent Safe-Stop.
+- Section 3 now fences `UNAUTHORIZED_INGRESS` as a pre-pipeline architectural rejection for non-GLOBAL container spoofing without the TECTON sentinel. It is tested, TRACE-recorded, and intentionally described below the stage table rather than as a numbered pipeline stage.
+- Section 3 now names sustained audit-write failure as Constitutional Drift / persistent Safe-Stop behavior once consecutive failures cross `audit_failure_threshold`; a single write-ahead failure still aborts only the operation that triggered it.
+- LLM fallback wording now matches the adapter: the deterministic offline fallback summarizes only governed PAV data, reports fallback state, refuses privacy-marked or unsupported queries, and does not echo raw user input.
 - LLM response validation implements external-name replacement, REDLINE leak flagging, and governance artifact suppression. The code now states this is downstream sanitation; upstream SCOPE/PAV/OATH boundaries remain the real enforcement surface.
 
 Section 4 / hub topology and data governance:
@@ -183,8 +185,8 @@ OATH consent semantics:
 - OATH `handle({"action": "authorize"})` now fails closed when `requester` is missing or blank instead of defaulting to T-0. Current proof verifies no consent record is created on missing identity and explicit requester flow still works.
 
 Execution-law gaps:
-- `UNAUTHORIZED_INGRESS` should be added to Section 3's halt-condition/stage language or explicitly fenced as a pre-pipeline architectural rejection below the constitutional stage table.
-- Section 3 should eventually name the sustained-audit-failure threshold as Constitutional Drift / Safe-Stop behavior, because the kernel already implements it.
+- CLOSED: `UNAUTHORIZED_INGRESS` is now fenced in Section 3 as a pre-pipeline architectural rejection below the constitutional stage table.
+- CLOSED: Section 3 now names the sustained-audit-failure threshold as Constitutional Drift / Safe-Stop behavior.
 
 Data-governance gaps:
 - Hard-purge irreversibility is true inside the current persistent store, but local backup restoration or database replacement can reintroduce pre-purge content until external anchoring/backup policy closes that deployment gap.
@@ -266,10 +268,10 @@ Pact text candidates:
 - Runtime-mediated callbacks should be named as allowed only when the runtime, not a peer seat, bridges the event.
 - Typed fault taxonomy should eventually distinguish global halt, container halt, structured concern, and recoverable drift while preserving fail-closed defaults.
 - CLOSED for Section 0: Foundational Failure examples are now explicit as illustrative, not exhaustive. Any future root-physics violation that fits the definition is Foundational Failure and triggers Safe-Stop even if the example list has not yet been amended.
-- Section 3 should remove or clarify duplicated §3.3.1 language during the next Pact text pass.
-- Section 3's implementation verification table should move to this alignment/evidence layer, or be marked as snapshot-only; Pact law should not carry drifting test-count numbers unless mechanically generated.
+- CLOSED: Section 3 removed the misplaced duplicate §3.3.1 language during the execution-law cleanup.
+- CLOSED: Section 3 replaced the implementation verification table with a non-numeric pointer to `docs/claim_matrix.md`; volatile proof counts stay in generated/release evidence.
 - Section 3 should clarify WARD's bootstrap relationship: seven domain/operational seats register with WARD, while WARD remains the routing/enforcement infrastructure rather than a peer in the execution sequence.
-- Section 3 should acknowledge LLM invocation states more precisely: disabled, available-and-called, unavailable/failed with governed fallback.
+- Section 3 should still acknowledge LLM invocation states more precisely: disabled, available-and-called, unavailable/failed with governed fallback. The Section 3.7.4 fallback rewrite corrected the false echo behavior but did not fully enumerate invocation states.
 - Operational configuration values that T-0 may change without Pact amendment (verb lists, TTL windows, model/timeout settings, audit-failure threshold) should be exposed in an evidence doc or generated snapshot rather than hidden only in `config.py`.
 - Section 4's provenance event list should include `UNTRUSTED_IMPORT` or be reframed as a non-exhaustive list of current reference events.
 - Section 4 should fence hard-purge irreversibility as store-local until Phase H external anchoring and backup/restore policy are in place.
