@@ -191,7 +191,7 @@ Execution-law gaps:
 Data-governance gaps:
 - Hard-purge irreversibility is true inside the current persistent store, but local backup restoration or database replacement can reintroduce pre-purge content until external anchoring/backup policy closes that deployment gap.
 - Future API/operator/connector output boundaries must classify raw hub-returning helpers as either PAV-only/enumeration surfaces or boundary-output surfaces. Boundary-output helpers must apply REDLINE exclusion before content leaves governance.
-- REDLINE exclusion IDs are not carried in the PAV object; this is the right privacy posture for advisor-facing surfaces, but future Pact wording should make clear where excluded-entry identity may appear for audit.
+- Section 4 now states that PAV carries REDLINE exclusion counts and contributing hub names without carrying REDLINE entry IDs. Future audit/export design should decide whether excluded-entry identity ever appears outside sovereign-only proof surfaces.
 - LEDGER brainstorming support is builder-level today. Moving it into a first-class envelope field remains a future design decision.
 
 Tenant-container gaps:
@@ -273,10 +273,10 @@ Pact text candidates:
 - Section 3 should clarify WARD's bootstrap relationship: seven domain/operational seats register with WARD, while WARD remains the routing/enforcement infrastructure rather than a peer in the execution sequence.
 - Section 3 should still acknowledge LLM invocation states more precisely: disabled, available-and-called, unavailable/failed with governed fallback. The Section 3.7.4 fallback rewrite corrected the false echo behavior but did not fully enumerate invocation states.
 - Operational configuration values that T-0 may change without Pact amendment (verb lists, TTL windows, model/timeout settings, audit-failure threshold) should be exposed in an evidence doc or generated snapshot rather than hidden only in `config.py`.
-- Section 4's provenance event list should include `UNTRUSTED_IMPORT` or be reframed as a non-exhaustive list of current reference events.
+- CLOSED: Section 4's provenance event list now includes `UNTRUSTED_IMPORT` and is framed as illustrative/non-exhaustive current reference events.
 - Section 4 should fence hard-purge irreversibility as store-local until Phase H external anchoring and backup/restore policy are in place.
-- Section 4 should specify REDLINE behavior by output boundary: PAV-only/enumeration helpers may return raw entries to governed callers; boundary-output helpers must exclude REDLINE before exposure.
-- Section 4 should state that PAV carries REDLINE exclusion counts and contributing hubs, not REDLINE entry IDs.
+- CLOSED: Section 4 now specifies REDLINE behavior by output boundary: PAV-only/enumeration helpers may return raw entries to governed callers; boundary-output helpers must exclude REDLINE before exposure.
+- CLOSED: Section 4 now states that PAV carries REDLINE exclusion counts and contributing hubs, not REDLINE entry IDs.
 - Section 4 should clarify any "advisory/model output" wording as advisory views, PAV, or model-facing inputs so it does not imply semantic/paraphrase-proof final-response protection. Stage 8 remains downstream heuristic sanitation; the deterministic guarantee is REDLINE omission before model-facing context is built.
 - Section 4's section-boundary style is a useful model for later Pact amendments: name the constitutional surface, then name exactly what the current reference implementation enforces and what remains non-end-to-end.
 - Section 5 already uses the stronger later-section style. Future edits should preserve its "current proof / not yet proven" concurrency boundary instead of flattening it into a generic isolation claim.

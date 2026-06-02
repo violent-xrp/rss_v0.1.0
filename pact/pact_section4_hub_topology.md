@@ -15,7 +15,7 @@ distribute modified versions. See /pact/LICENSE_pact.md for full terms.
 
 **Dependency:** Section 0 (Root Physics), Section 1 (The Eight Seats — SCOPE §1.4), Section 3 (Execution Law — Pipeline §3.3)
 **Forward References:** Section 5 (Tenant Containers), Section 6 (Persistence & Audit)
-**Primary Modules:** `hub_topology.py`, `pav.py`, `scope.py`, `persistence.py`, `runtime.py`
+**Primary Modules:** `topology.py`, `pav.py`, `scope.py`, `persistence/`, `runtime.py`
 
 ## **4.0 Purpose**
 
@@ -149,8 +149,9 @@ Governed entries retain provenance across constitutional transformations. The cu
 * `ARCHIVED`
 * `HARD_PURGE`
 * `REDLINE_DECLASSIFIED`
+* `UNTRUSTED_IMPORT` — records externally imported content with source and wrapped content digests, marking it data-only and not authority
 
-Provenance persists across restore and remains internal governance metadata unless explicitly surfaced. 
+This list is illustrative of the current reference events, not an exhaustive constitutional enumeration; new provenance events may be added by T-0 within Tier 2 constraints. Provenance persists across restore and remains internal governance metadata unless explicitly surfaced.
 
 ---
 
