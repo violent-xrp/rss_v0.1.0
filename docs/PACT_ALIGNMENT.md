@@ -233,11 +233,14 @@ Internal advisor layer / Tier 2.5 gap:
 - RSS currently treats external models as Tier 3: they may inform but cannot authorize, grant scope, create consent, seal law, or execute side effects.
 - Section 0 now carries the Internal Advisor Forward Fence: future internal advisor modules may translate external model analysis into structured, auditable advisory packets before the kernel or T-0 sees it.
 - Internal advisors should be modules, not seats: no constitutional authority, no direct command power, domain-bounded input/output contracts, TRACE-recorded invocations, and hash-bound outputs.
-- This preserves the useful multi-voice review instinct while keeping external model output outside the authority boundary.
-- If this layer becomes real, later Pact work should decide where it sits in the tier model, how advisor output enters amendment/review workflows, and which advisor classes are required for protected-section changes.
+- The primary design purpose is false-positive halt reduction through graduated response: `SERVE`, `NARROW`, `ESCALATE`, then `HALT`. This should make gates better informed without weakening the fail-closed authority boundary.
+- Principle for future wording: automate assessment, never authorization. Advisors may classify, summarize, narrow, and recommend; they may not grant, approve, expand scope, seal law, call tools, or execute side effects.
+- This also preserves the useful multi-voice review instinct while keeping external model output outside the authority boundary.
+- If this layer becomes real, later Pact work should decide where it sits in the tier model, how advisor output enters amendment/review workflows, which advisor classes are required for protected-section changes, and how TRACE proves that human/kernel authorization remained separate from advisor assessment.
 
 Structured Action Proposal / side-effect broker gap:
 - v0.1.0 has no side-effect broker and makes no claim that model/advisor text can execute tools, files, APIs, network calls, or other external effects.
+- Future Pact wording should define agentic systems explicitly: an external model operating in an action loop with tool access remains Tier 3. Agency is not authorization.
 - Future side-effect work should require a typed proposed-action object rather than free-text execution. Minimum fields to design around: proposal ID, source task ID, action class, target resource, payload or arguments, container binding, creation time, payload hash, and TTL/expiration.
 - Before any side effect executes, the proposed action should re-enter SCOPE, RUNE, execution validation, OATH, and CYCLE. Denial at any seat should produce a structured halt rather than a partial execution.
 - TRACE should record the proposal lifecycle separately from execution: proposed, rejected, authorized, executed, and failed. These event names are future design placeholders until the broker exists.
@@ -253,6 +256,7 @@ CYCLE fail-closed behavior:
 - `handle({"action": "check_rate"})` uses the non-strict path today.
 - Runtime-stage internal CYCLE failures are now tested: an injected `check_rate_limit()` exception returns `UNEXPECTED_ERROR` at Stage 6 / CYCLE rather than silently permitting the request.
 - CYCLE load reporting now includes both aggregate counts (`domains_tracked`, `total_recent_calls`) and a `per_domain` load breakdown. Real anomaly, budget-exhaustion, retry-loop, or entropy-style complexity metrics remain future hardening, not a v0.1.0 claim.
+- Token/cost control is also future hardening, not a v0.1.0 claim. The intended direction is for CYCLE to meter request/tool/PAV-token budgets while PAV remains a least-context evidence packet rather than an unbounded prompt dump.
 
 SEAL external attribution policy:
 - SEAL has an external advisor attribution scanner that rejects authoring/authority attribution patterns rather than bare name mentions.
@@ -336,7 +340,8 @@ Before v0.1.1:
 Before v0.2.0:
 - Revisit whether Pact wording should be updated after the kernel has mechanical T-0 identity gates, stronger connector boundaries, and a more mature external anchoring posture.
 - Enumerate which T-0 powers have mechanical gates, which are still convention-bound, and which require external trust anchoring.
-- Decide whether an internal advisor layer belongs in v0.2.0: structured, auditable, non-authoritative modules that translate external model analysis into governed packets for operator review.
+- Decide whether an internal advisor layer belongs in v0.2.0: structured, auditable, non-authoritative modules that translate external model analysis into governed packets for operator review, reduce false-positive halts through graduated response, and keep assessment separate from authorization.
+- Add agent terminology to the future tier model: agentic loops and tool access remain Tier 3, and agency is not authorization.
 - Treat Pact text changes as a deliberate version step, not as routine documentation cleanup.
 
 ## Rule

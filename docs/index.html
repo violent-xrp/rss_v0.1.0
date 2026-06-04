@@ -541,6 +541,140 @@ h1 {
   background: linear-gradient(90deg, transparent, rgba(244, 240, 234, 0.2), rgba(224, 115, 129, 0.9), transparent);
 }
 
+/* ── Live pipeline readout: operational seats light up in sequence ──────
+   The 6 operational seats pulse an "active" glow one after another, so the
+   static grid reads as the governed request flowing seat-to-seat. Synced to
+   the same ~6.6s loop; each seat holds its active beat briefly then fades.
+   Hover still overrides for inspection. */
+.seat-grid .seat.op {
+  --seat-rest: rgba(34, 44, 55, 0.0);
+  animation: seat-active 6.6s ease-in-out infinite;
+}
+.seat-grid .seat.op:nth-child(1) { animation-delay: 0s;    }
+.seat-grid .seat.op:nth-child(2) { animation-delay: 1.1s;  }
+.seat-grid .seat.op:nth-child(3) { animation-delay: 2.2s;  }
+.seat-grid .seat.op:nth-child(4) { animation-delay: 3.3s;  }
+.seat-grid .seat.op:nth-child(5) { animation-delay: 4.4s;  }
+.seat-grid .seat.op:nth-child(6) { animation-delay: 5.5s;  }
+
+@keyframes seat-active {
+  0%, 16%, 100% {
+    box-shadow: var(--shadow-card);
+    border-color: var(--glass-line);
+  }
+  6% {
+    box-shadow: var(--shadow-card), 0 0 0 1px rgba(224, 115, 129, 0.55), 0 0 38px rgba(224, 115, 129, 0.30);
+    border-color: var(--rose-strong);
+  }
+}
+/* When a seat is mid-beat, brighten its sigil watermark too (the active glyph). */
+.seat-grid .seat.op { }
+@keyframes seat-active-sigil {
+  0%, 16%, 100% { color: rgba(224, 115, 129, 0.07); }
+  6% { color: rgba(224, 115, 129, 0.22); }
+}
+.seat-grid .seat.op[data-sigil]::before { animation: seat-active-sigil 6.6s ease-in-out infinite; animation-delay: inherit; }
+.seat-grid .seat.op:nth-child(1)[data-sigil]::before { animation-delay: 0s;   }
+.seat-grid .seat.op:nth-child(2)[data-sigil]::before { animation-delay: 1.1s; }
+.seat-grid .seat.op:nth-child(3)[data-sigil]::before { animation-delay: 2.2s; }
+.seat-grid .seat.op:nth-child(4)[data-sigil]::before { animation-delay: 3.3s; }
+.seat-grid .seat.op:nth-child(5)[data-sigil]::before { animation-delay: 4.4s; }
+.seat-grid .seat.op:nth-child(6)[data-sigil]::before { animation-delay: 5.5s; }
+
+.pipeline-zone-map {
+  width: min(1120px, 100%);
+  margin: 18px auto 30px;
+  padding: 18px;
+  border: 1px solid var(--glass-line);
+  background:
+    linear-gradient(120deg, rgba(185, 92, 103, 0.08), transparent 42%),
+    linear-gradient(180deg, rgba(24, 32, 42, 0.74), rgba(14, 20, 28, 0.62));
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(16px);
+}
+
+.zone-ward {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 13px 15px;
+  border: 1px solid rgba(224, 115, 129, 0.28);
+  border-left: 3px solid var(--rose-strong);
+  background: linear-gradient(90deg, rgba(185, 92, 103, 0.16), rgba(18, 24, 32, 0.74));
+  animation: seat-active 6.6s ease-in-out infinite;
+}
+
+.zone-ward strong,
+.zone-cell strong {
+  display: block;
+  color: var(--text);
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 0.88rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.zone-ward span,
+.zone-cell span {
+  display: block;
+  color: var(--quiet);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.zone-lane {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.zone-cell {
+  min-height: 82px;
+  padding: 11px 10px;
+  border: 1px solid var(--glass-line);
+  border-top: 3px solid transparent;
+  background: rgba(14, 20, 28, 0.68);
+  overflow-wrap: anywhere;
+}
+
+.zone-cell.seat-zone {
+  border-top-color: var(--rose-strong);
+  background: linear-gradient(180deg, rgba(185, 92, 103, 0.14), rgba(14, 20, 28, 0.76));
+  animation: seat-active 6.6s ease-in-out infinite;
+}
+
+.zone-cell.boundary-zone {
+  border-top-color: var(--line);
+  color: var(--quiet);
+}
+
+.zone-cell.sub-zone {
+  border-top-color: var(--steel);
+  background: linear-gradient(180deg, rgba(122, 160, 184, 0.14), rgba(14, 20, 28, 0.76));
+}
+
+.zone-cell.sub-zone strong {
+  color: var(--steel);
+  text-transform: lowercase;
+}
+
+.zone-cell.model-zone {
+  border-top: 3px dashed rgba(122, 160, 184, 0.55);
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(122, 160, 184, 0.06) 0, rgba(122, 160, 184, 0.06) 6px,
+    rgba(10, 14, 20, 0.9) 6px, rgba(10, 14, 20, 0.9) 12px);
+  opacity: 0.86;
+}
+
+.zone-cell.scope { animation-delay: 1.1s; }
+.zone-cell.rune { animation-delay: 2.2s; }
+.zone-cell.oath { animation-delay: 3.3s; }
+.zone-cell.cycle { animation-delay: 4.4s; }
+.zone-cell.trace { animation-delay: 5.5s; }
+
 .seat-number {
   display: inline-block;
   margin-bottom: 30px;
@@ -1002,6 +1136,7 @@ code {
 
   .trace-strip,
   .seat-grid,
+  .zone-lane,
     .metrics,
     .boundary-list,
     .contrast-grid,
@@ -1038,6 +1173,7 @@ code {
 
   .trace-strip,
   .seat-grid,
+  .zone-lane,
     .metrics,
     .boundary-list,
     .contrast-grid,
@@ -1048,6 +1184,11 @@ code {
 
   .brake-figure img {
     min-height: 300px;
+  }
+
+  .zone-ward {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .trace-strip span {
@@ -1278,6 +1419,60 @@ code {
               <span class="seat-meta">🔍 &nbsp;Evidentiary</span>
               <h3>TRACE</h3>
               <p>Writes tamper-evident evidence; supports cold verification.</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="pipeline-zone-map" aria-label="Seat authority mapped to governed request stages">
+          <p class="seat-class-label">Pipeline zones <span>same seats, placed where they act in the request path</span></p>
+          <div class="zone-ward">
+            <strong>WARD</strong>
+            <span>Routing frame and integrity halt authority.</span>
+          </div>
+          <div class="zone-lane">
+            <article class="zone-cell boundary-zone">
+              <strong>Safe-Stop</strong>
+              <span>halt gate</span>
+            </article>
+            <article class="zone-cell boundary-zone">
+              <strong>Genesis</strong>
+              <span>root hash</span>
+            </article>
+            <article class="zone-cell seat-zone scope">
+              <strong>SCOPE</strong>
+              <span>scope</span>
+            </article>
+            <article class="zone-cell seat-zone rune">
+              <strong>RUNE</strong>
+              <span>meaning</span>
+            </article>
+            <article class="zone-cell sub-zone">
+              <strong>exec</strong>
+              <span>validate</span>
+            </article>
+            <article class="zone-cell seat-zone oath">
+              <strong>OATH</strong>
+              <span>consent</span>
+            </article>
+            <article class="zone-cell seat-zone cycle">
+              <strong>CYCLE</strong>
+              <span>cadence</span>
+            </article>
+            <article class="zone-cell sub-zone">
+              <strong>pav</strong>
+              <span>view</span>
+            </article>
+            <article class="zone-cell sub-zone">
+              <strong>bridge</strong>
+              <span>adapter</span>
+            </article>
+            <article class="zone-cell model-zone">
+              <strong>model</strong>
+              <span>answer</span>
+            </article>
+            <article class="zone-cell seat-zone trace">
+              <strong>TRACE</strong>
+              <span>audit</span>
             </article>
           </div>
         </div>

@@ -92,6 +92,8 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - RUNE per-pack/domain term and synonym namespaces plus v0.1.1 synonym confidence semantics. MED and LOW currently collapse to AMBIGUOUS, so distinct confirmation-state behavior must be designed and tested before RSS claims it.
 - TECTON policy overlays: per-tenant overlays may tighten scope, terms, permissions, consent, and domain packs, but may not loosen or fork the global constitutional floor.
 - Sigil universality proposal: current seat sigils are encoding-unstable and mostly latent. `docs/proposals/SIGIL_SET_PROPOSAL.md` tracks candidate replacement sets, ASCII fallback, authority-marker caveats, and the v0.1.1 amendment/re-anchor migration map.
+- Tier 2.5 internal advisor design: future advisors should reduce false-positive halts through graduated response (`SERVE` / `NARROW` / `ESCALATE` / `HALT`) while staying below the authority line. Principle: automate assessment, never authorization.
+- Agent terminology amendment candidate: an agentic system remains Tier 3 even when it has a loop and tool access. Agency is not authorization; any proposed side effect must re-enter governance before execution.
 - CLOSED: Seat interface decision for SCOPE/RUNE resolved by adding WARD-compatible adapters while preserving direct runtime request-path calls.
 - WARD hook protected-field audit as governance-relevant task/result fields grow.
 - CLOSED: CYCLE fail-closed proof now covers internal runtime-stage exceptions as `UNEXPECTED_ERROR` at Stage 6, in addition to strict-mode unknown-domain rejection.
@@ -116,9 +118,10 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - larger-event-count TRACE verification characterization
 - payload-inclusive TRACE export / recomputable envelope verification so third-party cold verifiers can validate event hashes from canonical exported material, not only parent-link continuity; design must preserve REDLINE/privacy boundaries, version the proof envelope, define whether payload material lives in a sovereign-only sidecar/receipt bundle, and stay future-work until the verifier can recompute hashes from exported material
 - product/operator console structure that does not outrun kernel truth
-- internal advisor layer design: structured, auditable, non-authoritative advisors between external models and the kernel/operator
-- advisory packet contract before advisor execution: typed evidence, concern kind, severity, source-advisor attribution, packet hash, authority set to none, and TRACE-recorded invocation/output
+- internal advisor layer design: structured, auditable, non-authoritative advisors between external models and the kernel/operator, primarily to reduce false-positive halts through graduated response rather than to grant authority
+- advisory packet contract before advisor execution: typed evidence, concern kind, severity, proposed response class (`SERVE` / `NARROW` / `ESCALATE` / `HALT`), source-advisor attribution, packet hash, authority set to none, and TRACE-recorded invocation/output
 - advise-to-act boundary: internal or personal advisor modules may read and advise, but may not mutate state, approve, call tools, or execute side effects until Structured Action Proposals, broker gates, and capability leases exist
+- agent vocabulary binding: future Pact wording should state that agentic loops and tool access do not create authority; agency is not authorization
 - sigil authority-marker design: future model-facing sigils are only meaningful if backed by kernel-only envelopes, nonce/hash binding, or equivalent structural proof; a bare glyph in a prompt is not security
 
 Do not diffuse effort equally across all future phases. Keep the current checkpoint sharp.
@@ -317,7 +320,8 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - connector IPI acceptance matrix for PDF metadata/hidden text, HTML hidden spans/alt text, email MIME parts, RAG neighbor chunks, tool returns, and Unicode invisible/confusable text
 - shadow connector harness: fake browser/email/API/RAG/tool-return adapters that return poisoned, malformed, oversized, metadata-hidden, and authority-spoofing payloads before any live connector claims expand
 - capability leases for future side-effect work: short-lived, scoped, revocable authorization objects bound to actor/request, action class, target resource, container, TTL, budget, and payload hash
-- CYCLE budget/anomaly extension: prove bounded behavior for retry loops, repeated denied actions, abnormal bursts, and execution-budget exhaustion in addition to simple request cadence
+- CYCLE budget/anomaly extension: prove bounded behavior for retry loops, repeated denied actions, abnormal bursts, execution-budget exhaustion, and token/cost budget exhaustion in addition to simple request cadence
+- PAV token-economy constraints: define entry-count, character/token-estimate, source, and total-context ceilings so governed PAV construction remains least-context evidence rather than a trusted context dump; audit/history material should stay outside model-facing prompts unless explicitly scoped back in
 - runner JSON verdict export for independent verification and future CI
 - live LLM evaluation harness for governed usefulness under PAV constraints: score whether live adapters answer from expected evidence markers while preserving refusal/isolation boundaries
 - external-map refinement for public reviewers
@@ -364,10 +368,11 @@ Pre-v0.1.0 scope rule:
 ### v0.2.0 / TECTON Candidate Queue
 
 These are product/substrate directions, not v0.1.0 blockers:
-- internal advisor layer: domain-bounded modules that translate external model analysis into structured, auditable advisory packets without becoming seats or authority holders
-- internal advisor packet schema: define the typed packet contract before any advisor/agent implementation, including evidence binding, concern kind, severity, source attribution, packet hash, and authority set to none
+- internal advisor layer: domain-bounded modules that translate external model analysis into structured, auditable advisory packets without becoming seats or authority holders; primary purpose is false-halt reduction through graduated response, not authorization
+- internal advisor packet schema: define the typed packet contract before any advisor/agent implementation, including evidence binding, concern kind, severity, proposed response class, source attribution, packet hash, and authority set to none
 - one law, many worlds: TECTON may support tighten-only tenant/domain policy overlays for terms, scope, consent, permissions, hubs, and packs, while the global Pact remains unforked and non-tenant-editable
 - multi-voice amendment review: advisor packets can inform T-0 during amendment review, while T-0 and SEAL remain the authority path
+- agent terminology: define agentic systems as Tier 3 model/tool loops whose agency grants no authority; proposed actions must re-enter RSS governance before side effects execute
 - TECTON operator surfaces for amendment queues, ratification previews, drift indicators, cold-verifier reports, consent-source views, and recovery/bypass receipts
 - public vocabulary translation table for product copy: Pact terms remain precise internally, while UI language uses operator, authority module, amendment workflow, and system owner where those are clearer
 
