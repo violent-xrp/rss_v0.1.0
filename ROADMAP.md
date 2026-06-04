@@ -23,6 +23,7 @@ Historical receipts live in supporting docs:
 - testing layout and runner discipline: `docs/TESTING.md`
 - demo handoff and artifact usage: `docs/demo/DEMO_HANDOFF.md`
 - external vocabulary / reviewer map: `docs/EXTERNAL_MAP.md`
+- active design proposals: `docs/proposals/`
 - Pact-to-kernel alignment map: `docs/PACT_ALIGNMENT.md`
 - claim traceability: `docs/claim_matrix.md`
 
@@ -90,6 +91,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - RUNE scale path: current classification is linear in active registry size and scans the global registry. Large-vocabulary support needs namespaced active registry partitions, a compiled multi-pattern matcher, and archived terms kept out of the hot path before RSS claims large-pack performance.
 - RUNE per-pack/domain term and synonym namespaces plus v0.1.1 synonym confidence semantics. MED and LOW currently collapse to AMBIGUOUS, so distinct confirmation-state behavior must be designed and tested before RSS claims it.
 - TECTON policy overlays: per-tenant overlays may tighten scope, terms, permissions, consent, and domain packs, but may not loosen or fork the global constitutional floor.
+- Sigil universality proposal: current seat sigils are encoding-unstable and mostly latent. `docs/proposals/SIGIL_SET_PROPOSAL.md` tracks candidate replacement sets, ASCII fallback, authority-marker caveats, and the v0.1.1 amendment/re-anchor migration map.
 - CLOSED: Seat interface decision for SCOPE/RUNE resolved by adding WARD-compatible adapters while preserving direct runtime request-path calls.
 - WARD hook protected-field audit as governance-relevant task/result fields grow.
 - CLOSED: CYCLE fail-closed proof now covers internal runtime-stage exceptions as `UNEXPECTED_ERROR` at Stage 6, in addition to strict-mode unknown-domain rejection.
@@ -117,6 +119,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - internal advisor layer design: structured, auditable, non-authoritative advisors between external models and the kernel/operator
 - advisory packet contract before advisor execution: typed evidence, concern kind, severity, source-advisor attribution, packet hash, authority set to none, and TRACE-recorded invocation/output
 - advise-to-act boundary: internal or personal advisor modules may read and advise, but may not mutate state, approve, call tools, or execute side effects until Structured Action Proposals, broker gates, and capability leases exist
+- sigil authority-marker design: future model-facing sigils are only meaningful if backed by kernel-only envelopes, nonce/hash binding, or equivalent structural proof; a bare glyph in a prompt is not security
 
 Do not diffuse effort equally across all future phases. Keep the current checkpoint sharp.
 
@@ -349,6 +352,7 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - Genesis path cleanup: document or consolidate the two Genesis verification surfaces (`verify_genesis` runtime path and `load_constitution` loader path) so the canonical production path stays obvious
 - Execution law placeholder cleanup: remove dead `ExecutionStateMachine.execute()` code if it is truly obsolete, or mark it explicitly as a non-wired future-broker placeholder
 - Vocabulary/register pass: keep "seat" as the authority-surface term, prefer operational/constitutional seat classes over broad Council language, and translate Pact vocabulary in reviewer/product docs
+- Sigil amendment ceremony: choose a universal non-emoji glyph set or revise `docs/proposals/SIGIL_SET_PROPOSAL.md`; if accepted, amend the genesis-anchored Section 0 seat registry, re-anchor Genesis, update Section 1/2/5 references, TECTON `SEAT_SIGILS`, tests, and public presentation in one coordinated v0.1.1 change
 - Amendment planning pass: group the accumulated `docs/PACT_ALIGNMENT.md` Pact text candidates by section before the v0.1.1 ceremony begins
 - Pact wording candidates after code proof: use `docs/PACT_ALIGNMENT.md` as the canonical inventory; ROADMAP should only summarize release sequencing and amendment-plan timing.
 

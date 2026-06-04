@@ -68,6 +68,7 @@ Terminology/register boundary:
 - The Pact can keep its constitutional register, but reviewer/product surfaces should not require readers to learn every internal metaphor before they can evaluate the mechanics.
 
 - Tier 2 subsystems now carry lowercase engineering handles (`exec`, `pav`, `hubtop`, `tecton`, `store`, `bridge`) as a docs/code convention only; Pact text is unchanged, and the handles carry no constitutional authority.
+- Sigil universality is a future proposal only: `docs/proposals/SIGIL_SET_PROPOSAL.md` records encoding-stable candidate sets and an authority-marker concept, but current Pact glyphs, TECTON routing, tests, and Genesis anchoring are unchanged.
 
 Section 1 / seat law:
 - Fail-closed seat behavior is broadly represented through typed errors and structured halt/refusal returns.
