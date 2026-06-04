@@ -37,3 +37,10 @@ PACT_COUNCIL_STRIP_MAP.md
 PACT_COUNCIL_STRIP*.md
 PACT_S0_ADDITIONS.md
 PACT_S0_ADDITIONS*.md
+
+# GitHub Pages site packaging
+# The public site should be self-contained in docs/index.html plus docs/CNAME.
+# Source/export images and CSS drafts belong under ignored local/site_assets/.
+docs/style.css
+docs/f1_*.png
+docs/reference_monitor_abstract.png
