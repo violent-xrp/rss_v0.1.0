@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Rose Sigil Systems is a test-backed Python prototype for pre-model AI workflow governance: scoped access, consent gates, audit traces, and fail-closed behavior."
+    >
+    <link rel="canonical" href="https://rosesigilsystems.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://rosesigilsystems.com/">
+    <meta property="og:title" content="Rose Sigil Systems | AI Workflow Governance">
+    <meta
+      property="og:description"
+      content="A test-backed Python prototype for pre-model AI workflow governance: scoped access, consent gates, audit traces, and fail-closed behavior."
+    >
+    <meta property="og:image" content="https://rosesigilsystems.com/f1_drift_banner.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Rose Sigil Systems | AI Workflow Governance">
+    <meta
+      name="twitter:description"
+      content="A test-backed Python prototype for pre-model AI workflow governance: scoped access, consent gates, audit traces, and fail-closed behavior."
+    >
+    <meta name="twitter:image" content="https://rosesigilsystems.com/f1_drift_banner.png">
+    <title>Rose Sigil Systems | AI Workflow Governance</title>
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <header class="site-header" aria-label="Primary">
+      <a class="brand" href="#top" aria-label="Rose Sigil Systems home">
+        <span class="brand-mark" aria-hidden="true">RSS</span>
+        <span>Rose Sigil Systems</span>
+      </a>
+      <nav class="nav-links" aria-label="Page sections">
+        <a href="#problem">Problem</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#proof">Proof</a>
+        <a href="#boundaries">Boundaries</a>
+        <a href="#direction">Direction</a>
+        <a href="#manifesto">Manifesto</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero section-band">
+        <div class="hero-inner">
+          <p class="eyebrow">Independent Python prototype | v0.1.0 alpha</p>
+          <h1>Rose Sigil Systems</h1>
+          <p class="hero-line">An AI that Waits.</p>
+          <p class="hero-copy">
+            RSS sits in front of the model path and decides what governed context an AI workflow may
+            receive before a model is asked to answer. Scope gets declared. Consent gets checked.
+            Audit evidence gets written. If the boundary is missing, the system stops.
+          </p>
+          <div class="hero-actions" aria-label="Primary actions">
+            <a class="button primary" href="https://github.com/violent-xrp/rss_v0.1.0">View repository</a>
+            <a class="button secondary" href="mailto:christain@rosesigilsystems.com">Contact</a>
+          </div>
+        </div>
+        <div class="trace-strip" aria-label="Governed request path, tier-coded">
+          <span class="t-boundary">ingress</span>
+          <span class="t-seat">SCOPE</span>
+          <span class="t-seat">RUNE</span>
+          <span class="t-sub">exec</span>
+          <span class="t-seat">OATH</span>
+          <span class="t-seat">CYCLE</span>
+          <span class="t-sub">pav</span>
+          <span class="t-sub">bridge</span>
+          <span class="t-model">model</span>
+          <span class="t-seat">TRACE</span>
+        </div>
+        <p class="trace-legend" aria-hidden="true">
+          <span class="key key-seat">Constitutional seat</span>
+          <span class="key key-sub">Tier&nbsp;2 subsystem</span>
+          <span class="key key-model">Tier&nbsp;3 model — subordinate</span>
+        </p>
+      </section>
+
+      <section id="problem" class="section-band split-section">
+        <div class="section-heading">
+          <p class="eyebrow">Why the boundary matters</p>
+          <h2>Filtering after output is too late for consequential workflows.</h2>
+        </div>
+        <div class="contrast-grid">
+          <article class="contrast-card problem-card">
+            <h3>Common pattern</h3>
+            <p>
+              A model receives broad context, generates an answer, and only then do filters or monitors
+              try to catch what went wrong. That posture is fragile when the workflow touches customer
+              records, account signals, approvals, legal documents, or regulated data.
+            </p>
+          </article>
+          <article class="contrast-card solution-card">
+            <h3>RSS pattern</h3>
+            <p>
+              Govern the request before model exposure. RSS narrows context through SCOPE, classifies
+              meaning through RUNE, checks consent through OATH, bounds cadence through CYCLE, and builds
+              a Prepared Advisory View instead of handing the model the full environment.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="architecture" class="section-band architecture-section">
+        <div class="section-heading">
+          <p class="eyebrow">Architecture — governed by The Pact</p>
+          <h2>Eight typed seats. Authority is bounded by class, not shared.</h2>
+          <p>
+            RSS is governed by an open-source constitution, The Pact. It defines eight
+            seats, each holding one authority type that no other seat may assume. Subsystems
+            serve the seats but hold no authority of their own, and the model is the least
+            privileged component in the system: it informs, it does not rule.
+          </p>
+        </div>
+
+        <div class="seat-class" aria-label="Operational seats">
+          <p class="seat-class-label">Operational seats <span>active in every governed request</span></p>
+          <div class="seat-grid">
+            <article class="seat op" data-sigil="⛉">
+              <span class="seat-meta">⛉ &nbsp;Binary</span>
+              <h3>WARD</h3>
+              <p>Routes governed tasks and halts on integrity failure.</p>
+            </article>
+            <article class="seat op" data-sigil="☐">
+              <span class="seat-meta">☐ &nbsp;Boundary</span>
+              <h3>SCOPE</h3>
+              <p>Declares bounded data access for a task.</p>
+            </article>
+            <article class="seat op" data-sigil="ᚱ">
+              <span class="seat-meta">ᚱ &nbsp;Interpretive</span>
+              <h3>RUNE</h3>
+              <p>Classifies meaning against governed vocabulary.</p>
+            </article>
+            <article class="seat op" data-sigil="⚖">
+              <span class="seat-meta">⚖ &nbsp;Consensual</span>
+              <h3>OATH</h3>
+              <p>Checks recorded consent for action classes.</p>
+            </article>
+            <article class="seat op" data-sigil="∞">
+              <span class="seat-meta">∞ &nbsp;Quantitative</span>
+              <h3>CYCLE</h3>
+              <p>Bounds cadence and reports per-domain load.</p>
+            </article>
+            <article class="seat op" data-sigil="🔍">
+              <span class="seat-meta">🔍 &nbsp;Evidentiary</span>
+              <h3>TRACE</h3>
+              <p>Writes tamper-evident evidence; supports cold verification.</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="seat-class" aria-label="Constitutional seats">
+          <p class="seat-class-label">Constitutional seats <span>active only when The Pact itself changes</span></p>
+          <div class="seat-grid seat-grid-two">
+            <article class="seat con" data-sigil="✎">
+              <span class="seat-meta">✎ &nbsp;Authorial</span>
+              <h3>SCRIBE</h3>
+              <p>Drafts and stages constitutional revisions. Cannot seal.</p>
+            </article>
+            <article class="seat con" data-sigil="🜔">
+              <span class="seat-meta">🜔 &nbsp;Procedural</span>
+              <h3>SEAL</h3>
+              <p>Ratifies reviewed amendments through ceremony, under T-0.</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="seat-class" aria-label="Tier 2 subsystems">
+          <p class="seat-class-label">Subsystems <span>serve the seats; hold no authority. Lowercase by design — they are not seats.</span></p>
+          <div class="sub-grid">
+            <article class="sub"><h4>exec</h4><p>Execution state machine.</p></article>
+            <article class="sub"><h4>pav</h4><p>Prepared Advisory View builder.</p></article>
+            <article class="sub"><h4>hubtop</h4><p>Hub topology and walls.</p></article>
+            <article class="sub"><h4>tecton</h4><p>Tenant container isolation.</p></article>
+            <article class="sub"><h4>store</h4><p>Persistence and round-trip.</p></article>
+            <article class="sub"><h4>bridge</h4><p>External model adapter.</p></article>
+          </div>
+        </div>
+
+        <figure class="tier-stack" aria-label="RSS authority tier stack">
+          <figcaption>Authority flows down. Escalation flows up. Lateral authority is forbidden.</figcaption>
+          <div class="tier tier-0"><span class="tier-tag">Tier 0</span><span class="tier-body"><strong>T-0</strong> — sovereign. Origin and termination of all authority.</span></div>
+          <div class="tier-arrow" aria-hidden="true">▼</div>
+          <div class="tier tier-1"><span class="tier-tag">Tier 1</span><span class="tier-body"><strong>Eight seats</strong> — typed constitutional authority. WARD · SCOPE · RUNE · OATH · CYCLE · TRACE · SCRIBE · SEAL</span></div>
+          <div class="tier-arrow" aria-hidden="true">▼</div>
+          <div class="tier tier-2"><span class="tier-tag">Tier 2</span><span class="tier-body"><strong>Subsystems</strong> — serve seats, no authority. exec · pav · hubtop · tecton · store · bridge</span></div>
+          <div class="tier-arrow" aria-hidden="true">▼</div>
+          <div class="tier tier-3"><span class="tier-tag">Tier 3</span><span class="tier-body"><strong>Model</strong> — external, subordinate. Informs; it cannot rule.</span></div>
+        </figure>
+      </section>
+
+      <section id="proof" class="section-band proof-section">
+        <div class="section-heading">
+          <p class="eyebrow">Current proof surface</p>
+          <h2>Built as an alpha kernel with explicit evidence, not as a finished enterprise product.</h2>
+        </div>
+        <dl class="metrics">
+          <div>
+            <dt>145</dt>
+            <dd>test functions</dd>
+          </div>
+          <div>
+            <dt>1312</dt>
+            <dd>assertions</dd>
+          </div>
+          <div>
+            <dt>0</dt>
+            <dd>failures</dd>
+          </div>
+          <div>
+            <dt>92.2%</dt>
+            <dd>statement coverage</dd>
+          </div>
+          <div>
+            <dt>145</dt>
+            <dd>mapped claims</dd>
+          </div>
+        </dl>
+        <div class="proof-copy">
+          <p>
+            The current implementation includes scoped data access, PAV construction, consent gates,
+            Safe-Stop recovery, hash-chained TRACE records with cold verification, TECTON container
+            isolation, and a governed offline demo mode.
+          </p>
+          <p>
+            Reproduce the baseline with <code>python tests/test_all.py</code>. Claim mapping lives in
+            <code>docs/claim_matrix.md</code>.
+          </p>
+        </div>
+      </section>
+
+      <section id="boundaries" class="section-band boundaries-section">
+        <div class="section-heading">
+          <p class="eyebrow">Governed claims</p>
+          <h2>What is real, and what is not yet.</h2>
+          <p>
+            RSS holds its own claims to the standard the kernel holds AI workflows to:
+            no claim outruns its proof.
+          </p>
+        </div>
+        <ul class="boundary-list">
+          <li>Not a production AI system.</li>
+          <li>Not an enterprise or customer deployment.</li>
+          <li>Not a certified security or compliance product.</li>
+          <li>Not cryptographically authenticated at ingress yet.</li>
+          <li>Not per-action/tool-call enforced for every future side effect.</li>
+          <li>Not a complete zero-trust implementation.</li>
+        </ul>
+      </section>
+
+      <section id="direction" class="section-band direction-section">
+        <div class="section-heading">
+          <p class="eyebrow">Direction - not yet built</p>
+          <h2>Where this goes: governed AI workspaces.</h2>
+          <p>
+            The direction is TECTON: isolated AI workspaces where each client, project, or
+            operational domain has its own governed context, hub topology, and audit surface.
+            RSS remains the shared law underneath those worlds. The future product is the layer
+            agents plug into before they touch consequential work.
+          </p>
+        </div>
+      </section>
+
+      <section id="manifesto" class="section-band manifesto-section">
+        <div class="manifesto-layout">
+          <div class="manifesto-heading">
+            <p class="eyebrow">Manifesto</p>
+            <h2>Capability is accelerating. Containment is the scarce layer.</h2>
+            <p>
+              RSS is not another engine. It is a runtime boundary for governing what powerful
+              systems can touch, what evidence they leave, and where human authority remains intact.
+            </p>
+          </div>
+
+          <div class="turbo-feature">
+            <article class="manifesto-article turbo-copy">
+              <h3>The Turbo Era</h3>
+              <p>
+                In 1977, Renault rolled out the RS01 with a turbocharged 1.5-liter V6. The car was
+                mocked as the Yellow Teapot because it kept returning to the pits steaming. Within a
+                few years, the grid was chasing turbocharging.
+              </p>
+              <p>
+                By 1986, qualifying engines were producing staggering power for single-lap bursts.
+                The era ended because the output had outrun the chassis, circuit safety, economics,
+                and regulation around it. Structural containment became mandatory.
+              </p>
+              <p>
+                You do not put brakes on a race car so it can drive slow. You put brakes on a race
+                car so it can drive fast.
+              </p>
+              <p>
+                AI is entering its own turbo era: stronger models, faster agents, more tool access,
+                and more autonomy. RSS treats that as a structural problem. It explores what happens
+                when scoped context, consent checks, audit traces, and fail-closed behavior are built
+                into the workflow before the model is asked to answer.
+              </p>
+            </article>
+
+            <figure class="brake-figure">
+              <img src="./f1_brakes_abstract.png" alt="Abstract high-performance brake disc rendered as a glowing control system">
+              <figcaption>
+                Structural containment is not there to slow the system down. It is what lets power
+                be used without pretending speed is safety.
+              </figcaption>
+            </figure>
+          </div>
+
+          <div class="lineage-feature">
+            <figure class="brake-figure reference-figure">
+              <img src="./reference_monitor_abstract.png" alt="Abstract reference monitor control plane surrounding governed code">
+              <figcaption>
+                The older security lineage matters because it gives RSS a stricter vocabulary:
+                complete mediation, bounded authority, and verifiable control.
+              </figcaption>
+            </figure>
+
+            <article class="manifesto-article lineage-article">
+              <h3>The Older Security Lineage</h3>
+              <p>
+                RSS did not invent the security kernel, the reference monitor, zero trust, or
+                capability security. The honest claim is narrower: RSS independently converged on
+                those principles and applies them to the LLM and agent runtime boundary.
+              </p>
+              <p>
+                The older lineage has durable requirements: complete mediation, tamper resistance, and
+                verifiability. RSS maps those instincts onto the AI boundary through an always-invoked
+                request path, Section 0 integrity checks, a bounded tier model, cold verification, and
+                a claim matrix that ties documented assertions back to tests.
+              </p>
+              <p>
+                The model is not the product's authority. Governance is the product: the runtime
+                mediator, the policy gate, the audit surface, and the recovery path. Alignment by
+                disposition asks the model to behave. Alignment by construction changes what the
+                model is allowed to touch.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-band closing-section">
+        <div class="closing-inner">
+          <p class="eyebrow">Open source kernel work</p>
+          <h2>Governance before model exposure. Evidence after the fact.</h2>
+          <p>
+            Building in public. If you're working near AI governance as a builder, an operator,
+            or a potential partner, reach out.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="https://github.com/violent-xrp/rss_v0.1.0">Open GitHub</a>
+            <a class="button secondary" href="mailto:christain@rosesigilsystems.com">christain@rosesigilsystems.com</a>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

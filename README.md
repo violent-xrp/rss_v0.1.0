@@ -2,6 +2,10 @@
 
 *An AI that Waits.*
 
+**Website:** [rosesigilsystems.com](https://rosesigilsystems.com/)
+
+**Contact:** [christain@rosesigilsystems.com](mailto:christain@rosesigilsystems.com)
+
 Most AI systems run forward. They generate, decide, act, and only then do filters or monitors try to catch what went wrong. That is too late for workflows where a bad answer can expose private data, approve the wrong thing, or mutate a record that matters.
 
 RSS runs differently. It sits in front of the model path and decides what the system is allowed to see, say, and do before governed context reaches the model, with a final sanitation gate before output delivery. Scope gets declared. Meaning gets classified. Consent gets checked. Cadence gets bounded. Audit evidence gets written.

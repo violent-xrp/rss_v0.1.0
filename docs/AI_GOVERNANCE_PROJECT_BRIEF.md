@@ -2,6 +2,8 @@
 
 _Licensed under AGPLv3; see `../LICENSE/README.md`._
 
+_Public site: [rosesigilsystems.com](https://rosesigilsystems.com/). Contact: [christain@rosesigilsystems.com](mailto:christain@rosesigilsystems.com)._
+
 ## One-line summary
 
 Rose Sigil Systems (RSS) is an independent Python prototype for pre-model AI workflow governance. It scopes what an AI workflow can see, checks authority and consent, writes audit evidence, and fails closed when context or permission is missing.
