@@ -23,6 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
+Tier 2 subsystem handle: tecton (serves the seats; holds no constitutional authority).
 RSS v0.1.0 — Layer 7: TECTON (Tenant Containers)
 Isolated execution domains with sigil-anchored routing.
 Container hubs are injected into the runtime pipeline.

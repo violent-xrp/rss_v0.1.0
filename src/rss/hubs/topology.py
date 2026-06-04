@@ -23,6 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
+Tier 2 subsystem handle: hubtop (serves the seats; holds no constitutional authority).
 RSS v0.1.0 — Layer 3: Hub Topology
 Five-hub architecture with REDLINE privacy boundaries.
 

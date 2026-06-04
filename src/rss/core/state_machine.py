@@ -23,6 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
+Tier 2 subsystem handle: exec (serves the seats; holds no constitutional authority).
 RSS v0.1.0 — Layer 4: Execution Law (State Machine)
 Intent lifecycle: classify → validate → execute. Risk-tier aware.
 """

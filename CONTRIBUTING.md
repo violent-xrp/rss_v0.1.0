@@ -55,6 +55,11 @@ For the current test layout, optional checks, and runner discipline, see `docs/T
 - supporting docs → `docs/`
 - repo-shaping docs → repo root
 
+## Tier 2 subsystem handles
+Tier 1 seats are ALL-CAPS authority surfaces. Tier 2 subsystems use lowercase engineering handles only: `exec`, `pav`, `hubtop`, `tecton`, `store`, and `bridge`.
+
+Use `docs/SUBSYSTEM_HANDLES.md` as the canonical reference. These handles do not rename modules, do not create seats, and do not grant constitutional authority.
+
 ## PR discipline
 Every meaningful PR should say:
 - what changed in code

@@ -67,6 +67,8 @@ Terminology/register boundary:
 - External-facing docs should translate formal Pact vocabulary into engineering language where useful: authority surface, governance module, routing boundary, amendment workflow, operator, and system owner.
 - The Pact can keep its constitutional register, but reviewer/product surfaces should not require readers to learn every internal metaphor before they can evaluate the mechanics.
 
+- Tier 2 subsystems now carry lowercase engineering handles (`exec`, `pav`, `hubtop`, `tecton`, `store`, `bridge`) as a docs/code convention only; Pact text is unchanged, and the handles carry no constitutional authority.
+
 Section 1 / seat law:
 - Fail-closed seat behavior is broadly represented through typed errors and structured halt/refusal returns.
 - TRACE's dual role is implemented intentionally: runtime audit writes can reach TRACE directly so WARD failure cannot prevent audit recording.

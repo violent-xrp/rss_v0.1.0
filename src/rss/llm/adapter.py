@@ -23,6 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
+Tier 2 subsystem handle: bridge (serves the seats; holds no constitutional authority).
 RSS v0.1.0 — LLM Adapter
 Wraps LLM calls with RSS governance injection. Graceful fallback.
 """

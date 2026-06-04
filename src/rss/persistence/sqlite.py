@@ -23,6 +23,7 @@
 # Contact: rose.systems@outlook.com  (Subject: "Contact Us — RSS Commercial License")
 # ==============================================================================
 """
+Tier 2 subsystem handle: store (serves the seats; holds no constitutional authority).
 RSS v0.1.0 — Persistence Layer (Production Hardened)
 SQLite backend. TRACE, hubs, terms, and consent survive restarts.
 Thread-safe + WAL-enabled version.
