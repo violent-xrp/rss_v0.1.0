@@ -14,7 +14,7 @@ distribute modified versions. See /pact/LICENSE_pact.md for full terms.
 **Document ID:** RSS-Pact-v0.1.0-S7
 **Dependency:** Section 0 (Root Physics), Section 1 (The Eight Seats — TRACE §1.3, SEAL §1.9), Section 6 (Persistence & Audit)
 **Forward References:** None (terminal section)
-**Primary Module:** `seal.py`
+**Primary Modules:** `governance/seats/seal.py`, with amendment-state durability wired through `runtime.py` and `persistence/sqlite.py`
 
 ## **7.0 Purpose**
 
@@ -173,9 +173,9 @@ Every ratified amendment produces a durable record containing:
 
 ### **7.5.2 Amendment History**
 
-In the current implementation, ratified amendments produce durable evidence through TRACE ceremony events and sealed canon artifacts. Queryable amendment history beyond the current runtime process is a future hardening target unless separately persisted.
+In the current implementation, ratified amendments produce durable evidence through three layers: TRACE ceremony events, sealed canon artifacts, and persisted amendment state. Proposal objects, review state, ratified AmendmentRecords, and queryable amendment history are persisted to SQLite (via the runtime-wired SEAL persistence path) and restored on bootstrap, so the constitutional changelog survives restart as first-class state.
 
-Within the running process, amendment history may be listed globally or filtered by section. Long-term durable amendment history should be persisted in a future hardening pass so the constitutional changelog survives restart as first-class state.
+Within and across process restarts, amendment history may be listed globally or filtered by section. The persisted record is intentionally lean: it captures the AmendmentRecord and ratified proposal text and reconstructs canon from them, but does not yet include byte-level diff content, evidence/environment snapshots, a full pre-seal drift report, or a post-ratification verification report. Those richer evidence fields remain future hardening.
 
 ### **7.5.3 No Retroactive Amendment**
 
@@ -212,7 +212,7 @@ These events flow into the unified global TRACE chain with the same write-ahead 
 
 TRACE events provide a durable audit trail for the amendment ceremony: proposal submission, review outcome, rejection, and ratification. Sealed canon artifacts provide durable evidence of the resulting constitutional state.
 
-In the current implementation, this durable trail is stronger than the in-memory proposal objects themselves. Proposal state and amendment-history structures do not yet persist across restart unless separately stored. The cold verifier can inspect persisted TRACE evidence; full proposal-object durability is a future hardening target.
+In the current implementation, ceremony durability rests on a fixed write ordering: the TRACE event is emitted first, the durable amendment-state write (proposal, review, or ratified record) second, and the in-memory mutation last. If a step's durable write fails, the ceremony returns `AMENDMENT_PERSISTENCE_FAILED` and leaves proposal, canon, and history state unchanged for that step. Proposal objects, review state, and ratified records persist to SQLite and are restored on bootstrap; the cold verifier can additionally inspect persisted TRACE evidence.
 
 ---
 
@@ -233,7 +233,7 @@ RATIFIED and REJECTED are terminal. A terminal proposal cannot change state. If 
 
 ### **7.8.3 Proposal Queryability**
 
-Proposals are queryable by ID and listable with optional status filtering within the running process. This supports governance transparency: T-0 and reviewers can see what amendments are pending, what has been approved, and what has been rejected. Proposal queryability across restarts requires the persistence hardening described in §7.11.1.
+Proposals are queryable by ID and listable with optional status filtering. This supports governance transparency: T-0 and reviewers can see what amendments are pending, what has been approved, and what has been rejected. Because proposal and review state persist to SQLite and restore on bootstrap, this queryability survives restart rather than being limited to a single process lifetime.
 
 ---
 
@@ -268,24 +268,23 @@ The current code path supports:
 * TRACE emission for all ceremony steps
 * sealed canon artifact generation through SEAL
 * reviewer identity and review notes preserved in the final AmendmentRecord
+* durable persistence of proposals, review state, and ratified AmendmentRecords to SQLite, restored on bootstrap, with the write ordering TRACE-first, durable-write-second, in-memory-mutation-last and a fail-closed `AMENDMENT_PERSISTENCE_FAILED` on durable-write failure
 
 Current limitations must be stated explicitly:
 
-* proposal and amendment-history structures remain in-memory only unless separately persisted
-* durable evidence currently rests primarily in TRACE events and sealed canon artifacts
+* the persisted amendment record is intentionally lean: it does not yet include byte-level diff content, evidence/environment snapshots, a full pre-seal drift report, or a post-ratification verification report
+* amendment records preserve old/new canon hashes for section-version continuity through SEAL's canonization engine, but are not a TRACE-style parent-hash chain and are not yet cryptographically signed (see §7.11.4)
 * volatile test counts and dated proof matrices belong in the Truth Register and release documentation, not in constitutional text
 
 ---
 
 ## **7.11 Future Considerations**
 
-### **7.11.1 Amendment Persistence**
+### **7.11.1 Amendment Record Enrichment**
 
-In the current implementation, proposal objects, review state, and amendment-history query structures live in memory and do not survive restart as first-class persisted state. Durable evidence currently comes from TRACE ceremony events and sealed canon artifacts.
+Amendment proposals, review state, ratified records, and reconstructed canon already persist to SQLite and survive restart (§7.5.2, §7.7.2). A proposal that is REVIEWED (approved) before a restart is recovered on bootstrap, so the actionable proposal object is no longer lost across process lifetime.
 
-This means: if a proposal is REVIEWED (approved) but the system restarts before T-0 executes the ratification command, the proposal is lost. The TRACE event recording the review survives, but the actionable proposal object does not.
-
-A future hardening pass should persist amendment proposals, review outcomes, and amendment records to SQLite so the full amendment chain survives restart with the same durability expectations applied elsewhere in RSS.
+What remains future hardening is the richness of the persisted record, not its existence. The current AmendmentRecord is intentionally lean. Future passes may add byte-level diff content, dependency and evidence snapshots, runtime-environment capture, a full pre-seal drift report, and a post-ratification verification report — and a read-only ratification preview/dry-run that shows the exact diff, expected hashes, version transition, and integrity result before T-0 commits.
 
 ### **7.11.2 Multi-Reviewer Ceremony**
 
@@ -297,7 +296,7 @@ The current system has no rollback mechanism. If a ratified amendment proves har
 
 ### **7.11.4 Cryptographic Signing of Amendments**
 
-Amendment records are currently hash-linked through SEAL's canonization engine but are not cryptographically signed. Sovereign signing (Phase H) would add non-repudiation to the amendment chain — ratification would require T-0's actual cryptographic private key, not merely the `t0_command=True` flag.
+Amendment records currently preserve old/new canon hashes for section-version continuity through SEAL's canonization engine, but are not cryptographically signed. Sovereign signing (Phase H) would add non-repudiation to the amendment chain — ratification would require T-0's actual cryptographic private key, not merely the `t0_command=True` flag.
 
 ### **7.11.5 Distributed Amendment Governance**
 

@@ -216,6 +216,8 @@ The persistence layer stores at minimum:
 * system state
 * containers
 * container hub entries
+* amendment proposals
+* amendment records
 
 Schema evolution is governed separately under migration rules.
 
@@ -328,6 +330,8 @@ This includes at minimum:
 * containers
 * container hub entries
 * system state
+* amendment proposal/review state
+* ratified amendment records
 
 ### 6.9.3 Entry ID Stability
 

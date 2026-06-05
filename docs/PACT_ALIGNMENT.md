@@ -129,6 +129,7 @@ Section 6 / persistence and audit:
 - `production_mode` is a real single switch in `RSSConfig.__post_init__`: it forces strict event-code validation, lowers audit failure threshold to 1, disables console logging, and requires the Genesis file.
 - SQLite persistence uses WAL mode, `check_same_thread=False`, and a process-local `RLock` around persistence operations. This is a single-process/threaded posture, not a distributed database guarantee.
 - Section 6 implementation references now use the current package paths: `audit/log.py`, `audit/export.py`, `audit/verify.py`, and `persistence/sqlite.py`.
+- Section 6 state-category lists now name amendment proposals and amendment records, aligning Schema Stability and Round-Trip wording with the implemented `amendment_proposals` / `amendment_records` tables and the critical amendment restore path.
 - Cold export exists through `export_from_db()` and includes `chain_valid`, event summary, REDLINE artifact-id sanitization, JSON/text output, and SQLite source labeling.
 - REDLINE export sanitization is token-boundary based: known REDLINE entry IDs are replaced in artifact identifiers without over-redacting unrelated larger tokens. Cold export collects REDLINE IDs from both global and container hub tables.
 - Live TRACE exports now fail closed with `TraceExportSanitizationError` if REDLINE ID collection from hub topology fails, rather than falling back to an empty redaction set and producing a trusted-looking export.
@@ -299,9 +300,9 @@ Pact text candidates:
 - Section 6 export sanitization wording should enumerate what is sanitized today: REDLINE entry IDs in TRACE artifact identifiers for both live and cold exports, using token-boundary replacement.
 - Section 6 should preserve the distinction between cold verification, cold export, and future payload-inclusive external recomputability. Pact wording should say the current verifier proves stored parent-link continuity; it should not claim third-party payload-inclusive recomputation until canonical export bundles, privacy policy, and verifier tests exist.
 - Section 7 should clarify the relationship between section-level versions and project/release versions: section versions increment per amended section, while project versions snapshot one or more sealed Pact changes plus code state.
-- Section 7 should reflect the current code-backed dual guard for external advisor attribution: proposal-time rejection creates no actionable proposal state, and ratification still flows through SEAL's seal guard.
-- Section 7 should reflect the current code-backed amendment persistence: proposals, review state, ratified records, queryable history, and reconstructed canon state survive restart.
-- Section 7 should reflect the current code-backed ceremony write-ahead discipline: proposal, review, and ratification state do not mutate when wired TRACE emission fails.
+- CLOSED: Section 7 now reflects the current code-backed dual guard for external advisor attribution: proposal-time rejection creates no actionable proposal state, and ratification still flows through SEAL's seal guard.
+- CLOSED: Section 7 now reflects the current code-backed amendment persistence: proposals, review state, ratified records, queryable history, and reconstructed canon state survive restart.
+- CLOSED: Section 7 now reflects the current code-backed ceremony write-ahead discipline: TRACE emits first, durable amendment state writes second, and proposal/canon/history state does not mutate when TRACE or persistence fails.
 - Section 7 should add lifecycle states for real governance queues: WITHDRAWN, DEFERRED, SUPERSEDED, EXPIRED, and a stale-base/conflict state if section versions advance under an open proposal.
 - Section 7 should add a ratification preview/dry-run concept and post-ratification verification report before TECTON exposes amendment ceremony in a product UI.
 - Section 7 AmendmentRecord structure should eventually include diff, dependency/evidence snapshot, environment snapshot, pre-seal drift report, and post-seal verification outcome.
