@@ -128,6 +128,7 @@ Section 6 / persistence and audit:
 - Consecutive audit-write failures are tracked through `audit_failure_threshold` and escalate to persistent Safe-Stop when the threshold is crossed. The default threshold is 3; `production_mode=True` forces the threshold to 1.
 - `production_mode` is a real single switch in `RSSConfig.__post_init__`: it forces strict event-code validation, lowers audit failure threshold to 1, disables console logging, and requires the Genesis file.
 - SQLite persistence uses WAL mode, `check_same_thread=False`, and a process-local `RLock` around persistence operations. This is a single-process/threaded posture, not a distributed database guarantee.
+- Section 6 implementation references now use the current package paths: `audit/log.py`, `audit/export.py`, `audit/verify.py`, and `persistence/sqlite.py`.
 - Cold export exists through `export_from_db()` and includes `chain_valid`, event summary, REDLINE artifact-id sanitization, JSON/text output, and SQLite source labeling.
 - REDLINE export sanitization is token-boundary based: known REDLINE entry IDs are replaced in artifact identifiers without over-redacting unrelated larger tokens. Cold export collects REDLINE IDs from both global and container hub tables.
 - Live TRACE exports now fail closed with `TraceExportSanitizationError` if REDLINE ID collection from hub topology fails, rather than falling back to an empty redaction set and producing a trusted-looking export.
@@ -293,7 +294,7 @@ Pact text candidates:
 - Section 5 consent wording should eventually require an auditable consent source when OATH resolves through GLOBAL fallback instead of a container-specific grant.
 - Section 5 product-vs-constitutional distinction: container ownership is operational authority within a deployment, not constitutional authority over the kernel. The Section 0 side is now in place through RSS and Products: products must honor Pact invariants, may not amend the Pact, must keep operational role identifiers separate from constitutional tier vocabulary, and constitutional T-0 vs. operational ownership are distinct roles. Section 5 wording can align with that fence later.
 - Section 6 should explicitly cross-reference sustained audit-write failure threshold escalation to Section 0 Constitutional Drift / Safe-Stop logic.
-- Section 6 should describe the current thread-safety mechanism concretely: WAL, `check_same_thread=False`, process-local lock, and single-process boundary.
+- CLOSED: Section 6 now describes the current thread-safety mechanism concretely: WAL, `check_same_thread=False`, process-local re-entrant lock, and the single-process boundary.
 - Section 6 dynamic event-code wording should say that `CONTAINER_REQUEST_*` is the current dynamic pattern and that future patterns require explicit registration.
 - Section 6 export sanitization wording should enumerate what is sanitized today: REDLINE entry IDs in TRACE artifact identifiers for both live and cold exports, using token-boundary replacement.
 - Section 6 should preserve the distinction between cold verification, cold export, and future payload-inclusive external recomputability. Pact wording should say the current verifier proves stored parent-link continuity; it should not claim third-party payload-inclusive recomputation until canonical export bundles, privacy policy, and verifier tests exist.

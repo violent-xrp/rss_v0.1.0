@@ -16,7 +16,7 @@ distribute modified versions. See /pact/LICENSE_pact.md for full terms.
 **Document ID:** RSS-Pact-v0.1.0-S6
 **Dependency:** §0 (Root Physics, Safe-Stop, Drift, Persistence & Audit), §1 (TRACE), §3 (Pipeline), §4 (Hub Topology), §5 (Tenant Containers)
 **Forward References:** §7 (Amendment & Evolution)
-**Primary Modules:** `audit_log.py`, `persistence.py`, `trace_export.py`, `runtime.py`, `config.py`, `trace_verify.py`
+**Primary Modules:** `audit/log.py`, `audit/export.py`, `audit/verify.py`, `persistence/sqlite.py`, `runtime.py`, `config.py`
 
 ## 6.0 Purpose
 
@@ -197,7 +197,7 @@ The current reference runtime uses SQLite with WAL enabled. This is part of the 
 
 ### 6.5.2 Thread Safety
 
-Persistence operations are protected for the current single-process threaded posture. This is not the same thing as proving full multi-process or distributed safety.
+Persistence operations are protected for the current single-process threaded posture. The current reference mechanism is WAL journaling with `check_same_thread=False` and a process-local re-entrant lock guarding persistence operations, so concurrent threads in one process serialize safely against the shared connection. This is a single-process guarantee; it is not the same thing as proving full multi-process or distributed safety.
 
 ### 6.5.3 Transaction Discipline
 
@@ -407,7 +407,7 @@ Current runtime behavior verifies the chain on boot and audibly records success 
 
 ### 6.11.4 Cold Verification
 
-`trace_verify.py` provides stand-alone TRACE verification against a cold SQLite file without booting the runtime. It exists for external review, forensic inspection, and disaster-recovery validation.
+The stand-alone cold verifier (`audit/verify.py`) provides TRACE verification against a cold SQLite file without booting the runtime. It exists for external review, forensic inspection, and disaster-recovery validation.
 
 ### 6.11.5 No Auto-Repair
 
