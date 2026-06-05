@@ -67,18 +67,18 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **Release-boundary polish:** keep the v0.1.0 claim surface aligned with the closed Phase G coverage floor and remaining known limits.
 - **Connector-proof planning:** keep future browser/email/document/RAG/tool-return import tests mapped before adding real external adapters.
 - **Pre-tag RUNE/OATH hardening map:** closed. OATH requester fallback, RUNE constraint-prompt proof, and RUNE longest bounded-match precedence are now proven.
-- **Pact cleanup cadence:** Section 0 is landed and pushed. Continue cleanup section-by-section from the synced Roots worktree, land one accepted section at a time, push, then re-sync Roots before the next section.
+- **Pact cleanup checkpoint:** the section-by-section Pact cleanup (Sections 0-7) is landed and pushed. Future Pact text changes move through the v0.1.1 amendment ceremony unless a release-gate review proves v0.1.0 would otherwise be false.
 - **Code-first Pact posture:** let kernel hardening move where it makes RSS more true; keep Pact edits section-bounded, reviewed, and version-sensitive so cleanup does not bundle unrelated lanes.
 
 ### Next
-- Start Section 1 cleanup from the synced Roots worktree: implementation-reference cleanup first, then decide the CYCLE "complexity" wording without broad vocabulary churn.
+- CLOSED: Sections 1-7 cleanup landed after Section 0; implementation-reference drift, CYCLE load wording, S5/S6 concurrency and persistence boundaries, and S7 amendment-persistence wording now match the current kernel truth.
 - CLOSED FOR CURRENT PASS: fresh offline demo artifacts were regenerated and inspected from the current working tree. The ignored local bundle reports `PASS`, 22/22 successful task IDs bound to TRACE, cold verification over 169 events, and matching report/TRACE artifact counts. Rerun immediately before any `v0.1.0-rc.1` tag.
 - Demo proof artifacts now need to stay evidence-bound: PASS requires expected seeded evidence markers and successful task IDs bound to TRACE, not just fluent non-error answers.
 - After a clean acceptance/sync/claim-matrix pass, prepare `v0.1.0-rc.1` as the next reviewable release checkpoint.
 - Keep final v0.1.0 gates explicit: final acceptance proof, synced public docs, fresh demo artifacts, and no release claim beyond the current proof surface.
 - Keep tightening the reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
 - Keep the zero-trust trajectory explicit without overclaiming v0.1.0: RSS is moving toward deployment-grade zero-trust through caller identity, per-action gates, least-privilege context, and external audit anchoring, but the current release remains a single-process governance kernel.
-- Parallel code/proof lane while Pact cleanup continues: Section 0 is closed for the current pass; keep public proof docs synced as Section 1 and later sections move through the same section-by-section cadence.
+- Pact cleanup is complete for the current pass; keep public proof docs synced as code hardening and release-boundary polish continue.
 
 ### Keep Warm
 - API/wrapper ingress boundary and caller identity propagation.
@@ -168,12 +168,11 @@ Mandatory before `v0.1.0-rc.1`:
   Section Scope cleanup, and Genesis re-anchor. Council vocabulary is preserved
   verbatim in this pass; the strip is deferred to the first v0.1.1 ceremony
   amendment.
-- CLOSED: `docs/PACT_VOICE.md` exists as a non-authoritative rail before T-0
-  begins the Section 0, Section 1, and Section 2 voice/structure cleanup.
-- CLOSED: Section 0-2 voice consistency work is framed before rewriting
-  begins: match the Section 4 and Section 5 "rule / current proof / boundary"
-  style, and keep substantive additions such as T-0 recovery authority owned by
-  T-0 rather than implementation cleanup.
+- CLOSED: `docs/PACT_VOICE.md` served as the non-authoritative rail for the
+  section-by-section Pact cleanup.
+- CLOSED: Section 0-7 cleanup landed with the Section 4 and Section 5
+  "rule / current proof / boundary" style. Substantive additions such as T-0
+  recovery authority remained T-0-owned rather than implementation cleanup.
 - CURRENT: one acceptance/sync pass is clean at 145 tests, 1312 assertions, and
   92.2% coverage after the current hardening pass. Rerun immediately
   before any `v0.1.0-rc.1` tag.
