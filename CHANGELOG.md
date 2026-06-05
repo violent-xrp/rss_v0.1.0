@@ -64,6 +64,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - Section 1/CYCLE cleanup corrected TRACE/RUNE implementation references, replaced CYCLE "system complexity" wording with per-domain request load, and extended `complexity_meter()` with a `per_domain` breakdown so Section 1.7.2 is code-true while real anomaly/budget complexity remains v0.1.1 future hardening
 - Section 3 cleanup removed duplicate Section 3.3.1 text, corrected Section 3.1.4 to word-boundary verb detection and Section 3.7.4 to the governed-data fallback, fenced `UNAUTHORIZED_INGRESS` and sustained-audit-failure Safe-Stop behavior, and replaced the Section 3.8 test-count table with a `docs/claim_matrix.md` pointer
 - Section 4 cleanup corrected stale Primary-Module filenames to current paths and added the `UNTRUSTED_IMPORT` provenance event (list now illustrative/non-exhaustive), matching `topology.py`
+- Section 5 cleanup sharpened the concurrency boundary (Section 5.1.6 / Section 5.6.3) to name the specific child-thread `ACTIVE_HUBS` context-inheritance edge and `contextvars.copy_context()` mitigation; documentation-only, the code fix remains parked future hardening
 - Added `docs/proposals/SIGIL_SET_PROPOSAL.md` to track encoding-stable seat-sigil candidates, future authority-marker caveats, and the v0.1.1 amendment/re-anchor migration map without changing any glyphs
 - Added the public GitHub Pages site under `docs/` with the custom domain `rosesigilsystems.com`, canonical/social metadata, and contact routing through `christain@rosesigilsystems.com`
 

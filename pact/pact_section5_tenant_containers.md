@@ -89,6 +89,8 @@ What is **not** yet proven:
 * full async-streaming safety
 * thread-hop/context-copy safety across future API/server deployments
 
+A specific known edge: a child thread spawned mid-request (for example through `threading.Thread` or a thread pool) does not automatically inherit the `ACTIVE_HUBS` context. Such a thread would resolve `runtime.hubs` to the global fallback rather than the active container, so future async or threaded delegation must explicitly propagate context (for example via `contextvars.copy_context()`) or bind the container hub context in the worker before it touches hubs.
+
 The constitutional requirement is that tenant isolation must survive all execution models. The current implementation materially improves this guarantee, but broader async/distributed proof remains future work. 
 
 ---
@@ -246,7 +248,7 @@ Container delegation must always restore the prior execution context on exit, in
 
 ### **5.6.3 Honest Concurrency Boundary**
 
-The current implementation removes the old global-mutation hazard and proves thread-level isolation. It does **not** yet prove every future async/server execution edge case. That broader proof remains future work.  
+The current implementation removes the old global-mutation hazard and proves thread-level isolation. It does **not** yet prove every future async/server execution edge case, including the child-thread context-inheritance edge named in §5.1.6. That broader proof remains future work.
 
 ### **5.6.4 Why Shared Runtime, Not Per-Container Runtime Forks**
 

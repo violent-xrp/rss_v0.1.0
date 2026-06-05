@@ -109,7 +109,7 @@ Section 4 / hub topology and data governance:
 Section 5 / tenant containers:
 - Tenant data isolation is object-level, not tag-level: each `TenantContainer` owns a distinct `HubTopology` instance, while the shared runtime law remains global.
 - Execution isolation uses `ACTIVE_HUBS: ContextVar` and token-based reset. `Runtime.hubs` is getter-only, so the old `runtime.hubs = c.hubs` global-mutation hazard is no longer the governing path.
-- The current proof is honestly bounded: thread-level isolation, exception-safe restore, and main-thread fallback are tested; full async/server/thread-hop context propagation remains Phase F/H deployment work.
+- The current proof is honestly bounded: thread-level isolation, exception-safe restore, and main-thread fallback are tested. Section 5 now explicitly names the child-thread `ACTIVE_HUBS` context-inheritance edge and `contextvars.copy_context()` / worker re-binding mitigation; the code-level fix remains Phase F/H deployment work.
 - ACTIVE profile immutability is mechanically enforced. `ContainerProfile` and nested `ContainerPermissions` lock on activation, `scope_policy` is wrapped in `MappingProxyType`, and sanctioned mutations go through `mutate_active_profile()` with a mandatory reason and `PROFILE_MUTATED` event.
 - Container request lifecycle checks run before seat routing. SUSPENDED, ARCHIVED, DESTROYED, and other non-ACTIVE states return `CONTAINER_NOT_ACTIVE` before OATH or downstream seat logic.
 - The sigil registry contains the eight canonical seat sigils and supports reverse resolution from sigil to seat name. Invalid sigils are rejected before delegation.
