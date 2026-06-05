@@ -4,6 +4,8 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 
 ## v0.1.0
 
+Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
+
 ### Current verified snapshot
 - **145 test functions / 1312 assertions / 0 failures** via `python tests/test_all.py`
 - **92.2% statement coverage** via `python run_coverage.py`
@@ -69,6 +71,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 - Section 7 cleanup corrected the amendment-persistence underclaim: proposals, review state, queryable history, and ratified records persist to SQLite and restore on bootstrap with TRACE-first, durable-write-second, mutate-last ordering and fail-closed `AMENDMENT_PERSISTENCE_FAILED`; Section 7.11.1 is now framed around remaining record-enrichment work, and Section 6 state-category lists now name amendment proposals and amendment records
 - Added `docs/proposals/SIGIL_SET_PROPOSAL.md` to track encoding-stable seat-sigil candidates, future authority-marker caveats, and the v0.1.1 amendment/re-anchor migration map without changing any glyphs
 - Added the public GitHub Pages site under `docs/` with the custom domain `rosesigilsystems.com`, canonical/social metadata, and contact routing through `christain@rosesigilsystems.com`
+- Added `docs/VERSIONING.md` as the canonical three-clock versioning model: semver project releases, `-rc.N` release-candidate iteration only, and Pact section versions through the Section 7 amendment ceremony
 
 ### Proof growth
 - constitution loader edges

@@ -8,7 +8,7 @@ The Pact remains the constitutional source. This file is a review surface: it re
 
 Pact edits are version-sensitive project events. Do not rewrite Pact language during ordinary implementation work unless T-0 explicitly authorizes that change.
 
-RSS uses pre-release code checkpoints before the final v0.1.0 tag. Code may harden through `v0.1.0-rc.N` snapshots while the v0.1.0 Pact/release line remains intact. The final `v0.1.0` tag should mark a stable reference snapshot, not every hardening commit on `main`.
+RSS versioning follows `docs/VERSIONING.md`: Code and releases use semver (0.1.x); -rc.N is release-candidate iteration toward that version; the Pact versions itself by section through the §7 amendment ceremony (§0.10.4), and a sealed Pact amendment surfaces as a project MINOR bump — never in the -rc suffix. Code may harden through release candidates without treating `-rc.N` as a Pact-edit counter or code-significance marker.
 
 Pre-v0.1.0 discipline: code may keep improving where it makes the kernel more faithful, bounded, and provable. The Pact should not be treated as a brake on hardening, but Pact text edits before the tag should stay narrow. If code proof naturally requires a pre-tag Pact change, limit it to Section 7 ceremony viability, T-0 recovery authority, or immediately adjacent wording. Broader vocabulary cleanup, full-Pact integrity language, and accumulated section refinements belong in the v0.1.1 amendment plan unless a release-gate review proves v0.1.0 would otherwise be false.
 
@@ -147,7 +147,7 @@ Section 7 / amendment and evolution:
 - Amendment persistence is implemented for the Runtime-wired SEAL path: proposal objects, review state, ratified amendment records, queryable amendment history, and reconstructed canon state survive restart. The durable ordering is TRACE emission first, amendment persistence second, and in-memory mutation last; persistence failure returns `AMENDMENT_PERSISTENCE_FAILED` and leaves proposal/canon/history state unchanged for the failed step.
 - Rejected amendment reviews emit `AMENDMENT_REJECTED` as the terminal review event rather than emitting both `AMENDMENT_REVIEWED` and `AMENDMENT_REJECTED`; audit queries that count reviewed proposals should count both event families.
 - `AmendmentRecord` preserves the current required evidence surface: proposal ID, section ID, old/new versions, old/new hashes, rationale, ratification timestamp, sovereign override flag, reviewer, and review notes.
-- Section-level versions increment independently (`v1.0`, `v1.1`, etc.) as sections are sealed. This is separate from project/release versions such as `v0.1.0` and future `v0.1.1`.
+- Section-level versions increment independently (`v1.0`, `v1.1`, etc.) as sections are sealed. This is separate from project/release versions such as `v0.1.0` and future `v0.1.1`; the canonical three-clock model is recorded in `docs/VERSIONING.md` and Pact Section 0.10.4.
 - The four ceremony event codes are registered in the TRACE export registry: `AMENDMENT_PROPOSED`, `AMENDMENT_REVIEWED`, `AMENDMENT_REJECTED`, and `AMENDMENT_RATIFIED`.
 - The current amendment persistence proof reconstructs canon from the persisted ratified proposal text and AmendmentRecord. It does not yet add byte-level diff/evidence snapshots or post-ratification verifier reports.
 
@@ -299,7 +299,7 @@ Pact text candidates:
 - Section 6 dynamic event-code wording should say that `CONTAINER_REQUEST_*` is the current dynamic pattern and that future patterns require explicit registration.
 - Section 6 export sanitization wording should enumerate what is sanitized today: REDLINE entry IDs in TRACE artifact identifiers for both live and cold exports, using token-boundary replacement.
 - Section 6 should preserve the distinction between cold verification, cold export, and future payload-inclusive external recomputability. Pact wording should say the current verifier proves stored parent-link continuity; it should not claim third-party payload-inclusive recomputation until canonical export bundles, privacy policy, and verifier tests exist.
-- Section 7 should clarify the relationship between section-level versions and project/release versions: section versions increment per amended section, while project versions snapshot one or more sealed Pact changes plus code state.
+- CLOSED for public docs: `docs/VERSIONING.md` now clarifies the relationship between section-level versions and project/release versions. Future Pact wording may cross-reference Section 0.10.4 from Section 7, but the current public model is no longer ambiguous.
 - CLOSED: Section 7 now reflects the current code-backed dual guard for external advisor attribution: proposal-time rejection creates no actionable proposal state, and ratification still flows through SEAL's seal guard.
 - CLOSED: Section 7 now reflects the current code-backed amendment persistence: proposals, review state, ratified records, queryable history, and reconstructed canon state survive restart.
 - CLOSED: Section 7 now reflects the current code-backed ceremony write-ahead discipline: TRACE emits first, durable amendment state writes second, and proposal/canon/history state does not mutate when TRACE or persistence fails.
@@ -328,7 +328,7 @@ Before v0.1.1:
 - Decide whether `UNTRUSTED_IMPORT` round-trip needs a dedicated global/container restore test beyond the current persistence-row proof.
 - Keep production-mode behavior in the generated or evidence docs if more flags join the one-switch posture.
 - CLOSED: amendment persistence landed before any substantial Pact v0.1.1 amendment ceremony. Keep future enhancements aligned with the proven SEAL ceremony ordering: TRACE emission first, durable proposal/history write second, in-memory mutation last.
-- Decide the section-version versus project-version model before ratifying the first post-v0.1.0 Pact amendment batch.
+- CLOSED: section-version versus project-version model is decided and documented in `docs/VERSIONING.md`; keep future amendment work aligned with Section 0.10.4 rather than encoding Pact changes in `-rc.N`.
 - Add a future structured amendment preview/report API as the substrate for a TECTON amendment UI.
 - Design the T-0 recovery/lock-out posture before adding cryptographic identity gates: keys should attest authority, not become the only way the sovereign operator can recover the system.
 - Add or schedule full-Pact integrity checks, reverse Pact-reference extraction, and pre-commit/CI drift gates.

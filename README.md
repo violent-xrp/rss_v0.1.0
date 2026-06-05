@@ -96,7 +96,7 @@ RSS is public-alpha kernel work. The most valuable contributions are boundary-ha
 
 Contributions should preserve the core posture: current claims stay conservative, future work stays named, and every meaningful safety claim should gain a proof path.
 
-**Versioning posture:** RSS uses pre-release code snapshots while the v0.1.0 Pact/release line is hardening. Tags such as `v0.1.0-rc.1` mark reviewable code checkpoints; the final `v0.1.0` tag should only be cut when the release boundary is declared clean. The Pact remains the constitutional source for this line unless T-0 explicitly authorizes a Pact text change.
+**Versioning posture:** Code and releases use semver (0.1.x); -rc.N is release-candidate iteration toward that version; the Pact versions itself by section through the §7 amendment ceremony (§0.10.4), and a sealed Pact amendment surfaces as a project MINOR bump — never in the -rc suffix. See `docs/VERSIONING.md`.
 
 ## Quick start
 

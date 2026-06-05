@@ -5,10 +5,11 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 Release target: **v0.1.0**
 
 Versioning posture:
-- use standard pre-release tags (`v0.1.0-rc.1`, `v0.1.0-rc.2`, etc.) for reviewable code checkpoints before the final v0.1.0 tag
-- keep `main` moving through hardening commits between checkpoints
-- treat the final `v0.1.0` tag as the stable reference snapshot for the v0.1.0 release boundary
-- treat Pact wording changes as version-sensitive project events authorized by T-0, not ordinary implementation cleanup
+- canonical model: `docs/VERSIONING.md`
+- project/release versions use semver (`0.1.0`, `0.1.1`, `0.2.0`) for code and release boundaries
+- `-rc.N` means release-candidate iteration toward the target version only; it does not track Pact edits or code significance
+- Pact section versions increment internally through the Section 7 amendment ceremony and Section 0.10.4; a sealed Pact amendment surfaces as a project MINOR bump, never in the `-rc.N` suffix
+- keep `main` moving through hardening commits between release boundaries without treating every commit as a version event
 
 This is the current command document for RSS. It should answer four questions quickly:
 - what is true now
@@ -21,6 +22,7 @@ Historical receipts live in supporting docs:
 - phase ledger and landed work: `docs/roadmap/PHASE_LEDGER.md`
 - coverage tracker: `docs/roadmap/COVERAGE_TRACKER.md`
 - testing layout and runner discipline: `docs/TESTING.md`
+- versioning model: `docs/VERSIONING.md`
 - demo handoff and artifact usage: `docs/demo/DEMO_HANDOFF.md`
 - external vocabulary / reviewer map: `docs/EXTERNAL_MAP.md`
 - active design proposals: `docs/proposals/`
@@ -346,7 +348,7 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - CLOSED: Restore visibility hardening now counts skipped persisted records in `restore_skips`, stores structured `runtime.restore_warnings`, and prints restore warnings for malformed or duplicate terms, synonyms, consents, and hub entries instead of silently swallowing them.
 - PAV/runtime skipped-source visibility: erroring hubs or skipped sources should be counted and surfaced without leaking protected content
 - CLOSED: Section 7 amendment persistence now persists proposals, review state, ratified amendment records, reconstructed canon state, and queryable history across restart
-- Section 7 version model: define how section-level versions (`v1.0`, `v1.1`) relate to project/release versions (`v0.1.0`, `v0.1.1`)
+- CLOSED: canonical versioning model now lives in `docs/VERSIONING.md`: project/release versions use semver, `-rc.N` is release-candidate iteration only, and Pact section versions are internal amendment records that surface through a project MINOR bump when sealed.
 - Section 7 operator ceremony API: future preview/dry-run, diff report, stale-base handling, and post-ratification verification report for TECTON UI readiness
 - T-0 recovery authority: design auditable manual recovery so future cryptographic identity strengthens attestation without creating permanent lock-out risk
 - Full-Pact integrity: extend hash verification and pre-seal integrity beyond Section 0, and generate `docs/pact_code_map.md` from code references back to Pact sections

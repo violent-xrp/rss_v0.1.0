@@ -45,6 +45,11 @@ For the current test layout, optional checks, and runner discipline, see `docs/T
 - any drop must be recorded in `docs/roadmap/ACCEPTANCE_HISTORY.md` and summarized in `ROADMAP.md` if it changes release posture
 - do not bury count-history logic inside the test runner itself
 
+## Versioning
+Use `docs/VERSIONING.md` as the canonical versioning reference.
+
+Code and releases use semver (0.1.x); -rc.N is release-candidate iteration toward that version; the Pact versions itself by section through the §7 amendment ceremony (§0.10.4), and a sealed Pact amendment surfaces as a project MINOR bump — never in the -rc suffix.
+
 ## Where to put things
 - kernel modules → `src/rss/` (subpackages: `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`)
 - CLI entry point → `src/main.py`
