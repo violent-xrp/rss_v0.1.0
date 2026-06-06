@@ -145,6 +145,7 @@ Section 7 / amendment and evolution:
 - Amendment proposals now run the external advisor attribution guard before proposal state is created, and ratification still flows through `seal()` with the same guard before canonizing the proposed text.
 - When a TRACE callback is wired, proposal, review, and ratification emit the corresponding amendment event before mutating ceremony state. TRACE callback failure returns `AMENDMENT_TRACE_FAILED` and leaves proposal/canon/history state unchanged for that step.
 - Amendment persistence is implemented for the Runtime-wired SEAL path: proposal objects, review state, ratified amendment records, queryable amendment history, and reconstructed canon state survive restart. The durable ordering is TRACE emission first, amendment persistence second, and in-memory mutation last; persistence failure returns `AMENDMENT_PERSISTENCE_FAILED` and leaves proposal/canon/history state unchanged for the failed step.
+- The current ceremony persists sealed canon in SQLite amendment state; it does not write ratified text back to `pact/*.md`. Until a future canon-to-file export/sync tool exists, the human-readable Pact files and DB canon are separate representations that can diverge.
 - Rejected amendment reviews emit `AMENDMENT_REJECTED` as the terminal review event rather than emitting both `AMENDMENT_REVIEWED` and `AMENDMENT_REJECTED`; audit queries that count reviewed proposals should count both event families.
 - `AmendmentRecord` preserves the current required evidence surface: proposal ID, section ID, old/new versions, old/new hashes, rationale, ratification timestamp, sovereign override flag, reviewer, and review notes.
 - Section-level versions increment independently (`v1.0`, `v1.1`, etc.) as sections are sealed. This is separate from project/release versions such as `v0.1.0` and future `v0.1.1`; the canonical three-clock model is recorded in `docs/VERSIONING.md` and Pact Section 0.10.4.
@@ -157,6 +158,8 @@ T-0 mechanical identity:
 - The Pact assigns sovereign authority to T-0 for certain actions.
 - v0.1.0 discloses that some T-0 gates are soft command/convention boundaries rather than cryptographic or identity-checked mechanics.
 - Priority examples: term/synonym/disallow authorization, seat creation/modification, container lifecycle authority, and seal/amendment authorization. Safe-Stop clearing now has an explicit `t0_command=True` soft gate, but still lacks cryptographic identity proof.
+- Future implementation should centralize sovereign decisions behind a single `authorize_t0(action, context)` seam before adding cryptographic identity, so later attestation can be inserted without scattering new authority checks across seats and runtime code.
+- Operational identities for TECTON deployments are separate from constitutional T-0 authority. Future user keys, rotation, revocation, and recovery should be deployment-governed/audited while remaining unable to amend the Pact or expand constitutional authority; keys should not be stored in repo files, Pact text, or TRACE payloads.
 
 T-0 recovery and lock-out risk:
 - Section 0 now carries the constitutional recovery fence: T-0 sovereign authority cannot be destroyed by technical identity failure, and future cryptographic gates should attest authority rather than become the only possible recovery path.
@@ -223,6 +226,8 @@ Amendment/evolution gaps:
 - There is no read-only ratification preview/dry-run step that shows the exact diff, expected hashes, version transition, integrity result, and AmendmentRecord before T-0 commits.
 - Parallel amendments against the same section are not handled explicitly. A proposal reviewed against an older section version is not automatically marked stale if another amendment lands first.
 - There is no post-ratification self-test that proves the new canon hash, version counter, TRACE event, persistence state, and cold verifier posture all match the expected result.
+- There is not yet a read-only Pact/canon drift diagnostic that compares `pact/*.md` file hashes with sealed DB canon hashes and reports no-canon, in-sync, file-ahead, or canon-ahead states.
+- There is not yet a canon-to-file export path. Section 1-7 export can be a normal sync operation once designed, but Section 0 export is a protected lock-out path because any file write must pair with Genesis re-anchor plus boot, tamper, and recovery verification.
 
 Pact embedding / reverse traceability gaps:
 - The claim matrix maps Pact sections to tests, and code comments cite Pact clauses, but the reverse map from kernel modules back to Pact sections is not yet mechanically generated.
@@ -237,11 +242,13 @@ Internal advisor layer / Tier 2.5 gap:
 - Internal advisors should be modules, not seats: no constitutional authority, no direct command power, domain-bounded input/output contracts, TRACE-recorded invocations, and hash-bound outputs.
 - The primary design purpose is false-positive halt reduction through graduated response: `SERVE`, `NARROW`, `ESCALATE`, then `HALT`. This should make gates better informed without weakening the fail-closed authority boundary.
 - Principle for future wording: automate assessment, never authorization. Advisors may classify, summarize, narrow, and recommend; they may not grant, approve, expand scope, seal law, call tools, or execute side effects.
+- Amendment and code-consistency review is a natural Tier 2.5 use case: advisors can compare proposed Pact text, implementation evidence, and test coverage, but T-0 and the kernel remain the only authorization surfaces.
 - This also preserves the useful multi-voice review instinct while keeping external model output outside the authority boundary.
 - If this layer becomes real, later Pact work should decide where it sits in the tier model, how advisor output enters amendment/review workflows, which advisor classes are required for protected-section changes, and how TRACE proves that human/kernel authorization remained separate from advisor assessment.
 
 Structured Action Proposal / side-effect broker gap:
 - v0.1.0 has no side-effect broker and makes no claim that model/advisor text can execute tools, files, APIs, network calls, or other external effects.
+- v0.1.0 is a single forward pass: model output is sanitized and logged, but it does not re-enter the gates as a proposed action.
 - Future Pact wording should define agentic systems explicitly: an external model operating in an action loop with tool access remains Tier 3. Agency is not authorization.
 - Future side-effect work should require a typed proposed-action object rather than free-text execution. Minimum fields to design around: proposal ID, source task ID, action class, target resource, payload or arguments, container binding, creation time, payload hash, and TTL/expiration.
 - Before any side effect executes, the proposed action should re-enter SCOPE, RUNE, execution validation, OATH, and CYCLE. Denial at any seat should produce a structured halt rather than a partial execution.
