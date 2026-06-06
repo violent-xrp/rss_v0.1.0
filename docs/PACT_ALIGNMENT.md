@@ -226,7 +226,7 @@ Amendment/evolution gaps:
 - There is no read-only ratification preview/dry-run step that shows the exact diff, expected hashes, version transition, integrity result, and AmendmentRecord before T-0 commits.
 - Parallel amendments against the same section are not handled explicitly. A proposal reviewed against an older section version is not automatically marked stale if another amendment lands first.
 - There is no post-ratification self-test that proves the new canon hash, version counter, TRACE event, persistence state, and cold verifier posture all match the expected result.
-- There is not yet a read-only Pact/canon drift diagnostic that compares `pact/*.md` file hashes with sealed DB canon hashes and reports no-canon, in-sync, file-ahead, or canon-ahead states.
+- CLOSED for diagnostic: `rss.audit.pact_canon_drift` now provides a read-only Pact/canon drift report comparing `pact/*.md` file hashes with sealed DB canon hashes and reporting no-canon, in-sync, file-ahead, or canon-ahead states. It does not export canon to files or mutate Genesis.
 - There is not yet a canon-to-file export path. Section 1-7 export can be a normal sync operation once designed, but Section 0 export is a protected lock-out path because any file write must pair with Genesis re-anchor plus boot, tamper, and recovery verification.
 
 Pact embedding / reverse traceability gaps:

@@ -26,7 +26,16 @@
 
 Mechanical split from tests/test_all.py; proof bodies and # CLAIM tags are preserved.
 """
+from pathlib import Path
+
 from test_support import *
+from rss.audit.pact_canon_drift import (
+    STATUS_CANON_AHEAD,
+    STATUS_FILE_AHEAD,
+    STATUS_IN_SYNC,
+    STATUS_NO_CANON,
+    compare_pact_to_canon,
+)
 
 
 def test_audit_log():
@@ -104,6 +113,85 @@ def test_trace_export():
         for suffix in ["-wal", "-shm"]:
             if os.path.exists(path + suffix):
                 os.unlink(path + suffix)
+
+
+def test_pact_canon_drift_detector_no_canon():
+    # CLAIM: §7.5, §7.11.1 — Pact/canon drift detector reports no sealed canon without mutation
+    section("Pact/Canon Drift Detector: No Canon")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        pact_dir = Path(tmp) / "pact"
+        pact_dir.mkdir()
+        s0_text = "Section 0 local file\n"
+        s7_text = "Section 7 local file\n"
+        (pact_dir / "pact_section0_root_physics.md").write_text(s0_text, encoding="utf-8")
+        (pact_dir / "pact_section7_amendment_evolution.md").write_text(s7_text, encoding="utf-8")
+
+        results = compare_pact_to_canon(pact_dir)
+
+    check(len(results) == 2, "drift detector reports every Pact section file")
+    check([r.section_id for r in results] == ["S0", "S7"], "drift detector derives SEAL section ids")
+    check(all(r.status == STATUS_NO_CANON for r in results), "sections without DB canon report NO_CANON")
+    check(results[0].file_hash == compute_hash(s0_text), "file hash uses constitution compute_hash")
+    check(all(r.canon_hash is None for r in results), "NO_CANON results do not invent canon hashes")
+
+
+def test_pact_canon_drift_detector_compares_latest_records():
+    # CLAIM: §7.5, §7.11.1 — Pact/canon drift detector reports in-sync, canon-ahead, and file-ahead states
+    section("Pact/Canon Drift Detector: Latest Canon")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        pact_dir = Path(tmp) / "pact"
+        pact_dir.mkdir()
+        db_path = Path(tmp) / "rss.db"
+
+        in_sync = "S1 sealed canon text\n"
+        old_text = "S2 old file text\n"
+        new_text = "S2 sealed DB canon text\n"
+        manual_text = "S3 manual file edit\n"
+        previous_text = "S3 previous canon text\n"
+        db_text = "S3 sealed DB canon text\n"
+
+        (pact_dir / "pact_section1_eight_seats.md").write_text(in_sync, encoding="utf-8")
+        (pact_dir / "pact_section2_meaning_law.md").write_text(old_text, encoding="utf-8")
+        (pact_dir / "pact_section3_execution_law.md").write_text(manual_text, encoding="utf-8")
+
+        conn = sqlite3.connect(db_path)
+        with conn:
+            conn.execute(
+                """CREATE TABLE amendment_records (
+                    proposal_id TEXT PRIMARY KEY,
+                    section_id TEXT,
+                    old_version TEXT,
+                    new_version TEXT,
+                    old_hash TEXT,
+                    new_hash TEXT,
+                    rationale TEXT,
+                    ratified_at TEXT,
+                    sovereign_override INTEGER DEFAULT 0,
+                    reviewer TEXT,
+                    review_notes TEXT
+                )"""
+            )
+            rows = [
+                ("P-S1", "S1", None, "v1.0", None, compute_hash(in_sync), "sync", "2026-01-01T00:00:00+00:00", 0, "T-0", ""),
+                ("P-S2", "S2", "v1.0", "v1.1", compute_hash(old_text), compute_hash(new_text), "canon ahead", "2026-01-02T00:00:00+00:00", 0, "T-0", ""),
+                ("P-S3", "S3", "v1.0", "v1.1", compute_hash(previous_text), compute_hash(db_text), "file ahead", "2026-01-03T00:00:00+00:00", 0, "T-0", ""),
+            ]
+            conn.executemany("INSERT INTO amendment_records VALUES(?,?,?,?,?,?,?,?,?,?,?)", rows)
+        conn.close()
+
+        results = compare_pact_to_canon(pact_dir, db_path)
+
+    by_section = {result.section_id: result for result in results}
+    check(by_section["S1"].status == STATUS_IN_SYNC, "matching file/latest canon reports IN_SYNC")
+    check(by_section["S1"].canon_hash == compute_hash(in_sync), "IN_SYNC reports latest canon hash")
+    check(by_section["S2"].status == STATUS_CANON_AHEAD, "file equal to old_hash reports CANON_AHEAD")
+    check(by_section["S2"].old_hash == compute_hash(old_text), "CANON_AHEAD preserves old_hash evidence")
+    check(by_section["S3"].status == STATUS_FILE_AHEAD, "file differing from old/new canon reports FILE_AHEAD")
+    check(by_section["S3"].canon_hash == compute_hash(db_text), "FILE_AHEAD still reports sealed canon hash")
+    check(by_section["S3"].canon_version == "v1.1", "drift result preserves canon section version")
+    check(by_section["S3"].ratified_at == "2026-01-03T00:00:00+00:00", "drift result preserves ratification timestamp")
 
 
 def test_safe_stop_persistent():

@@ -131,6 +131,8 @@ from test_tenant_containers import (
 
 from test_audit_trace import (
     test_audit_log,
+    test_pact_canon_drift_detector_no_canon,
+    test_pact_canon_drift_detector_compares_latest_records,
     test_trace_export,
     test_safe_stop_persistent,
     test_trace_seat,
@@ -199,6 +201,8 @@ TESTS = [
     test_constitution,
     test_constitution_load_constitution,
     test_audit_log,
+    test_pact_canon_drift_detector_no_canon,
+    test_pact_canon_drift_detector_compares_latest_records,
     test_ward,
     test_scope,
     test_hubs,

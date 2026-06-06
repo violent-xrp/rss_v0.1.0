@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-06-05 04:30 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-06-06 02:14 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 109 distinct Pact sections referenced across 145 claim tags on 145 test functions.
+**Coverage:** 110 distinct Pact sections referenced across 147 claim tags on 147 test functions.
 
 ---
 
@@ -548,8 +548,15 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_s7_amendment_ceremony` — S7 propose → review → ratify ceremony, S0 sovereign override, versioning
 
+## §7.5
+
+- `test_pact_canon_drift_detector_no_canon` — Pact/canon drift detector reports no sealed canon without mutation
+- `test_pact_canon_drift_detector_compares_latest_records` — Pact/canon drift detector reports in-sync, canon-ahead, and file-ahead states
+
 ## §7.11.1
 
+- `test_pact_canon_drift_detector_no_canon` — Pact/canon drift detector reports no sealed canon without mutation
+- `test_pact_canon_drift_detector_compares_latest_records` — Pact/canon drift detector reports in-sync, canon-ahead, and file-ahead states
 - `test_s7_amendment_persistence_roundtrip` — amendment proposal/review state and ratified history survive restart
 
 ## §E-1

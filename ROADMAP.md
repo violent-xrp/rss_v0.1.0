@@ -36,16 +36,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **145 test functions / 1312 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **92.2% statement coverage** via `python run_coverage.py`
-- **145 claims / 145 tests / 109 Pact sections** in `docs/claim_matrix.md`
+- **147 test functions / 1325 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **91.7% statement coverage** via `python run_coverage.py`
+- **147 claims / 147 tests / 110 Pact sections** in `docs/claim_matrix.md`
 - **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 145/1312 baseline
+- public docs are synced to the current 147/1325 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -86,7 +86,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 
 ### Post-rc.1 / Toward v0.1.1
 - **Amendment mechanics:** Section 7 ceremony persists sealed canon in SQLite; it does not write updated text back to `pact/*.md`. A future canon-to-file export tool is needed before ceremony output updates the human-readable Pact files.
-- **Pact/canon drift detection:** add a read-only diagnostic that compares each Pact file hash to any sealed DB canon hash and reports no-canon-yet, in-sync, file-ahead, or canon-ahead states. This makes the two-copy gap visible without mutating canon, files, or Genesis.
+- **Pact/canon drift detection:** a read-only diagnostic now compares each Pact file hash to any sealed DB canon hash and reports no-canon-yet, in-sync, file-ahead, or canon-ahead states. It makes the two-copy gap visible without mutating canon, files, or Genesis; canon-to-file export remains future work.
 - **Section 0 lock-out path:** Section 1-7 file export is the safe common path. Section 0 export is special because it is Genesis-anchored; any Section 0 file write must pair with Genesis re-anchor plus boot, tamper, and recovery verification or the runtime will Safe-Stop.
 - **T-0 identity seam:** identity enforcement remains future work. The cheap prerequisite is a single `authorize_t0(action, context)` chokepoint for sovereign gates that returns permissively today, so later cryptographic identity can be inserted in one place.
 - **Recovery before keys:** cryptographic identity must be designed recovery-first. Keys may strengthen attestation, but they must not become the only way T-0 can recover lawful authority under Section 0.1.4.

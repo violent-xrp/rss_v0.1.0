@@ -32,7 +32,7 @@ runtime.py              85.1%
 oath.py                 88.2%
 pav.py                  86.9%
 constitution.py         92.5%
-TOTAL                   92.2%
+TOTAL                   91.7%
 ```
 
 ## Current Targets
