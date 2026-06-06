@@ -4,6 +4,8 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 
 Release target: **v0.1.0**
 
+Current release candidate: **v0.1.0-rc.1** is tagged and pushed at `c694b83`.
+
 Versioning posture:
 - canonical model: `docs/VERSIONING.md`
 - project/release versions use semver (`0.1.0`, `0.1.1`, `0.2.0`) for code and release boundaries
@@ -74,13 +76,24 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 
 ### Next
 - CLOSED: Sections 1-7 cleanup landed after Section 0; implementation-reference drift, CYCLE load wording, S5/S6 concurrency and persistence boundaries, and S7 amendment-persistence wording now match the current kernel truth.
-- CLOSED FOR CURRENT PASS: fresh offline demo artifacts were regenerated and inspected from the current working tree. The ignored local bundle reports `PASS`, 22/22 successful task IDs bound to TRACE, cold verification over 169 events, and matching report/TRACE artifact counts. Rerun immediately before any `v0.1.0-rc.1` tag.
+- CLOSED FOR `v0.1.0-rc.1`: final acceptance, sync, claim-matrix, and offline demo gates passed before the tag. The ignored local demo bundle reports `PASS`, 22/22 successful task IDs bound to TRACE, 14/14 expected evidence markers found, and cold verification over 192 events. Rerun the gates before final `v0.1.0`.
 - Demo proof artifacts now need to stay evidence-bound: PASS requires expected seeded evidence markers and successful task IDs bound to TRACE, not just fluent non-error answers.
-- After a clean acceptance/sync/claim-matrix pass, prepare `v0.1.0-rc.1` as the next reviewable release checkpoint.
+- `v0.1.0-rc.1` is the current reviewable release candidate; the next release decision is whether this candidate can converge to final `v0.1.0` or needs another candidate iteration.
 - Keep final v0.1.0 gates explicit: final acceptance proof, synced public docs, fresh demo artifacts, and no release claim beyond the current proof surface.
 - Keep tightening the reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
 - Keep the zero-trust trajectory explicit without overclaiming v0.1.0: RSS is moving toward deployment-grade zero-trust through caller identity, per-action gates, least-privilege context, and external audit anchoring, but the current release remains a single-process governance kernel.
 - Pact cleanup is complete for the current pass; keep public proof docs synced as code hardening and release-boundary polish continue.
+
+### Post-rc.1 / Toward v0.1.1
+- **Amendment mechanics:** Section 7 ceremony persists sealed canon in SQLite; it does not write updated text back to `pact/*.md`. A future canon-to-file export tool is needed before ceremony output updates the human-readable Pact files.
+- **Pact/canon drift detection:** add a read-only diagnostic that compares each Pact file hash to any sealed DB canon hash and reports no-canon-yet, in-sync, file-ahead, or canon-ahead states. This makes the two-copy gap visible without mutating canon, files, or Genesis.
+- **Section 0 lock-out path:** Section 1-7 file export is the safe common path. Section 0 export is special because it is Genesis-anchored; any Section 0 file write must pair with Genesis re-anchor plus boot, tamper, and recovery verification or the runtime will Safe-Stop.
+- **T-0 identity seam:** identity enforcement remains future work. The cheap prerequisite is a single `authorize_t0(action, context)` chokepoint for sovereign gates that returns permissively today, so later cryptographic identity can be inserted in one place.
+- **Recovery before keys:** cryptographic identity must be designed recovery-first. Keys may strengthen attestation, but they must not become the only way T-0 can recover lawful authority under Section 0.1.4.
+- **Operational identity:** future TECTON deployment users should carry operational credentials and role scopes separate from, subordinate to, and unable to amend constitutional T-0 authority. Key rotation, revocation, and recovery are governed/audited events; keys do not belong in repo, Pact text, or TRACE payloads.
+- **Action-proposal loop:** v0.1.0 is a single forward pass: model output is sanitized and logged, but it does not re-enter the gates. The v0.1.1+ frontier is a typed action proposal and side-effect broker where every proposed side effect re-enters SCOPE, RUNE, execution validation, OATH, and CYCLE before execution.
+- **Tier 2.5 advisor layer:** future internal advisors may assess, narrow, and recommend through structured packets, including amendment/code consistency review. They remain non-authoritative: automate assessment, never authorization.
+- **Sigil universality:** `docs/proposals/SIGIL_SET_PROPOSAL.md` remains the public design surface for encoding-stable sigils and authority-marker caveats. No glyph change is built or claimed in v0.1.0.
 
 ### Keep Warm
 - API/wrapper ingress boundary and caller identity propagation.
@@ -137,7 +150,7 @@ belongs on this side of the tag only if it must exist before RSS can trust its
 own release or amendment path. Default destination for everything else is the
 v0.1.1 ceremony queue.
 
-Mandatory before `v0.1.0-rc.1`:
+Completed for `v0.1.0-rc.1`:
 - CLOSED: S0-S2 mechanical OATH/RUNE hardening is proven: OATH requester
   fallback closed, RUNE constraint-prompt exclusion proven, and longest
   bounded-match precedence implemented.
@@ -175,20 +188,22 @@ Mandatory before `v0.1.0-rc.1`:
 - CLOSED: Section 0-7 cleanup landed with the Section 4 and Section 5
   "rule / current proof / boundary" style. Substantive additions such as T-0
   recovery authority remained T-0-owned rather than implementation cleanup.
-- CURRENT: one acceptance/sync pass is clean at 145 tests, 1312 assertions, and
-  92.2% coverage after the current hardening pass. Rerun immediately
-  before any `v0.1.0-rc.1` tag.
+- CLOSED: final rc.1 acceptance/sync pass was clean at 145 tests, 1312
+  assertions, 0 failures, and 92.2% coverage. Rerun the same gates before
+  final `v0.1.0`.
 - CLOSED: demo artifact decision is made for `v0.1.0-rc.1`: do not rely on a
-  stale artifact bundle. Generate fresh offline artifacts immediately before
-  the checkpoint. The summary `PASS` status now requires full useful-retrieval
-  counts, refusal/isolation/recovery flags, live TRACE validity, cold TRACE
-  verification, and a non-empty cold event count.
+  stale artifact bundle. Fresh offline artifacts were generated before the
+  checkpoint with summary `PASS`, 22/22 TRACE-bound successful task IDs, 14/14
+  expected evidence markers, refusal/isolation/recovery flags, live TRACE
+  validity, cold TRACE verification, and 192 cold events. Regenerate before
+  final `v0.1.0`.
 
 Mandatory before final `v0.1.0`:
 - CLOSED: T-0 recovery authority is now carried in Section 0. Later sections
   may add cross-references during v0.1.1 cleanup, but v0.1.0 no longer depends
   on a separate recovery-authority drafting item.
 - Final acceptance/sync/claim-matrix pass before final tag.
+- Fresh offline demo artifact bundle before final tag.
 
 Held for v0.1.1 ceremony unless a release-gate review proves otherwise:
 - broad Pact wording cleanup and Council/vocabulary sweep
