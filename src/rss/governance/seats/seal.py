@@ -34,6 +34,8 @@ from dataclasses import dataclass, field, replace
 from datetime import datetime, UTC
 from typing import Callable, Dict, List, Optional
 
+from rss.governance.t0 import authorize_t0
+
 
 class SealError(Exception):
     """Raised when sealing fails."""
@@ -317,7 +319,11 @@ class Seal:
         amendment is sealed into canon and recorded in amendment_history.
 
         Returns the AmendmentRecord on success, or an error dict."""
-        if not t0_command:
+        t0 = authorize_t0(
+            "ratify_amendment",
+            {"t0_command": t0_command, "proposal_id": proposal_id},
+        )
+        if not t0.allowed:
             return {"error": "T0_COMMAND_REQUIRED",
                     "reason": "Only T-0 may ratify amendments (§7.4.1)"}
 
@@ -483,7 +489,15 @@ class Seal:
                                t0_command: bool) -> Optional[dict]:
         if not review_complete:
             return {"error": "NO_REVIEW_ATTESTATION"}
-        if not t0_command:
+        t0 = authorize_t0(
+            "seal",
+            {
+                "t0_command": t0_command,
+                "section_id": packet.section_id,
+                "doc_id": packet.doc_id,
+            },
+        )
+        if not t0.allowed:
             return {"error": "NO_T0_COMMAND"}
         if not packet.section_id or not packet.doc_id:
             return {"error": "MISSING_IDS"}

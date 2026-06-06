@@ -7,9 +7,9 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
 
 ### Current verified snapshot
-- **147 test functions / 1325 assertions / 0 failures** via `python tests/test_all.py`
+- **148 test functions / 1336 assertions / 0 failures** via `python tests/test_all.py`
 - **91.7% statement coverage** via `python run_coverage.py`
-- **147 claims / 147 tests / 110 Pact sections** in `docs/claim_matrix.md`
+- **148 claims / 148 tests / 111 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -68,6 +68,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - Section 4 cleanup corrected stale Primary-Module filenames to current paths and added the `UNTRUSTED_IMPORT` provenance event (list now illustrative/non-exhaustive), matching `topology.py`
 - Section 5 cleanup sharpened the concurrency boundary (Section 5.1.6 / Section 5.6.3) to name the specific child-thread `ACTIVE_HUBS` context-inheritance edge and `contextvars.copy_context()` mitigation; documentation-only, the code fix remains parked future hardening
 - Section 6 cleanup corrected stale audit/persistence module references to current paths (`audit/log.py`, `audit/export.py`, `audit/verify.py`, `persistence/sqlite.py`) and named the concrete single-process thread-safety mechanism (WAL, `check_same_thread=False`, process-local lock) in Section 6.5.2; documentation-only, no code change
+- T-0 authority checks now route Safe-Stop clearing and SEAL seal/ratification through a shared `authorize_t0(action, context)` seam while preserving the current soft `t0_command=True` behavior; cryptographic identity remains future hardening
 - Section 7 cleanup corrected the amendment-persistence underclaim: proposals, review state, queryable history, and ratified records persist to SQLite and restore on bootstrap with TRACE-first, durable-write-second, mutate-last ordering and fail-closed `AMENDMENT_PERSISTENCE_FAILED`; Section 7.11.1 is now framed around remaining record-enrichment work, and Section 6 state-category lists now name amendment proposals and amendment records
 - Added `docs/proposals/SIGIL_SET_PROPOSAL.md` to track encoding-stable seat-sigil candidates, future authority-marker caveats, and the v0.1.1 amendment/re-anchor migration map without changing any glyphs
 - Added `docs/proposals/V0_1_1_AMENDMENT_PLAN.md` and recorded Option B for the first v0.1.1 amendment ceremony: Sections 1, 3, and 6 only, with Section 0 deferred to a dedicated Genesis-aware ceremony; planning-only, no Pact/code/Genesis changes

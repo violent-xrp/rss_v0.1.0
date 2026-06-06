@@ -894,6 +894,70 @@ def test_clear_safe_stop_idempotence():
         _cleanup_db(path)
 
 
+def test_t0_authorization_seam():
+    # CLAIM: §0.1.4 — protected T-0 command gates route through one soft authorization seam without changing v0.1.0 behavior.
+    section("T-0 Authorization Seam")
+
+    from rss.governance.t0 import authorize_t0
+    import rss.core.runtime as runtime_mod
+    import rss.governance.seats.seal as seal_mod
+
+    denied = authorize_t0("test_action", {"t0_command": False})
+    allowed = authorize_t0("test_action", {"t0_command": True})
+    check(denied.allowed is False, "authorize_t0 denies missing soft command")
+    check(denied.reason == "missing_t0_command", "authorize_t0 exposes missing-command reason")
+    check(allowed.allowed is True, "authorize_t0 allows explicit soft command")
+    check(allowed.reason == "soft_t0_command", "authorize_t0 preserves soft-command reason")
+
+    runtime_calls = []
+    real_runtime_authorize = runtime_mod.authorize_t0
+
+    def runtime_probe(action, context=None):
+        runtime_calls.append((action, dict(context or {})))
+        return real_runtime_authorize(action, context)
+
+    runtime_mod.authorize_t0 = runtime_probe
+    try:
+        rss = bootstrap(RSSConfig(db_path=":memory:"))
+        blocked = rss.clear_safe_stop()
+        check(blocked.get("error") == "T0_COMMAND_REQUIRED",
+              "clear_safe_stop still returns the existing missing-command error")
+        check(runtime_calls[-1][0] == "clear_safe_stop",
+              "clear_safe_stop routes through authorize_t0")
+        check(runtime_calls[-1][1].get("t0_command") is False,
+              "clear_safe_stop passes the soft command state to authorize_t0")
+        rss.persistence.close()
+    finally:
+        runtime_mod.authorize_t0 = real_runtime_authorize
+
+    seal_calls = []
+    real_seal_authorize = seal_mod.authorize_t0
+
+    def seal_probe(action, context=None):
+        seal_calls.append((action, dict(context or {})))
+        return real_seal_authorize(action, context)
+
+    seal_mod.authorize_t0 = seal_probe
+    try:
+        seal = Seal()
+        packet = SealPacket("S1", 1, "T0-SEAM", "Text.")
+        blocked_seal = seal.seal(packet, review_complete=True, t0_command=False)
+        check(blocked_seal.get("error") == "NO_T0_COMMAND",
+              "SEAL still returns the existing missing-command error")
+        check(seal_calls[-1][0] == "seal",
+              "SEAL seal() routes through authorize_t0")
+
+        proposed = seal.propose_amendment("S3", "test", "text")
+        seal.review_amendment(proposed["proposal_id"], "reviewer", "APPROVE")
+        blocked_ratify = seal.ratify_amendment(proposed["proposal_id"], t0_command=False)
+        check(blocked_ratify.get("error") == "T0_COMMAND_REQUIRED",
+              "SEAL ratify_amendment still returns the existing missing-command error")
+        check(seal_calls[-1][0] == "ratify_amendment",
+              "SEAL ratify_amendment() routes through authorize_t0")
+    finally:
+        seal_mod.authorize_t0 = real_seal_authorize
+
+
 def test_llm_availability_timeout_is_config_driven():
     # CLAIM: §3.7.5 — LLM availability check timeout is config-driven via llm_availability_check_timeout; independent of generation timeout
     section("Priority A-4: LLM Availability Timeout Config-Driven")

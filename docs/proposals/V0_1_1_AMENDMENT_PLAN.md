@@ -87,7 +87,7 @@ These should not be amended into current-tense Pact law until code and tests exi
 | --- | --- | --- |
 | OATH | duration expiry, explicit DENIED/deny operation, structured consent-source response | Current code does not fully implement these semantics |
 | RUNE | domain/container namespaces, compiled matcher/index, active/archive lifecycle, distinct MED/LOW semantics | Needs runtime design and performance/test proof first |
-| T-0 identity | cryptographic/mechanical identity and `authorize_t0()` enforcement | Recovery-before-keys design must come first |
+| T-0 identity | cryptographic/mechanical identity on top of the current `authorize_t0()` seam | Recovery-before-keys design must come first |
 | Action proposal loop | typed proposed-action object and side-effect broker | Not built in v0.1.0; model output does not re-enter gates today |
 | Tier 2.5 advisors | advisor packet runtime layer | Design exists, runtime layer does not |
 | Full-Pact integrity | boot/request-time integrity across Sections 1-7 | Needs implementation and gate design |

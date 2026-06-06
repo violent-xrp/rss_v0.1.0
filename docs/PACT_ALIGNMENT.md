@@ -39,7 +39,7 @@ Section 0 integrity and Safe-Stop:
 - Section 0 integrity is mechanically checked during constitution loading.
 - The default runtime config binds Genesis to `pact/pact_section0_root_physics.md` and the current Section 0 hash; acceptance proof now covers live default-path verification, tamper-triggered Safe-Stop, and T-0 recovery after restoring the Section 0 artifact.
 - Safe-Stop is persistent across restart in the current single-process SQLite-backed runtime.
-- Safe-Stop clearing requires explicit `t0_command=True` today; this is a soft sovereign-command gate, not cryptographic/mechanical identity. The mechanical identity gate remains future hardening.
+- Safe-Stop clearing requires explicit `t0_command=True` today and now routes through the shared `authorize_t0(action, context)` seam. This is still a soft sovereign-command gate, not cryptographic/mechanical identity; the mechanical identity gate remains future hardening.
 - Section 0 §0.8.4 bootstrap round-trip is code-proven for the current SQLite reference path: terms, synonyms, disallowed terms, global hub entries, consent records, TRACE events, TECTON container state, container hub entries, Safe-Stop/system state, and schema version restore through fresh bootstrap. Container persistence currently uses TECTON's explicit `save_to(...)` path before automatic restore; auto-save-on-mutation remains a future product/hardening decision, not part of the current claim.
 
 Typed authority and directionality:
@@ -157,8 +157,8 @@ Section 7 / amendment and evolution:
 T-0 mechanical identity:
 - The Pact assigns sovereign authority to T-0 for certain actions.
 - v0.1.0 discloses that some T-0 gates are soft command/convention boundaries rather than cryptographic or identity-checked mechanics.
-- Priority examples: term/synonym/disallow authorization, seat creation/modification, container lifecycle authority, and seal/amendment authorization. Safe-Stop clearing now has an explicit `t0_command=True` soft gate, but still lacks cryptographic identity proof.
-- Future implementation should centralize sovereign decisions behind a single `authorize_t0(action, context)` seam before adding cryptographic identity, so later attestation can be inserted without scattering new authority checks across seats and runtime code.
+- CLOSED for the first seam: Safe-Stop clearing and SEAL seal/ratification now route through a shared `authorize_t0(action, context)` chokepoint while preserving the current soft `t0_command=True` behavior.
+- Remaining priority examples: term/synonym/disallow authorization, seat creation/modification, broader container lifecycle authority, and cryptographic/mechanical identity proof. Future implementation should extend the seam to those Pact-reserved powers before adding identity attestation.
 - Operational identities for TECTON deployments are separate from constitutional T-0 authority. Future user keys, rotation, revocation, and recovery should be deployment-governed/audited while remaining unable to amend the Pact or expand constitutional authority; keys should not be stored in repo files, Pact text, or TRACE payloads.
 
 T-0 recovery and lock-out risk:
