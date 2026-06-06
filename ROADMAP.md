@@ -117,7 +117,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - Runner JSON verdict export for independent tooling / CI cross-checks.
 - External vocabulary map maintenance as reviewer-facing language evolves.
 - Pact alignment map maintenance before Pact wording, v0.1.1, or v0.2.0 changes.
-- Section-ordered Pact amendment plan before the v0.1.1 ceremony; `docs/PACT_ALIGNMENT.md` is the inventory, not the execution order.
+- Section-ordered Pact amendment plan before the v0.1.1 ceremony: `docs/proposals/V0_1_1_AMENDMENT_PLAN.md`. `docs/PACT_ALIGNMENT.md` remains the inventory, not the execution order.
 - Seat load-bearing audit after v0.1.0.
 - T-0 recovery/lock-out design before cryptographic identity becomes load-bearing.
 - Full-Pact integrity and generated reverse Pact-reference extraction so code/law drift is visible in both directions. The reverse map should be a generated doc such as `docs/pact_code_map.md`, separate from the hand-authored `docs/PACT_ALIGNMENT.md`.
@@ -181,8 +181,8 @@ Completed for `v0.1.0-rc.1`:
   pass includes the constitutional T-0 vs product operational ownership
   distinction, Pact-level recovery authority clause, internal advisor fence,
   Section Scope cleanup, and Genesis re-anchor. Council vocabulary is preserved
-  verbatim in this pass; the strip is deferred to the first v0.1.1 ceremony
-  amendment.
+  verbatim in this pass; Section 0 vocabulary is deferred to a dedicated
+  Genesis-aware ceremony, not the first Option B v0.1.1 amendment.
 - CLOSED: `docs/PACT_VOICE.md` served as the non-authoritative rail for the
   section-by-section Pact cleanup.
 - CLOSED: Section 0-7 cleanup landed with the Section 4 and Section 5
@@ -207,12 +207,12 @@ Mandatory before final `v0.1.0`:
 
 Held for v0.1.1 ceremony unless a release-gate review proves otherwise:
 - broad Pact wording cleanup and Council/vocabulary sweep
-- Council vocabulary strip across all eight Pact sections as the first v0.1.1
-  amendment ceremony test case. This coordinated cross-section vocabulary
-  change replaces "Council" with "the eight seats", "operational seats", or
-  "constitutional seats" as exact context requires. It exercises amendment
-  persistence and ceremony machinery with bounded, low-risk scope before larger
-  v0.1.1 candidates run through ceremony.
+- Option B Council/register cleanup as the first v0.1.1 amendment ceremony test
+  case: Sections 1, 3, and 6 only. This replaces or narrows "Council" language
+  where current code already supports the clearer wording, while leaving Section
+  0 untouched for a later Genesis-aware ceremony with re-anchor proof. It
+  exercises amendment persistence and ceremony machinery with bounded, low-risk
+  scope before larger v0.1.1 candidates run through ceremony.
 - full-Pact integrity extension and generated reverse Pact-reference extraction
 - RUNE large-vocabulary hardening: namespace the active registry by pack/domain/container, replace global linear scans with a compiled multi-pattern matcher, and add active/archive lifecycle so retired terms leave the hot classifier path
 - tighten-only TECTON policy overlays for tenant/domain customization without tenant constitutional deltas
@@ -373,7 +373,7 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - Execution law placeholder cleanup: remove dead `ExecutionStateMachine.execute()` code if it is truly obsolete, or mark it explicitly as a non-wired future-broker placeholder
 - Vocabulary/register pass: keep "seat" as the authority-surface term, prefer operational/constitutional seat classes over broad Council language, and translate Pact vocabulary in reviewer/product docs
 - Sigil amendment ceremony: choose a universal non-emoji glyph set or revise `docs/proposals/SIGIL_SET_PROPOSAL.md`; if accepted, amend the genesis-anchored Section 0 seat registry, re-anchor Genesis, update Section 1/2/5 references, TECTON `SEAT_SIGILS`, tests, and public presentation in one coordinated v0.1.1 change
-- Amendment planning pass: group the accumulated `docs/PACT_ALIGNMENT.md` Pact text candidates by section before the v0.1.1 ceremony begins
+- CLOSED for planning: `docs/proposals/V0_1_1_AMENDMENT_PLAN.md` groups the accumulated `docs/PACT_ALIGNMENT.md` Pact text candidates by section and dependency before the v0.1.1 ceremony begins
 - Pact wording candidates after code proof: use `docs/PACT_ALIGNMENT.md` as the canonical inventory; ROADMAP should only summarize release sequencing and amendment-plan timing.
 
 Pre-v0.1.0 scope rule:

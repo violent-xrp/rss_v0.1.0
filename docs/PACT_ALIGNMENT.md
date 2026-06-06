@@ -273,7 +273,7 @@ SEAL external attribution policy:
 
 Amendment planning hygiene:
 - The Pact text candidate list below is an inventory, not a ratification order.
-- Before the v0.1.1 amendment ceremony begins, create a short amendment plan that groups candidates by Pact section and orders them by dependency.
+- `docs/proposals/V0_1_1_AMENDMENT_PLAN.md` is the current section-ordered amendment plan for v0.1.1; it groups candidates by Pact section and orders them by dependency.
 - The plan should distinguish code-backed amendments, wording-only clarifications, deferred candidates, and rejected/no-change decisions.
 - This prevents the eventual ceremony from becoming a freeform rewrite session after the candidate list has grown past easy working memory.
 
@@ -318,7 +318,7 @@ Pact text candidates:
 - Section 7 / Phase H identity wording should cross-reference Section 0 recovery authority: cryptographic proof should strengthen attestation while preserving auditable recovery paths, and should not make T-0 recovery authority destructible by technical identity failure.
 - Future Pact wording should extend integrity protection beyond Section 0: all Pact sections should be hash-checked, and amendment ceremony should refuse to seal new law while any section's integrity is uncertain.
 - CLOSED for Section 0: internal advisors are now fenced from seats and external models. If a Tier 2.5 advisory layer is introduced, later sections can elaborate how advisors translate and structure evidence without holding authority.
-- Council vocabulary strip across all sections: scheduled as the first v0.1.1 amendment ceremony test case. Reduces or reserves "Council" as a general collective term; replaces with "the eight seats", "operational seats", or "constitutional seats" where more exact. Coordinated cross-section change appropriate for ceremony rather than pre-canonization editorial pass. Will exercise amendment persistence and ceremony machinery end-to-end with bounded scope.
+- Council vocabulary strip: Option B is selected for the first v0.1.1 amendment ceremony test case. Ceremony 1 should cover Sections 1, 3, and 6 only, replacing or narrowing "Council" language where current code already supports the clearer wording. Section 0 remains deferred to a dedicated Genesis-aware ceremony with re-anchor proof. This keeps the first ceremony bounded while still exercising amendment persistence and ceremony machinery end-to-end.
 
 ## Version Watch
 
@@ -340,7 +340,7 @@ Before v0.1.1:
 - Design the T-0 recovery/lock-out posture before adding cryptographic identity gates: keys should attest authority, not become the only way the sovereign operator can recover the system.
 - Add or schedule full-Pact integrity checks, reverse Pact-reference extraction, and pre-commit/CI drift gates.
 - Preserve the vocabulary rule: keep "seat" as the authority-surface term, prefer operational/constitutional seat classes over broad Council language, and translate formal Pact language for external readers.
-- Before any v0.1.1 amendment ceremony, prepare a section-ordered amendment plan so the long candidate list is reviewed deliberately rather than edited from memory.
+- Before any v0.1.1 amendment ceremony, review `docs/proposals/V0_1_1_AMENDMENT_PLAN.md` so the long candidate list is handled deliberately rather than edited from memory.
 - CLOSED: SCOPE/RUNE now expose WARD-compatible `status()` and `handle(task)` adapters while remaining direct law services on the runtime request path.
 - Add or schedule tests for WARD hook protected-field coverage and RUNE confidence/edge-token behavior.
 - Keep this file aligned with any new tests that prove additional Pact clauses.

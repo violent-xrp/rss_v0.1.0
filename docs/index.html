@@ -53,6 +53,8 @@
   --amber: #d7a24a;
   --steel: #7aa0b8;
   --green: #71b28a;
+  --cyan: #00f0ff;
+  --emerald: #10b981;
   --glass: rgba(18, 24, 32, 0.58);
   --glass-strong: rgba(24, 32, 42, 0.76);
   --glass-line: rgba(236, 242, 248, 0.13);
@@ -76,8 +78,9 @@ body {
   isolation: isolate;
   margin: 0;
   background:
-    linear-gradient(120deg, rgba(122, 160, 184, 0.08), transparent 28%),
-    linear-gradient(250deg, rgba(185, 92, 103, 0.07), transparent 34%),
+    linear-gradient(120deg, rgba(122, 160, 184, 0.15), transparent 35%),
+    linear-gradient(250deg, rgba(185, 92, 103, 0.15), transparent 40%),
+    radial-gradient(circle at 50% 0%, rgba(215, 162, 74, 0.08), transparent 50%),
     linear-gradient(180deg, #0b0f14 0%, #101620 46%, #0b0f14 100%);
   color: var(--text);
   font-size: 16px;
@@ -92,8 +95,8 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(40% 40% at 20% 30%, rgba(185, 92, 103, 0.1), transparent 70%),
-    radial-gradient(45% 45% at 80% 70%, rgba(122, 160, 184, 0.09), transparent 72%);
+    radial-gradient(40% 40% at 20% 30%, rgba(185, 92, 103, 0.18), transparent 70%),
+    radial-gradient(45% 45% at 80% 70%, rgba(122, 160, 184, 0.16), transparent 72%);
   animation: ambient-drift 18s ease-in-out infinite alternate;
 }
 
@@ -512,11 +515,13 @@ h1 {
 .seat-grid article.con[data-sigil]::before { color: rgba(215, 162, 74, 0.08); }
 .seat-grid article:hover[data-sigil]::before,
 .seat-grid article:focus-within[data-sigil]::before {
-  color: rgba(224, 115, 129, 0.18);
-  transform: scale(1.06) rotate(-3deg);
+  color: rgba(224, 115, 129, 0.4);
+  text-shadow: 0 0 40px rgba(224, 115, 129, 0.8), 0 0 80px rgba(224, 115, 129, 0.4);
+  transform: scale(1.1) rotate(-3deg);
 }
 .seat-grid article.con:hover[data-sigil]::before {
-  color: rgba(215, 162, 74, 0.2);
+  color: rgba(215, 162, 74, 0.4);
+  text-shadow: 0 0 40px rgba(215, 162, 74, 0.8), 0 0 80px rgba(215, 162, 74, 0.4);
 }
 
 .seat-grid article::after {
@@ -529,11 +534,27 @@ h1 {
   animation: seat-line 4s ease-in-out infinite;
 }
 
+@keyframes laser-edge-op {
+  0%   { box-shadow: 0 28px 80px rgba(0,0,0,0.38), 0 0 42px rgba(224,115,129,0.18), inset 0 0 0 0 rgba(224,115,129,0); }
+  50%  { box-shadow: 0 28px 80px rgba(0,0,0,0.38), 0 0 42px rgba(224,115,129,0.3), inset 0 0 20px 2px rgba(224,115,129,0.5); }
+  100% { box-shadow: 0 28px 80px rgba(0,0,0,0.38), 0 0 42px rgba(224,115,129,0.18), inset 0 0 0 0 rgba(224,115,129,0); }
+}
+@keyframes laser-edge-con {
+  0%   { box-shadow: 0 28px 80px rgba(0,0,0,0.38), 0 0 42px rgba(215,162,74,0.18), inset 0 0 0 0 rgba(215,162,74,0); }
+  50%  { box-shadow: 0 28px 80px rgba(0,0,0,0.38), 0 0 42px rgba(215,162,74,0.3), inset 0 0 20px 2px rgba(215,162,74,0.5); }
+  100% { box-shadow: 0 28px 80px rgba(0,0,0,0.38), 0 0 42px rgba(215,162,74,0.18), inset 0 0 0 0 rgba(215,162,74,0); }
+}
+
 .seat-grid article:hover,
 .seat-grid article:focus-within {
   transform: translateY(-3px);
   border-color: var(--rose-strong);
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.38), 0 0 42px rgba(224, 115, 129, 0.18);
+  animation: laser-edge-op 1.5s infinite;
+}
+.seat-grid article.con:hover,
+.seat-grid article.con:focus-within {
+  border-color: var(--amber);
+  animation: laser-edge-con 1.5s infinite;
 }
 
 .seat-grid article:hover::after,
@@ -800,7 +821,7 @@ h1 {
 }
 .seat.op .seat-meta { color: var(--rose-strong); }
 
-/* Constitutional seats: amber accent (ceremony, not runtime) — distinct
+/* Pact seats: amber accent (ceremony, not runtime) — distinct
    so the two classes read as different rhythms, not a flat list of 8. */
 .seat.con {
   border-top: 2px solid rgba(215, 162, 74, 0.55);
@@ -1297,10 +1318,291 @@ code {
   }
 }
 
+/* Enhanced Animations and Hover States */
+.seat, .sub, .contrast-card, .button {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease;
+}
+.seat:hover, .sub:hover, .contrast-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.seat.op:hover {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), inset 0 2px 0 rgba(224, 115, 129, 0.4);
+}
+.seat.con:hover {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), inset 0 2px 0 rgba(215, 162, 74, 0.4);
+}
+.button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.15);
+}
+
+/* Sigil Network Visuals */
+.seat-grid {
+  position: relative;
+  z-index: 1;
+}
+.seat-grid::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -20px;
+  right: -20px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(185, 92, 103, 0.4), rgba(122, 160, 184, 0.4), rgba(185, 92, 103, 0.4), transparent);
+  z-index: -1;
+  animation: energy-pulse 4s infinite linear;
+}
+.seat-grid::after {
+  content: "";
+  position: absolute;
+  top: -20px;
+  bottom: -20px;
+  left: 50%;
+  width: 2px;
+  background: linear-gradient(180deg, transparent, rgba(215, 162, 74, 0.3), rgba(185, 92, 103, 0.3), transparent);
+  z-index: -1;
+  animation: energy-pulse 5s infinite linear;
+}
+@keyframes energy-pulse {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; box-shadow: 0 0 15px rgba(185, 92, 103, 0.5); }
+}
+
+/* Glowing Nodes inside Seats */
+.node-point {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 10px var(--text);
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+.node-point::before,
+.node-point::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  animation: sonar-pulse 2s infinite cubic-bezier(0.1, 0.8, 0.3, 1);
+}
+.node-point::after {
+  animation-delay: 1s;
+}
+@keyframes sonar-pulse {
+  0% { width: 100%; height: 100%; opacity: 1; }
+  100% { width: 300%; height: 300%; opacity: 0; }
+}
+
+.seat:hover .node-point {
+  transform: scale(1.5);
+}
+.seat.op .node-point {
+  background: var(--rose-strong);
+  box-shadow: 0 0 15px var(--rose-strong);
+}
+.seat.op .node-point::before, .seat.op .node-point::after {
+  border-color: var(--rose-strong);
+}
+.seat.con .node-point {
+  background: var(--cyan);
+  box-shadow: 0 0 20px var(--cyan);
+}
+.seat.con .node-point::before, .seat.con .node-point::after {
+  border-color: var(--cyan);
+  animation: pact-pulse 4s infinite cubic-bezier(0.1, 0.8, 0.3, 1);
+}
+.seat.con .node-point::after {
+  animation-delay: 2s;
+}
+@keyframes pact-pulse {
+  0% { width: 100%; height: 100%; opacity: 1; border-width: 2px; }
+  100% { width: 400%; height: 400%; opacity: 0; border-width: 0px; }
+}
+.node-point.top-right { top: 8px; right: 8px; }
+.node-point.bottom-left { bottom: 8px; left: 8px; }
+
+/* Phase 4: Global Omnisigils */
+.global-sigil {
+  position: absolute;
+  top: -80px;
+  font-size: 40rem;
+  line-height: 1;
+  color: rgba(224, 115, 129, 0.12);
+  pointer-events: none;
+  z-index: -1;
+  user-select: none;
+  animation: ambient-drift 18s ease-in-out infinite alternate, sigil-pulse 8s infinite alternate;
+}
+.global-sigil.top-left {
+  left: -100px;
+  transform: rotate(15deg);
+}
+.global-sigil.top-right {
+  right: -100px;
+  transform: rotate(-15deg);
+  color: rgba(215, 162, 74, 0.12);
+}
+@keyframes sigil-pulse {
+  0% { text-shadow: 0 0 30px rgba(224, 115, 129, 0.15); }
+  100% { text-shadow: 0 0 80px rgba(224, 115, 129, 0.35); }
+}
+
+/* Phase 4: Header Nodes */
+.header-node {
+  bottom: -4px;
+}
+.header-node.bottom-left { left: 32px; }
+.header-node.bottom-right { right: 32px; left: auto; }
+.site-header .node-point {
+  background: var(--rose-strong);
+  box-shadow: 0 0 15px var(--rose-strong);
+}
+.site-header .node-point::before, .site-header .node-point::after {
+  border-color: var(--rose-strong);
+}
+
+/* Hero Background Grid */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(224, 115, 129, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(224, 115, 129, 0.15) 1px, transparent 1px);
+  background-size: 60px 60px;
+  background-position: center center;
+  mask-image: radial-gradient(circle at center, black 0%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at center, black 0%, transparent 100%);
+  animation: grid-pulse 4s infinite alternate;
+}
+@keyframes grid-pulse {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+.hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Etched Metal Typography */
+.seat-meta {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  letter-spacing: 0.1em;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8), -1px -1px 1px rgba(255,255,255,0.1);
+  font-weight: 900;
+  font-size: 1.1rem;
+}
+/* Phase 5: Proof Matrix and Redline Boundaries */
+.proof-section .metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  padding: 2rem;
+  background:
+    linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+    var(--glass-strong);
+  background-size: 20px 20px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+.proof-section .metrics::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(16, 185, 129, 0.05) 50%, transparent 100%);
+  animation: scanline 6s linear infinite;
+  pointer-events: none;
+}
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+.proof-section .metrics dt {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--emerald);
+  text-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
+  animation: data-pulse 2s infinite alternate;
+}
+@keyframes data-pulse {
+  0% { opacity: 0.8; text-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+  100% { opacity: 1; text-shadow: 0 0 25px rgba(16, 185, 129, 0.8); }
+}
+.proof-section .metrics dd {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.boundary-list {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.boundary-list li {
+  position: relative;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(90deg, rgba(224, 115, 129, 0.08) 0%, transparent 100%);
+  border-left: 4px solid var(--rose-strong);
+  color: var(--text);
+  font-family: "Space Grotesk", sans-serif;
+  letter-spacing: 0.02em;
+  animation: redline-pulse 3s infinite alternate;
+}
+@keyframes redline-pulse {
+  0% { border-left-color: rgba(224, 115, 129, 0.5); box-shadow: -5px 0 15px -5px rgba(224, 115, 129, 0); }
+  100% { border-left-color: var(--rose-strong); box-shadow: -5px 0 20px -5px rgba(224, 115, 129, 0.4); }
+}
+
+.claim-matrix-link {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  margin-top: 1rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid var(--emerald);
+  color: var(--emerald);
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  animation: link-pulse 2s infinite alternate;
+}
+.claim-matrix-link:hover {
+  background: rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+@keyframes link-pulse {
+  0% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.2); }
+  100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
+}
     </style>
   </head>
   <body>
+    <!-- Phase 4: Global Omnisigils -->
+    <div class="global-sigil top-left" aria-hidden="true">⛉</div>
+    <div class="global-sigil top-right" aria-hidden="true">ᚱ</div>
+
     <header class="site-header" aria-label="Primary">
+      <!-- Phase 4: Header Nodes -->
+      <div class="node-point header-node bottom-left"></div>
+      <div class="node-point header-node bottom-right"></div>
       <a class="brand" href="#top" aria-label="Rose Sigil Systems home">
         <span class="brand-mark" aria-hidden="true">RSS</span>
         <span>Rose Sigil Systems</span>
@@ -1344,7 +1646,7 @@ code {
           <span class="t-seat">TRACE</span>
         </div>
         <p class="trace-legend" aria-hidden="true">
-          <span class="key key-seat">Constitutional seat</span>
+          <span class="key key-seat">Pact seat</span>
           <span class="key key-sub">Tier&nbsp;2 subsystem</span>
           <span class="key key-model">Tier&nbsp;3 model — subordinate</span>
         </p>
@@ -1380,7 +1682,7 @@ code {
           <p class="eyebrow">Architecture — governed by The Pact</p>
           <h2>Eight typed seats. Authority is bounded by class, not shared.</h2>
           <p>
-            RSS is governed by an open-source constitution, The Pact. It defines eight
+            RSS is governed by an open-source code of law, The Pact. It defines eight
             seats, each holding one authority type that no other seat may assume. Subsystems
             serve the seats but hold no authority of their own, and the model is the least
             privileged component in the system: it informs, it does not rule.
@@ -1391,31 +1693,43 @@ code {
           <p class="seat-class-label">Operational seats <span>active in every governed request</span></p>
           <div class="seat-grid">
             <article class="seat op" data-sigil="⛉">
+              <div class="node-point top-right"></div>
+              <div class="node-point bottom-left"></div>
               <span class="seat-meta">⛉ &nbsp;Binary</span>
               <h3>WARD</h3>
               <p>Routes governed tasks and halts on integrity failure.</p>
             </article>
             <article class="seat op" data-sigil="☐">
+              <div class="node-point top-right"></div>
+              <div class="node-point bottom-left"></div>
               <span class="seat-meta">☐ &nbsp;Boundary</span>
               <h3>SCOPE</h3>
               <p>Declares bounded data access for a task.</p>
             </article>
             <article class="seat op" data-sigil="ᚱ">
+              <div class="node-point top-right"></div>
+              <div class="node-point bottom-left"></div>
               <span class="seat-meta">ᚱ &nbsp;Interpretive</span>
               <h3>RUNE</h3>
               <p>Classifies meaning against governed vocabulary.</p>
             </article>
             <article class="seat op" data-sigil="⚖">
+              <div class="node-point top-right"></div>
+              <div class="node-point bottom-left"></div>
               <span class="seat-meta">⚖ &nbsp;Consensual</span>
               <h3>OATH</h3>
               <p>Checks recorded consent for action classes.</p>
             </article>
             <article class="seat op" data-sigil="∞">
+              <div class="node-point top-right"></div>
+              <div class="node-point bottom-left"></div>
               <span class="seat-meta">∞ &nbsp;Quantitative</span>
               <h3>CYCLE</h3>
               <p>Bounds cadence and reports per-domain load.</p>
             </article>
             <article class="seat op" data-sigil="🔍">
+              <div class="node-point top-right"></div>
+              <div class="node-point bottom-left"></div>
               <span class="seat-meta">🔍 &nbsp;Evidentiary</span>
               <h3>TRACE</h3>
               <p>Writes tamper-evident evidence; supports cold verification.</p>
@@ -1477,15 +1791,19 @@ code {
           </div>
         </div>
 
-        <div class="seat-class" aria-label="Constitutional seats">
-          <p class="seat-class-label">Constitutional seats <span>active only when The Pact itself changes</span></p>
+        <div class="seat-class" aria-label="Pact seats">
+          <p class="seat-class-label">Pact seats <span>active only when The Pact itself changes</span></p>
           <div class="seat-grid seat-grid-two">
             <article class="seat con" data-sigil="✎">
+              <div class="node-point top-right"></div>
+              <div class="node-point bottom-left"></div>
               <span class="seat-meta">✎ &nbsp;Authorial</span>
               <h3>SCRIBE</h3>
               <p>Drafts and stages constitutional revisions. Cannot seal.</p>
             </article>
             <article class="seat con" data-sigil="🜔">
+              <div class="node-point top-right"></div>
+              <div class="node-point bottom-left"></div>
               <span class="seat-meta">🜔 &nbsp;Procedural</span>
               <h3>SEAL</h3>
               <p>Ratifies reviewed amendments through ceremony, under T-0.</p>
@@ -1509,7 +1827,7 @@ code {
           <figcaption>Authority flows down. Escalation flows up. Lateral authority is forbidden.</figcaption>
           <div class="tier tier-0"><span class="tier-tag">Tier 0</span><span class="tier-body"><strong>T-0</strong> — sovereign. Origin and termination of all authority.</span></div>
           <div class="tier-arrow" aria-hidden="true">▼</div>
-          <div class="tier tier-1"><span class="tier-tag">Tier 1</span><span class="tier-body"><strong>Eight seats</strong> — typed constitutional authority. WARD · SCOPE · RUNE · OATH · CYCLE · TRACE · SCRIBE · SEAL</span></div>
+          <div class="tier tier-1"><span class="tier-tag">Tier 1</span><span class="tier-body"><strong>Eight seats</strong> — typed Pact authority. WARD · SCOPE · RUNE · OATH · CYCLE · TRACE · SCRIBE · SEAL</span></div>
           <div class="tier-arrow" aria-hidden="true">▼</div>
           <div class="tier tier-2"><span class="tier-tag">Tier 2</span><span class="tier-body"><strong>Subsystems</strong> — serve seats, no authority. exec · pav · hubtop · tecton · store · bridge</span></div>
           <div class="tier-arrow" aria-hidden="true">▼</div>
@@ -1552,7 +1870,7 @@ code {
           </p>
           <p>
             Reproduce the baseline with <code>python tests/test_all.py</code>. Claim mapping lives in
-            <code>docs/claim_matrix.md</code>.
+            <a href="claim_matrix.html" class="claim-matrix-link">docs/claim_matrix.md</a>.
           </p>
         </div>
       </section>
