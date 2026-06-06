@@ -45,6 +45,7 @@ from rss.governance.seats.oath import Oath
 from rss.governance.seats.cycle import Cycle
 from rss.governance.seats.scribe import Scribe
 from rss.governance.seats.seal import Seal
+from rss.governance.t0 import authorize_t0
 from rss.persistence.sqlite import Persistence, CURRENT_SCHEMA_VERSION
 from rss.llm.adapter import LLMAdapter
 
@@ -317,7 +318,8 @@ class Runtime:
         v0.1.0 uses the same soft sovereign-command fence as SEAL. This is
         deliberate operator friction, not cryptographic identity proof.
         """
-        if not t0_command:
+        t0 = authorize_t0("clear_safe_stop", {"t0_command": t0_command})
+        if not t0.allowed:
             return {"error": "T0_COMMAND_REQUIRED",
                     "reason": "Only T-0 may clear Safe-Stop (§0.5.2)"}
         if not self.persistence.is_safe_stopped().get("active"):

@@ -47,6 +47,7 @@ from test_core_runtime import (
     test_ward_hook_enforcement,
     test_runtime_default_term_pack_is_config_driven,
     test_clear_safe_stop_idempotence,
+    test_t0_authorization_seam,
     test_llm_availability_timeout_is_config_driven,
 )
 
@@ -343,6 +344,7 @@ TESTS = [
     test_phase_g_demo_suite_operator_flow,
     test_tecton_destructive_transitions_require_reason,
     test_clear_safe_stop_idempotence,
+    test_t0_authorization_seam,
     test_llm_availability_timeout_is_config_driven,
     test_archive_entry_returns_hub_entry,
 ]

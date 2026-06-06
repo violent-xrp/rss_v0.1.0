@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-06-06 02:14 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-06-06 23:26 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 110 distinct Pact sections referenced across 147 claim tags on 147 test functions.
+**Coverage:** 111 distinct Pact sections referenced across 148 claim tags on 148 test functions.
 
 ---
 
@@ -12,6 +12,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_runtime_default_term_pack_is_config_driven` — runtime bootstrap term pack is config-driven, not hardcoded; definition prefix also config-driven
 - `test_genesis_binding_and_offline_fallback` — Genesis artifact bound from config; offline fallback summarizes governed data; shared reference pack is idempotent; ingress posture exposed
+
+## §0.1.4
+
+- `test_t0_authorization_seam` — protected T-0 command gates route through one soft authorization seam without changing v0.1.0 behavior.
 
 ## §0.2
 
