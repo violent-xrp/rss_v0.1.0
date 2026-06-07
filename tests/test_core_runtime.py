@@ -20,7 +20,7 @@
 #    without adhering to the AGPLv3 open-source requirements, you must obtain
 #    a separate Contractor License from the author.
 #
-# Contact: rose.systems@outlook.com  (Subject: "Contact Us ? RSS Commercial License")
+# Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
 # ==============================================================================
 """Core runtime, bootstrap, and execution proofs.
 

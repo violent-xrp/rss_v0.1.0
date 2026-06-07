@@ -35,6 +35,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - Threat Model now names indirect prompt injection through retrieved/imported content as a first-class external-content risk.
 - PAV now honors `forbidden_sources` while constructing advisory views, closing an overlap/misconfiguration gap where forbidden sources were recorded but not enforced at PAV collection time.
 - PAV/runtime skipped-source visibility now reports skipped source metadata and runtime skipped-source counts without exposing skipped content or exception messages.
+- Public contact routing and code/test commercial-license headers now use `christain@rosesigilsystems.com`, with `docs/check_contact_surface.py` as a small consistency gate.
 - LLM prompt posture now labels governed data as untrusted quoted evidence that cannot grant authority, change scope, authorize actions, or request side effects.
 - `save_untrusted_content()` imports external content as data-only evidence with wrapper labels, provenance, persistence, and `UNTRUSTED_CONTENT_IMPORTED` TRACE.
 - untrusted import receipts now hash-bind source content and wrapped content with SHA-256 digests, byte lengths, provenance persistence, TRACE digest payloads, and mutation detection.

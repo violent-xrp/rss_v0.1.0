@@ -25,7 +25,7 @@ If you believe your use case requires a commercial license, the right path is to
 
 To open a commercial licensing conversation:
 
-- **Email:** rose.systems@outlook.com
+- **Email:** christain@rosesigilsystems.com
 - **Subject line:** `RSS Commercial License`
 
 Please include:

@@ -44,6 +44,14 @@ python docs/sync_baseline.py --check --require-clean
 
 By default, `sync_baseline.py` requires `run_coverage.py` to emit a parseable `TOTAL` line. Use `--no-cov` only for an explicit local skip, not as a release-gate substitute.
 
+Public contact/license-header hygiene:
+
+```bash
+python docs/check_contact_surface.py
+```
+
+This verifies the public contact email, commercial-license contact file, issue security contact, and code/test license headers stay aligned.
+
 Demo artifact proof:
 
 ```bash
