@@ -1065,7 +1065,8 @@ class Runtime:
             pav_view = self.pav.build(envelope, self.hubs)
             self._log("PAV_OK", task_id,
                        f"Entries: {len(pav_view.entries)}, REDLINE excluded: {pav_view.redline_excluded}, "
-                       f"Contributing hubs: {pav_view.contributing_hubs}")
+                       f"Contributing hubs: {pav_view.contributing_hubs}, "
+                       f"Skipped sources: {pav_view.skipped_sources}")
             last_stage = 7
 
             # -- Stage 8: LLM call (if requested) --
@@ -1099,6 +1100,7 @@ class Runtime:
                 "term_id": term_status.term_id,
                 "task_id": task_id,
                 "pav_entries": len(pav_view.entries),
+                "pav_skipped_sources": len(pav_view.skipped_sources),
             }
             if llm_response is not None:
                 result["llm_response"] = llm_response

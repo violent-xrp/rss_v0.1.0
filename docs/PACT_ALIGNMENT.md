@@ -103,6 +103,7 @@ Section 4 / hub topology and data governance:
 - PERSONAL access requires explicit sovereign construction in SCOPE; REDLINE remains excluded by PAV even when PERSONAL is sovereignly included.
 - Query surfaces (`search()` and `governed_search()`) default-exclude REDLINE. Enumeration/identity surfaces (`list_hub()` and `get_entry()`) intentionally return complete state to governed callers that apply their own output policy.
 - PAV construction excludes REDLINE and purged entries, tracks `redline_excluded` as a count, and records contributing hub names without emitting placeholder content for excluded entries.
+- PAV construction now also records skipped-source metadata for forbidden sources, standard LEDGER exclusion, and hub-read failures; runtime responses surface the skipped-source count while omitting skipped content and exception messages.
 - LEDGER exclusion is mechanical in standard PAV construction; brainstorming inclusion exists as a `PAVBuilder.build(..., brainstorming=True)` parameter, not as a first-class SCOPE envelope field.
 - Untrusted imported content now adds `UNTRUSTED_IMPORT` provenance with source and wrapped SHA-256 digests; this is a kernel improvement beyond the older provenance event list.
 

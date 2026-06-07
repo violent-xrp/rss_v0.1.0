@@ -79,6 +79,73 @@ def test_pav():
     check(all("id" in e for e in pav2.entries), "FULL_CONTEXT includes id")
 
 
+def test_pav_skipped_source_visibility():
+    # CLAIM: §4.6.6 — PAV reports skipped source metadata without exposing skipped content
+    section("PAV Skipped Source Visibility")
+
+    class ErroringHubTopology(HubTopology):
+        def list_hub(self, hub: str):
+            if hub == "SYSTEM":
+                raise RuntimeError("DO-NOT-LEAK-SYSTEM-DETAIL")
+            return super().list_hub(hub)
+
+    hubs = ErroringHubTopology()
+    hubs.add_entry("WORK", "visible work evidence")
+    hubs.add_entry("PERSONAL", "private content should not surface")
+    hubs.add_entry("LEDGER", "ledger content should not surface")
+
+    scope = Scope()
+    env = scope.declare(
+        "PAV-SKIP",
+        ["WORK", "SYSTEM", "PERSONAL", "LEDGER"],
+        ["PERSONAL"],
+        "EXCLUDE",
+        CONTENT_ONLY,
+        sovereign=True,
+    )
+    pav = PAVBuilder().build(env, hubs)
+    reasons = {(s["source"], s["reason"]) for s in pav.skipped_sources}
+
+    check(len(pav.entries) == 1, "PAV keeps available allowed source entries")
+    check(pav.entries[0]["content"] == "visible work evidence",
+          "PAV does not lose valid source data when another hub errors")
+    check(("SYSTEM", "hub_error") in reasons,
+          "PAV reports erroring hub as skipped source")
+    check(("PERSONAL", "forbidden") in reasons,
+          "PAV reports forbidden hub as skipped source")
+    check(("LEDGER", "ledger_excluded") in reasons,
+          "PAV reports standard LEDGER exclusion as skipped source")
+    check("DO-NOT-LEAK-SYSTEM-DETAIL" not in str(pav.skipped_sources),
+          "PAV skipped metadata omits exception messages")
+    check("private content should not surface" not in str(pav.skipped_sources),
+          "PAV skipped metadata omits forbidden content")
+
+    rss = bootstrap(RSSConfig(db_path=":memory:"))
+    try:
+        rss.hubs.add_entry("WORK", "runtime visible work evidence")
+        real_list_hub = rss.hubs.list_hub
+
+        def runtime_erroring_list_hub(hub: str):
+            if hub == "SYSTEM":
+                raise RuntimeError("DO-NOT-LEAK-RUNTIME-DETAIL")
+            return real_list_hub(hub)
+
+        rss.hubs.list_hub = runtime_erroring_list_hub
+        rss.oath.authorize("EXECUTE", "GLOBAL", "SESSION", "T-0")
+        result = rss.process_request(
+            "review quote",
+            task_id="PAV-SKIP-RUNTIME",
+            scope_policy={"allowed_sources": ["WORK", "SYSTEM"]},
+        )
+        check("error" not in result, "runtime request still succeeds when one PAV source errors")
+        check(result.get("pav_entries") == 1,
+              "runtime PAV keeps available source data after skipped source")
+        check(result.get("pav_skipped_sources") == 1,
+              "runtime response surfaces skipped-source count")
+    finally:
+        rss.persistence.close()
+
+
 def test_persistence():
     # CLAIM: §6.2 — SQLite persistence basic round-trip
     section("Persistence (SQLite)")

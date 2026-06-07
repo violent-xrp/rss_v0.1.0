@@ -7,9 +7,9 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
 
 ### Current verified snapshot
-- **148 test functions / 1336 assertions / 0 failures** via `python tests/test_all.py`
+- **149 test functions / 1346 assertions / 0 failures** via `python tests/test_all.py`
 - **91.7% statement coverage** via `python run_coverage.py`
-- **148 claims / 148 tests / 111 Pact sections** in `docs/claim_matrix.md`
+- **149 claims / 149 tests / 111 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -34,6 +34,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - ROADMAP has been consolidated into a current/future command document, with acceptance history, coverage tracking, phase ledger, testing guidance, and demo handoff detail moved under `docs/`
 - Threat Model now names indirect prompt injection through retrieved/imported content as a first-class external-content risk.
 - PAV now honors `forbidden_sources` while constructing advisory views, closing an overlap/misconfiguration gap where forbidden sources were recorded but not enforced at PAV collection time.
+- PAV/runtime skipped-source visibility now reports skipped source metadata and runtime skipped-source counts without exposing skipped content or exception messages.
 - LLM prompt posture now labels governed data as untrusted quoted evidence that cannot grant authority, change scope, authorize actions, or request side effects.
 - `save_untrusted_content()` imports external content as data-only evidence with wrapper labels, provenance, persistence, and `UNTRUSTED_CONTENT_IMPORTED` TRACE.
 - untrusted import receipts now hash-bind source content and wrapped content with SHA-256 digests, byte lengths, provenance persistence, TRACE digest payloads, and mutation detection.

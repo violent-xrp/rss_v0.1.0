@@ -56,6 +56,7 @@ class PAV:
     sanitization: str
     advisor: str
     redline_excluded: int
+    skipped_sources: List[dict]
     contributing_hubs: List[str]    # §4.6.6 — which hubs contributed entries
 
 
@@ -71,18 +72,26 @@ class PAVBuilder:
         collected: List[HubEntry] = []
         redline_excluded = 0
         contributing_hubs: List[str] = []
+        skipped_sources: List[dict] = []
 
         for source in envelope.allowed_sources:
             if source in envelope.forbidden_sources:
+                skipped_sources.append({"source": source, "reason": "forbidden"})
                 continue
 
             # §4.6.7 — LEDGER excluded from standard PAVs
             if source == "LEDGER" and not brainstorming:
+                skipped_sources.append({"source": source, "reason": "ledger_excluded"})
                 continue
 
             try:
                 entries = hubs.list_hub(source)
-            except Exception:
+            except Exception as exc:
+                skipped_sources.append({
+                    "source": source,
+                    "reason": "hub_error",
+                    "error_type": type(exc).__name__,
+                })
                 continue
 
             hub_contributed = False
@@ -113,6 +122,7 @@ class PAVBuilder:
             advisor="EXTERNAL",
             redline_excluded=redline_excluded,
             contributing_hubs=contributing_hubs,
+            skipped_sources=skipped_sources,
         )
 
     def _sanitize(self, entry: HubEntry, policy: str) -> dict:

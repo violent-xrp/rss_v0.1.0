@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-06-06 23:26 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-06-07 01:49 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 111 distinct Pact sections referenced across 148 claim tags on 148 test functions.
+**Coverage:** 111 distinct Pact sections referenced across 149 claim tags on 149 test functions.
 
 ---
 
@@ -318,6 +318,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §4.6.6
 
+- `test_pav_skipped_source_visibility` — PAV reports skipped source metadata without exposing skipped content
 - `test_s4_pav_hub_audit` — PAV records contributing_hubs
 
 ## §4.6.7

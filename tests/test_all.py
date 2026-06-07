@@ -85,6 +85,7 @@ from test_governance_seats import (
 from test_hubs_persistence import (
     test_hubs,
     test_pav,
+    test_pav_skipped_source_visibility,
     test_persistence,
     test_persistence_roundtrip,
     test_restore_skipped_records_are_visible,
@@ -208,6 +209,7 @@ TESTS = [
     test_scope,
     test_hubs,
     test_pav,
+    test_pav_skipped_source_visibility,
     test_meaning_law,
     test_state_machine,
     test_execution_word_boundary_hardening,
