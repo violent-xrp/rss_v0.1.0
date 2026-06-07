@@ -5,7 +5,7 @@ This wrapper keeps the routine public-surface check in one command:
 
 1. Baseline sync in check mode, including acceptance runner and coverage proof.
 2. Public contact/license-header consistency.
-3. Public vendor/tool-name scan with explicit intentional-hit allowlist.
+3. External provenance/name hygiene scan with explicit intentional-hit allowlist.
 
 Usage:
     python docs/check_public_hygiene.py
@@ -21,7 +21,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-VENDOR_TERMS = (
+EXTERNAL_PROVENANCE_NAME_TERMS = (
     "Clau" + "de",
     "Chat" + "GPT",
     "Gem" + "ini",
@@ -37,7 +37,7 @@ VENDOR_TERMS = (
 
 
 @dataclass(frozen=True)
-class AllowedVendorHit:
+class AllowedProvenanceNameHit:
     path: str
     reason: str
     line_contains: tuple[str, ...] = ()
@@ -53,43 +53,43 @@ class AllowedVendorHit:
         return True
 
 
-ALLOWED_VENDOR_HITS = (
-    AllowedVendorHit(
+ALLOWED_PROVENANCE_NAME_HITS = (
+    AllowedProvenanceNameHit(
         "pact/pact_section3_execution_law.md",
         "Pact documents intentional external-name filtering behavior.",
         line_contains=("External name filtering",),
     ),
-    AllowedVendorHit(
+    AllowedProvenanceNameHit(
         "src/rss/core/config.py",
         "Configuration constant defines external names to redact.",
         line_contains=("Co" + "pilot",),
     ),
-    AllowedVendorHit(
+    AllowedProvenanceNameHit(
         "tests/test_adversarial_scenarios.py",
         "Intentional historical reviewer labels in test docstrings.",
         line_contains=("Addition #",),
     ),
-    AllowedVendorHit(
+    AllowedProvenanceNameHit(
         "tests/test_core_runtime.py",
         "Intentional external-name sanitizer fixture.",
         line_contains=("Chat" + "GPT",),
     ),
-    AllowedVendorHit(
+    AllowedProvenanceNameHit(
         "tests/test_core_runtime.py",
         "Intentional external-name sanitizer fixture.",
         line_contains=("Clau" + "de", "Gem" + "ini"),
     ),
-    AllowedVendorHit(
+    AllowedProvenanceNameHit(
         "tests/test_governance_seats.py",
         "Intentional amendment-attribution fixture.",
         line_contains=("reviewer=", "Chat" + "GPT"),
     ),
-    AllowedVendorHit(
+    AllowedProvenanceNameHit(
         "tests/test_governance_seats.py",
         "Intentional amendment-attribution fixture.",
         line_contains=("reviewer ==", "Chat" + "GPT"),
     ),
-    AllowedVendorHit(
+    AllowedProvenanceNameHit(
         "tests/test_tenant_containers.py",
         "Intentional reviewer-label comment for tenant scenarios.",
         line_contains=("D-5", "five scenarios"),
@@ -124,13 +124,13 @@ def tracked_public_files() -> list[Path]:
     return files
 
 
-def is_allowed_vendor_hit(path: str, line_number: int, line: str) -> bool:
-    return any(hit.matches(path, line_number, line) for hit in ALLOWED_VENDOR_HITS)
+def is_allowed_provenance_name_hit(path: str, line_number: int, line: str) -> bool:
+    return any(hit.matches(path, line_number, line) for hit in ALLOWED_PROVENANCE_NAME_HITS)
 
 
-def vendor_scan() -> int:
-    print("\n== Public vendor/tool-name scan ==", flush=True)
-    pattern = re.compile("|".join(re.escape(term) for term in VENDOR_TERMS))
+def provenance_name_hygiene_scan() -> int:
+    print("\n== External provenance/name hygiene scan ==", flush=True)
+    pattern = re.compile("|".join(re.escape(term) for term in EXTERNAL_PROVENANCE_NAME_TERMS))
     unexpected: list[str] = []
     allowed_count = 0
 
@@ -144,18 +144,18 @@ def vendor_scan() -> int:
         for index, line in enumerate(text.splitlines(), start=1):
             if not pattern.search(line):
                 continue
-            if is_allowed_vendor_hit(rel, index, line):
+            if is_allowed_provenance_name_hit(rel, index, line):
                 allowed_count += 1
                 continue
             unexpected.append(f"{rel}:{index}: {line.strip()}")
 
     if unexpected:
-        print("Unexpected public vendor/tool-name hits:")
+        print("Unexpected external provenance/name hygiene hits:")
         for hit in unexpected:
             print(f"  - {hit}")
         return 1
 
-    print(f"Public vendor/tool-name scan passed ({allowed_count} intentional hits allowed).")
+    print(f"External provenance/name hygiene scan passed ({allowed_count} intentional hits allowed).")
     return 0
 
 
@@ -176,7 +176,7 @@ def main() -> int:
         if run_step(label, command) != 0:
             failures += 1
 
-    if vendor_scan() != 0:
+    if provenance_name_hygiene_scan() != 0:
         failures += 1
 
     if failures:

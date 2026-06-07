@@ -28,7 +28,7 @@ Public hygiene wrapper:
 python docs/check_public_hygiene.py
 ```
 
-This runs baseline sync in check mode, including public docs and the GitHub Pages proof block, then the contact/license-header check and public vendor/tool-name scan with intentional fixture allowlists.
+This runs baseline sync in check mode, including public docs and the GitHub Pages proof block, then the contact/license-header check and external provenance/name hygiene scan with intentional fixture allowlists.
 
 Coverage:
 
