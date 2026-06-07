@@ -52,10 +52,13 @@ def read_text(path: Path) -> str:
 def main() -> int:
     failures: list[str] = []
     files = tracked_files()
+    self_path = Path(__file__).resolve()
 
     for path in files:
         text = read_text(path)
         rel = path.relative_to(REPO_ROOT).as_posix()
+        if path.resolve() == self_path:
+            continue
         for forbidden in FORBIDDEN_STRINGS:
             if forbidden in text:
                 failures.append(f"{rel}: contains forbidden contact string {forbidden!r}")
