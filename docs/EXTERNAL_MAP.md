@@ -74,8 +74,10 @@ Avoid absolute claims:
 ## Reviewer Shortcut
 
 If a reviewer asks where the proof lives, point them to:
+- `README.md` for the Day 1 reviewer path
 - `ROADMAP.md` for current truth and active work
 - `TRUTH_REGISTER.md` for what can and cannot be claimed
+- `docs/TESTING.md` for gate commands and coverage-sync rules
 - `docs/PACT_ALIGNMENT.md` for Pact-to-kernel alignment and known gaps
 - `docs/claim_matrix.md` for claim-to-test traceability
 - `docs/demo/DEMO_HANDOFF.md` for the demo artifact path

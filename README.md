@@ -100,6 +100,27 @@ Contributions should preserve the core posture: current claims stay conservative
 
 ## Quick start
 
+### Day 1 reviewer path
+If you are reviewing whether the current proof surface is real, run the gates before reading the whole repository:
+
+```bash
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+python tests/test_all.py
+python run_coverage.py
+python docs/sync_baseline.py --check --require-clean
+python examples/demo_suite.py --offline --artifacts demo_artifacts
+```
+
+Then inspect:
+- `demo_artifacts/demo_summary.md` for the operator-readable walkthrough result
+- `demo_artifacts/demo_report.json` for machine-readable proof flags
+- `demo_artifacts/demo_trace.json` for the persisted TRACE export
+- `docs/claim_matrix.md` for Pact-to-test traceability
+- `TRUTH_REGISTER.md` and `docs/PACT_ALIGNMENT.md` for claim boundaries and known gaps
+
+This path proves the current baseline, coverage, synchronized public counts, and one governed demo run. It does not prove future connectors, action brokers, cryptographic identity, or deployment-layer sandboxing.
+
 ### Requirements
 - Python 3.11+
 - SQLite (bundled with Python)

@@ -11,7 +11,11 @@ It explains how to run the demo, what artifacts it emits, and what the proof mea
 For an outside engineer reviewing the current proof surface, run:
 
 ```bash
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
 python tests/test_all.py
+python run_coverage.py
+python docs/sync_baseline.py --check --require-clean
 python examples/demo_suite.py --offline --artifacts demo_artifacts
 ```
 
@@ -21,9 +25,14 @@ Then inspect:
 demo_artifacts/demo_summary.md
 demo_artifacts/demo_report.json
 demo_artifacts/demo_trace.json
+docs/claim_matrix.md
+TRUTH_REGISTER.md
+docs/PACT_ALIGNMENT.md
 ```
 
-The acceptance runner proves the kernel baseline. The demo artifacts prove one governed walkthrough: useful retrieval, refusal, isolation, recovery, and cold audit verification from the same run.
+The acceptance runner proves the kernel baseline. Coverage and baseline sync prove the public proof counts are current. The demo artifacts prove one governed walkthrough: useful retrieval, refusal, isolation, recovery, and cold audit verification from the same run.
+
+This path does not prove future connectors, action brokers, cryptographic identity, or deployment-layer sandboxing.
 
 ## Run The Deterministic Demo
 
