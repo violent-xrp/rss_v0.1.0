@@ -37,16 +37,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **149 test functions / 1346 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **91.8% statement coverage** via `python run_coverage.py`
-- **149 claims / 149 tests / 111 Pact sections** in `docs/claim_matrix.md`
-- **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
+- **151 test functions / 1360 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **92.6% statement coverage** via `python run_coverage.py`
+- **151 claims / 151 tests / 111 Pact sections** in `docs/claim_matrix.md`
+- **23 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 149/1346 baseline
+- public docs are synced to the current 151/1360 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:

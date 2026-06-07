@@ -11,28 +11,30 @@ This file preserves coverage detail that used to live in `ROADMAP.md`.
 Verified on the current synced baseline pass.
 
 ```text
-config.py              100.0%
-state_machine.py       95.0%
-audit/migrate.py       100.0%
-scribe.py              100.0%
-reference_pack.py      100.0%
-trace_verify.py         94.3%
-trace_export.py         95.5%
-tecton.py               94.8%
-cycle.py                94.2%
-persistence.py          94.4%
-meaning_law.py          93.8%
-hub_topology.py         92.7%
-seal.py                 94.0%
-ward.py                 87.9%
-scope.py                92.6%
-llm_adapter.py          90.1%
-audit_log.py            87.4%
-runtime.py              85.1%
-oath.py                 88.2%
-pav.py                  90.9%
-constitution.py         92.5%
-TOTAL                   91.8%
+config.py                  100.0%
+state_machine.py            95.0%
+audit/pact_canon_drift.py   98.1%
+audit/migrate.py           100.0%
+scribe.py                  100.0%
+reference_pack.py          100.0%
+trace_verify.py             94.3%
+trace_export.py             95.5%
+tecton.py                   94.8%
+cycle.py                    94.2%
+persistence.py              94.4%
+meaning_law.py              93.8%
+hub_topology.py             92.7%
+seal.py                     94.0%
+ward.py                     87.9%
+governance/t0.py           100.0%
+scope.py                    92.6%
+llm_adapter.py              90.1%
+audit_log.py                87.4%
+runtime.py                  85.1%
+oath.py                     88.2%
+pav.py                      90.9%
+constitution.py             92.5%
+TOTAL                       92.6%
 ```
 
 ## Current Targets
@@ -56,6 +58,7 @@ Modules below the Phase G 85% target:
 - The untrusted-content import boundary pass added `save_untrusted_content()` and `UNTRUSTED_CONTENT_IMPORTED` TRACE while keeping total coverage at 91.0%.
 - The Phase G coverage-floor pass lifted `cycle.py` to 94.2% and `trace_verify.py` to 94.7%.
 - The untrusted import hash-binding pass lifted `hub_topology.py` to 92.7% and total package coverage to **92.3%**.
+- The public hygiene hardening pass added focused drift-detector CLI/edge proof, lifting `audit/pact_canon_drift.py` to 98.1% and total package coverage to **92.6%**.
 
 ## Next Coverage Work
 

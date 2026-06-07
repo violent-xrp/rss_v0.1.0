@@ -15,7 +15,7 @@ python tests/test_all.py
 Current expected final line:
 
 ```text
-RSS v0.1.0 - 149 test functions, 1346 assertions passed, 0 failed
+RSS v0.1.0 - 151 test functions, 1360 assertions passed, 0 failed
 ```
 
 This custom runner is the local source of truth for the current Windows environment.
@@ -28,7 +28,7 @@ Public hygiene wrapper:
 python docs/check_public_hygiene.py
 ```
 
-This runs baseline sync in check mode, the contact/license-header check, and the public vendor/tool-name scan with intentional fixture allowlists.
+This runs baseline sync in check mode, including public docs and the GitHub Pages proof block, then the contact/license-header check and public vendor/tool-name scan with intentional fixture allowlists.
 
 Coverage:
 
@@ -104,7 +104,7 @@ The modular split was mechanical and conservative:
 - Any count drop must be recorded in `docs/roadmap/ACCEPTANCE_HISTORY.md`.
 - Claim tags should stay beside the proof bodies.
 - Regenerate `docs/claim_matrix.md` after meaningful claim/test changes.
-- Run `python docs/sync_baseline.py` after changes that affect counts, coverage, or claim traceability.
+- Run `python docs/sync_baseline.py` after changes that affect counts, coverage, claim traceability, source-module count, or the public proof block.
 - Do not bury count-history logic inside the test runner itself.
 
 ## Future Cleanup

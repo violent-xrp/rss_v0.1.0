@@ -7,10 +7,10 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
 
 ### Current verified snapshot
-- **149 test functions / 1346 assertions / 0 failures** via `python tests/test_all.py`
-- **91.8% statement coverage** via `python run_coverage.py`
-- **149 claims / 149 tests / 111 Pact sections** in `docs/claim_matrix.md`
-- **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
+- **151 test functions / 1360 assertions / 0 failures** via `python tests/test_all.py`
+- **92.6% statement coverage** via `python run_coverage.py`
+- **151 claims / 151 tests / 111 Pact sections** in `docs/claim_matrix.md`
+- **23 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
 - Section 0 integrity verification and persistent Safe-Stop flow
@@ -37,6 +37,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - PAV/runtime skipped-source visibility now reports skipped source metadata and runtime skipped-source counts without exposing skipped content or exception messages.
 - Public contact routing and code/test commercial-license headers now use `christain@rosesigilsystems.com`, with `docs/check_contact_surface.py` as a small consistency gate.
 - `docs/check_public_hygiene.py` now wraps baseline sync, contact-surface validation, and public vendor/tool-name scanning into one hygiene command.
+- Public hygiene now syncs the GitHub Pages proof block, source-module counts, and current coverage tracker rows so stale public proof numbers fail mechanically.
 - LLM prompt posture now labels governed data as untrusted quoted evidence that cannot grant authority, change scope, authorize actions, or request side effects.
 - `save_untrusted_content()` imports external content as data-only evidence with wrapper labels, provenance, persistence, and `UNTRUSTED_CONTENT_IMPORTED` TRACE.
 - untrusted import receipts now hash-bind source content and wrapped content with SHA-256 digests, byte lengths, provenance persistence, TRACE digest payloads, and mutation detection.

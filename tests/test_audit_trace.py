@@ -26,6 +26,8 @@
 
 Mechanical split from tests/test_all.py; proof bodies and # CLAIM tags are preserved.
 """
+import io
+from contextlib import redirect_stdout
 from pathlib import Path
 
 from test_support import *
@@ -34,7 +36,11 @@ from rss.audit.pact_canon_drift import (
     STATUS_FILE_AHEAD,
     STATUS_IN_SYNC,
     STATUS_NO_CANON,
+    _latest_canon_records,
+    _main as pact_canon_drift_main,
     compare_pact_to_canon,
+    iter_pact_section_files,
+    section_id_for_path,
 )
 
 
@@ -192,6 +198,108 @@ def test_pact_canon_drift_detector_compares_latest_records():
     check(by_section["S3"].canon_hash == compute_hash(db_text), "FILE_AHEAD still reports sealed canon hash")
     check(by_section["S3"].canon_version == "v1.1", "drift result preserves canon section version")
     check(by_section["S3"].ratified_at == "2026-01-03T00:00:00+00:00", "drift result preserves ratification timestamp")
+
+
+def test_pact_canon_drift_detector_helpers_and_db_edges():
+    # CLAIM: §7.5, §7.11.1 — drift detector helper and DB edge paths remain read-only and explicit
+    section("Pact/Canon Drift Detector: Helper and DB Edges")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        pact_dir = root / "pact"
+        pact_dir.mkdir()
+        db_path = root / "rss.db"
+        missing_db = root / "missing.db"
+        directory_db = root / "not-a-db"
+        directory_db.mkdir()
+
+        (pact_dir / "pact_section10_future.md").write_text("S10\n", encoding="utf-8")
+        (pact_dir / "pact_section2_meaning_law.md").write_text("S2\n", encoding="utf-8")
+        (pact_dir / "pact_appendix.md").write_text("ignored\n", encoding="utf-8")
+
+        check(section_id_for_path(pact_dir / "pact_section10_future.md") == "S10", "helper derives multi-digit section ids")
+        check(section_id_for_path(pact_dir / "pact_appendix.md") is None, "helper ignores non-section Pact files")
+        check(
+            [path.name for path in iter_pact_section_files(pact_dir)]
+            == ["pact_section2_meaning_law.md", "pact_section10_future.md"],
+            "Pact section iteration ignores non-sections and sorts numerically",
+        )
+
+        conn = sqlite3.connect(db_path)
+        with conn:
+            conn.execute("CREATE TABLE unrelated (id TEXT)")
+        conn.close()
+        no_table_results = compare_pact_to_canon(pact_dir, db_path)
+        check(all(result.status == STATUS_NO_CANON for result in no_table_results), "DB without amendment_records reports NO_CANON")
+
+        conn = sqlite3.connect(db_path)
+        with conn:
+            conn.execute("DROP TABLE unrelated")
+            conn.execute(
+                """CREATE TABLE amendment_records (
+                    proposal_id TEXT PRIMARY KEY,
+                    section_id TEXT,
+                    old_version TEXT,
+                    new_version TEXT,
+                    old_hash TEXT,
+                    new_hash TEXT,
+                    rationale TEXT,
+                    ratified_at TEXT,
+                    sovereign_override INTEGER DEFAULT 0,
+                    reviewer TEXT,
+                    review_notes TEXT
+                )"""
+            )
+            conn.execute(
+                "INSERT INTO amendment_records VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                ("P-BLANK", "   ", None, "v1.0", None, compute_hash("ignored"), "blank", "2026-01-01", 0, "T-0", ""),
+            )
+            conn.execute(
+                "INSERT INTO amendment_records VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                ("P-S2", "s2", None, "v1.0", None, compute_hash("S2\n"), "sync", "2026-01-02", 0, "T-0", ""),
+            )
+        conn.close()
+        records = _latest_canon_records(db_path)
+        check("" not in records, "blank section ids are ignored")
+        check("S2" in records, "canon loader normalizes section ids")
+
+        try:
+            _latest_canon_records(missing_db)
+            check(False, "missing DB should raise FileNotFoundError")
+        except FileNotFoundError:
+            check(True, "missing DB raises FileNotFoundError")
+
+        try:
+            _latest_canon_records(directory_db)
+            check(False, "directory DB should fail read-only open")
+        except RuntimeError:
+            check(True, "read-only DB open failure is explicit")
+
+
+def test_pact_canon_drift_detector_cli_outputs():
+    # CLAIM: §7.5, §7.11.1 — drift detector CLI emits human and JSON reports without mutation
+    section("Pact/Canon Drift Detector: CLI Outputs")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        pact_dir = Path(tmp) / "pact"
+        pact_dir.mkdir()
+        (pact_dir / "pact_section0_root_physics.md").write_text("S0 local\n", encoding="utf-8")
+
+        human_buffer = io.StringIO()
+        with redirect_stdout(human_buffer):
+            human_rc = pact_canon_drift_main(["--pact-dir", str(pact_dir)])
+        human = human_buffer.getvalue()
+        check(human_rc == 0, "drift CLI human mode exits cleanly")
+        check("Pact/canon drift report" in human, "drift CLI prints human report header")
+        check("S0" in human and STATUS_NO_CANON in human, "drift CLI human report names section status")
+
+        json_buffer = io.StringIO()
+        with redirect_stdout(json_buffer):
+            json_rc = pact_canon_drift_main(["--pact-dir", str(pact_dir), "--json"])
+        payload = json.loads(json_buffer.getvalue())
+        check(json_rc == 0, "drift CLI JSON mode exits cleanly")
+        check(payload[0]["section_id"] == "S0", "drift CLI JSON preserves section id")
+        check(payload[0]["status"] == STATUS_NO_CANON, "drift CLI JSON preserves drift status")
 
 
 def test_safe_stop_persistent():

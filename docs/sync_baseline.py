@@ -45,6 +45,7 @@ CURRENT_DOCS = [
     "THREAT_MODEL.md",
     "CONTRIBUTING.md",
     "docs/TESTING.md",
+    "docs/index.html",
     "docs/roadmap/ACCEPTANCE_HISTORY.md",
     "docs/roadmap/COVERAGE_TRACKER.md",
 ]
@@ -55,6 +56,7 @@ class Baseline:
     test_functions: int
     assertions: int
     failures: int
+    source_modules: int = 0
     coverage_percent: Optional[float] = None
     claim_sections: Optional[int] = None
     claim_tags: Optional[int] = None
@@ -123,6 +125,7 @@ CLAIM_FILE_RE = re.compile(
 COVERAGE_LABELS = {
     "rss/core/config.py": "config.py",
     "rss/core/state_machine.py": "state_machine.py",
+    "rss/audit/pact_canon_drift.py": "audit/pact_canon_drift.py",
     "rss/audit/migrate.py": "audit/migrate.py",
     "rss/governance/seats/scribe.py": "scribe.py",
     "rss/reference_pack.py": "reference_pack.py",
@@ -135,6 +138,7 @@ COVERAGE_LABELS = {
     "rss/hubs/topology.py": "hub_topology.py",
     "rss/governance/seats/seal.py": "seal.py",
     "rss/governance/seats/ward.py": "ward.py",
+    "rss/governance/t0.py": "governance/t0.py",
     "rss/governance/seats/scope.py": "scope.py",
     "rss/llm/adapter.py": "llm_adapter.py",
     "rss/audit/log.py": "audit_log.py",
@@ -171,6 +175,18 @@ def parse_acceptance() -> Baseline:
         test_functions=int(match.group(1)),
         assertions=int(match.group(2)),
         failures=int(match.group(3)),
+    )
+
+
+def count_source_modules() -> int:
+    """Count tracked rss package modules, excluding package marker files."""
+    result = run_command(["git", "ls-files", "src/rss/*.py", "src/rss/**/*.py"])
+    if result.returncode != 0:
+        raise SystemExit("sync_baseline: could not count tracked src/rss modules")
+    return sum(
+        1
+        for line in result.stdout.splitlines()
+        if line.strip() and not line.strip().endswith("__init__.py")
     )
 
 
@@ -268,6 +284,13 @@ def rewrite_common(text: str, baseline: Baseline) -> str:
         out,
     )
 
+    if baseline.source_modules:
+        out = re.sub(
+            r"\*\*\d+ (source modules|kernel modules)",
+            lambda match: f"**{baseline.source_modules} {match.group(1)}",
+            out,
+        )
+
     out = re.sub(
         r"\bcurrent \d+/\d+ baseline\b",
         f"current {baseline.compact_pair} baseline",
@@ -359,8 +382,35 @@ def rewrite_coverage_tracker(text: str, baseline: Baseline) -> str:
     return out
 
 
+def rewrite_site_index(text: str, baseline: Baseline) -> str:
+    out = text
+
+    replacements = {
+        "test functions": str(baseline.test_functions),
+        "assertions": str(baseline.assertions),
+        "failures": str(baseline.failures),
+        "statement coverage": baseline.coverage_text,
+        "mapped claims": str(baseline.claim_tags) if baseline.claim_tags is not None else None,
+    }
+    for label, value in replacements.items():
+        if value is None:
+            continue
+        out = re.sub(
+            rf"(<dt>)[^<]+(</dt>\s*<dd>{re.escape(label)}</dd>)",
+            rf"\g<1>{value}\2",
+            out,
+        )
+
+    out = out.replace('href="claim_matrix.html"', 'href="claim_matrix.md"')
+    return out
+
+
 DEFAULT_DOC_HANDLERS = (rewrite_common,)
 DOC_HANDLERS = {
+    "docs/index.html": (
+        rewrite_common,
+        rewrite_site_index,
+    ),
     "docs/roadmap/COVERAGE_TRACKER.md": (
         rewrite_common,
         rewrite_coverage_tracker,
@@ -418,6 +468,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         f"      {baseline.test_functions} test functions, "
         f"{baseline.assertions} assertions, {baseline.failures} failures"
     )
+    baseline.source_modules = count_source_modules()
+    print(f"      {baseline.source_modules} tracked src/rss modules")
 
     if args.require_clean and not baseline.clean:
         print()

@@ -62,7 +62,7 @@ ALLOWED_VENDOR_HITS = (
     AllowedVendorHit(
         "src/rss/core/config.py",
         "Configuration constant defines external names to redact.",
-        line_numbers=(46,),
+        line_contains=("Co" + "pilot",),
     ),
     AllowedVendorHit(
         "tests/test_adversarial_scenarios.py",
@@ -72,12 +72,22 @@ ALLOWED_VENDOR_HITS = (
     AllowedVendorHit(
         "tests/test_core_runtime.py",
         "Intentional external-name sanitizer fixture.",
-        line_numbers=(709, 711, 715, 717),
+        line_contains=("Chat" + "GPT",),
+    ),
+    AllowedVendorHit(
+        "tests/test_core_runtime.py",
+        "Intentional external-name sanitizer fixture.",
+        line_contains=("Clau" + "de", "Gem" + "ini"),
     ),
     AllowedVendorHit(
         "tests/test_governance_seats.py",
         "Intentional amendment-attribution fixture.",
-        line_numbers=(984, 1003),
+        line_contains=("reviewer=", "Chat" + "GPT"),
+    ),
+    AllowedVendorHit(
+        "tests/test_governance_seats.py",
+        "Intentional amendment-attribution fixture.",
+        line_contains=("reviewer ==", "Chat" + "GPT"),
     ),
     AllowedVendorHit(
         "tests/test_tenant_containers.py",

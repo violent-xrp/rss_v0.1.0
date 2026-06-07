@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-06-07 03:44 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-06-07 17:41 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 111 distinct Pact sections referenced across 149 claim tags on 149 test functions.
+**Coverage:** 111 distinct Pact sections referenced across 151 claim tags on 151 test functions.
 
 ---
 
@@ -557,11 +557,15 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_pact_canon_drift_detector_no_canon` — Pact/canon drift detector reports no sealed canon without mutation
 - `test_pact_canon_drift_detector_compares_latest_records` — Pact/canon drift detector reports in-sync, canon-ahead, and file-ahead states
+- `test_pact_canon_drift_detector_helpers_and_db_edges` — drift detector helper and DB edge paths remain read-only and explicit
+- `test_pact_canon_drift_detector_cli_outputs` — drift detector CLI emits human and JSON reports without mutation
 
 ## §7.11.1
 
 - `test_pact_canon_drift_detector_no_canon` — Pact/canon drift detector reports no sealed canon without mutation
 - `test_pact_canon_drift_detector_compares_latest_records` — Pact/canon drift detector reports in-sync, canon-ahead, and file-ahead states
+- `test_pact_canon_drift_detector_helpers_and_db_edges` — drift detector helper and DB edge paths remain read-only and explicit
+- `test_pact_canon_drift_detector_cli_outputs` — drift detector CLI emits human and JSON reports without mutation
 - `test_s7_amendment_persistence_roundtrip` — amendment proposal/review state and ratified history survive restart
 
 ## §E-1
