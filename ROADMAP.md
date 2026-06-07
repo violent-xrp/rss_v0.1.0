@@ -27,6 +27,7 @@ Historical receipts live in supporting docs:
 - versioning model: `docs/VERSIONING.md`
 - demo handoff and artifact usage: `docs/demo/DEMO_HANDOFF.md`
 - external vocabulary / reviewer map: `docs/EXTERNAL_MAP.md`
+- future action-plane design boundary: `docs/ACTION_PLANE.md`
 - active design proposals: `docs/proposals/`
 - Pact-to-kernel alignment map: `docs/PACT_ALIGNMENT.md`
 - claim traceability: `docs/claim_matrix.md`
@@ -80,7 +81,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - Demo proof artifacts now need to stay evidence-bound: PASS requires expected seeded evidence markers and successful task IDs bound to TRACE, not just fluent non-error answers.
 - `v0.1.0-rc.1` is the current reviewable release candidate; the next release decision is whether this candidate can converge to final `v0.1.0` or needs another candidate iteration.
 - Keep final v0.1.0 gates explicit: final acceptance proof, synced public docs, fresh demo artifacts, and no release claim beyond the current proof surface.
-- Keep tightening the reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
+- Keep tightening the 30/60/90-minute reviewer path around governed useful retrieval, refusal, isolation, recovery, cold verification, and artifact inspection.
 - Keep the zero-trust trajectory explicit without overclaiming v0.1.0: RSS is moving toward deployment-grade zero-trust through caller identity, per-action gates, least-privilege context, and external audit anchoring, but the current release remains a single-process governance kernel.
 - Pact cleanup is complete for the current pass; keep public proof docs synced as code hardening and release-boundary polish continue.
 
@@ -91,14 +92,14 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **T-0 identity seam:** the `authorize_t0(action, context)` chokepoint now centralizes current soft sovereign-command gates for Safe-Stop clearing and SEAL authority checks. Cryptographic/mechanical identity enforcement remains future work.
 - **Recovery before keys:** cryptographic identity must be designed recovery-first. Keys may strengthen attestation, but they must not become the only way T-0 can recover lawful authority under Section 0.1.4.
 - **Operational identity:** future TECTON deployment users should carry operational credentials and role scopes separate from, subordinate to, and unable to amend constitutional T-0 authority. Key rotation, revocation, and recovery are governed/audited events; keys do not belong in repo, Pact text, or TRACE payloads.
-- **Action-proposal loop:** v0.1.0 is a single forward pass: model output is sanitized and logged, but it does not re-enter the gates. The v0.1.1+ frontier is a typed action proposal and side-effect broker where every proposed side effect re-enters SCOPE, RUNE, execution validation, OATH, and CYCLE before execution.
+- **Action-proposal loop:** v0.1.0 is a single forward pass: model output is sanitized and logged, but it does not re-enter the gates. The v0.1.1+ frontier is a typed action proposal and side-effect broker where every proposed side effect re-enters SCOPE, RUNE, execution validation, OATH, and CYCLE before execution. The future design boundary is captured in `docs/ACTION_PLANE.md`.
 - **Tier 2.5 advisor layer:** future internal advisors may assess, narrow, and recommend through structured packets, including amendment/code consistency review. They remain non-authoritative: automate assessment, never authorization.
 - **Sigil universality:** `docs/proposals/SIGIL_SET_PROPOSAL.md` remains the public design surface for encoding-stable sigils and authority-marker caveats. No glyph change is built or claimed in v0.1.0.
 
 ### Keep Warm
 - API/wrapper ingress boundary and caller identity propagation.
 - Per-action/tool-call enforcement before real side effects execute.
-- Structured Action Proposals: LLM output becomes a typed proposed task that must re-enter SCOPE, RUNE, Execution, OATH, and CYCLE before any side-effect broker acts.
+- Structured Action Proposals: LLM output becomes a typed proposed task that must re-enter SCOPE, RUNE, Execution, OATH, and CYCLE before any side-effect broker acts. See `docs/ACTION_PLANE.md` for the planning-only boundary.
 - Minimum proposal shape to evaluate later: `proposal_id`, `source_task_id`, `action_class`, `target_resource`, `payload`, `container_id`, `proposed_at`, and a payload hash/TTL binding. The broker boundary must emit proposal, rejection, authorization, and execution receipts before any external file, API, network, or tool side effect.
 - Cryptographic/mechanical T-0 identity gate for Safe-Stop clearing beyond the current soft `t0_command=True` fence.
 - Zero-trust hardening sequence: authenticated ingress, actor-bound request context, capability-scoped side-effect broker, per-action/tool-call authorization, signed TRACE exports, external timestamp anchoring, and auditable recovery/bypass paths.
@@ -310,7 +311,7 @@ Landed:
 - SEAL ceremony TRACE emission now fails closed when a trace callback is wired: proposal, review, and ratification do not mutate ceremony state if amendment audit emission fails
 - WARD registration now fails fast when a seat lacks the standard `status()` / `handle(task)` interface, so malformed routable seats cannot enter the registry.
 - Phase G coverage floor closed: `cycle.py` and `trace_verify.py` are both above 94% and every package module is at or above 85%
-- demo handoff now names the fast reviewer path, artifact review order, proof signals, and release boundary
+- demo handoff now names the 30/60/90-minute reviewer path, artifact review order, proof signals, and release boundary
 - demo artifact proof now records per-question proof rows, expected governed-evidence markers, and successful task IDs bound to TRACE artifacts so useful retrieval cannot pass on fluent but ungrounded answers
 - external vocabulary map added for engineers/reviewers who do not know RSS terms yet
 - artifact export bundle from a single governed run:

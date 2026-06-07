@@ -74,11 +74,12 @@ Avoid absolute claims:
 ## Reviewer Shortcut
 
 If a reviewer asks where the proof lives, point them to:
-- `README.md` for the Day 1 reviewer path
+- `README.md` for the 30/60/90-minute reviewer path
 - `ROADMAP.md` for current truth and active work
 - `TRUTH_REGISTER.md` for what can and cannot be claimed
 - `docs/TESTING.md` for gate commands and coverage-sync rules
 - `docs/PACT_ALIGNMENT.md` for Pact-to-kernel alignment and known gaps
 - `docs/claim_matrix.md` for claim-to-test traceability
 - `docs/demo/DEMO_HANDOFF.md` for the demo artifact path
+- `docs/ACTION_PLANE.md` for the future action-plane boundary, which is not a current release claim
 - `tests/test_all.py` for the canonical acceptance runner

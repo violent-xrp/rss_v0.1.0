@@ -100,8 +100,10 @@ Contributions should preserve the core posture: current claims stay conservative
 
 ## Quick start
 
-### Day 1 reviewer path
-If you are reviewing whether the current proof surface is real, run the gates before reading the whole repository:
+### 30/60/90-minute reviewer path
+If you are reviewing whether the current proof surface is real, use this order before reading the whole repository.
+
+**30 minutes: reproduce the proof baseline.**
 
 ```bash
 pip install -r requirements.txt
@@ -109,15 +111,24 @@ pip install -r requirements-dev.txt
 python tests/test_all.py
 python run_coverage.py
 python docs/sync_baseline.py --check --require-clean
+```
+
+**60 minutes: generate and inspect one governed demo run.**
+
+```bash
 python examples/demo_suite.py --offline --artifacts demo_artifacts
 ```
 
-Then inspect:
 - `demo_artifacts/demo_summary.md` for the operator-readable walkthrough result
 - `demo_artifacts/demo_report.json` for machine-readable proof flags
 - `demo_artifacts/demo_trace.json` for the persisted TRACE export
+
+**90 minutes: inspect the claim boundary.**
+
 - `docs/claim_matrix.md` for Pact-to-test traceability
-- `TRUTH_REGISTER.md` and `docs/PACT_ALIGNMENT.md` for claim boundaries and known gaps
+- `TRUTH_REGISTER.md` and `docs/PACT_ALIGNMENT.md` for current claim boundaries and known gaps
+- `ROADMAP.md` for active release posture and deferred work
+- `docs/ACTION_PLANE.md` for the future action-plane boundary, which is not a v0.1.0 claim
 
 This path proves the current baseline, coverage, synchronized public counts, and one governed demo run. It does not prove future connectors, action brokers, cryptographic identity, or deployment-layer sandboxing.
 

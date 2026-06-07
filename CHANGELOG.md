@@ -40,7 +40,8 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - `save_untrusted_content()` imports external content as data-only evidence with wrapper labels, provenance, persistence, and `UNTRUSTED_CONTENT_IMPORTED` TRACE.
 - untrusted import receipts now hash-bind source content and wrapped content with SHA-256 digests, byte lengths, provenance persistence, TRACE digest payloads, and mutation detection.
 - `docs/EXTERNAL_MAP.md` gives outside reviewers a plain-English map from RSS vocabulary to engineering responsibilities without renaming internals.
-- demo handoff now gives outside reviewers a fast path, artifact inspection order, proof-signal checklist, and release-boundary language.
+- demo handoff now gives outside reviewers a 30/60/90-minute reviewer path, artifact inspection order, proof-signal checklist, and release-boundary language.
+- `docs/ACTION_PLANE.md` defines the future action-plane boundary as planning-only work, separating the current v0.1.0 proof surface from later side-effect broker design.
 - live demo-suite normal-advisor lane uses SYSTEM-only scope so ordinary conversation does not open WORK/PERSONAL data
 - interactive `src/main.py demo` routes ordinary chat through SYSTEM-only scope while obvious seeded-data questions keep the governed WORK/PAV path
 - runner-truth hardening so the acceptance harness remains the single pass/fail truth source
