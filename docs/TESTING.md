@@ -22,6 +22,14 @@ This custom runner is the local source of truth for the current Windows environm
 
 ## Optional Checks
 
+Public hygiene wrapper:
+
+```bash
+python docs/check_public_hygiene.py
+```
+
+This runs baseline sync in check mode, the contact/license-header check, and the public vendor/tool-name scan with intentional fixture allowlists.
+
 Coverage:
 
 ```bash
