@@ -16,7 +16,7 @@ I started building Rose Sigil Systems because I kept seeing the same failure pat
 
 **RSS v0.1.0** is a domain-agnostic, application-layer AI governance kernel with a zero-trust trajectory. What exists now is alpha: the architecture works, the discipline is real, and the known limits are stated openly.
 
-**Verified baseline:** 149 test functions, 1346 assertions, 0 failures, 91.7% coverage. Traceability: 149 claims mapped to 149 tests across 111 Pact sections.
+**Verified baseline:** 149 test functions, 1346 assertions, 0 failures, 91.8% coverage. Traceability: 149 claims mapped to 149 tests across 111 Pact sections.
 
 Reproduce with `python tests/test_all.py` and `python run_coverage.py`. Claim mapping at `docs/claim_matrix.md`.
 

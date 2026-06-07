@@ -37,7 +37,7 @@ Historical receipts live in supporting docs:
 
 Current code state:
 - **149 test functions / 1346 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **91.7% statement coverage** via `python run_coverage.py`
+- **91.8% statement coverage** via `python run_coverage.py`
 - **149 claims / 149 tests / 111 Pact sections** in `docs/claim_matrix.md`
 - **22 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
@@ -230,7 +230,7 @@ Held for v0.1.1 ceremony unless a release-gate review proves otherwise:
 Before tagging final v0.1.0, RSS should have:
 - one clean acceptance run at the current or higher assertion count
 - current coverage and claim matrix regenerated
-- `python docs/sync_baseline.py --check --require-clean` exits 0, proving current-facing baseline docs are synced and the runner is clean
+- `python docs/sync_baseline.py --check --require-clean` exits 0, proving current-facing baseline docs are synced, the runner is clean, and coverage proof reproduced
 - demo artifact flow documented and runnable
 - remaining known limitations disclosed clearly
 - no public claim that exceeds the current proof surface

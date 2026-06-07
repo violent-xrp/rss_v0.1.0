@@ -42,6 +42,8 @@ python docs/sync_baseline.py --check
 python docs/sync_baseline.py --check --require-clean
 ```
 
+By default, `sync_baseline.py` requires `run_coverage.py` to emit a parseable `TOTAL` line. Use `--no-cov` only for an explicit local skip, not as a release-gate substitute.
+
 Demo artifact proof:
 
 ```bash

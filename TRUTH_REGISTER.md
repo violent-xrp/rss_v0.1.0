@@ -6,7 +6,7 @@ Release: **v0.1.0**
 
 ## Current verified state
 - **149 test functions / 1346 assertions / 0 failures** via `python tests/test_all.py`
-- **91.7% statement coverage** via `python run_coverage.py`
+- **91.8% statement coverage** via `python run_coverage.py`
 - **149 claims / 149 tests / 111 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (subpackages: `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`) + `src/main.py` CLI entry point
 - demo/reference-pack v2, pack validation, demo artifact export, governed offline fallback, live normal-advisor boundary, interactive SYSTEM-only normal-chat containment, and untrusted import hash-binding are implemented in the current code snapshot

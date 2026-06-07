@@ -8,7 +8,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 
 ### Current verified snapshot
 - **149 test functions / 1346 assertions / 0 failures** via `python tests/test_all.py`
-- **91.7% statement coverage** via `python run_coverage.py`
+- **91.8% statement coverage** via `python run_coverage.py`
 - **149 claims / 149 tests / 111 Pact sections** in `docs/claim_matrix.md`
 - **22 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
@@ -43,6 +43,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - live demo-suite normal-advisor lane uses SYSTEM-only scope so ordinary conversation does not open WORK/PERSONAL data
 - interactive `src/main.py demo` routes ordinary chat through SYSTEM-only scope while obvious seeded-data questions keep the governed WORK/PAV path
 - runner-truth hardening so the acceptance harness remains the single pass/fail truth source
+- `docs/sync_baseline.py` now fails closed when required coverage proof cannot be parsed; `--no-cov` is the explicit opt-out rather than a silent green path.
 - R1 repo restructure: flat `src/` → `src/rss/` package tree with subpackages `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`
 - TECTON destructive transitions (`suspend`, `archive`, `destroy`, `reactivate`) now require non-empty `reason`, logged into lifecycle audit record
 - `clear_safe_stop()` is idempotent — returns `NO_OP` and emits no false audit event when not halted

@@ -9,7 +9,7 @@ This file preserves the count history and verification receipts that used to liv
 ## Current Baseline
 
 - **149 test functions / 1346 assertions / 0 failures**
-- **91.7% statement coverage**
+- **91.8% statement coverage**
 - **149 claims / 149 tests / 111 Pact sections**
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
@@ -112,7 +112,7 @@ All public-facing docs were synced to the current **149 / 1346 / 0** baseline on
 
 Current synced public numbers:
 - **149 / 1346 / 0**
-- **91.7%** coverage
+- **91.8%** coverage
 - **149 claims / 149 tests / 111 Pact sections**
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.

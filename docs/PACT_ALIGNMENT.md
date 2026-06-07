@@ -55,6 +55,7 @@ Most-restrictive outcome:
 Drift discipline:
 - TRACE, cold verification, TRUTH_REGISTER, CLAIM_DISCIPLINE, `docs/claim_matrix.md`, and `docs/sync_baseline.py` provide the current evidence discipline.
 - The runner-truth rule keeps public counts tied to the acceptance harness instead of manual doc claims.
+- `docs/sync_baseline.py` now treats missing/unparseable coverage as a failed proof by default; `--no-cov` is an explicit local opt-out, not a release-gate success path.
 
 Domain agnosticism:
 - The kernel is not construction-specific.

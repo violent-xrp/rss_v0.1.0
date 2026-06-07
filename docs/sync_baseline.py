@@ -15,7 +15,8 @@ Usage:
 Exit codes:
     0  docs are synced and the acceptance runner is clean
     1  --check found stale docs
-    2  acceptance runner reported failures, or --require-clean blocked sync
+    2  acceptance runner reported failures, required coverage proof is unavailable,
+       or --require-clean blocked sync
 
 Use the repo venv on Windows:
     .\\.venv\\Scripts\\python.exe docs\\sync_baseline.py
@@ -182,7 +183,10 @@ def parse_coverage() -> tuple[Optional[float], dict[str, float]]:
     output = f"{result.stdout}\n{result.stderr}"
     total_match = COVERAGE_TOTAL_RE.search(output)
     if not total_match:
-        print("sync_baseline: coverage TOTAL line not found; skipping coverage sync", file=sys.stderr)
+        print(
+            "sync_baseline: coverage TOTAL line not found; coverage proof unavailable",
+            file=sys.stderr,
+        )
         return None, {}
 
     modules: dict[str, float] = {}
@@ -436,6 +440,22 @@ def main(argv: Optional[list[str]] = None) -> int:
         baseline.coverage_percent, baseline.coverage_modules = parse_coverage()
         if baseline.coverage_text:
             print(f"      {baseline.coverage_text} statement coverage")
+        else:
+            print()
+            print(
+                "RESULT: coverage proof unavailable; install requirements-dev "
+                "or pass --no-cov to skip coverage explicitly."
+            )
+            payload = {
+                "baseline": asdict(baseline),
+                "results": [],
+                "check": args.check,
+                "stale_or_changed": None,
+                "coverage_unavailable": True,
+            }
+            if args.json:
+                print(json.dumps(payload, indent=2, sort_keys=True))
+            return 2
 
     if args.no_claim:
         print("[3/3] Claim matrix skipped")
