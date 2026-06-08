@@ -102,7 +102,7 @@ Verified after the untrusted import hash-binding proof:
 
 ## Public Doc Sync
 
-All public-facing docs were synced to the current **151 / 1360 / 0** baseline on 2026-04-29:
+All public-facing docs listed below were synced during the 2026-04-29 public-doc pass:
 - `README.md`
 - `TRUTH_REGISTER.md`
 - `CLAIM_DISCIPLINE.md`

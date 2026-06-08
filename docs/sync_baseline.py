@@ -305,12 +305,6 @@ def rewrite_common(text: str, baseline: Baseline) -> str:
     )
 
     out = re.sub(
-        r"\bcurrent \*\*\d+ / \d+ / \d+\*\* baseline\b",
-        f"current **{baseline.test_triplet}** baseline",
-        out,
-    )
-
-    out = re.sub(
         r"(Current synced public numbers:\n- \*\*)\d+ / \d+ / \d+(\*\*)",
         rf"\g<1>{baseline.test_triplet}\2",
         out,
