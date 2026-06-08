@@ -6,8 +6,9 @@ This directory holds public design proposals that are not yet implemented and do
 
 Active proposals:
 
-- `V0_1_1_AMENDMENT_PLAN.md` — section-ordered plan for the first post-`v0.1.0` Pact amendment cycle. Option B is selected for Ceremony 1: Sections 1, 3, and 6 only, with Section 0 deferred to a dedicated Genesis-aware ceremony.
-- `SIGIL_SET_PROPOSAL.md` — encoding-stable seat-sigil candidates and future authority-marker caveats.
+- `V0_1_1_AMENDMENT_PLAN.md` - section-ordered plan for the first post-`v0.1.0` Pact amendment cycle. Option B is selected for Ceremony 1: Sections 1, 3, and 6 only, with Section 0 deferred to a dedicated Genesis-aware ceremony.
+- `PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md` - proposed workflow for exporting sealed Section 7 canon back to human-readable Pact files, with a safe Sections 1-7 path and a separate Genesis-aware Section 0 path.
+- `SIGIL_SET_PROPOSAL.md` - encoding-stable seat-sigil candidates and future authority-marker caveats.
 
 Rules:
 

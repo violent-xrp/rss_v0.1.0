@@ -232,7 +232,7 @@ Amendment/evolution gaps:
 - Parallel amendments against the same section are not handled explicitly. A proposal reviewed against an older section version is not automatically marked stale if another amendment lands first.
 - There is no post-ratification self-test that proves the new canon hash, version counter, TRACE event, persistence state, and cold verifier posture all match the expected result.
 - CLOSED for diagnostic: `rss.audit.pact_canon_drift` now provides a read-only Pact/canon drift report comparing `pact/*.md` file hashes with sealed DB canon hashes and reporting no-canon, in-sync, file-ahead, or canon-ahead states. It does not export canon to files or mutate Genesis.
-- There is not yet a canon-to-file export path. Section 1-7 export can be a normal sync operation once designed, but Section 0 export is a protected lock-out path because any file write must pair with Genesis re-anchor plus boot, tamper, and recovery verification.
+- There is not yet a canon-to-file export path. The proposed workflow is captured in `docs/proposals/PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md`: Section 1-7 export can be the common path once implemented, while Section 0 export remains a protected lock-out path because any file write must pair with Genesis re-anchor plus boot, tamper, and recovery verification.
 
 Pact embedding / reverse traceability gaps:
 - CLOSED for generated reverse traceability: `docs/build_pact_code_map.py` now generates `docs/pact_code_map.md` from source references back to Pact sections, including unmatched code references, Pact sections without source refs, and modules without Pact refs.
@@ -345,6 +345,7 @@ Before v0.1.1:
 - Add or schedule full-Pact integrity checks and pre-commit/CI drift gates; reverse Pact-reference extraction now exists as generated local tooling.
 - Preserve the vocabulary rule: keep "seat" as the authority-surface term, prefer operational/constitutional seat classes over broad Council language, and translate formal Pact language for external readers.
 - Before any v0.1.1 amendment ceremony, review `docs/proposals/V0_1_1_AMENDMENT_PLAN.md` so the long candidate list is handled deliberately rather than edited from memory.
+- Before implementing canon-to-file export, review `docs/proposals/PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md` so Section 1-7 export, stale-base refusal, and the separate Section 0 Genesis path stay distinct.
 - CLOSED: SCOPE/RUNE now expose WARD-compatible `status()` and `handle(task)` adapters while remaining direct law services on the runtime request path.
 - Add or schedule tests for WARD hook protected-field coverage and RUNE confidence/edge-token behavior.
 - Keep this file aligned with any new tests that prove additional Pact clauses.

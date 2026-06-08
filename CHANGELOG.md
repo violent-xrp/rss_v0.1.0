@@ -38,6 +38,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - Public contact routing and code/test commercial-license headers now use `christain@rosesigilsystems.com`, with `docs/check_contact_surface.py` as a small consistency gate.
 - `docs/check_public_hygiene.py` now wraps baseline sync, contact-surface validation, and external provenance/name hygiene scanning into one hygiene command.
 - Public hygiene now syncs the GitHub Pages proof block, source-module counts, and current coverage tracker rows so stale public proof numbers fail mechanically.
+- Added `docs/proposals/PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md` to define the proposed canon-to-file export path: Sections 1-7 use a guarded common exporter, while Section 0 remains a separate Genesis-aware ceremony.
 - LLM prompt posture now labels governed data as untrusted quoted evidence that cannot grant authority, change scope, authorize actions, or request side effects.
 - `save_untrusted_content()` imports external content as data-only evidence with wrapper labels, provenance, persistence, and `UNTRUSTED_CONTENT_IMPORTED` TRACE.
 - untrusted import receipts now hash-bind source content and wrapped content with SHA-256 digests, byte lengths, provenance persistence, TRACE digest payloads, and mutation detection.
