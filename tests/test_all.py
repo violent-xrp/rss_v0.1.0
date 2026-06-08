@@ -181,6 +181,13 @@ from test_audit_trace import (
     test_trace_export_additional_proof,
 )
 
+from test_audit_pact_canon_export import (
+    test_pact_canon_export_dry_run_refuses_unsafe_paths,
+    test_pact_canon_export_write_requires_t0_and_syncs_drift,
+    test_pact_canon_export_first_canon_requires_explicit_base_hash,
+    test_pact_canon_export_cli_defaults_to_dry_run,
+)
+
 from test_adversarial_scenarios import (
     test_adversarial_ingress,
     test_adversarial_cross_container,
@@ -351,6 +358,10 @@ TESTS = [
     test_trace_verify_additional_proof,
     test_trace_verify_human_report_branches,
     test_trace_export_additional_proof,
+    test_pact_canon_export_dry_run_refuses_unsafe_paths,
+    test_pact_canon_export_write_requires_t0_and_syncs_drift,
+    test_pact_canon_export_first_canon_requires_explicit_base_hash,
+    test_pact_canon_export_cli_defaults_to_dry_run,
     test_seal_ceremony_additional_proof,
     test_s7_amendment_persistence_roundtrip,
     test_genesis_binding_and_offline_fallback,

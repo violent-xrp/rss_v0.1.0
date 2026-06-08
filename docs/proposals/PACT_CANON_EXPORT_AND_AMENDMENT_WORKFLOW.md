@@ -2,7 +2,7 @@
 
 _License: CC BY-ND 4.0 discipline material; see `../../LICENSE/CC BY-ND 4.0.md`._
 
-Status: proposed design. This document does not amend the Pact, does not change runtime behavior, and does not authorize Section 0 edits.
+Status: partially implemented. The Sections 1-7 guarded exporter exists in `rss.audit.pact_canon_export`; the Section 0 Genesis-aware path remains future work. This document does not amend the Pact and does not authorize Section 0 edits.
 
 ## Purpose
 
@@ -12,7 +12,7 @@ RSS now has enough amendment machinery to separate three surfaces that must not 
 - sealed canon in SQLite: the Section 7 ceremony record after proposal, review, and ratification.
 - release documentation: the public explanation of what the current kernel proves.
 
-Today, Section 7 can persist sealed canon and the drift detector can compare that canon with the Pact files. RSS still needs a controlled canon-to-file export path before a ratified amendment can update the human-readable Pact files without hand-copy drift.
+Section 7 can persist sealed canon and the drift detector can compare that canon with the Pact files. RSS now has a controlled Sections 1-7 canon-to-file export path so a ratified non-root amendment can update the human-readable Pact files without hand-copy drift. Section 0 remains deliberately excluded from that common path.
 
 ## Current Built Surface
 
@@ -23,10 +23,10 @@ Built and test-backed today:
 - Generated Pact-to-test mapping in `docs/claim_matrix.md`.
 - Generated code-to-Pact mapping in `docs/pact_code_map.md`.
 - Public hygiene checks for baseline sync, contact surface, reverse map freshness, and external provenance/name hygiene.
+- Guarded Sections 1-7 canon-to-file export in `rss.audit.pact_canon_export`.
 
 Not built today:
 
-- Canon-to-file export from sealed DB canon into `pact/*.md`.
 - Section 0 export with Genesis re-anchor.
 - Full-Pact boot-time integrity beyond the current Section 0 Genesis anchor.
 - Cryptographic T-0 identity for amendment authority.
@@ -48,7 +48,7 @@ The default posture is fail closed. A stale file, missing canon record, section 
 
 ## Section 1-7 Common Path
 
-The safe common path should support Sections 1 through 7 only.
+The safe common path supports Sections 1 through 7 only.
 
 Expected flow:
 
@@ -102,23 +102,24 @@ Section 0 export without re-anchor proof is a lock-out risk and must be refused.
 
 ## Tooling Shape
 
-The implementation can be one script or a small module plus CLI. The interface should make unsafe use hard.
+The implementation lives in `rss.audit.pact_canon_export`. The interface makes unsafe use hard.
 
 Suggested commands:
 
 ```text
-python -m rss.audit.pact_canon_export --section 3 --dry-run
-python -m rss.audit.pact_canon_export --section 3 --write --t0-command
+PYTHONPATH=src python -m rss.audit.pact_canon_export --section 3
+PYTHONPATH=src python -m rss.audit.pact_canon_export --section 3 --write --t0-command
 ```
 
-Required behavior:
+Built behavior:
 
-- `--dry-run` is the default.
+- Dry-run is the default when `--write` is absent.
 - `--write` requires an explicit soft T-0 command until mechanical identity exists.
 - Section 0 targets return a distinct refusal code.
 - Missing canon returns a distinct refusal code.
 - Hash mismatch returns a distinct refusal code and prints both hashes.
 - Successful write prints the post-write drift status.
+- First-canon export without an amendment `old_hash` requires an explicit `--expected-file-hash` for a single targeted section.
 
 The tool should be usable by operator workflows and future TECTON UI surfaces, but the file write remains a kernel-governed operation.
 
@@ -160,11 +161,12 @@ This proposal does not:
 
 ## Exit Criteria
 
-This proposal can be archived as implemented only when:
+This proposal can be archived as fully implemented only when:
 
-1. Sections 1-7 canon-to-file export exists and is tested.
+1. Sections 1-7 canon-to-file export exists and is tested. **Done.**
 2. Export refuses Section 0 through the common path.
-3. Export refuses stale file bases.
-4. Export writes atomically.
-5. Drift detector verifies exported sections as `IN_SYNC`.
-6. Public docs explain the built path without claiming Section 0 or full-Pact integrity.
+3. Export refuses stale file bases. **Done.**
+4. Export writes atomically. **Done.**
+5. Drift detector verifies exported sections as `IN_SYNC`. **Done.**
+6. Public docs explain the built path without claiming Section 0 or full-Pact integrity. **Done for the Sections 1-7 exporter.**
+7. The separate Section 0 Genesis-aware ceremony path is implemented and tested.

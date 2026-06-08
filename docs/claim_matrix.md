@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-06-08 18:40 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-06-08 19:33 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 113 distinct Pact sections referenced across 153 claim tags on 153 test functions.
+**Coverage:** 113 distinct Pact sections referenced across 157 claim tags on 157 test functions.
 
 ---
 

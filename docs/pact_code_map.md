@@ -10,6 +10,11 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 
 ### §0 -> pact/pact_section0_root_physics.md
 - `src/rss/audit/export.py:134`
+- `src/rss/audit/pact_canon_export.py:29`
+- `src/rss/audit/pact_canon_export.py:50`
+- `src/rss/audit/pact_canon_export.py:50`
+- `src/rss/audit/pact_canon_export.py:224`
+- `src/rss/audit/pact_canon_export.py:226`
 - `src/rss/core/config.py:65`
 - `src/rss/core/config.py:66`
 - `src/rss/core/config.py:66`
@@ -81,6 +86,9 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 
 ### §0.9 -> pact/pact_section0_root_physics.md
 - `src/rss/governance/seats/oath.py:128`
+
+### §1 -> pact/pact_section1_eight_seats.md
+- `src/rss/audit/pact_canon_export.py:372`
 
 ### §1.1.2 -> pact/pact_section1_eight_seats.md
 - `src/rss/governance/seats/rune.py:332`
@@ -563,6 +571,9 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 ### §6.12.3 -> pact/pact_section6_persistence_&_audit.md
 - `src/rss/audit/verify.py:59`
 
+### §7 -> pact/pact_section7_amendment_evolution.md
+- `src/rss/audit/pact_canon_export.py:27`
+
 ### §7.1 -> pact/pact_section7_amendment_evolution.md
 - `src/rss/governance/seats/seal.py:221`
 
@@ -640,7 +651,6 @@ These Pact sections have no explicit source reference in `src/rss/`.
 - §0.12 (`pact/pact_section0_root_physics.md`)
 - §0.13 (`pact/pact_section0_root_physics.md`)
 - §0.13.1 (`pact/pact_section0_root_physics.md`)
-- §1 (`pact/pact_section1_eight_seats.md`)
 - §1.0 (`pact/pact_section1_eight_seats.md`)
 - §1.0.1 (`pact/pact_section1_eight_seats.md`)
 - §1.1 (`pact/pact_section1_eight_seats.md`)
@@ -941,7 +951,6 @@ These Pact sections have no explicit source reference in `src/rss/`.
 - §6.14 (`pact/pact_section6_persistence_&_audit.md`)
 - §6.15 (`pact/pact_section6_persistence_&_audit.md`)
 - §6.16 (`pact/pact_section6_persistence_&_audit.md`)
-- §7 (`pact/pact_section7_amendment_evolution.md`)
 - §7.0 (`pact/pact_section7_amendment_evolution.md`)
 - §7.0.1 (`pact/pact_section7_amendment_evolution.md`)
 - §7.0.2 (`pact/pact_section7_amendment_evolution.md`)
@@ -1000,7 +1009,7 @@ These `src/rss/` modules contain no explicit Pact section reference.
 
 ## Summary
 - **Total Pact Sections:** 491
-- **Pact Sections with Code Refs:** 103
-- **Pact Sections without Code Refs:** 388
+- **Pact Sections with Code Refs:** 105
+- **Pact Sections without Code Refs:** 386
 - **Code References without Matching Pact Section:** 0
 - **Code Modules without Pact Refs:** 7

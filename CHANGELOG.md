@@ -7,10 +7,10 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
 
 ### Current verified snapshot
-- **153 test functions / 1407 assertions / 0 failures** via `python tests/test_all.py`
-- **92.6% statement coverage** via `python run_coverage.py`
-- **153 claims / 153 tests / 113 Pact sections** in `docs/claim_matrix.md`
-- **23 source modules** in the `src/rss/` package tree (R1 restructure complete)
+- **157 test functions / 1433 assertions / 0 failures** via `python tests/test_all.py`
+- **92.4% statement coverage** via `python run_coverage.py`
+- **157 claims / 157 tests / 113 Pact sections** in `docs/claim_matrix.md`
+- **24 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
 - Section 0 integrity verification and persistent Safe-Stop flow
@@ -39,6 +39,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - `docs/check_public_hygiene.py` now wraps baseline sync, contact-surface validation, and external provenance/name hygiene scanning into one hygiene command.
 - Public hygiene now syncs the GitHub Pages proof block, source-module counts, and current coverage tracker rows so stale public proof numbers fail mechanically.
 - Added `docs/proposals/PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md` to define the proposed canon-to-file export path: Sections 1-7 use a guarded common exporter, while Section 0 remains a separate Genesis-aware ceremony.
+- Added `rss.audit.pact_canon_export`, a guarded Sections 1-7 canon-to-file exporter with dry-run default, explicit soft T-0 write gate, stale-base and first-canon hash guards, atomic writes, and explicit Section 0 refusal.
 - LLM prompt posture now labels governed data as untrusted quoted evidence that cannot grant authority, change scope, authorize actions, or request side effects.
 - `save_untrusted_content()` imports external content as data-only evidence with wrapper labels, provenance, persistence, and `UNTRUSTED_CONTENT_IMPORTED` TRACE.
 - untrusted import receipts now hash-bind source content and wrapped content with SHA-256 digests, byte lengths, provenance persistence, TRACE digest payloads, and mutation detection.

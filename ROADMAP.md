@@ -37,16 +37,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **153 test functions / 1407 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **92.6% statement coverage** via `python run_coverage.py`
-- **153 claims / 153 tests / 113 Pact sections** in `docs/claim_matrix.md`
-- **23 kernel modules** in the `src/rss/` package tree plus `src/main.py`
+- **157 test functions / 1433 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **92.4% statement coverage** via `python run_coverage.py`
+- **157 claims / 157 tests / 113 Pact sections** in `docs/claim_matrix.md`
+- **24 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 153/1407 baseline
+- public docs are synced to the current 157/1433 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -86,8 +86,8 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - Pact cleanup is complete for the current pass; keep public proof docs synced as code hardening and release-boundary polish continue.
 
 ### Post-rc.1 / Toward v0.1.1
-- **Amendment mechanics:** Section 7 ceremony persists sealed canon in SQLite; it does not write updated text back to `pact/*.md`. The proposed canon-to-file export workflow is captured in `docs/proposals/PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md`; implementation remains future work.
-- **Pact/canon drift detection:** a read-only diagnostic now compares each Pact file hash to any sealed DB canon hash and reports no-canon-yet, in-sync, file-ahead, or canon-ahead states. It makes the two-copy gap visible without mutating canon, files, or Genesis; canon-to-file export remains future work.
+- **Amendment mechanics:** Section 7 ceremony persists sealed canon in SQLite. A guarded Sections 1-7 canon-to-file exporter now lives in `rss.audit.pact_canon_export`; Section 0 export remains a separate Genesis-aware future path captured in `docs/proposals/PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md`.
+- **Pact/canon drift detection:** a read-only diagnostic compares each Pact file hash to any sealed DB canon hash and reports no-canon-yet, in-sync, file-ahead, or canon-ahead states. The Sections 1-7 exporter can now close canon-ahead states when the file base is verified; Section 0 remains outside the common exporter.
 - **Section 0 lock-out path:** Section 1-7 file export is the safe common path. Section 0 export is special because it is Genesis-anchored; any Section 0 file write must pair with Genesis re-anchor plus boot, tamper, and recovery verification or the runtime will Safe-Stop.
 - **T-0 identity seam:** the `authorize_t0(action, context)` chokepoint now centralizes current soft sovereign-command gates for Safe-Stop clearing, SEAL authority checks, and runtime RUNE vocabulary mutations. Cryptographic/mechanical identity enforcement remains future work.
 - **Recovery before keys:** cryptographic identity must be designed recovery-first. Keys may strengthen attestation, but they must not become the only way T-0 can recover lawful authority under Section 0.1.4.
@@ -365,10 +365,11 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - CLOSED: PAV/runtime skipped-source visibility now records skipped-source metadata for forbidden sources, standard LEDGER exclusion, and hub-read failures, and runtime responses expose only the skipped-source count without leaking skipped content or exception messages.
 - CLOSED: Section 7 amendment persistence now persists proposals, review state, ratified amendment records, reconstructed canon state, and queryable history across restart
 - CLOSED: canonical versioning model now lives in `docs/VERSIONING.md`: project/release versions use semver, `-rc.N` is release-candidate iteration only, and Pact section versions are internal amendment records that surface through a project MINOR bump when sealed.
-- Section 7 operator ceremony API: future preview/dry-run, diff report, stale-base handling, canon-to-file export, and post-ratification verification report for TECTON UI readiness; proposed workflow lives in `docs/proposals/PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md`
+- Section 7 operator ceremony API: future richer diff report, stale-base UX, and post-ratification verification report for TECTON UI readiness; the guarded Sections 1-7 canon-to-file CLI exists, while Section 0 export remains future Genesis-aware work
 - T-0 recovery authority: design auditable manual recovery so future cryptographic identity strengthens attestation without creating permanent lock-out risk
 - Full-Pact integrity: extend hash verification and pre-seal integrity beyond Section 0
 - CLOSED: reverse Pact-code map generation now reports code references by Pact section, source references without matching Pact headings, Pact sections without source refs, and governance modules without Pact refs
+- CLOSED: guarded Sections 1-7 canon-to-file export now lives in `rss.audit.pact_canon_export` with dry-run default, stale-base refusal, explicit T-0 write gate, atomic writes, first-canon `--expected-file-hash`, and Section 0 refusal
 - Local enforcement hooks: add pre-commit/CI checks for baseline sync, claim matrix drift, and Pact-reference extraction once the commands are stable beyond the local public-hygiene gate
 - Genesis path cleanup: document or consolidate the two Genesis verification surfaces (`verify_genesis` runtime path and `load_constitution` loader path) so the canonical production path stays obvious
 - Execution law placeholder cleanup: remove dead `ExecutionStateMachine.execute()` code if it is truly obsolete, or mark it explicitly as a non-wired future-broker placeholder

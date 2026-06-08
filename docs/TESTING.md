@@ -15,7 +15,7 @@ python tests/test_all.py
 Current expected final line:
 
 ```text
-RSS v0.1.0 - 153 test functions, 1407 assertions passed, 0 failed
+RSS v0.1.0 - 157 test functions, 1433 assertions passed, 0 failed
 ```
 
 This custom runner is the local source of truth for the current Windows environment.
@@ -48,6 +48,14 @@ Reverse Pact-code map:
 python docs/build_pact_code_map.py
 python docs/build_pact_code_map.py --check
 ```
+
+Pact canon export dry-run:
+
+```bash
+PYTHONPATH=src python -m rss.audit.pact_canon_export --section 3 --db path/to/rss.db
+```
+
+Writes require `--write --t0-command`; first-canon writes without a sealed `old_hash` also require an explicit `--expected-file-hash`. Section 0 is refused by this common exporter.
 
 Baseline sync:
 
