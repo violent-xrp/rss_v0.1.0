@@ -53,7 +53,7 @@ Most-restrictive outcome:
 - REDLINE and forbidden-source paths are excluded from advisory views rather than filtered after model output.
 
 Drift discipline:
-- TRACE, cold verification, TRUTH_REGISTER, CLAIM_DISCIPLINE, `docs/claim_matrix.md`, and `docs/sync_baseline.py` provide the current evidence discipline.
+- TRACE, cold verification, TRUTH_REGISTER, CLAIM_DISCIPLINE, `docs/claim_matrix.md`, `docs/pact_code_map.md`, and `docs/sync_baseline.py` provide the current evidence discipline.
 - The runner-truth rule keeps public counts tied to the acceptance harness instead of manual doc claims.
 - `docs/sync_baseline.py` now treats missing/unparseable coverage as a failed proof by default; `--no-cov` is an explicit local opt-out, not a release-gate success path.
 
@@ -235,11 +235,10 @@ Amendment/evolution gaps:
 - There is not yet a canon-to-file export path. Section 1-7 export can be a normal sync operation once designed, but Section 0 export is a protected lock-out path because any file write must pair with Genesis re-anchor plus boot, tamper, and recovery verification.
 
 Pact embedding / reverse traceability gaps:
-- The claim matrix maps Pact sections to tests, and code comments cite Pact clauses, but the reverse map from kernel modules back to Pact sections is not yet mechanically generated.
+- CLOSED for generated reverse traceability: `docs/build_pact_code_map.py` now generates `docs/pact_code_map.md` from source references back to Pact sections, including unmatched code references, Pact sections without source refs, and modules without Pact refs.
 - Section 0 integrity is mechanically checked; full-Pact integrity across Sections 1-7 is not yet treated as the same boot/request-time invariant.
 - Amendment pre-seal integrity should eventually verify the whole Pact surface, not only the root Genesis artifact, before new law is sealed.
-- A generated implementation map should answer two questions: which Pact sections have no kernel references, and which kernel modules introduce governance behavior without Pact references.
-- A pre-commit or CI gate should eventually run baseline sync, claim-matrix generation/checks, and Pact-reference extraction so drift is caught before review rather than after publication.
+- Public hygiene now checks reverse-map freshness locally; a future pre-commit or CI gate should run the same baseline sync, claim-matrix, and Pact-reference checks before review rather than after publication.
 
 Internal advisor layer / Tier 2.5 gap:
 - RSS currently treats external models as Tier 3: they may inform but cannot authorize, grant scope, create consent, seal law, or execute side effects.
@@ -343,7 +342,7 @@ Before v0.1.1:
 - CLOSED: section-version versus project-version model is decided and documented in `docs/VERSIONING.md`; keep future amendment work aligned with Section 0.10.4 rather than encoding Pact changes in `-rc.N`.
 - Add a future structured amendment preview/report API as the substrate for a TECTON amendment UI.
 - Design the T-0 recovery/lock-out posture before adding cryptographic identity gates: keys should attest authority, not become the only way the sovereign operator can recover the system.
-- Add or schedule full-Pact integrity checks, reverse Pact-reference extraction, and pre-commit/CI drift gates.
+- Add or schedule full-Pact integrity checks and pre-commit/CI drift gates; reverse Pact-reference extraction now exists as generated local tooling.
 - Preserve the vocabulary rule: keep "seat" as the authority-surface term, prefer operational/constitutional seat classes over broad Council language, and translate formal Pact language for external readers.
 - Before any v0.1.1 amendment ceremony, review `docs/proposals/V0_1_1_AMENDMENT_PLAN.md` so the long candidate list is handled deliberately rather than edited from memory.
 - CLOSED: SCOPE/RUNE now expose WARD-compatible `status()` and `handle(task)` adapters while remaining direct law services on the runtime request path.

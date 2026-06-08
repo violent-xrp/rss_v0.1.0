@@ -7,9 +7,9 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
 
 ### Current verified snapshot
-- **152 test functions / 1398 assertions / 0 failures** via `python tests/test_all.py`
+- **153 test functions / 1407 assertions / 0 failures** via `python tests/test_all.py`
 - **92.6% statement coverage** via `python run_coverage.py`
-- **152 claims / 152 tests / 113 Pact sections** in `docs/claim_matrix.md`
+- **153 claims / 153 tests / 113 Pact sections** in `docs/claim_matrix.md`
 - **23 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -83,6 +83,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - Added the public GitHub Pages site under `docs/` with the custom domain `rosesigilsystems.com`, canonical/social metadata, and contact routing through `christain@rosesigilsystems.com`
 - Added `docs/VERSIONING.md` as the canonical three-clock versioning model: semver project releases, `-rc.N` release-candidate iteration only, and Pact section versions through the Section 7 amendment ceremony
 - Added `rss.audit.pact_canon_drift`, a read-only Pact/canon drift detector that reports no-canon, in-sync, file-ahead, and canon-ahead states without mutating Pact files, sealed canon, or Genesis
+- Added `docs/build_pact_code_map.py` and generated `docs/pact_code_map.md` for reverse code-to-Pact traceability; public hygiene now checks the generated map, and the stale verifier citation to nonexistent Section 6.12.4 was corrected to Section 6.12.3
 
 ### Proof growth
 - constitution loader edges

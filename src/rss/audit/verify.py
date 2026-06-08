@@ -56,7 +56,7 @@ What this verifier does NOT prove:
   - That the hashes were computed from any specific original payload (v0.1.0
     exports don't include raw payloads, only hashes — see §6.3.6)
   - That the database itself wasn't replaced wholesale between audits
-    (external signing / timestamp anchoring is Phase 6 — see §6.12.4)
+    (external signing / timestamp anchoring is Phase 6 — see §6.12.3)
 
 Usage:
 

@@ -55,6 +55,10 @@ from test_cli import (
     test_cli_vocabulary_commands_require_t0_command,
 )
 
+from test_docs_tooling import (
+    test_reverse_pact_code_map_generator_parses_pact_heading_variants,
+)
+
 from test_governance_seats import (
     test_ward,
     test_scope,
@@ -356,6 +360,7 @@ TESTS = [
     test_clear_safe_stop_idempotence,
     test_t0_authorization_seam,
     test_cli_vocabulary_commands_require_t0_command,
+    test_reverse_pact_code_map_generator_parses_pact_heading_variants,
     test_llm_availability_timeout_is_config_driven,
     test_archive_entry_returns_hub_entry,
 ]

@@ -5,7 +5,8 @@ This wrapper keeps the routine public-surface check in one command:
 
 1. Baseline sync in check mode, including acceptance runner and coverage proof.
 2. Public contact/license-header consistency.
-3. External provenance/name hygiene scan with explicit intentional-hit allowlist.
+3. Reverse Pact-code map freshness.
+4. External provenance/name hygiene scan with explicit intentional-hit allowlist.
 
 Usage:
     python docs/check_public_hygiene.py
@@ -168,6 +169,10 @@ def main() -> int:
         (
             "Contact surface gate",
             [sys.executable, "docs/check_contact_surface.py"],
+        ),
+        (
+            "Reverse Pact-code map gate",
+            [sys.executable, "docs/build_pact_code_map.py", "--check"],
         ),
     ]
 
