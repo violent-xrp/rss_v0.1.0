@@ -926,6 +926,60 @@ def test_t0_authorization_seam():
               "clear_safe_stop routes through authorize_t0")
         check(runtime_calls[-1][1].get("t0_command") is False,
               "clear_safe_stop passes the soft command state to authorize_t0")
+
+        denied_term = rss.save_term(Term("T0-RUNE-DENY", "t0 denied", "Denied term", [], "1.0"))
+        check(denied_term.get("error") == "T0_COMMAND_REQUIRED",
+              "RUNE term mutation requires explicit T-0 command")
+        check(runtime_calls[-1][0] == "rune_save_term",
+              "RUNE term mutation routes through authorize_t0")
+        check(rss.meaning.get_term("T0-RUNE-DENY") is None,
+              "denied RUNE term mutation creates no term")
+
+        allowed_term = rss.save_term(
+            Term("T0-RUNE-ALLOW", "t0 allowed", "Allowed term", [], "1.0"),
+            t0_command=True,
+        )
+        check(allowed_term is None, "authorized RUNE term mutation preserves success behavior")
+        check(runtime_calls[-1][0] == "rune_save_term",
+              "authorized RUNE term mutation still routes through authorize_t0")
+        check(runtime_calls[-1][1].get("t0_command") is True,
+              "RUNE term mutation passes the soft command state to authorize_t0")
+
+        denied_synonym = rss.save_synonym("t0 alias", "T0-RUNE-ALLOW", "HIGH")
+        check(denied_synonym.get("error") == "T0_COMMAND_REQUIRED",
+              "RUNE synonym mutation requires explicit T-0 command")
+        check(runtime_calls[-1][0] == "rune_save_synonym",
+              "RUNE synonym mutation routes through authorize_t0")
+        check("t0 alias" not in rss.meaning._synonyms,
+              "denied RUNE synonym mutation creates no synonym")
+
+        rss.save_synonym("t0 alias", "T0-RUNE-ALLOW", "HIGH", t0_command=True)
+        check(rss.meaning.classify("t0 alias").status == "SOFT",
+              "authorized RUNE synonym mutation succeeds")
+
+        denied_disallowed = rss.save_disallowed("t0 forbidden", "test")
+        check(denied_disallowed.get("error") == "T0_COMMAND_REQUIRED",
+              "RUNE disallowed mutation requires explicit T-0 command")
+        check(runtime_calls[-1][0] == "rune_save_disallowed",
+              "RUNE disallowed mutation routes through authorize_t0")
+        check("t0 forbidden" not in rss.meaning._disallowed,
+              "denied RUNE disallowed mutation creates no disallowed phrase")
+
+        rss.save_disallowed("t0 forbidden", "test", t0_command=True)
+        check(rss.meaning.classify("t0 forbidden").status == "DISALLOWED",
+              "authorized RUNE disallowed mutation succeeds")
+
+        denied_remove = rss.remove_synonym("t0 alias")
+        check(denied_remove.get("error") == "T0_COMMAND_REQUIRED",
+              "RUNE synonym removal requires explicit T-0 command")
+        check(runtime_calls[-1][0] == "rune_remove_synonym",
+              "RUNE synonym removal routes through authorize_t0")
+        check("t0 alias" in rss.meaning._synonyms,
+              "denied RUNE synonym removal leaves synonym intact")
+
+        rss.remove_synonym("t0 alias", t0_command=True)
+        check("t0 alias" not in rss.meaning._synonyms,
+              "authorized RUNE synonym removal succeeds")
         rss.persistence.close()
     finally:
         runtime_mod.authorize_t0 = real_runtime_authorize

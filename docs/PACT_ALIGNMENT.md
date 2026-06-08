@@ -160,7 +160,8 @@ T-0 mechanical identity:
 - The Pact assigns sovereign authority to T-0 for certain actions.
 - v0.1.0 discloses that some T-0 gates are soft command/convention boundaries rather than cryptographic or identity-checked mechanics.
 - CLOSED for the first seam: Safe-Stop clearing and SEAL seal/ratification now route through a shared `authorize_t0(action, context)` chokepoint while preserving the current soft `t0_command=True` behavior.
-- Remaining priority examples: term/synonym/disallow authorization, seat creation/modification, broader container lifecycle authority, and cryptographic/mechanical identity proof. Future implementation should extend the seam to those Pact-reserved powers before adding identity attestation.
+- CLOSED for runtime RUNE vocabulary mutation: `save_term`, `save_synonym`, `save_disallowed`, and `remove_synonym` now route through the same `authorize_t0(action, context)` seam and require explicit soft `t0_command=True`.
+- Remaining priority examples: seat creation/modification, broader container lifecycle authority, and cryptographic/mechanical identity proof. Future implementation should extend the seam to those Pact-reserved powers before adding identity attestation.
 - Operational identities for TECTON deployments are separate from constitutional T-0 authority. Future user keys, rotation, revocation, and recovery should be deployment-governed/audited while remaining unable to amend the Pact or expand constitutional authority; keys should not be stored in repo files, Pact text, or TRACE payloads.
 
 T-0 recovery and lock-out risk:
@@ -181,7 +182,9 @@ Binary drift response:
 
 RUNE authorization surface:
 - RUNE currently enforces normalization, sealed terms, disallowed phrases, synonym handling, and anti-trojan scanning.
-- Pact-stated authority over term creation should eventually be paired with mechanical caller authority, not only trusted code paths.
+- Runtime term, synonym, disallowed-phrase, and synonym-removal mutations now require explicit soft T-0 authorization through `authorize_t0(action, context)`.
+- CLI vocabulary commands expose that same soft gate as `--t0-command` and print `T0_COMMAND_REQUIRED` instead of reporting false success when the flag is absent.
+- Direct low-level RUNE service calls, bootstrap, and restore remain trusted internal state paths; this is not cryptographic identity proof.
 - Per-pack synonym namespaces remain future hardening before domain packs can compose freely.
 - Anti-trojan scanning currently checks definitions. Runtime proof now captures the actual advisor prompt payload and verifies constraints remain kernel metadata, not advisor/model context. If a future adapter reinjects constraints, the scanner contract must expand before that change lands.
 - Primary substring classification now prefers the longest bounded sealed-term match, so registration order cannot make a shorter term outrank a more specific phrase.

@@ -51,6 +51,10 @@ from test_core_runtime import (
     test_llm_availability_timeout_is_config_driven,
 )
 
+from test_cli import (
+    test_cli_vocabulary_commands_require_t0_command,
+)
+
 from test_governance_seats import (
     test_ward,
     test_scope,
@@ -351,6 +355,7 @@ TESTS = [
     test_tecton_destructive_transitions_require_reason,
     test_clear_safe_stop_idempotence,
     test_t0_authorization_seam,
+    test_cli_vocabulary_commands_require_t0_command,
     test_llm_availability_timeout_is_config_driven,
     test_archive_entry_returns_hub_entry,
 ]

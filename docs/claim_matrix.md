@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-06-07 17:41 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-06-08 18:00 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 111 distinct Pact sections referenced across 151 claim tags on 151 test functions.
+**Coverage:** 113 distinct Pact sections referenced across 152 claim tags on 152 test functions.
 
 ---
 
@@ -37,6 +37,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §0.3.1
 
 - `test_s5_sigil_alignment` — eight seat sigils and reverse resolution
+
+## §0.4.1
+
+- `test_cli_vocabulary_commands_require_t0_command` — CLI RUNE vocabulary mutations require explicit soft T-0 command and do not report false success on denial
 
 ## §0.5
 
@@ -173,6 +177,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_vocabulary_management` — vocabulary add/update/remove persistence
 - `test_synonym_removal` — synonym removal cleans memory and DB; no ghost
+
+## §2.6
+
+- `test_cli_vocabulary_commands_require_t0_command` — CLI RUNE vocabulary mutations require explicit soft T-0 command and do not report false success on denial
 
 ## §2.7
 

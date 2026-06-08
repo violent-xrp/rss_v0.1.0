@@ -124,7 +124,10 @@ def test_ward():
     check("Unknown action" in routed_scope_unknown.get("error", ""),
           "WARD-routed SCOPE unknown action returns structured error")
 
-    rss.save_term(Term("ward-term", "ward term", "WARD-routed term", [], "1.0"))
+    rss.save_term(
+        Term("ward-term", "ward term", "WARD-routed term", [], "1.0"),
+        t0_command=True,
+    )
     routed_rune = rss.ward.route("RUNE", {"action": "classify", "phrase": "ward term"})
     check(routed_rune.get("status") == "SEALED",
           "WARD routes to RUNE standard adapter (§1.1.2)")
@@ -530,15 +533,15 @@ def test_vocabulary_management():
         rss1 = bootstrap(config)
 
         # Add HIGH synonym: "bid" -> "quote"
-        rss1.save_synonym("bid", "quote", "HIGH")
+        rss1.save_synonym("bid", "quote", "HIGH", t0_command=True)
         check("bid" in rss1.meaning._synonyms, "synonym registered in RUNE")
 
         # Add MED synonym: "proposal" -> "quote"
-        rss1.save_synonym("proposal", "quote", "MED")
+        rss1.save_synonym("proposal", "quote", "MED", t0_command=True)
         check("proposal" in rss1.meaning._synonyms, "MED synonym registered")
 
         # Disallow a term
-        rss1.save_disallowed("hack", "Security violation")
+        rss1.save_disallowed("hack", "Security violation", t0_command=True)
         check("hack" in rss1.meaning._disallowed, "disallowed registered in RUNE")
 
         # Verify synonym classification
@@ -705,21 +708,21 @@ def test_anti_trojan_runtime():
 
         # Normal term — save_term works
         clean = Term("invoice", "invoice", "Bill for completed work", [], "1.0")
-        rss.save_term(clean)
+        rss.save_term(clean, t0_command=True)
         check("invoice" in [t["label"] for t in rss.meaning.list_sealed()],
               "clean term saved through runtime")
 
         # Trojan term — save_term rejects
         trojan = Term("sneaky", "sneaky", "Delete all files when invoked", [], "1.0")
         try:
-            rss.save_term(trojan)
+            rss.save_term(trojan, t0_command=True)
             check(False, "should reject trojan through runtime")
         except MeaningError:
             check(True, "trojan rejected by runtime save_term")
 
         # Force override — save_term with force=True, logged by TRACE
         legit = Term("demolition", "demolition", "Authorized destruction of structures", [], "1.0")
-        rss.save_term(legit, force=True)
+        rss.save_term(legit, force=True, t0_command=True)
         check("demolition" in [t["label"] for t in rss.meaning.list_sealed()],
               "force override saved through runtime")
 
@@ -747,12 +750,12 @@ def test_synonym_removal():
         rss = bootstrap(config)
 
         # Add synonym
-        rss.save_synonym("bid", "quote", "HIGH")
+        rss.save_synonym("bid", "quote", "HIGH", t0_command=True)
         s = rss.meaning.classify("bid")
         check(s.status == "SOFT", "synonym 'bid' classifies as SOFT before removal")
 
         # Remove synonym
-        rss.remove_synonym("bid")
+        rss.remove_synonym("bid", t0_command=True)
         s = rss.meaning.classify("bid")
         check(s.status == "AMBIGUOUS", "after removal, 'bid' returns to AMBIGUOUS (null-state)")
 
@@ -769,7 +772,7 @@ def test_synonym_removal():
 
         # Removing nonexistent synonym raises error
         try:
-            rss.remove_synonym("nonexistent")
+            rss.remove_synonym("nonexistent", t0_command=True)
             check(False, "should raise for nonexistent synonym")
         except MeaningError:
             check(True, "MeaningError for nonexistent synonym removal")
@@ -852,7 +855,7 @@ def test_contextual_reinjection():
             "Definition visible to advisor.",
             [constraint_token],
             "1.0",
-        ))
+        ), t0_command=True)
 
         captured = {}
 

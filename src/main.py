@@ -173,20 +173,34 @@ def show_status(rss):
             print(f"    [{t['id']}] {t['label']} — {t['definition']} (v{t['version']})")
 
 
+def _print_t0_denial(result):
+    """Print protected-mutation denials returned by runtime helpers."""
+    if isinstance(result, dict) and result.get("error") == "T0_COMMAND_REQUIRED":
+        reason = result.get("reason", "T-0 command required")
+        print(f"  Error: {result['error']} — {reason}")
+        print("  Add --t0-command to explicitly exercise the current soft T-0 gate.")
+        return True
+    return False
+
+
 def add_term(rss, args):
     """Add a sealed term from CLI.
-    Usage: python main.py add-term <label> <definition> [--force]
-    Example: python main.py add-term invoice "Bill for completed work"
+    Usage: python main.py add-term <label> <definition> [--t0-command] [--force]
+    Example: python main.py add-term invoice "Bill for completed work" --t0-command
     Use --force for definitions that legitimately contain high-risk verbs (§2.3.3).
     """
     if len(args) < 2:
-        print("  Usage: python main.py add-term <label> <definition> [--force]")
-        print('  Example: python main.py add-term invoice "Bill for completed work"')
+        print("  Usage: python main.py add-term <label> <definition> [--t0-command] [--force]")
+        print('  Example: python main.py add-term invoice "Bill for completed work" --t0-command')
         print("  Use --force for definitions with legitimate high-risk verbs (§2.3.3)")
         return
 
     force = "--force" in args
-    clean_args = [a for a in args if a != "--force"]
+    t0_command = "--t0-command" in args
+    clean_args = [a for a in args if a not in ("--force", "--t0-command")]
+    if len(clean_args) < 2:
+        print("  Usage: python main.py add-term <label> <definition> [--t0-command] [--force]")
+        return
     label = clean_args[0]
     definition = " ".join(clean_args[1:])
 
@@ -204,7 +218,9 @@ def add_term(rss, args):
         version="1.0",
     )
     try:
-        rss.save_term(term, force=force)
+        result = rss.save_term(term, force=force, t0_command=t0_command)
+        if _print_t0_denial(result):
+            return
         print(f"  Sealed term added: '{label}' — {definition}")
         if force:
             print("  NOTE: Anti-trojan scanner bypassed (T-0 force override, logged by TRACE)")
@@ -240,17 +256,22 @@ def add_entry(rss, args):
 
 def add_synonym(rss, args):
     """Add a synonym for a sealed term.
-    Usage: python main.py add-synonym <phrase> <term_label> [confidence]
+    Usage: python main.py add-synonym <phrase> <term_label> [confidence] [--t0-command]
     Confidence: HIGH (auto-resolves), MED (requires confirmation), LOW
     """
     if len(args) < 2:
-        print("  Usage: python main.py add-synonym <phrase> <term_label> [HIGH|MED|LOW]")
-        print("  Example: python main.py add-synonym bid quote HIGH")
+        print("  Usage: python main.py add-synonym <phrase> <term_label> [HIGH|MED|LOW] [--t0-command]")
+        print("  Example: python main.py add-synonym bid quote HIGH --t0-command")
         return
 
-    phrase = args[0]
-    term_label = args[1]
-    confidence = args[2].upper() if len(args) > 2 else "MED"
+    t0_command = "--t0-command" in args
+    clean_args = [a for a in args if a != "--t0-command"]
+    if len(clean_args) < 2:
+        print("  Usage: python main.py add-synonym <phrase> <term_label> [HIGH|MED|LOW] [--t0-command]")
+        return
+    phrase = clean_args[0]
+    term_label = clean_args[1]
+    confidence = clean_args[2].upper() if len(clean_args) > 2 else "MED"
 
     if confidence not in ("HIGH", "MED", "LOW"):
         print(f"  Invalid confidence: {confidence}. Use HIGH, MED, or LOW.")
@@ -265,7 +286,9 @@ def add_synonym(rss, args):
 
     term_id = match[0]["id"]
     try:
-        rss.save_synonym(phrase, term_id, confidence)
+        result = rss.save_synonym(phrase, term_id, confidence, t0_command=t0_command)
+        if _print_t0_denial(result):
+            return
         print(f"  Synonym added: '{phrase}' -> '{term_label}' ({confidence})")
     except Exception as e:
         print(f"  Error: {e}")
@@ -273,17 +296,24 @@ def add_synonym(rss, args):
 
 def remove_synonym_cmd(rss, args):
     """Remove a synonym (§2.4.4).
-    Usage: python main.py remove-synonym <phrase>
+    Usage: python main.py remove-synonym <phrase> [--t0-command]
     Returns phrase to null-state (AMBIGUOUS). No ghost mappings.
     """
     if len(args) < 1:
-        print("  Usage: python main.py remove-synonym <phrase>")
-        print("  Example: python main.py remove-synonym bid")
+        print("  Usage: python main.py remove-synonym <phrase> [--t0-command]")
+        print("  Example: python main.py remove-synonym bid --t0-command")
         return
 
-    phrase = args[0]
+    t0_command = "--t0-command" in args
+    clean_args = [a for a in args if a != "--t0-command"]
+    if not clean_args:
+        print("  Usage: python main.py remove-synonym <phrase> [--t0-command]")
+        return
+    phrase = clean_args[0]
     try:
-        rss.remove_synonym(phrase)
+        result = rss.remove_synonym(phrase, t0_command=t0_command)
+        if _print_t0_denial(result):
+            return
         print(f"  Synonym removed: '{phrase}' (returned to null-state)")
     except Exception as e:
         print(f"  Error: {e}")
@@ -291,17 +321,24 @@ def remove_synonym_cmd(rss, args):
 
 def disallow_term(rss, args):
     """Mark a term as explicitly disallowed.
-    Usage: python main.py disallow <phrase> <reason>
+    Usage: python main.py disallow <phrase> <reason> [--t0-command]
     """
     if len(args) < 2:
-        print("  Usage: python main.py disallow <phrase> <reason>")
-        print('  Example: python main.py disallow hack "Security violation"')
+        print("  Usage: python main.py disallow <phrase> <reason> [--t0-command]")
+        print('  Example: python main.py disallow hack "Security violation" --t0-command')
         return
 
-    phrase = args[0]
-    reason = " ".join(args[1:])
+    t0_command = "--t0-command" in args
+    clean_args = [a for a in args if a != "--t0-command"]
+    if len(clean_args) < 2:
+        print("  Usage: python main.py disallow <phrase> <reason> [--t0-command]")
+        return
+    phrase = clean_args[0]
+    reason = " ".join(clean_args[1:])
 
-    rss.save_disallowed(phrase, reason)
+    result = rss.save_disallowed(phrase, reason, t0_command=t0_command)
+    if _print_t0_denial(result):
+        return
     print(f"  Disallowed: '{phrase}' — {reason}")
 
 

@@ -191,7 +191,7 @@ def test_persistence_roundtrip():
 
         # Add a custom term via save_term (writes to RUNE + SQLite)
         custom = Term("invoice", "invoice", "Bill for completed work", ["EOR"], "1.0")
-        rss1.save_term(custom)
+        rss1.save_term(custom, t0_command=True)
 
         # Add hub entry via save_hub_entry (writes to hubs + SQLite)
         rss1.save_hub_entry("WORK", "Test project data for round-trip")
@@ -334,9 +334,9 @@ def test_s0_8_4_governed_state_bootstrap_roundtrip():
             ["review"],
             "1.0",
         )
-        rss1.save_term(term)
-        rss1.save_synonym("review bundle", "TERM-S084", "HIGH")
-        rss1.save_disallowed("forbidden packet", "test disallow survives restart")
+        rss1.save_term(term, t0_command=True)
+        rss1.save_synonym("review bundle", "TERM-S084", "HIGH", t0_command=True)
+        rss1.save_disallowed("forbidden packet", "test disallow survives restart", t0_command=True)
 
         hub_entry = rss1.save_hub_entry("WORK", "S084 global hub payload")
         redline_entry = rss1.save_hub_entry("PERSONAL", "S084 private payload", redline=True)

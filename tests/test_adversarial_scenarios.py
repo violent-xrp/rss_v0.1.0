@@ -480,7 +480,7 @@ def test_domain_pack_equivalence():
         for domain, terms in packs.items():
             # Seal the terms
             for t in terms:
-                rss.save_term(t)
+                rss.save_term(t, t0_command=True)
 
             # Classification works
             for t in terms:

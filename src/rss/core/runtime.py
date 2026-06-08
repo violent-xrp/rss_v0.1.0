@@ -771,9 +771,25 @@ class Runtime:
 
         return restored
 
-    def save_term(self, term: Term, force: bool = False):
+    def _require_t0(self, action: str, context: dict) -> Optional[dict]:
+        """Require the current soft T-0 command for protected runtime mutations."""
+        t0 = authorize_t0(action, context)
+        if t0.allowed:
+            return None
+        return {
+            "error": "T0_COMMAND_REQUIRED",
+            "reason": f"Only T-0 may perform {action}",
+        }
+
+    def save_term(self, term: Term, force: bool = False, t0_command: bool = False):
         """Save a term to both RUNE and persistence.
         If force=True, bypasses anti-trojan scanner (§2.3.3). Logged by TRACE."""
+        denied = self._require_t0(
+            "rune_save_term",
+            {"t0_command": t0_command, "term_id": term.id, "force": force},
+        )
+        if denied:
+            return denied
         self.meaning.create_term(term, force=force)
         self.persistence.save_sealed_term(term)
         if force:
@@ -782,20 +798,45 @@ class Runtime:
         else:
             self._log("TERM_CREATED", term.id, f"Sealed term: {term.label}")
 
-    def save_synonym(self, phrase: str, term_id: str, confidence: str):
+    def save_synonym(self, phrase: str, term_id: str, confidence: str,
+                     t0_command: bool = False):
         """Add synonym to RUNE and persist."""
+        denied = self._require_t0(
+            "rune_save_synonym",
+            {
+                "t0_command": t0_command,
+                "phrase": phrase,
+                "term_id": term_id,
+                "confidence": confidence,
+            },
+        )
+        if denied:
+            return denied
         self.meaning.add_synonym(phrase, term_id, confidence)
         self.persistence.save_synonym(phrase, term_id, confidence)
         self._log("SYNONYM_ADDED", term_id, f"Synonym: {phrase} -> {term_id} ({confidence})")
 
-    def save_disallowed(self, phrase: str, reason: str):
+    def save_disallowed(self, phrase: str, reason: str,
+                        t0_command: bool = False):
         """Mark term as disallowed in RUNE and persist."""
+        denied = self._require_t0(
+            "rune_save_disallowed",
+            {"t0_command": t0_command, "phrase": phrase},
+        )
+        if denied:
+            return denied
         self.meaning.disallow(phrase, reason)
         self.persistence.save_disallowed(phrase, reason)
         self._log("TERM_DISALLOWED", phrase, f"Disallowed: {phrase} — {reason}")
 
-    def remove_synonym(self, phrase: str):
+    def remove_synonym(self, phrase: str, t0_command: bool = False):
         """Remove synonym from RUNE and persistence (§2.4.4). Returns to null-state."""
+        denied = self._require_t0(
+            "rune_remove_synonym",
+            {"t0_command": t0_command, "phrase": phrase},
+        )
+        if denied:
+            return denied
         self.meaning.remove_synonym(phrase)
         self.persistence.delete_synonym(phrase)
         self._log("SYNONYM_REMOVED", phrase, f"Synonym removed: {phrase} (returned to null-state)")
