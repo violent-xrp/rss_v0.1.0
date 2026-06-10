@@ -45,6 +45,7 @@ CURRENT_DOCS = [
     "THREAT_MODEL.md",
     "CONTRIBUTING.md",
     "docs/TESTING.md",
+    "docs/AI_GOVERNANCE_PROJECT_BRIEF.md",
     "docs/index.html",
     "docs/roadmap/ACCEPTANCE_HISTORY.md",
     "docs/roadmap/COVERAGE_TRACKER.md",
@@ -325,6 +326,14 @@ def rewrite_common(text: str, baseline: Baseline) -> str:
             ),
             out,
         )
+        out = re.sub(
+            r"\b\d+ mapped proof claims across \d+ Pact sections\b",
+            (
+                f"{baseline.claim_tags} mapped proof claims across "
+                f"{baseline.claim_sections} Pact sections"
+            ),
+            out,
+        )
 
     if baseline.coverage_text:
         out = re.sub(
@@ -343,6 +352,12 @@ def rewrite_common(text: str, baseline: Baseline) -> str:
         )
         out = re.sub(
             r"^(- \*\*)\d{1,3}(?:\.\d+)?%( statement coverage\*\*)",
+            rf"\g<1>{baseline.coverage_text}\2",
+            out,
+            flags=re.MULTILINE,
+        )
+        out = re.sub(
+            r"^(- )\d{1,3}(?:\.\d+)?%( statement coverage)$",
             rf"\g<1>{baseline.coverage_text}\2",
             out,
             flags=re.MULTILINE,

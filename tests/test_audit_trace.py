@@ -1243,6 +1243,45 @@ def test_a1_historical_trace_chain_loaded_on_restart():
                 os.unlink(p)
 
 
+def test_a1_restore_false_boot_continues_persisted_trace_chain():
+    """A1-1b: restore=False boots must still preserve TRACE chain continuity."""
+    # CLAIM: §6.3.5, §6.11.4 — boot audit events continue the persisted TRACE chain even without state restore
+    section("Phase A.1: restore=False TRACE Chain Continuity")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        cfg = RSSConfig(db_path=path)
+
+        rss1 = bootstrap(cfg, restore=False)
+        rss1.process_request("quote", use_llm=False)
+        from rss.audit.verify import verify_trace_file
+        first = verify_trace_file(path)
+        check(first["verified"] is True,
+              "session 1 cold verifier reports intact chain")
+        first_count = first["event_count"]
+        rss1.persistence.close()
+
+        rss2 = bootstrap(cfg, restore=False)
+        second = verify_trace_file(path)
+        check(second["verified"] is True,
+              "restore=False second boot keeps persisted TRACE chain intact")
+        check(second["event_count"] > first_count,
+              "second boot appends audit events to existing chain")
+        check(rss2.is_safe_stopped()["active"] is False,
+              "restore=False chain continuity avoids false Safe-Stop")
+        rss2.persistence.close()
+
+        rss3 = bootstrap(cfg, restore=True)
+        check(rss3.is_safe_stopped()["active"] is False,
+              "later restore=True boot does not Safe-Stop on prior restore=False session")
+        rss3.persistence.close()
+    finally:
+        for p in [path, path + "-wal", path + "-shm"]:
+            if os.path.exists(p):
+                os.unlink(p)
+
+
 def test_a1_boot_verification_catches_persisted_tamper():
     """A1-2: Boot-time verification now detects tampering in the persisted chain.
 

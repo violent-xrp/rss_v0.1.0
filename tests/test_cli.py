@@ -45,6 +45,26 @@ def _capture_cli(fn, rss, args):
     return stream.getvalue()
 
 
+def test_cli_smoke_tests_treat_ambiguous_as_expected_classification():
+    # CLAIM: §3.8 — CLI smoke proof checks expected classifications instead of treating AMBIGUOUS as an error
+    """Default CLI smoke tests should pass with SEALED and AMBIGUOUS expectations."""
+    section("CLI Smoke Test Classification Expectations")
+
+    main_module = _load_main_module()
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+        output = _capture_cli(lambda runtime, _args: main_module.run_tests(runtime), rss, [])
+        check("[FAIL]" not in output, "CLI smoke test reports no failures")
+        check("Results: 10 passed, 0 failed" in output,
+              "CLI smoke test passes all default cases")
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
 def test_cli_vocabulary_commands_require_t0_command():
     # CLAIM: §2.6, §0.4.1 — CLI RUNE vocabulary mutations require explicit soft T-0 command and do not report false success on denial
     """Vocabulary mutation CLI commands respect the runtime T-0 seam."""

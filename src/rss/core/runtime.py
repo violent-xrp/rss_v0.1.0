@@ -46,6 +46,7 @@ from rss.governance.seats.cycle import Cycle
 from rss.governance.seats.scribe import Scribe
 from rss.governance.seats.seal import Seal
 from rss.governance.t0 import authorize_t0
+from rss.audit.export import REDLINE_REDACTED
 from rss.persistence.sqlite import Persistence, CURRENT_SCHEMA_VERSION
 from rss.llm.adapter import LLMAdapter
 
@@ -552,6 +553,25 @@ class Runtime:
             file=_sys.stderr,
         )
 
+    def restore_trace_chain_for_boot(self, *, force: bool = False) -> int:
+        """Load persisted TRACE history needed for boot-chain continuity.
+
+        This is intentionally narrower than restore_from_db(): even callers
+        that boot with restore=False must keep the audit chain continuous before
+        they emit new boot/session events. Other governed state categories
+        remain controlled by the explicit restore=True path.
+        """
+        if self.trace.all_events() and not force:
+            return len(self.trace.all_events())
+        try:
+            saved_events = self.persistence.load_all_trace()
+        except Exception as e:
+            self._handle_restore_failure("trace_events", e)
+            return 0
+        if saved_events:
+            self.trace._events = list(saved_events)
+        return len(saved_events)
+
     def restore_from_db(self):
         """
         Load saved state from SQLite on bootstrap.
@@ -577,17 +597,7 @@ class Runtime:
         # in bootstrap() runs after restore_from_db() and must walk the full
         # persisted chain, not just events emitted in the current session.
         # §6.9.7 G-6: trace_events is CRITICAL — exception here enters Safe-Stop.
-        try:
-            saved_events = self.persistence.load_all_trace()
-        except Exception as e:
-            self._handle_restore_failure("trace_events", e)
-            saved_events = []
-        if saved_events:
-            # Direct assignment bypasses append()'s validation — these events
-            # were already validated when they were originally written and we
-            # must preserve their exact sequence, including parent_hash links.
-            self.trace._events = list(saved_events)
-            restored["trace_events"] = len(saved_events)
+        restored["trace_events"] = self.restore_trace_chain_for_boot(force=True)
 
         # Restore sealed terms — CRITICAL
         try:
@@ -921,6 +931,19 @@ class Runtime:
                         fingerprint = entry.content[:40].lower()
                         if fingerprint in response.lower():
                             violations.append(f"REDLINE_LEAK:{entry.id}")
+                            response, replacements = _re.subn(
+                                _re.escape(entry.content),
+                                REDLINE_REDACTED,
+                                response,
+                                flags=_re.IGNORECASE,
+                            )
+                            if replacements == 0:
+                                response = _re.sub(
+                                    _re.escape(entry.content[:40]),
+                                    REDLINE_REDACTED,
+                                    response,
+                                    flags=_re.IGNORECASE,
+                                )
         except Exception:
             pass  # Hub access failure shouldn't block response delivery
 
@@ -1216,6 +1239,11 @@ def bootstrap(config=None, restore: bool = False) -> Runtime:
             # Defensive duplicate tolerance: bootstrap should remain stable even
             # if a caller passes overlapping defaults.
             pass
+
+    # §6.3.5 / §6.11.3 — Load persisted TRACE history before this boot emits
+    # any new TRACE event. This preserves parent_hash continuity even when the
+    # caller intentionally leaves non-audit state unrestored with restore=False.
+    runtime.restore_trace_chain_for_boot()
 
     # §6.8.3 — If Persistence applied migrations during construction, emit the
     # SCHEMA_MIGRATED event now that TRACE is wired up.

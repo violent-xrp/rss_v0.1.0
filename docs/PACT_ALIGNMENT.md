@@ -40,6 +40,7 @@ Section 0 integrity and Safe-Stop:
 - The default runtime config binds Genesis to `pact/pact_section0_root_physics.md` and the current Section 0 hash; acceptance proof now covers live default-path verification, tamper-triggered Safe-Stop, and T-0 recovery after restoring the Section 0 artifact.
 - Safe-Stop is persistent across restart in the current single-process SQLite-backed runtime.
 - Safe-Stop clearing requires explicit `t0_command=True` today and now routes through the shared `authorize_t0(action, context)` seam. This is still a soft sovereign-command gate, not cryptographic/mechanical identity; the mechanical identity gate remains future hardening.
+- Runtime boot now loads persisted TRACE history before emitting boot events even when `restore=False`, so session-boundary audit events continue the persisted chain instead of starting a mid-table root.
 - Section 0 §0.8.4 bootstrap round-trip is code-proven for the current SQLite reference path: terms, synonyms, disallowed terms, global hub entries, consent records, TRACE events, TECTON container state, container hub entries, Safe-Stop/system state, and schema version restore through fresh bootstrap. Container persistence currently uses TECTON's explicit `save_to(...)` path before automatic restore; auto-save-on-mutation remains a future product/hardening decision, not part of the current claim.
 
 Typed authority and directionality:
@@ -95,7 +96,7 @@ Section 3 / execution law:
 - Section 3 now fences `UNAUTHORIZED_INGRESS` as a pre-pipeline architectural rejection for non-GLOBAL container spoofing without the TECTON sentinel. It is tested, TRACE-recorded, and intentionally described below the stage table rather than as a numbered pipeline stage.
 - Section 3 now names sustained audit-write failure as Constitutional Drift / persistent Safe-Stop behavior once consecutive failures cross `audit_failure_threshold`; a single write-ahead failure still aborts only the operation that triggered it.
 - LLM fallback wording now matches the adapter: the deterministic offline fallback summarizes only governed PAV data, reports fallback state, refuses privacy-marked or unsupported queries, and does not echo raw user input.
-- LLM response validation implements external-name replacement, REDLINE leak flagging, and governance artifact suppression. The code now states this is downstream sanitation; upstream SCOPE/PAV/OATH boundaries remain the real enforcement surface.
+- LLM response validation implements external-name replacement, REDLINE leak redaction plus TRACE flagging, and governance artifact suppression. The code now states this is downstream sanitation; upstream SCOPE/PAV/OATH boundaries remain the real enforcement surface.
 
 Section 4 / hub topology and data governance:
 - Hubs are represented as typed governance locations, not ordinary folders: `HubEntry` carries hub, original hub, REDLINE state, purge state, timestamp, version, and provenance.
@@ -112,7 +113,7 @@ Section 5 / tenant containers:
 - Tenant data isolation is object-level, not tag-level: each `TenantContainer` owns a distinct `HubTopology` instance, while the shared runtime law remains global.
 - Execution isolation uses `ACTIVE_HUBS: ContextVar` and token-based reset. `Runtime.hubs` is getter-only, so the old `runtime.hubs = c.hubs` global-mutation hazard is no longer the governing path.
 - The current proof is honestly bounded: thread-level isolation, exception-safe restore, and main-thread fallback are tested. Section 5 now explicitly names the child-thread `ACTIVE_HUBS` context-inheritance edge and `contextvars.copy_context()` / worker re-binding mitigation; the code-level fix remains Phase F/H deployment work.
-- ACTIVE profile immutability is mechanically enforced. `ContainerProfile` and nested `ContainerPermissions` lock on activation, `scope_policy` is wrapped in `MappingProxyType`, and sanctioned mutations go through `mutate_active_profile()` with a mandatory reason and `PROFILE_MUTATED` event.
+- ACTIVE profile immutability is mechanically enforced. `ContainerProfile` and nested `ContainerPermissions` lock on activation, `scope_policy` is wrapped in `MappingProxyType`, restored ACTIVE profiles are re-locked after SQLite round-trip, and sanctioned mutations go through `mutate_active_profile()` with a mandatory reason and `PROFILE_MUTATED` event.
 - Container request lifecycle checks run before seat routing. SUSPENDED, ARCHIVED, DESTROYED, and other non-ACTIVE states return `CONTAINER_NOT_ACTIVE` before OATH or downstream seat logic.
 - The sigil registry contains the eight canonical seat sigils and supports reverse resolution from sigil to seat name. Invalid sigils are rejected before delegation.
 - Current permission enforcement is explicit by field: `can_draft` gates SCRIBE, `can_request_seal` gates SEAL, `can_call_advisors` gates LLM/advisor invocation, `can_access_system_hub` composes with SCOPE allowed sources, and positive `max_requests_per_minute` values feed CYCLE.

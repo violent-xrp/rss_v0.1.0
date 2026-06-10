@@ -503,6 +503,58 @@ def test_s5_container_persistence():
                 os.unlink(path + suffix)
 
 
+def test_s5_restored_active_profile_remains_immutable():
+    """§5.3.3 — ACTIVE profile immutability survives persistence restore."""
+    # CLAIM: §5.3.3, §5.2.1 — restored ACTIVE profiles remain locked after SQLite round-trip
+    section("S5: Restored ACTIVE Profile Immutability")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+        tecton = Tecton()
+
+        c = tecton.create_container("RestoreLock", "T-0")
+        tecton.activate_container(c.container_id)
+        tecton.save_to(rss.persistence)
+
+        tecton2 = Tecton()
+        restored_count = tecton2.restore_from(rss.persistence)
+        check(restored_count == 1, "restored ACTIVE container from SQLite")
+
+        restored = tecton2.get_container(c.container_id)
+        check(restored.state == "ACTIVE", "restored container remains ACTIVE")
+        check(getattr(restored.profile, "_locked", False) is True,
+              "restored ACTIVE profile is locked")
+
+        try:
+            restored.profile.label = "Bypass"
+            check(False, "restored ACTIVE profile direct assignment should be blocked")
+        except TectonError:
+            check(True, "restored ACTIVE profile blocks direct assignment")
+
+        try:
+            restored.profile.scope_policy["allowed_sources"] = ("PERSONAL",)
+            check(False, "restored ACTIVE scope_policy mutation should be blocked")
+        except TypeError:
+            check(True, "restored ACTIVE scope_policy is immutable")
+
+        try:
+            restored.profile.permissions.max_requests_per_minute = 99
+            check(False, "restored ACTIVE permissions mutation should be blocked")
+        except TectonError:
+            check(True, "restored ACTIVE nested permissions are locked")
+
+        rss.persistence.close()
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+        for suffix in ["-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+
 def test_s5_container_isolation():
     """§5.1.1 — Absolute data isolation between containers"""
     # CLAIM: §5.1.1 — Morrison and Johnson containers cannot see each other's data

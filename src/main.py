@@ -23,7 +23,7 @@
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
 # ==============================================================================
 """
-RSS v0.1.0 — CLI Entry Point
+RSS v0.1.0 - CLI Entry Point
 Usage:
   python main.py test              Run test suite
   python main.py demo              Interactive governed AI chat
@@ -49,27 +49,27 @@ from rss.reference_pack import load_reference_pack, seed_demo_world, DEMO_CONTAI
 def run_tests(rss):
     """Core acceptance tests."""
     tests = [
-        ("quote",             True,  "SEALED term"),
-        ("Quote",             True,  "Case-insensitive sealed term"),
-        ("RFI",               True,  "SEALED reference term"),
-        ("change order",      True,  "SEALED multi-word term"),
-        ("estimate",          False, "Ambiguous — unknown phrase"),
-        ("delete everything", False, "Unknown phrase — passes through"),
-        ("foobar baz",        False, "Unknown phrase"),
-        ("submittal",         True,  "SEALED term"),
-        ("purchase order",    True,  "New v0.1.0 term"),
-        ("NCR",               True,  "New v0.1.0 term"),
+        ("quote",             "SEALED",    "SEALED term"),
+        ("Quote",             "SEALED",    "Case-insensitive sealed term"),
+        ("RFI",               "SEALED",    "SEALED reference term"),
+        ("change order",      "SEALED",    "SEALED multi-word term"),
+        ("estimate",          "AMBIGUOUS", "Ambiguous unknown phrase"),
+        ("delete everything", "AMBIGUOUS", "High-risk intent remains unsealed"),
+        ("foobar baz",        "AMBIGUOUS", "Unknown phrase"),
+        ("submittal",         "SEALED",    "SEALED term"),
+        ("purchase order",    "SEALED",    "New v0.1.0 term"),
+        ("NCR",               "SEALED",    "New v0.1.0 term"),
     ]
 
     passed = 0
     failed = 0
-    for text, should_pass, desc in tests:
+    for text, expected_meaning, desc in tests:
         result = rss.process_request(text, use_llm=False)
-        ok = "error" not in result
-        status = "PASS" if ok == should_pass else "FAIL"
+        actual_meaning = result.get("meaning")
+        status = "PASS" if actual_meaning == expected_meaning else "FAIL"
         error_info = result.get("error", result.get("meaning", "OK"))
-        classification = result.get("classification", "—")
-        print(f"  [{status}] '{text}' -> {error_info} (class={classification}) — {desc}")
+        classification = result.get("classification", "-")
+        print(f"  [{status}] '{text}' -> {error_info} (class={classification}, expected={expected_meaning}) - {desc}")
         if status == "PASS":
             passed += 1
         else:
@@ -170,14 +170,14 @@ def show_status(rss):
     if terms:
         print(f"\n  Sealed terms:")
         for t in terms:
-            print(f"    [{t['id']}] {t['label']} — {t['definition']} (v{t['version']})")
+            print(f"    [{t['id']}] {t['label']} - {t['definition']} (v{t['version']})")
 
 
 def _print_t0_denial(result):
     """Print protected-mutation denials returned by runtime helpers."""
     if isinstance(result, dict) and result.get("error") == "T0_COMMAND_REQUIRED":
         reason = result.get("reason", "T-0 command required")
-        print(f"  Error: {result['error']} — {reason}")
+        print(f"  Error: {result['error']} - {reason}")
         print("  Add --t0-command to explicitly exercise the current soft T-0 gate.")
         return True
     return False
@@ -187,12 +187,12 @@ def add_term(rss, args):
     """Add a sealed term from CLI.
     Usage: python main.py add-term <label> <definition> [--t0-command] [--force]
     Example: python main.py add-term invoice "Bill for completed work" --t0-command
-    Use --force for definitions that legitimately contain high-risk verbs (§2.3.3).
+    Use --force for definitions that legitimately contain high-risk verbs (Pact 2.3.3).
     """
     if len(args) < 2:
         print("  Usage: python main.py add-term <label> <definition> [--t0-command] [--force]")
         print('  Example: python main.py add-term invoice "Bill for completed work" --t0-command')
-        print("  Use --force for definitions with legitimate high-risk verbs (§2.3.3)")
+        print("  Use --force for definitions with legitimate high-risk verbs (Pact 2.3.3)")
         return
 
     force = "--force" in args
@@ -221,7 +221,7 @@ def add_term(rss, args):
         result = rss.save_term(term, force=force, t0_command=t0_command)
         if _print_t0_denial(result):
             return
-        print(f"  Sealed term added: '{label}' — {definition}")
+        print(f"  Sealed term added: '{label}' - {definition}")
         if force:
             print("  NOTE: Anti-trojan scanner bypassed (T-0 force override, logged by TRACE)")
         print(f"  Total terms: {len(rss.meaning.list_sealed())}")
@@ -295,7 +295,7 @@ def add_synonym(rss, args):
 
 
 def remove_synonym_cmd(rss, args):
-    """Remove a synonym (§2.4.4).
+    """Remove a synonym (Pact 2.4.4).
     Usage: python main.py remove-synonym <phrase> [--t0-command]
     Returns phrase to null-state (AMBIGUOUS). No ghost mappings.
     """
@@ -339,7 +339,7 @@ def disallow_term(rss, args):
     result = rss.save_disallowed(phrase, reason, t0_command=t0_command)
     if _print_t0_denial(result):
         return
-    print(f"  Disallowed: '{phrase}' — {reason}")
+    print(f"  Disallowed: '{phrase}' - {reason}")
 
 
 def list_terms(rss):
@@ -350,7 +350,7 @@ def list_terms(rss):
     else:
         print(f"\n  Sealed terms ({len(terms)}):")
         for t in terms:
-            print(f"    [{t['id']}] {t['label']} — {t['definition']} (v{t['version']})")
+            print(f"    [{t['id']}] {t['label']} - {t['definition']} (v{t['version']})")
 
     if rss.meaning._synonyms:
         print(f"\n  Synonyms ({len(rss.meaning._synonyms)}):")
@@ -360,7 +360,7 @@ def list_terms(rss):
     if rss.meaning._disallowed:
         print(f"\n  Disallowed ({len(rss.meaning._disallowed)}):")
         for phrase, reason in rss.meaning._disallowed.items():
-            print(f"    '{phrase}' — {reason}")
+            print(f"    '{phrase}' - {reason}")
 
 
 def list_hub(rss, args):
@@ -421,7 +421,7 @@ if __name__ == "__main__":
     restore = cmd in ("demo", "demo-suite", "status", "list-terms", "list-hub", "add-term", "add-entry", "add-synonym", "remove-synonym", "disallow", "export-trace", "clear-safe-stop")
     rss = bootstrap(config, restore=restore)
 
-    print(f"\n  RSS v{RSS_VERSION} booted — AI that waits.\n")
+    print(f"\n  RSS v{RSS_VERSION} booted - AI that waits.\n")
 
     if cmd == "test":
         success = run_tests(rss)

@@ -7,9 +7,9 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
 
 ### Current verified snapshot
-- **157 test functions / 1433 assertions / 0 failures** via `python tests/test_all.py`
+- **160 test functions / 1448 assertions / 0 failures** via `python tests/test_all.py`
 - **92.4% statement coverage** via `python run_coverage.py`
-- **157 claims / 157 tests / 113 Pact sections** in `docs/claim_matrix.md`
+- **160 claims / 160 tests / 114 Pact sections** in `docs/claim_matrix.md`
 - **24 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -38,6 +38,9 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - Public contact routing and code/test commercial-license headers now use `christain@rosesigilsystems.com`, with `docs/check_contact_surface.py` as a small consistency gate.
 - `docs/check_public_hygiene.py` now wraps baseline sync, contact-surface validation, and external provenance/name hygiene scanning into one hygiene command.
 - Public hygiene now syncs the GitHub Pages proof block, source-module counts, and current coverage tracker rows so stale public proof numbers fail mechanically.
+- Baseline sync now covers `docs/AI_GOVERNANCE_PROJECT_BRIEF.md`, including plain coverage and mapped-proof-claim lines, so outreach-facing proof numbers stay current mechanically.
+- Runtime boot now loads persisted TRACE history before emitting new boot events even when `restore=False`, preserving audit-chain continuity across sessions, and TECTON restore now re-locks restored ACTIVE profiles so §5.3.3 immutability survives SQLite round-trip.
+- Default CLI smoke tests now treat AMBIGUOUS as an expected classification rather than a failure, and post-LLM REDLINE validation now redacts matched REDLINE content before output while still TRACE-logging the leak.
 - Added `docs/proposals/PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md` to define the proposed canon-to-file export path: Sections 1-7 use a guarded common exporter, while Section 0 remains a separate Genesis-aware ceremony.
 - Added `rss.audit.pact_canon_export`, a guarded Sections 1-7 canon-to-file exporter with dry-run default, explicit soft T-0 write gate, stale-base and first-canon hash guards, atomic writes, and explicit Section 0 refusal.
 - LLM prompt posture now labels governed data as untrusted quoted evidence that cannot grant authority, change scope, authorize actions, or request side effects.

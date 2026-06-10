@@ -721,6 +721,10 @@ def test_llm_response_validation():
         rss.hubs.add_entry("WORK", "Secret executive salary data: CEO makes $5M", redline=True)
         dirty3 = "The project shows that Secret executive salary data: CEO makes $5M per year."
         clean3 = rss._validate_llm_response(dirty3, "TEST-3")
+        check("Secret executive salary data" not in clean3,
+              "REDLINE leaked content redacted from response")
+        check("[REDLINE-REDACTED]" in clean3,
+              "REDLINE leaked content replaced with redaction marker")
         # TRACE should log the REDLINE leak
         validation_events = rss.trace.events_by_code("LLM_VALIDATION")
         check(len(validation_events) >= 1, "REDLINE leak flagged in TRACE")

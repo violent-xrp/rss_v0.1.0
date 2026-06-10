@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-06-08 19:33 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-06-10 23:29 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 113 distinct Pact sections referenced across 157 claim tags on 157 test functions.
+**Coverage:** 114 distinct Pact sections referenced across 160 claim tags on 160 test functions.
 
 ---
 
@@ -256,6 +256,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_a1_post_llm_scan_covers_archive_and_ledger` — post-LLM REDLINE scan covers ARCHIVE and LEDGER hubs
 - `test_llm_response_validation` — post-LLM scan strips external names and governance artifacts
 
+## §3.8
+
+- `test_cli_smoke_tests_treat_ambiguous_as_expected_classification` — CLI smoke proof checks expected classifications instead of treating AMBIGUOUS as an error
+
 ## §4.1
 
 - `test_demo_world_seed_and_container_isolation` — demo world seed is idempotent; container data is isolated across tenants; governed offline fallback answers from seeded global data
@@ -376,6 +380,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_f2_container_entry_id_stability` — container entry IDs stable across restart
 - `test_s5_container_persistence` — containers persist and restore from SQLite
+- `test_s5_restored_active_profile_remains_immutable` — restored ACTIVE profiles remain locked after SQLite round-trip
 
 ## §5.2.2
 
@@ -405,6 +410,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_adversarial_scope_escalation` — scope mutation blocked at multiple layers
 - `test_c_phase_regression_battery` — canonical JSON, profile freezing, strict mode, threshold Safe-Stop, REDLINE sanitization
 - `test_s5_profile_immutability` — ACTIVE profile frozen; mutate_active_profile requires reason
+- `test_s5_restored_active_profile_remains_immutable` — restored ACTIVE profiles remain locked after SQLite round-trip
 
 ## §5.4.1
 
@@ -461,6 +467,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_s6_boot_chain_verification` — BOOT_CHAIN_VERIFIED emitted on clean boot
 - `test_s6_bootstrap_event_sequence` — bootstrap event ordering: SCHEMA_VERSION_SET then BOOT_CHAIN_VERIFIED
+- `test_a1_restore_false_boot_continues_persisted_trace_chain` — boot audit events continue the persisted TRACE chain even without state restore
 - `test_a1_boot_verification_catches_persisted_tamper` — persisted-chain tamper caught at boot
 
 ## §6.3.6
@@ -545,6 +552,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_idempotence_replay` — Safe-Stop/schema/declassify/revocation/verification are idempotent
 - `test_s6_cold_verifier` — cold trace verifier: clean, tampered, missing, empty cases + Safe-Stop + filter
+- `test_a1_restore_false_boot_continues_persisted_trace_chain` — boot audit events continue the persisted TRACE chain even without state restore
 - `test_trace_verify_cli_error_classification` — cold verifier CLI exit codes: file-not-found returns EXIT_FILE_ERROR; schema-invalid returns EXIT_SCHEMA_INVALID
 - `test_trace_verify_registry_load_failure_is_nonfatal` — cold verifier --use-registry load failure degrades to a warning; EXIT_OK still returned
 - `test_trace_verify_additional_proof` — cold verifier: corrupted schema version degrades gracefully; mixed known/unknown codes reported; safe-stop state readable cold

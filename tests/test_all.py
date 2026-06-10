@@ -52,6 +52,7 @@ from test_core_runtime import (
 )
 
 from test_cli import (
+    test_cli_smoke_tests_treat_ambiguous_as_expected_classification,
     test_cli_vocabulary_commands_require_t0_command,
 )
 
@@ -130,6 +131,7 @@ from test_tenant_containers import (
     test_s5_scope_policy_tuples,
     test_s5_can_call_advisors,
     test_s5_container_persistence,
+    test_s5_restored_active_profile_remains_immutable,
     test_s5_container_isolation,
     test_s5_s4_rules_in_containers,
     test_s5_valid_transitions_table,
@@ -161,6 +163,7 @@ from test_audit_trace import (
     test_s6_bootstrap_event_sequence,
     test_s6_cold_verifier,
     test_a1_historical_trace_chain_loaded_on_restart,
+    test_a1_restore_false_boot_continues_persisted_trace_chain,
     test_a1_boot_verification_catches_persisted_tamper,
     test_a1_unified_container_filter,
     test_a1_export_from_db_emits_chain_valid,
@@ -294,6 +297,7 @@ TESTS = [
     test_s5_scope_policy_tuples,
     test_s5_can_call_advisors,
     test_s5_container_persistence,
+    test_s5_restored_active_profile_remains_immutable,
     test_s5_container_isolation,
     test_s5_s4_rules_in_containers,
     test_s5_valid_transitions_table,
@@ -312,6 +316,7 @@ TESTS = [
     test_s6_bootstrap_event_sequence,
     test_s6_cold_verifier,
     test_a1_historical_trace_chain_loaded_on_restart,
+    test_a1_restore_false_boot_continues_persisted_trace_chain,
     test_a1_boot_verification_catches_persisted_tamper,
     test_a1_unified_container_filter,
     test_a1_export_from_db_emits_chain_valid,
@@ -370,6 +375,7 @@ TESTS = [
     test_tecton_destructive_transitions_require_reason,
     test_clear_safe_stop_idempotence,
     test_t0_authorization_seam,
+    test_cli_smoke_tests_treat_ambiguous_as_expected_classification,
     test_cli_vocabulary_commands_require_t0_command,
     test_reverse_pact_code_map_generator_parses_pact_heading_variants,
     test_llm_availability_timeout_is_config_driven,

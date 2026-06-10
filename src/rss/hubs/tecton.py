@@ -704,6 +704,8 @@ class Tecton:
                 created_at=datetime.fromisoformat(row["created_at"]),
                 lifecycle_log=row.get("lifecycle_log", []),
             )
+            if container.state not in {"CREATED", "CONFIGURED"}:
+                container.profile._lock()
             self._containers[cid] = container
             restored += 1
         return restored
