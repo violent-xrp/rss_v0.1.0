@@ -66,6 +66,8 @@ RSS translates those concerns into working mechanics: scoped context, consent ch
 
 RSS is a test-backed prototype that explores how scoped context, consent checks, audit traces, and human recovery paths make AI workflows more inspectable in consequential settings.
 
+For a framework-oriented view, see `NIST_AI_RMF_MAPPING.md`. It maps RSS mechanisms to NIST AI RMF functions as a reviewer aid; it is not a certification or compliance claim.
+
 ## What this does not claim
 
 RSS v0.1.0 should not be described as:

@@ -27,6 +27,8 @@ Historical receipts live in supporting docs:
 - versioning model: `docs/VERSIONING.md`
 - demo handoff and artifact usage: `docs/demo/DEMO_HANDOFF.md`
 - external vocabulary / reviewer map: `docs/EXTERNAL_MAP.md`
+- documentation map: `docs/README.md`
+- NIST AI RMF reviewer map: `docs/NIST_AI_RMF_MAPPING.md`
 - future action-plane design boundary: `docs/ACTION_PLANE.md`
 - active design proposals: `docs/proposals/`
 - Pact-to-kernel alignment map: `docs/PACT_ALIGNMENT.md`
@@ -71,6 +73,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 ### Now
 - **Release-boundary polish:** keep the v0.1.0 claim surface aligned with the closed Phase G coverage floor and remaining known limits.
 - **Connector-proof planning:** keep future browser/email/document/RAG/tool-return import tests mapped before adding real external adapters.
+- **Framework-facing reviewer map:** keep `docs/NIST_AI_RMF_MAPPING.md` aligned with the current proof surface so RSS can be explained in recognized AI risk-management language without claiming certification or production compliance.
 - **Pre-tag RUNE/OATH hardening map:** closed. OATH requester fallback, RUNE constraint-prompt proof, and RUNE longest bounded-match precedence are now proven.
 - **Pact cleanup checkpoint:** the section-by-section Pact cleanup (Sections 0-7) is landed and pushed. Future Pact text changes move through the v0.1.1 amendment ceremony unless a release-gate review proves v0.1.0 would otherwise be false.
 - **Code-first Pact posture:** let kernel hardening move where it makes RSS more true; keep Pact edits section-bounded, reviewed, and version-sensitive so cleanup does not bundle unrelated lanes.

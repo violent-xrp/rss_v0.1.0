@@ -16,6 +16,19 @@ In particular:
 - Prefer **the eight seats**, **operational seats**, **constitutional seats**, **authority surfaces**, or **governance modules** depending on audience.
 - Product copy should say **operator**, **system owner**, **amendment workflow**, and **authority module** where those are clearer than sovereign/ceremony/seat language.
 
+## Why The Names Exist
+
+RSS uses memorable internal names, but each name points to a concrete engineering control: scope, meaning, consent, cadence, audit, drafting, ratification, tenant isolation, or halt/recovery.
+
+The names are meant to keep responsibilities stable as implementation changes:
+- **The Pact** is the source of law.
+- **Seats** are fixed Tier 1 authority surfaces.
+- **WARD, SCOPE, RUNE, OATH, CYCLE, TRACE, SCRIBE, and SEAL** name the control responsibility each seat owns.
+- **TECTON, PAV, REDLINE, and Safe-Stop** name engineering control concepts around containers, prepared context, protected data, and halt/recovery.
+- Seat names are ALL-CAPS, but not every ALL-CAPS name is a seat: TECTON, PAV, and REDLINE are subsystem or control-concept names. Lowercase handles such as `pav`, `hubtop`, and `store` are Tier 2 subsystem shorthand only.
+
+External readers do not need to adopt the internal vocabulary. They can use the translation table below and the framework map in `docs/NIST_AI_RMF_MAPPING.md` to evaluate the controls in standard engineering language.
+
 ## Core Translation
 
 | RSS term | Engineering translation | Current role |
@@ -79,6 +92,7 @@ If a reviewer asks where the proof lives, point them to:
 - `TRUTH_REGISTER.md` for what can and cannot be claimed
 - `docs/TESTING.md` for gate commands and coverage-sync rules
 - `docs/PACT_ALIGNMENT.md` for Pact-to-kernel alignment and known gaps
+- `docs/NIST_AI_RMF_MAPPING.md` for the NIST AI RMF reviewer map
 - `docs/claim_matrix.md` for claim-to-test traceability
 - `docs/demo/DEMO_HANDOFF.md` for the demo artifact path
 - `docs/ACTION_PLANE.md` for the future action-plane boundary, which is not a current release claim

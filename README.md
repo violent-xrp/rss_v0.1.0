@@ -32,7 +32,7 @@ Enterprise AI adoption is not only a model-quality problem. Teams also need to a
 
 RSS treats those as product and workflow requirements. It shows how an AI workflow can keep useful model behavior while narrowing context, checking authority, logging evidence, and preserving human recovery paths. That matters for account research, lead qualification, customer-signal summaries, regulated records, and other workflows where automation has business value but unbounded authority creates risk.
 
-For a plain-English business overview, see `docs/AI_GOVERNANCE_PROJECT_BRIEF.md`.
+For a plain-English business overview, see `docs/AI_GOVERNANCE_PROJECT_BRIEF.md`. For a governance-framework view, see `docs/NIST_AI_RMF_MAPPING.md`, which maps the current RSS proof surface to the NIST AI RMF functions without claiming certification or production compliance.
 
 ## Architectural thesis
 

@@ -41,6 +41,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - Baseline sync now covers `docs/AI_GOVERNANCE_PROJECT_BRIEF.md`, including plain coverage and mapped-proof-claim lines, so outreach-facing proof numbers stay current mechanically.
 - Runtime boot now loads persisted TRACE history before emitting new boot events even when `restore=False`, preserving audit-chain continuity across sessions, and TECTON restore now re-locks restored ACTIVE profiles so §5.3.3 immutability survives SQLite round-trip.
 - Default CLI smoke tests now treat AMBIGUOUS as an expected classification rather than a failure, and post-LLM REDLINE validation now redacts matched REDLINE content before output while still TRACE-logging the leak.
+- Added `docs/NIST_AI_RMF_MAPPING.md` and `docs/README.md` to map RSS mechanisms to NIST AI RMF functions conservatively and route reviewers through the documentation set without creating a new truth source.
 - Added `docs/proposals/PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md` to define the proposed canon-to-file export path: Sections 1-7 use a guarded common exporter, while Section 0 remains a separate Genesis-aware ceremony.
 - Added `rss.audit.pact_canon_export`, a guarded Sections 1-7 canon-to-file exporter with dry-run default, explicit soft T-0 write gate, stale-base and first-canon hash guards, atomic writes, and explicit Section 0 refusal.
 - LLM prompt posture now labels governed data as untrusted quoted evidence that cannot grant authority, change scope, authorize actions, or request side effects.
