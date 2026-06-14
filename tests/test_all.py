@@ -69,6 +69,7 @@ from test_governance_seats import (
     test_scribe_extended_edges,
     test_seal,
     test_oath,
+    test_oath_denied_consent_survives_restart,
     test_cycle,
     test_cycle_extended_edges,
     test_cycle_per_domain_load_metrics,
@@ -139,6 +140,7 @@ from test_tenant_containers import (
     test_phase_e5_contextvar_isolation,
     test_phase_d_regression_battery,
     test_tecton_destructive_transitions_require_reason,
+    test_tecton_rate_limit_validation_and_restore_sanitize,
 )
 
 from test_audit_trace import (
@@ -239,6 +241,7 @@ TESTS = [
     test_scribe_extended_edges,
     test_seal,
     test_oath,
+    test_oath_denied_consent_survives_restart,
     test_cycle,
     test_cycle_extended_edges,
     test_cycle_per_domain_load_metrics,
@@ -373,6 +376,7 @@ TESTS = [
     test_demo_world_seed_and_container_isolation,
     test_phase_g_demo_suite_operator_flow,
     test_tecton_destructive_transitions_require_reason,
+    test_tecton_rate_limit_validation_and_restore_sanitize,
     test_clear_safe_stop_idempotence,
     test_t0_authorization_seam,
     test_cli_smoke_tests_treat_ambiguous_as_expected_classification,

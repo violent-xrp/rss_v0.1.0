@@ -1058,5 +1058,87 @@ def test_tecton_destructive_transitions_require_reason():
           "CONTAINER_SUSPENDED event artifact_id matches container")
 
 
+def test_tecton_rate_limit_validation_and_restore_sanitize():
+    # CLAIM: §5.4.1 — non-positive or malformed max_requests_per_minute fails at construction; invalid persisted values sanitize visibly to the default on restore
+    """Positive rate-limit validation plus type-safe, visible legacy sanitize."""
+    section("S5: Rate-Limit Validation and Restore Sanitize")
+
+    # ── Construction rejects every invalid shape as TectonError ──
+    for bad in (0, -5, None, "10", True):
+        try:
+            ContainerPermissions(max_requests_per_minute=bad)
+            check(False, f"max_requests_per_minute={bad!r} should raise TectonError")
+        except TectonError:
+            check(True, f"max_requests_per_minute={bad!r} rejected as TectonError")
+        except Exception as exc:
+            check(False,
+                  f"max_requests_per_minute={bad!r} raised {type(exc).__name__}, "
+                  f"expected TectonError")
+
+    # Valid value still constructs
+    perms = ContainerPermissions(max_requests_per_minute=25)
+    check(perms.max_requests_per_minute == 25, "valid positive limit accepted")
+
+    # A permissions object can be mutated before it is locked. TECTON must
+    # validate again at its public boundaries, not trust constructor history.
+    tecton = Tecton()
+    mutated = ContainerPermissions(max_requests_per_minute=5)
+    mutated.max_requests_per_minute = 0
+    try:
+        tecton.create_container("Mutated Rate", "T-0", permissions=mutated)
+        check(False, "mutated invalid permissions should be rejected at create_container")
+    except TectonError:
+        check(True, "mutated invalid permissions rejected at create_container")
+
+    active = tecton.create_container(
+        "Active Rate", "T-0",
+        permissions=ContainerPermissions(max_requests_per_minute=5),
+    )
+    tecton.activate_container(active.container_id)
+    mutated_update = ContainerPermissions(max_requests_per_minute=5)
+    mutated_update.max_requests_per_minute = -1
+    try:
+        tecton.mutate_active_profile(
+            active.container_id,
+            permissions=mutated_update,
+            reason="test: invalid rate mutation",
+        )
+        check(False, "mutated invalid permissions should be rejected at mutate_active_profile")
+    except TectonError:
+        check(True, "mutated invalid permissions rejected at mutate_active_profile")
+
+    # ── from_dict sanitizes legacy invalid persisted values to the default ──
+    # A pre-validation database row must not brick restore with a TypeError
+    # and must not silently self-repair: the sanitize prints a RESTORE WARN.
+    import io
+    import contextlib
+    for legacy in (0, -3, None, "fast"):
+        profile_dict = {
+            "label": "LegacyRate",
+            "owner": "T-0",
+            "permissions": {"max_requests_per_minute": legacy},
+        }
+        stderr_capture = io.StringIO()
+        with contextlib.redirect_stderr(stderr_capture):
+            profile = ContainerProfile.from_dict(profile_dict)
+        check(profile.permissions.max_requests_per_minute == 10,
+              f"legacy value {legacy!r} sanitized to default 10")
+        check("RESTORE WARN" in stderr_capture.getvalue(),
+              f"legacy value {legacy!r} sanitize is visible, not silent")
+
+    # A valid persisted value passes through untouched with no warning
+    stderr_capture = io.StringIO()
+    with contextlib.redirect_stderr(stderr_capture):
+        profile = ContainerProfile.from_dict({
+            "label": "ValidRate",
+            "owner": "T-0",
+            "permissions": {"max_requests_per_minute": 30},
+        })
+    check(profile.permissions.max_requests_per_minute == 30,
+          "valid persisted limit restores unchanged")
+    check(stderr_capture.getvalue() == "",
+          "valid persisted limit emits no restore warning")
+
+
 if __name__ == "__main__":
     run_module(globals())

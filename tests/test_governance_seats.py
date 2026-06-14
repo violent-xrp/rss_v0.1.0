@@ -452,6 +452,124 @@ def test_oath():
     coercion_found = c.get("coercion_detected") or c.get("coercion", False)
     check(coercion_found, "coercion detected")
 
+    # Phase E-4 (Option B) — Explicit Deny overrides GLOBAL fallback
+    oath.authorize("DENY_TEST", "WORK", "SESSION", "T-0")
+    oath.deny("DENY_TEST", "WORK", "SESSION", "T-0", container_id="C2")
+    check(oath.check("DENY_TEST", "C3") == "AUTHORIZED", "GLOBAL fallback remains AUTHORIZED")
+    check(oath.check("DENY_TEST", "C2") == "DENIED", "explicit container DENIED overrides GLOBAL AUTHORIZED")
+
+    oath.revoke("DENY_TEST", container_id="C2")
+    check(oath.check("DENY_TEST", "C2") == "REVOKED", "revoking container DENIED changes to REVOKED, still overriding GLOBAL")
+
+    # Structured detailed check() tests
+    oath.authorize("DETAILED_TEST", "WORK", "SESSION", "T-0")
+    oath.authorize("DETAILED_TEST", "WORK", "SESSION", "T-0", container_id="C4")
+
+    # 1. Container specific
+    d_check = oath.check("DETAILED_TEST", "C4", detailed=True)
+    check(isinstance(d_check, dict) and d_check.get("status") == "AUTHORIZED" and d_check.get("source") == "CONTAINER", "detailed check reflects CONTAINER source")
+
+    # 2. Global fallback
+    d_check_fallback = oath.check("DETAILED_TEST", "UNREGISTERED_CONTAINER", detailed=True)
+    check(isinstance(d_check_fallback, dict) and d_check_fallback.get("status") == "AUTHORIZED" and d_check_fallback.get("source") == "GLOBAL_FALLBACK", "detailed check reflects GLOBAL_FALLBACK source")
+
+    # 3. Global absent
+    d_check_absent = oath.check("NONEXISTENT_ACTION", detailed=True)
+    check(isinstance(d_check_absent, dict) and d_check_absent.get("status") == "DENIED" and d_check_absent.get("source") == "ABSENT", "detailed check reflects ABSENT source for missing action")
+
+    # 4. Direct GLOBAL record (container_id == GLOBAL, record exists)
+    d_check_global = oath.check("DETAILED_TEST", "GLOBAL", detailed=True)
+    check(isinstance(d_check_global, dict)
+          and d_check_global.get("status") == "AUTHORIZED"
+          and d_check_global.get("source") == "GLOBAL",
+          "detailed check reflects GLOBAL source for direct global record")
+
+    # 5. Malformed namespace fails closed with ERROR source
+    d_check_error = oath.check("DETAILED_TEST", "bad:container", detailed=True)
+    check(isinstance(d_check_error, dict)
+          and d_check_error.get("status") == "DENIED"
+          and d_check_error.get("source") == "ERROR",
+          "detailed check fails closed with ERROR source on malformed namespace")
+
+    # 6. handle() adapter surfaces source on detailed check
+    routed_detailed = oath.handle({
+        "action": "check", "action_class": "DETAILED_TEST",
+        "container_id": "C4", "detailed": True,
+    })
+    check(routed_detailed.get("status") == "AUTHORIZED"
+          and routed_detailed.get("source") == "CONTAINER",
+          "handle() detailed check carries source through the seat adapter")
+
+
+def test_oath_denied_consent_survives_restart():
+    # CLAIM: §6.9.2, §0.9 — DENIED consent survives restart; restore never upgrades a restrictive status to AUTHORIZED
+    """Explicit DENIED records must round-trip through SQLite and reboot.
+
+    Covers both restore paths:
+      1. restore_from_db() — container-scoped DENIED rehydrates as DENIED.
+      2. _ensure_default_execute_consent() — a persisted GLOBAL:EXECUTE
+         DENIED record must not be silently re-authorized on a
+         restore=False boot.
+    """
+    section("OATH: DENIED Consent Restart Round-Trip")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        # Session 1: GLOBAL EXECUTE authorized (default), C2 explicitly denied
+        config = RSSConfig(db_path=path)
+        rss1 = bootstrap(config)
+        result = rss1.oath.deny("EXECUTE", "WORK", "SESSION", "T-0",
+                                container_id="C2")
+        check(result.get("denied") is True, "deny() persists a DENIED record")
+        check(rss1.oath.check("EXECUTE", "C2") == "DENIED",
+              "C2 DENIED in the granting session")
+        check(rss1.oath.check("EXECUTE", "GLOBAL") == "AUTHORIZED",
+              "GLOBAL remains AUTHORIZED in the granting session")
+        rss1.persistence.close()
+
+        # Session 2: restore=True — container DENIED must survive
+        rss2 = bootstrap(config, restore=True)
+        check(rss2.oath.check("EXECUTE", "C2") == "DENIED",
+              "container DENIED survives restart (no fallback re-open)")
+        check(rss2.oath.check("EXECUTE", "GLOBAL") == "AUTHORIZED",
+              "GLOBAL AUTHORIZED also survives restart")
+        consent_skips = [w for w in rss2.restore_warnings
+                         if w.get("category") == "consents"]
+        check(len(consent_skips) == 0,
+              "DENIED record restores cleanly, not skipped as unknown_status")
+        rss2.persistence.close()
+    finally:
+        for suffix in ["", "-wal", "-shm"]:
+            if os.path.exists(path + suffix):
+                os.unlink(path + suffix)
+
+    # Separate DB: GLOBAL:EXECUTE itself DENIED, then a restore=False boot.
+    # _ensure_default_execute_consent must rehydrate DENIED, not AUTHORIZED.
+    fd, path2 = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config2 = RSSConfig(db_path=path2)
+        rss3 = bootstrap(config2)
+        rss3.oath.deny("EXECUTE", "WORK", "SESSION", "T-0",
+                       container_id="GLOBAL")
+        check(rss3.oath.check("EXECUTE", "GLOBAL") == "DENIED",
+              "GLOBAL EXECUTE DENIED in the denying session")
+        rss3.persistence.close()
+
+        rss4 = bootstrap(config2, restore=False)
+        check(rss4.oath.check("EXECUTE", "GLOBAL") == "DENIED",
+              "GLOBAL DENIED survives a restore=False boot "
+              "(default-consent path must not re-authorize)")
+        blocked = rss4.process_request("quote", use_llm=False)
+        check(blocked.get("error") == "CONSENT_REQUIRED",
+              "pipeline Stage 5 blocks on restored DENIED consent")
+        rss4.persistence.close()
+    finally:
+        for suffix in ["", "-wal", "-shm"]:
+            if os.path.exists(path2 + suffix):
+                os.unlink(path2 + suffix)
+
 
 def test_cycle():
     # CLAIM: §1.9 — CYCLE quantitative cadence enforcement

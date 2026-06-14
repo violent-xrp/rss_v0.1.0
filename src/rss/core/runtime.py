@@ -289,15 +289,18 @@ class Runtime:
         # A record exists. Rehydrate in memory if not already there.
         key = self.oath._key("EXECUTE", "GLOBAL")
         if key not in self.oath._consents:
-            # Restore the exact persisted status (AUTHORIZED or REVOKED)
+            # Restore the exact persisted status (AUTHORIZED, REVOKED, or DENIED).
+            # A persisted non-AUTHORIZED status must never be silently upgraded
+            # to AUTHORIZED by the rehydration path (§0.9 restrictive precedence).
             self.oath.authorize(
                 action_class="EXECUTE", scope="", duration="",
                 requester=existing.get("requester", "T-0"),
                 container_id="GLOBAL",
                 _persist=False,
             )
-            if existing.get("status") == "REVOKED":
-                self.oath._consents[key].status = "REVOKED"
+            persisted_status = existing.get("status")
+            if persisted_status in ("REVOKED", "DENIED"):
+                self.oath._consents[key].status = persisted_status
 
     # ── Safe-Stop (persistent, survives restart) ──
 
@@ -718,7 +721,7 @@ class Runtime:
             saved_consents = []
         for c in saved_consents:
             status = c.get("status", "AUTHORIZED")
-            if status not in ("AUTHORIZED", "REVOKED"):
+            if status not in ("AUTHORIZED", "REVOKED", "DENIED"):
                 self._record_restore_skip(
                     restored, "consents", "unknown_status", c.get("key", "")
                 )
@@ -733,16 +736,17 @@ class Runtime:
                     container_id=c.get("container_id", "GLOBAL"),
                     _persist=False,  # suppress re-persist during restore
                 )
-                # If the persisted status is REVOKED, flip it.
-                # We call revoke() with _persist=False semantics by accessing
-                # the record directly — revoke() doesn't take a _persist flag,
-                # but we're not issuing a new revocation, we're restoring
-                # existing state.
-                if status == "REVOKED":
+                # If the persisted status is REVOKED or DENIED, flip it.
+                # We set the record directly — revoke()/deny() would issue a
+                # NEW state change with write-ahead persistence, but we're not
+                # issuing one, we're restoring existing durable state. A
+                # restrictive persisted status must never be silently upgraded
+                # to AUTHORIZED by the restore path (§0.9).
+                if status in ("REVOKED", "DENIED"):
                     key = self.oath._key(c["action_class"],
                                          c.get("container_id", "GLOBAL"))
                     if key in self.oath._consents:
-                        self.oath._consents[key].status = "REVOKED"
+                        self.oath._consents[key].status = status
                 restored["consents"] += 1
             except Exception as exc:
                 self._record_restore_skip(

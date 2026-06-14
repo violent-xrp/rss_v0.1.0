@@ -30,11 +30,11 @@ governance/t0.py           100.0%
 scope.py                    92.6%
 llm_adapter.py              90.1%
 audit_log.py                87.4%
-runtime.py                  85.7%
-oath.py                     88.2%
+runtime.py                  85.9%
+oath.py                     83.2%
 pav.py                      90.9%
 constitution.py             92.5%
-TOTAL                       92.4%
+TOTAL                       92.1%
 ```
 
 ## Current Targets

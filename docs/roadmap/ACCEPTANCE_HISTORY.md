@@ -8,9 +8,9 @@ This file preserves the count history and verification receipts that used to liv
 
 ## Current Baseline
 
-- **160 test functions / 1448 assertions / 0 failures**
-- **92.4% statement coverage**
-- **160 claims / 160 tests / 114 Pact sections**
+- **162 test functions / 1484 assertions / 0 failures**
+- **92.1% statement coverage**
+- **162 claims / 162 tests / 114 Pact sections**
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
 - Claim matrix: `python docs/build_claim_matrix.py`
@@ -111,8 +111,8 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 - `THREAT_MODEL.md`
 
 Current synced public numbers:
-- **160 / 1448 / 0**
-- **92.4%** coverage
-- **160 claims / 160 tests / 114 Pact sections**
+- **162 / 1484 / 0**
+- **92.1%** coverage
+- **162 claims / 162 tests / 114 Pact sections**
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.

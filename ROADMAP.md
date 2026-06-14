@@ -39,16 +39,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **160 test functions / 1448 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **92.4% statement coverage** via `python run_coverage.py`
-- **160 claims / 160 tests / 114 Pact sections** in `docs/claim_matrix.md`
+- **162 test functions / 1484 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **92.1% statement coverage** via `python run_coverage.py`
+- **162 claims / 162 tests / 114 Pact sections** in `docs/claim_matrix.md`
 - **24 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 160/1448 baseline
+- public docs are synced to the current 162/1484 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -106,7 +106,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - Minimum proposal shape to evaluate later: `proposal_id`, `source_task_id`, `action_class`, `target_resource`, `payload`, `container_id`, `proposed_at`, and a payload hash/TTL binding. The broker boundary must emit proposal, rejection, authorization, and execution receipts before any external file, API, network, or tool side effect.
 - Cryptographic/mechanical T-0 identity gate for Safe-Stop clearing beyond the current soft `t0_command=True` fence.
 - Zero-trust hardening sequence: authenticated ingress, actor-bound request context, capability-scoped side-effect broker, per-action/tool-call authorization, signed TRACE exports, external timestamp anchoring, and auditable recovery/bypass paths.
-- OATH consent-source reporting, explicit DENY semantics, and duration policy.
+- OATH duration policy and stronger coercion-warning semantics.
 - RUNE scale path: current classification is linear in active registry size and scans the global registry. Large-vocabulary support needs namespaced active registry partitions, a compiled multi-pattern matcher, and archived terms kept out of the hot path before RSS claims large-pack performance.
 - RUNE per-pack/domain term and synonym namespaces plus v0.1.1 synonym confidence semantics. MED and LOW currently collapse to AMBIGUOUS, so distinct confirmation-state behavior must be designed and tested before RSS claims it.
 - TECTON policy overlays: per-tenant overlays may tighten scope, terms, permissions, consent, and domain packs, but may not loosen or fork the global constitutional floor.
@@ -350,16 +350,16 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - RUNE classification index: replace full-registry word-boundary scans with a compiled multi-pattern matcher that is rebuilt only on registry changes and searched per relevant namespace
 - RUNE term lifecycle: distinguish active and archived/retired terms so historical meaning remains auditable without keeping every retired term in the hot classification path
 - RUNE synonym confidence cleanup: decide in v0.1.1 whether to collapse HIGH/MED/LOW Pact wording to the states RSS actually uses, or build distinct MED/LOW confirmation semantics with explicit returned metadata and tests
-- OATH structured `check()` result option that preserves the current string return while exposing consent source (`container_specific`, `global_fallback`, or absent) for audit/reviewer context
+- CLOSED: OATH structured `check(detailed=True)` preserves the current string return while exposing consent source (`CONTAINER`, `GLOBAL`, `GLOBAL_FALLBACK`, `ABSENT`, `ERROR`) for audit/reviewer context.
 - OATH duration decision: either enforce expiry through deterministic time semantics or document `ConsentRecord.duration` as metadata-only
-- OATH explicit `DENIED` consent status and `deny()` operation so a container-specific denial can override GLOBAL authorization
+- CLOSED: OATH explicit `DENIED` consent status and `deny()` operation now let a container-specific denial override GLOBAL authorization, and DENIED records survive restore/restart without being upgraded.
 - OATH coercion detection cleanup: rename the current keyword flag as limited, or build a real governed warning surface before claiming coercion defense
 - OATH nested consent inheritance only if TECTON grows parent/child container hierarchy
 - last-resort consent failure receipt if durable consent persistence and TRACE failure notification fail at the same time
 - mechanical T-0 gate ordering for Pact-reserved powers: `authorize_t0(action, context)` now centralizes the current soft command check for Safe-Stop clearing, SEAL seal/ratification, and runtime RUNE term/synonym/disallowed mutations; seat changes, broader container lifecycle authority, and cryptographic/mechanical identity remain future hardening
 - TECTON permission-enforcement map: keep `can_draft`, `can_request_seal`, `can_call_advisors`, `can_access_system_hub`, `max_requests_per_minute`, and `risk_tier` visibly split between enforced behavior and declared metadata
-- TECTON rate-limit input validation: decide whether non-positive `max_requests_per_minute` values should fail at profile creation/mutation instead of falling back to default CYCLE behavior
-- TECTON/OATH consent-source auditability: expose whether authorization came from container-specific consent or GLOBAL fallback if OATH check responses become structured
+- CLOSED: TECTON rate-limit input validation now rejects non-positive or malformed `max_requests_per_minute` values at profile construction and mutation boundaries, while invalid legacy persisted values sanitize visibly to the default on restore.
+- CLOSED at OATH API boundary: structured consent checks expose whether authorization came from container-specific consent, GLOBAL, GLOBAL fallback, absent consent, or validation error. Runtime response/TRACE surfacing remains future product work.
 - Section 6 export/audit precision: keep cold verification, cold export, and future payload-inclusive external recomputability as separate claims; do not let Pact wording claim external recomputation until exported canonical proof material, privacy policy, and verifier tests exist
 - Section 6 production posture evidence: keep the one-switch `production_mode` behavior visible if more settings join that profile
 - Section 6 provenance proof: decide whether `UNTRUSTED_IMPORT` needs a dedicated full restore test beyond current SQLite row round-trip proof

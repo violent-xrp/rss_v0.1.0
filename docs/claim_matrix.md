@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-06-10 23:29 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-06-12 21:05 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 114 distinct Pact sections referenced across 160 claim tags on 160 test functions.
+**Coverage:** 114 distinct Pact sections referenced across 162 claim tags on 162 test functions.
 
 ---
 
@@ -85,6 +85,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §0.9
 
+- `test_oath_denied_consent_survives_restart` — DENIED consent survives restart; restore never upgrades a restrictive status to AUTHORIZED
 - `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
 
 ## §1.1.2
@@ -416,6 +417,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_s5_can_call_advisors` — can_call_advisors permission gates LLM invocation
 - `test_phase_d_regression_battery` — UUID ingress, scope-on-permission, OATH persistence-failure visibility
+- `test_tecton_rate_limit_validation_and_restore_sanitize` — non-positive or malformed max_requests_per_minute fails at construction; invalid persisted values sanitize visibly to the default on restore
 
 ## §5.5.2
 
@@ -516,6 +518,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §6.9.2
 
+- `test_oath_denied_consent_survives_restart` — DENIED consent survives restart; restore never upgrades a restrictive status to AUTHORIZED
 - `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
 - `test_phase_d_regression_battery` — UUID ingress, scope-on-permission, OATH persistence-failure visibility
 

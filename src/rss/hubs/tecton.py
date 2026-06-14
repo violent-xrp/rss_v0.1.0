@@ -132,12 +132,34 @@ class ContainerPermissions(_Lockable):
         risk_tier: str = "STANDARD",
         max_requests_per_minute: int = 10,
     ):
+        # §5.4.1 — Positive rate-limit validation. isinstance guard keeps a
+        # corrupted value (None, string, bool) from raising a bare TypeError
+        # on the <= comparison; every invalid shape fails as TectonError.
+        if (not isinstance(max_requests_per_minute, int)
+                or isinstance(max_requests_per_minute, bool)
+                or max_requests_per_minute <= 0):
+            raise TectonError(
+                f"max_requests_per_minute must be a strictly positive integer, "
+                f"got {max_requests_per_minute!r}")
         self.can_draft = can_draft
         self.can_request_seal = can_request_seal
         self.can_call_advisors = can_call_advisors
         self.can_access_system_hub = can_access_system_hub
         self.risk_tier = risk_tier
         self.max_requests_per_minute = max_requests_per_minute
+
+
+def _validate_container_permissions(permissions: ContainerPermissions) -> None:
+    """Validate a ContainerPermissions object at TECTON ingress boundaries."""
+    if not isinstance(permissions, ContainerPermissions):
+        raise TectonError(
+            f"permissions must be a ContainerPermissions instance, got "
+            f"{type(permissions).__name__}")
+    mrpm = getattr(permissions, "max_requests_per_minute", None)
+    if not isinstance(mrpm, int) or isinstance(mrpm, bool) or mrpm <= 0:
+        raise TectonError(
+            f"max_requests_per_minute must be a strictly positive integer, "
+            f"got {mrpm!r}")
 
 
 def _default_scope_policy() -> dict:
@@ -228,13 +250,29 @@ class ContainerProfile(_Lockable):
     def from_dict(cls, d: dict) -> "ContainerProfile":
         """Deserialize from persistence."""
         perms_d = d.get("permissions", {})
+
+        # §5.4.1 — Sanitize legacy/invalid max_requests_per_minute on load.
+        # Construction now rejects non-positive values, so a pre-validation
+        # persisted row must be coerced to the default — but visibly, matching
+        # the restore-visibility discipline (§6.9.7): silent self-repair of
+        # governed state is exactly what RESTORE WARN exists to prevent.
+        mrpm = perms_d.get("max_requests_per_minute", 10)
+        if not isinstance(mrpm, int) or isinstance(mrpm, bool) or mrpm <= 0:
+            import sys as _sys
+            print(
+                f"[RESTORE WARN S5.4.1] Container '{d.get('label', '?')}': invalid "
+                f"persisted max_requests_per_minute {mrpm!r}; sanitized to 10.",
+                file=_sys.stderr,
+            )
+            mrpm = 10
+
         perms = ContainerPermissions(
             can_draft=perms_d.get("can_draft", True),
             can_request_seal=perms_d.get("can_request_seal", True),
             can_call_advisors=perms_d.get("can_call_advisors", True),
             can_access_system_hub=perms_d.get("can_access_system_hub", False),
             risk_tier=perms_d.get("risk_tier", "STANDARD"),
-            max_requests_per_minute=perms_d.get("max_requests_per_minute", 10),
+            max_requests_per_minute=mrpm,
         )
         sp = d.get("scope_policy", {})
         return cls(
@@ -333,13 +371,15 @@ class Tecton:
             raise TectonError("Container label must not be empty.")
         if not owner:
             raise TectonError("Container owner must not be empty.")
+        permissions = permissions or ContainerPermissions()
+        _validate_container_permissions(permissions)
 
         # Phase D-3: Full UUID4 for collision resistance at scale (§6.9.6).
         # Previously used .hex[:8] (32 bits) which birthday-collided at ~65K
         # containers. Full hex is 122 bits of entropy — effectively uncollidable.
         cid = f"TECTON-{uuid4().hex}"
         profile = ContainerProfile(label=label, owner=owner,
-                                   permissions=permissions or ContainerPermissions())
+                                   permissions=permissions)
         now = datetime.now(UTC)
         container = TenantContainer(
             container_id=cid, profile=profile,
@@ -487,6 +527,8 @@ class Tecton:
             raise TectonError(f"mutate_active_profile only applies to ACTIVE containers (got {c.state})")
         if not reason:
             raise TectonError("Profile mutation on ACTIVE container requires a reason (§5.3.3)")
+        if permissions is not None:
+            _validate_container_permissions(permissions)
 
         old_values = {}
         new_values = {}

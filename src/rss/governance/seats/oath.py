@@ -42,7 +42,7 @@ class ConsentRecord:
     action_class: str
     scope: str
     requester: str
-    status: str  # AUTHORIZED, REVOKED, PENDING
+    status: str  # AUTHORIZED, REVOKED, DENIED, PENDING
     container_id: str = "GLOBAL"
     granted_at: Optional[datetime] = None
     duration: Optional[str] = None
@@ -185,6 +185,57 @@ class Oath:
 
         return {"authorized": True, "action_class": normalized_action, "container_id": normalized_container}
 
+    def deny(self, action_class: str, scope: str, duration: str,
+                  requester: str, container_id: str = "GLOBAL",
+                  _persist: bool = True) -> dict:
+        """Phase E-4 — Explicit container-specific denial that overrides GLOBAL fallback.
+
+        Uses the same write-ahead persistence semantics as authorize()."""
+        normalized_action = self._normalize_action_class(action_class)
+        if not normalized_action:
+            raise OathError("action_class must not be empty.")
+        normalized_requester = str(requester).strip() if requester is not None else ""
+        if not normalized_requester:
+            raise OathError("requester must not be empty.")
+        normalized_container = self._normalize_container_id(container_id)
+
+        record = ConsentRecord(
+            action_class=normalized_action,
+            scope=scope,
+            requester=normalized_requester,
+            status="DENIED",
+            container_id=normalized_container,
+            granted_at=datetime.now(UTC),
+            duration=duration,
+        )
+        key = self._key(normalized_action, normalized_container)
+
+        if _persist and self._persist_callback is not None:
+            try:
+                self._persist_callback(key, record)
+            except Exception as exc:
+                import sys as _sys
+                print(
+                    f"[OATH WARN §E-4] Consent denial REFUSED — persistence failed for "
+                    f"{normalized_action}/{normalized_container}: {exc}",
+                    file=_sys.stderr,
+                )
+                if self._failure_callback is not None:
+                    try:
+                        self._failure_callback(normalized_action, normalized_container, exc)
+                    except Exception:
+                        pass
+                return {
+                    "denied": False,
+                    "error": "PERSISTENCE_FAILURE",
+                    "reason": f"Denial not applied: durable write failed ({type(exc).__name__})",
+                    "action_class": normalized_action,
+                    "container_id": normalized_container,
+                }
+
+        self._consents[key] = record
+        return {"denied": True, "action_class": normalized_action, "container_id": normalized_container}
+
     def revoke(self, action_class: str, container_id: str = "GLOBAL") -> dict:
         """Phase E-4 (Option B) — True write-ahead revocation semantics.
 
@@ -246,26 +297,30 @@ class Oath:
         self._consents[key].status = "REVOKED"
         return {"revoked": True, "action_class": normalized_action}
 
-    def check(self, action_class: str, container_id: str = "GLOBAL") -> str:
-        """Check consent. Container-specific first, then GLOBAL fallback."""
+    def check(self, action_class: str, container_id: str = "GLOBAL", detailed: bool = False) -> str | dict:
+        """Check consent. Container-specific first, then GLOBAL fallback.
+        If detailed=True, returns a dict exposing the consent source (CONTAINER, GLOBAL_FALLBACK, GLOBAL, or ABSENT)."""
         try:
             normalized_action = self._normalize_action_class(action_class)
             if not normalized_action:
-                return "DENIED"
+                return {"status": "DENIED", "source": "INVALID_ACTION"} if detailed else "DENIED"
             normalized_container = self._normalize_container_id(container_id)
         except OathError:
-            return "DENIED"
+            return {"status": "DENIED", "source": "ERROR"} if detailed else "DENIED"
 
         key = self._key(normalized_action, normalized_container)
         if key in self._consents:
-            return self._consents[key].status
+            status = self._consents[key].status
+            source = "CONTAINER" if normalized_container != "GLOBAL" else "GLOBAL"
+            return {"status": status, "source": source} if detailed else status
 
         # Fallback to GLOBAL
         global_key = self._key(normalized_action, "GLOBAL")
         if global_key in self._consents:
-            return self._consents[global_key].status
+            status = self._consents[global_key].status
+            return {"status": status, "source": "GLOBAL_FALLBACK"} if detailed else status
 
-        return "DENIED"
+        return {"status": "DENIED", "source": "ABSENT"} if detailed else "DENIED"
 
     def detect_coercion(self, pattern: str, requester: str) -> dict:
         flags = ["urgent", "override", "immediately", "bypass", "emergency"]
@@ -285,7 +340,7 @@ class Oath:
         if action is None:
             return {"error": "MISSING_ACTION"}
         action_class = task.get("action_class")
-        if action in {"authorize", "check", "revoke"}:
+        if action in {"authorize", "check", "revoke", "deny"}:
             try:
                 action_class = self._normalize_action_class(action_class)
                 container_id = self._normalize_container_id(task.get("container_id", "GLOBAL"))
@@ -304,9 +359,22 @@ class Oath:
                 task.get("duration", ""), requester,
                 container_id,
             )
+        if action == "deny":
+            requester = str(task.get("requester", "")).strip()
+            if not requester:
+                return {"error": "MISSING_REQUESTER", "action": action}
+            return self.deny(
+                action_class, task.get("scope", ""),
+                task.get("duration", ""), requester,
+                container_id,
+            )
         if action == "check":
-            s = self.check(action_class, container_id)
-            return {"action_class": action_class, "status": s}
+            detailed = bool(task.get("detailed", False))
+            if detailed:
+                res = self.check(action_class, container_id, detailed=True)
+                return {"action_class": action_class, "status": res["status"], "source": res["source"]}
+            else:
+                return {"action_class": action_class, "status": self.check(action_class, container_id)}
         if action == "revoke":
             return self.revoke(action_class, container_id)
         return {"error": f"Unknown action: {action}"}

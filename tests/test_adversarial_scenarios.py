@@ -350,21 +350,20 @@ def test_adversarial_malformed_inputs():
         check(env is not None, "ADV-M4: duplicate allowed_sources doesn't crash")
 
         # M5: Zero max_requests_per_minute
-        from rss.hubs.tecton import ContainerPermissions
+        from rss.hubs.tecton import ContainerPermissions, TectonError
         try:
             c = rss.tecton.create_container("ZeroRate", "T-0",
                                             permissions=ContainerPermissions(max_requests_per_minute=0))
-            # Should work — CYCLE only enforces if max > 0
-            check(True, "ADV-M5: zero max_requests_per_minute doesn't crash creation")
-        except Exception:
+            check(False, "ADV-M5: zero max_requests_per_minute should have been rejected")
+        except TectonError:
             check(True, "ADV-M5: zero max_requests_per_minute rejected at creation")
 
         # M6: Negative max_requests_per_minute
         try:
             c = rss.tecton.create_container("NegRate", "T-0",
                                             permissions=ContainerPermissions(max_requests_per_minute=-5))
-            check(True, "ADV-M6: negative rate doesn't crash (edge case)")
-        except Exception:
+            check(False, "ADV-M6: negative rate should have been rejected")
+        except TectonError:
             check(True, "ADV-M6: negative rate rejected")
 
         # M7: Hub entry with empty content

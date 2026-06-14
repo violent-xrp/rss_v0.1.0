@@ -7,9 +7,9 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
 
 ### Current verified snapshot
-- **160 test functions / 1448 assertions / 0 failures** via `python tests/test_all.py`
-- **92.4% statement coverage** via `python run_coverage.py`
-- **160 claims / 160 tests / 114 Pact sections** in `docs/claim_matrix.md`
+- **162 test functions / 1484 assertions / 0 failures** via `python tests/test_all.py`
+- **92.1% statement coverage** via `python run_coverage.py`
+- **162 claims / 162 tests / 114 Pact sections** in `docs/claim_matrix.md`
 - **24 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -18,6 +18,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - REDLINE fail-closed query behavior and export sanitization
 - TECTON tenant isolation, lifecycle logging, and context-bound hub isolation
 - OATH write-ahead consent semantics and persistence-failure surfacing
+- OATH now supports explicit `DENIED` consent with restart survival and structured consent-source reporting, and TECTON now rejects invalid `max_requests_per_minute` at construction/mutation boundaries while visibly sanitizing legacy persisted invalid values on restore
 - SEAL amendment ceremony support and ceremony hardening
 - SEAL amendment persistence for proposal lifecycle, review state, ratified records, reconstructed canon state, and queryable history
 - config-driven default term packs and definition prefixes

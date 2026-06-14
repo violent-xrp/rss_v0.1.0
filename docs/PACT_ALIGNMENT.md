@@ -195,7 +195,8 @@ RUNE authorization surface:
 OATH consent semantics:
 - OATH has write-ahead consent persistence and fail-closed namespace validation.
 - Duration is recorded but not yet enforced as expiry.
-- `DENIED` as an explicit consent state, consent-source reporting, and stronger coercion handling remain v0.1.1 candidates.
+- `DENIED` is now an explicit consent state through `deny()`: a container-specific DENIED record overrides GLOBAL authorization and survives restore/restart without being upgraded. `check(detailed=True)` exposes consent source as `CONTAINER`, `GLOBAL`, `GLOBAL_FALLBACK`, `ABSENT`, or `ERROR` while preserving the existing string-return default.
+- Stronger coercion handling remains a v0.1.1 candidate.
 - OATH `handle({"action": "authorize"})` now fails closed when `requester` is missing or blank instead of defaulting to T-0. Current proof verifies no consent record is created on missing identity and explicit requester flow still works.
 
 Execution-law gaps:
@@ -211,8 +212,8 @@ Data-governance gaps:
 Tenant-container gaps:
 - ACTIVE profile mutation has structural immutability, reason enforcement, and audit emission, but the actor is still T-0 by trusted code path/convention rather than mechanical identity.
 - Permission fields should stay visibly split between enforced and declared. `risk_tier` is declared metadata today; future policy must decide whether and how it affects runtime outcomes.
-- Non-positive `max_requests_per_minute` values are tolerated and do not become a container override; they fall back to CYCLE's existing domain behavior instead of failing validation.
-- OATH consent fallback source is not yet surfaced in the runtime response or TRACE as container-specific versus GLOBAL fallback. Future structured consent checks should make the source auditable.
+- Non-positive or malformed `max_requests_per_minute` values now fail at `ContainerPermissions` construction and TECTON profile-mutation boundaries. Invalid legacy persisted values sanitize visibly to the default on restore instead of silently repairing or crashing.
+- OATH consent fallback source is available through structured `check(detailed=True)`, but it is not yet surfaced in the normal runtime response or TRACE as container-specific versus GLOBAL fallback. That operator-surface exposure remains future work.
 - Dynamic TRACE event-code exceptions should remain tightly enumerated. `CONTAINER_REQUEST_*` is the current accepted dynamic prefix; any future dynamic prefix should be a deliberate registry change.
 
 Persistence/audit gaps:
@@ -334,8 +335,8 @@ Before v0.1.1:
 - Carry Section 4's output-boundary rule into future API/operator/connector work before adding raw hub-returning public surfaces.
 - Decide whether LEDGER brainstorming belongs in SCOPE as a first-class envelope field or remains a PAV-builder-only expert mode.
 - Keep the Section 5 permission map current as fields move from declared metadata to enforced behavior.
-- Decide whether non-positive container rate limits should be rejected at profile creation/mutation instead of falling back to default CYCLE behavior.
-- Add consent-source reporting if OATH check responses become structured.
+- CLOSED: non-positive or malformed container rate limits are rejected at creation/mutation boundaries and invalid legacy persisted values sanitize visibly on restore.
+- CLOSED at OATH API boundary: consent-source reporting exists through structured `check(detailed=True)`; decide later whether runtime responses and TRACE should surface that source.
 - Keep Section 6 audit/export claims split between internal consistency, cold export, and future external recomputability.
 - Decide whether `UNTRUSTED_IMPORT` round-trip needs a dedicated global/container restore test beyond the current persistence-row proof.
 - Keep production-mode behavior in the generated or evidence docs if more flags join the one-switch posture.
