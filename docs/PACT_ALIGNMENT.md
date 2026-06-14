@@ -83,6 +83,7 @@ Section 1 / seat law:
 Section 2 / meaning law:
 - RUNE's classification order matches the Pact: DISALLOWED, direct, substring, synonym, default.
 - RUNE defaults unknown phrases to AMBIGUOUS and does not produce SEALED without registry/synonym membership.
+- RUNE now exposes `scan_disallowed()` for payload-audit callers that need to detect bounded disallowed terms embedded inside longer strings; this preserves `classify()` exact-match disallowed semantics while giving future action-plane/broker work a safer anti-trojan primitive.
 - Runtime contextual reinjection is present: canonical `label: definition` term pairs are sent through the LLM adapter's `terms` parameter.
 - MED and LOW synonym confidence are not yet behaviorally distinct in the returned `TermStatus`; both become AMBIGUOUS with the same confirmation wording. Distinct MED/LOW confirmation semantics are v0.1.1 design work, not a v0.1.0 claim.
 
@@ -188,6 +189,7 @@ RUNE authorization surface:
 - Direct low-level RUNE service calls, bootstrap, and restore remain trusted internal state paths; this is not cryptographic identity proof.
 - Per-pack synonym namespaces remain future hardening before domain packs can compose freely.
 - Anti-trojan scanning currently checks definitions. Runtime proof now captures the actual advisor prompt payload and verifies constraints remain kernel metadata, not advisor/model context. If a future adapter reinjects constraints, the scanner contract must expand before that change lands.
+- Embedded disallowed-term scanning is now available through `scan_disallowed()` for longer payload strings. This closes the RUNE-side helper gap, but it does not claim that a side-effect broker exists in v0.1.0.
 - Primary substring classification now prefers the longest bounded sealed-term match, so registration order cannot make a shorter term outrank a more specific phrase.
 - Boundary-sensitive labels, including punctuation-heavy, apostrophe-like, internal-hyphen, combining-mark, and confusable inputs, need tests or validation as the registry grows.
 - MED/LOW confidence behavior needs v0.1.1 resolution: preserve the Pact shape by adding explicit confirmation metadata/semantics, or amend future Pact text to collapse the confidence model to the states RSS actually uses.

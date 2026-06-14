@@ -93,8 +93,8 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/audit/pact_canon_export.py:372`
 
 ### §1.1.2 -> pact/pact_section1_eight_seats.md
-- `src/rss/governance/seats/rune.py:332`
-- `src/rss/governance/seats/rune.py:341`
+- `src/rss/governance/seats/rune.py:359`
+- `src/rss/governance/seats/rune.py:368`
 - `src/rss/governance/seats/scope.py:160`
 - `src/rss/governance/seats/scope.py:167`
 - `src/rss/governance/seats/ward.py:74`
@@ -123,17 +123,18 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/governance/seats/rune.py:156`
 - `src/rss/governance/seats/rune.py:166`
 - `src/rss/governance/seats/rune.py:217`
-- `src/rss/governance/seats/rune.py:287`
-- `src/rss/governance/seats/rune.py:310`
+- `src/rss/governance/seats/rune.py:315`
+- `src/rss/governance/seats/rune.py:338`
 
 ### §2.2 -> pact/pact_section2_meaning_law.md
-- `src/rss/governance/seats/rune.py:247`
+- `src/rss/governance/seats/rune.py:275`
 
 ### §2.3 -> pact/pact_section2_meaning_law.md
 - `src/rss/governance/seats/rune.py:40`
-- `src/rss/governance/seats/rune.py:247`
-- `src/rss/governance/seats/rune.py:258`
-- `src/rss/governance/seats/rune.py:265`
+- `src/rss/governance/seats/rune.py:235`
+- `src/rss/governance/seats/rune.py:275`
+- `src/rss/governance/seats/rune.py:286`
+- `src/rss/governance/seats/rune.py:293`
 
 ### §2.3.1 -> pact/pact_section2_meaning_law.md
 - `src/rss/core/config.py:48`
@@ -147,7 +148,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/audit/export.py:148`
 - `src/rss/core/runtime.py:847`
 - `src/rss/governance/seats/rune.py:41`
-- `src/rss/governance/seats/rune.py:298`
+- `src/rss/governance/seats/rune.py:326`
 - `src/rss/persistence/sqlite.py:645`
 
 ### §2.7 -> pact/pact_section2_meaning_law.md
@@ -156,6 +157,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 
 ### §2.8 -> pact/pact_section2_meaning_law.md
 - `src/rss/governance/seats/rune.py:142`
+- `src/rss/governance/seats/rune.py:235`
 
 ### §2.8.1 -> pact/pact_section2_meaning_law.md
 - `src/rss/governance/seats/rune.py:42`

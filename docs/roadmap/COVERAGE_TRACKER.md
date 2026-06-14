@@ -22,7 +22,7 @@ trace_export.py             95.5%
 tecton.py                   94.8%
 cycle.py                    94.2%
 persistence.py              94.4%
-meaning_law.py              93.8%
+meaning_law.py              94.2%
 hub_topology.py             92.7%
 seal.py                     94.0%
 ward.py                     87.9%
@@ -34,7 +34,7 @@ runtime.py                  85.9%
 oath.py                     83.2%
 pav.py                      90.9%
 constitution.py             92.5%
-TOTAL                       92.1%
+TOTAL                       92.2%
 ```
 
 ## Current Targets

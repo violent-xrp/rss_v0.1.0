@@ -39,8 +39,8 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **162 test functions / 1484 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **92.1% statement coverage** via `python run_coverage.py`
+- **162 test functions / 1490 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **92.2% statement coverage** via `python run_coverage.py`
 - **162 claims / 162 tests / 114 Pact sections** in `docs/claim_matrix.md`
 - **24 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
@@ -48,7 +48,7 @@ Current code state:
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 162/1484 baseline
+- public docs are synced to the current 162/1490 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -75,6 +75,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **Connector-proof planning:** keep future browser/email/document/RAG/tool-return import tests mapped before adding real external adapters.
 - **Framework-facing reviewer map:** keep `docs/NIST_AI_RMF_MAPPING.md` aligned with the current proof surface so RSS can be explained in recognized AI risk-management language without claiming certification or production compliance.
 - **Pre-tag RUNE/OATH hardening map:** closed. OATH requester fallback, RUNE constraint-prompt proof, and RUNE longest bounded-match precedence are now proven.
+- **RUNE embedded disallowed scan:** closed as a code helper. RUNE can now audit longer payload strings for bounded disallowed terms via `scan_disallowed()` while preserving `classify()` exact-match semantics. The side-effect broker that will consume this helper remains future action-plane work.
 - **Pact cleanup checkpoint:** the section-by-section Pact cleanup (Sections 0-7) is landed and pushed. Future Pact text changes move through the v0.1.1 amendment ceremony unless a release-gate review proves v0.1.0 would otherwise be false.
 - **Code-first Pact posture:** let kernel hardening move where it makes RSS more true; keep Pact edits section-bounded, reviewed, and version-sensitive so cleanup does not bundle unrelated lanes.
 
@@ -107,7 +108,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - Cryptographic/mechanical T-0 identity gate for Safe-Stop clearing beyond the current soft `t0_command=True` fence.
 - Zero-trust hardening sequence: authenticated ingress, actor-bound request context, capability-scoped side-effect broker, per-action/tool-call authorization, signed TRACE exports, external timestamp anchoring, and auditable recovery/bypass paths.
 - OATH duration policy and stronger coercion-warning semantics.
-- RUNE scale path: current classification is linear in active registry size and scans the global registry. Large-vocabulary support needs namespaced active registry partitions, a compiled multi-pattern matcher, and archived terms kept out of the hot path before RSS claims large-pack performance.
+- RUNE scale path: current classification and embedded disallowed scanning are linear in active registry size and scan the global registry. Large-vocabulary support needs namespaced active registry partitions, a compiled multi-pattern matcher, and archived terms kept out of the hot path before RSS claims large-pack performance.
 - RUNE per-pack/domain term and synonym namespaces plus v0.1.1 synonym confidence semantics. MED and LOW currently collapse to AMBIGUOUS, so distinct confirmation-state behavior must be designed and tested before RSS claims it.
 - TECTON policy overlays: per-tenant overlays may tighten scope, terms, permissions, consent, and domain packs, but may not loosen or fork the global constitutional floor.
 - Sigil universality proposal: current seat sigils are encoding-unstable and mostly latent. `docs/proposals/SIGIL_SET_PROPOSAL.md` tracks candidate replacement sets, ASCII fallback, authority-marker caveats, and the v0.1.1 amendment/re-anchor migration map.

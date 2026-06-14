@@ -231,6 +231,34 @@ class MeaningLaw:
         matches.sort(key=lambda m: m["position"])
         return matches
 
+    def scan_disallowed(self, text: str, case_sensitive: bool = False) -> List[dict]:
+        """Detect embedded disallowed terms within a longer string (§2.3, §2.8).
+
+        classify() matches a disallowed phrase only by exact equality, so a
+        disallowed term that is also a sealed term does not reject every
+        sentence mentioning it. That is correct for whole-phrase classification
+        but insufficient for auditing arbitrary payloads, where a disallowed
+        action can be embedded inside a larger argument string.
+
+        Returns a list of {phrase, reason, position} for each disallowed term
+        found as a discrete bounded token. Empty list means no embedded
+        disallowed term was detected.
+        """
+        normalized = _normalize_phrase(text)
+        compare = normalized if case_sensitive else normalized.lower()
+        hits = []
+        for phrase, reason in self._disallowed.items():
+            # Keys in _disallowed are already normalized + lowercased by disallow().
+            if self._word_boundary_match(phrase, compare):
+                match = re.search(r"\b" + re.escape(phrase) + r"\b", compare)
+                hits.append({
+                    "phrase": phrase,
+                    "reason": reason,
+                    "position": match.start() if match else -1,
+                })
+        hits.sort(key=lambda h: h["position"])
+        return hits
+
     def _detect_compounds(self, compare: str, case_sensitive: bool) -> List[str]:
         """Internal helper for compound detection attached to primary classify.
         Expects `compare` to already be the normalized + case-folded form."""
@@ -308,10 +336,9 @@ class MeaningLaw:
         The key is stored in normalized, case-folded form so classify()
         matches whitespace, punctuation, and NFKC variants consistently
         (§2.1.2). Disallowance is exact-equality after normalization, not
-        word-boundary; use this for phrases that should never be submitted
-        alone. If you need embedded-in-sentence rejection, register
-        multiple disallowance variants or promote the check to a SCOPE
-        policy."""
+        word-boundary in classify(); use this for phrases that should never
+        be submitted alone. Use scan_disallowed() when auditing longer
+        payloads for embedded disallowed terms."""
         key = _normalize_phrase(phrase).lower()
         if not key:
             raise MeaningError("Cannot disallow an empty phrase")

@@ -215,6 +215,16 @@ def test_meaning_law():
     s = rune.classify("forbidden_term")
     check(s.status == "DISALLOWED", "disallowed term blocked")
 
+    hits = rune.scan_disallowed("please include forbidden_term in the payload")
+    check(len(hits) == 1, "embedded disallowed term detected")
+    check(hits[0]["phrase"] == "forbidden_term", "embedded disallowed hit reports phrase")
+    check(hits[0]["reason"] == "Explicitly banned", "embedded disallowed hit reports reason")
+    check(hits[0]["position"] >= 0, "embedded disallowed hit reports position")
+    check(rune.scan_disallowed("forbidden_terminal") == [],
+          "embedded disallowed scan respects word boundaries")
+    s = rune.classify("please include forbidden_term in the payload")
+    check(s.status != "DISALLOWED", "classify exact-match disallowed semantics unchanged")
+
     t = rune.update_term("T1", "Updated definition")
     check(t.version == "1.1", "version bumped")
 
