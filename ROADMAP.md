@@ -97,16 +97,21 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **Recovery before keys:** cryptographic identity must be designed recovery-first. Keys may strengthen attestation, but they must not become the only way T-0 can recover lawful authority under Section 0.1.4.
 - **Operational identity:** future TECTON deployment users should carry operational credentials and role scopes separate from, subordinate to, and unable to amend constitutional T-0 authority. Key rotation, revocation, and recovery are governed/audited events; keys do not belong in repo, Pact text, or TRACE payloads.
 - **Action-proposal loop:** v0.1.0 is a single forward pass: model output is sanitized and logged, but it does not re-enter the gates. The v0.1.1+ frontier is a typed action proposal and side-effect broker where every proposed side effect re-enters SCOPE, RUNE, execution validation, OATH, and CYCLE before execution. The future design boundary is captured in `docs/ACTION_PLANE.md`.
+- **Three-window governance model:** future architecture is organized as before model exposure, during observable output generation, and after output when proposed actions re-enter governance. This is a planning model in `docs/proposals/THREE_WINDOW_GOVERNANCE_MODEL.md`, not a claim that RSS observes hidden model thinking.
+- **Cross-OS proof harness:** Windows is the current primary proof environment. Linux should be the first cross-OS CI target for the canonical runner, public hygiene, reverse map, cold verification, and file-write/export paths. Android remains an adapter/action-surface testbed, not a kernel port; macOS follows later.
 - **Tier 2.5 advisor layer:** future internal advisors may assess, narrow, and recommend through structured packets, including amendment/code consistency review. They remain non-authoritative: automate assessment, never authorization.
 - **Sigil universality:** `docs/proposals/SIGIL_SET_PROPOSAL.md` remains the public design surface for encoding-stable sigils and authority-marker caveats. No glyph change is built or claimed in v0.1.0.
 
 ### Keep Warm
 - API/wrapper ingress boundary and caller identity propagation.
 - Per-action/tool-call enforcement before real side effects execute.
+- Observable stream enforcement before release of generated output: buffer streamed chunks, meter token/byte/cost estimates, halt on governed violations, and emit completion/halt receipts without claiming hidden-reasoning visibility.
 - Structured Action Proposals: LLM output becomes a typed proposed task that must re-enter SCOPE, RUNE, Execution, OATH, and CYCLE before any side-effect broker acts. See `docs/ACTION_PLANE.md` for the planning-only boundary.
 - Minimum proposal shape to evaluate later: `proposal_id`, `source_task_id`, `action_class`, `target_resource`, `payload`, `container_id`, `proposed_at`, and a payload hash/TTL binding. The broker boundary must emit proposal, rejection, authorization, and execution receipts before any external file, API, network, or tool side effect.
+- Runtime Obligation Ledger: future live record of active leases, container bindings, consent source, budget, result-import requirement, verification requirement, and TRACE obligations after authorization.
 - Cryptographic/mechanical T-0 identity gate for Safe-Stop clearing beyond the current soft `t0_command=True` fence.
 - Zero-trust hardening sequence: authenticated ingress, actor-bound request context, capability-scoped side-effect broker, per-action/tool-call authorization, signed TRACE exports, external timestamp anchoring, and auditable recovery/bypass paths.
+- Cross-OS proof: treat OS differences as proof surfaces, not assumptions. Windows is proven locally; Linux CI is the first portability target; Android belongs to adapter proof; macOS is a later completeness target.
 - OATH duration policy and stronger coercion-warning semantics.
 - RUNE scale path: current classification and embedded disallowed scanning are linear in active registry size and scan the global registry. Large-vocabulary support needs namespaced active registry partitions, a compiled multi-pattern matcher, and archived terms kept out of the hot path before RSS claims large-pack performance.
 - RUNE per-pack/domain term and synonym namespaces plus v0.1.1 synonym confidence semantics. MED and LOW currently collapse to AMBIGUOUS, so distinct confirmation-state behavior must be designed and tested before RSS claims it.
@@ -343,7 +348,9 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - capability leases for future side-effect work: short-lived, scoped, revocable authorization objects bound to actor/request, action class, target resource, container, TTL, budget, and payload hash
 - CYCLE budget/anomaly extension: prove bounded behavior for retry loops, repeated denied actions, abnormal bursts, execution-budget exhaustion, and token/cost budget exhaustion in addition to simple request cadence
 - PAV token-economy constraints: define entry-count, character/token-estimate, source, and total-context ceilings so governed PAV construction remains least-context evidence rather than a trusted context dump; audit/history material should stay outside model-facing prompts unless explicitly scoped back in
+- three-window governance proposal: use `docs/proposals/THREE_WINDOW_GOVERNANCE_MODEL.md` to keep before/during/after language precise; "during" means observable output stream enforcement, not hidden model-thought visibility
 - runner JSON verdict export for independent verification and future CI
+- Linux CI gate for `tests/test_all.py`, `docs/check_public_hygiene.py`, reverse Pact-code map freshness, cold verification, and guarded canon export behavior before claiming cross-OS proof
 - live LLM evaluation harness for governed usefulness under PAV constraints: score whether live adapters answer from expected evidence markers while preserving refusal/isolation boundaries
 - external-map refinement for public reviewers
 - post-v0.1.0 seat load-bearing audit: verify each seat owns a unique invariant as connectors and per-action gates arrive
@@ -395,6 +402,7 @@ These are product/substrate directions, not v0.1.0 blockers:
 - one law, many worlds: TECTON may support tighten-only tenant/domain policy overlays for terms, scope, consent, permissions, hubs, and packs, while the global Pact remains unforked and non-tenant-editable
 - multi-voice amendment review: advisor packets can inform T-0 during amendment review, while T-0 and SEAL remain the authority path
 - agent terminology: define agentic systems as Tier 3 model/tool loops whose agency grants no authority; proposed actions must re-enter RSS governance before side effects execute
+- runtime obligation ledger: track active constraints after authorization so confirmed actions remain bound to container, lease, budget, result-import, verification, and TRACE requirements
 - TECTON operator surfaces for amendment queues, ratification previews, drift indicators, cold-verifier reports, consent-source views, and recovery/bypass receipts
 - public vocabulary translation table for product copy: Pact terms remain precise internally, while UI language uses operator, authority module, amendment workflow, and system owner where those are clearer
 
@@ -423,6 +431,7 @@ Execution and side effects:
 - **Side effects:** only governable when they pass through the runtime boundary.
 - **Per-action enforcement:** current runtime is request/task-level with action-class gates; per-tool-call gating is active future hardening.
 - **Wrapper/API boundary:** context propagation across ASGI, worker threads, background jobs, and external tools remains unresolved.
+- **Cross-OS proof:** current proof is Windows-local. Linux, Android-adapter, and macOS claims require their own gates before public wording expands.
 
 Imported content and meaning:
 - **Indirect prompt injection:** future external-content importers must preserve the data/instruction boundary across hidden text, metadata, comments, retrieved snippets, and tool returns.

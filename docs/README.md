@@ -9,6 +9,7 @@ This file is a routing layer for the public documentation. It is not a separate 
 - `../README.md` - project overview, reviewer path, quick start, and public positioning.
 - `../ROADMAP.md` - current state, active focus, release boundary, and future queue.
 - `../TRUTH_REGISTER.md` - what RSS can claim now, what is partial, and what remains future.
+- `PROJECT_CONTROL_SURFACE.md` - routing map for which public document owns which type of claim.
 
 ## Proof And Gates
 
@@ -43,6 +44,7 @@ This file is a routing layer for the public documentation. It is not a separate 
 - `proposals/` - public proposal documents for future design lanes.
 - `proposals/V0_1_1_AMENDMENT_PLAN.md` - current amendment-planning surface.
 - `proposals/PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md` - canon export and amendment workflow proposal.
+- `proposals/THREE_WINDOW_GOVERNANCE_MODEL.md` - future before/during/after governance model; not a current release claim.
 
 ## Rule
 

@@ -10,6 +10,18 @@ RSS v0.1.0 does not include a universal action plane, side-effect broker, connec
 
 This document does not amend the Pact and does not change the v0.1.0 proof surface.
 
+## Relationship To Three-Window Governance
+
+The action plane is the future **after-output** window in the broader three-window model:
+
+1. **Before model exposure:** RSS decides what governed context may reach the model.
+2. **During observable output generation:** a future stream gate may inspect buffered output chunks, meter token/cost budgets, and halt before unsafe text is released.
+3. **After output:** model output remains data; any proposed side effect must become a typed action proposal and re-enter governance before execution.
+
+RSS should not describe this as observing model "thinking" unless it has access to model internals. The application-layer claim is narrower: observable output generation and proposed side effects can be governed.
+
+See `proposals/THREE_WINDOW_GOVERNANCE_MODEL.md` for the planning model.
+
 ## Purpose
 
 The future action plane is the execution boundary below the governance kernel.
@@ -38,6 +50,7 @@ A sandbox or worker is containment, not authority. A tool call is not permitted 
 - Capability lease: short-lived, scoped authorization bound to actor/request, action class, target, container, TTL, budget, and payload hash.
 - Execution receipt: broker output describing exactly what ran and what artifact changed.
 - Verifier report: independent check of the artifact or side effect, not a continuation of model reasoning.
+- Runtime obligation ledger: future live record of active leases, budgets, container bindings, result-import requirements, and TRACE obligations after authorization.
 
 ## Hard Rules
 

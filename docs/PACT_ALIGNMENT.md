@@ -257,11 +257,14 @@ Internal advisor layer / Tier 2.5 gap:
 Structured Action Proposal / side-effect broker gap:
 - v0.1.0 has no side-effect broker and makes no claim that model/advisor text can execute tools, files, APIs, network calls, or other external effects.
 - v0.1.0 is a single forward pass: model output is sanitized and logged, but it does not re-enter the gates as a proposed action.
+- Future architecture should use the three-window vocabulary from `docs/proposals/THREE_WINDOW_GOVERNANCE_MODEL.md`: before model exposure, during observable output generation, and after output action governance.
+- Do not describe RSS as observing model "thinking" unless future code has access to hidden model internals. Current/future application-layer wording should refer to observable streamed output, token/chunk boundaries, and proposed side effects.
 - Future Pact wording should define agentic systems explicitly: an external model operating in an action loop with tool access remains Tier 3. Agency is not authorization.
 - Future side-effect work should require a typed proposed-action object rather than free-text execution. Minimum fields to design around: proposal ID, source task ID, action class, target resource, payload or arguments, container binding, creation time, payload hash, and TTL/expiration.
 - Before any side effect executes, the proposed action should re-enter SCOPE, RUNE, execution validation, OATH, and CYCLE. Denial at any seat should produce a structured halt rather than a partial execution.
 - TRACE should record the proposal lifecycle separately from execution: proposed, rejected, authorized, executed, and failed. These event names are future design placeholders until the broker exists.
 - Tool-return or connector-result ingestion remains a separate indirect-prompt-injection surface; executed results must enter through governed untrusted-content import paths before advisory use.
+- A future Runtime Obligation Ledger should record active constraints after authorization: container, actor/request, consent source, lease TTL, budget, payload hash, result-import requirement, verification requirement, and TRACE obligations. This would track obligations; it would not create authority.
 
 Seat interface:
 - WARD's protocol expects seats to expose `status()` and `handle(task)`.
@@ -350,6 +353,7 @@ Before v0.1.1:
 - Preserve the vocabulary rule: keep "seat" as the authority-surface term, prefer operational/constitutional seat classes over broad Council language, and translate formal Pact language for external readers.
 - Before any v0.1.1 amendment ceremony, review `docs/proposals/V0_1_1_AMENDMENT_PLAN.md` so the long candidate list is handled deliberately rather than edited from memory.
 - Before extending canon-to-file export, review `docs/proposals/PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md` so richer Section 1-7 operator reporting and the separate Section 0 Genesis path stay distinct.
+- Before expanding public before/during/after language, review `docs/proposals/THREE_WINDOW_GOVERNANCE_MODEL.md` so stream-boundary claims do not become hidden-reasoning claims.
 - CLOSED: SCOPE/RUNE now expose WARD-compatible `status()` and `handle(task)` adapters while remaining direct law services on the runtime request path.
 - Add or schedule tests for WARD hook protected-field coverage and RUNE confidence/edge-token behavior.
 - Keep this file aligned with any new tests that prove additional Pact clauses.

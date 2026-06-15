@@ -13,6 +13,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - **24 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
+- Added `docs/proposals/THREE_WINDOW_GOVERNANCE_MODEL.md` and `docs/PROJECT_CONTROL_SURFACE.md` to define the future before/during/after governance model, cross-OS proof posture, "An AI that waits" positioning boundary, and which public docs own which claims; planning/docs only, no current capability claim.
 - Section 0 integrity verification and persistent Safe-Stop flow
 - hash-chained TRACE with cold verification and schema/version scaffolding
 - REDLINE fail-closed query behavior and export sanitization

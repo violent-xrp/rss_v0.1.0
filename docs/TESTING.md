@@ -89,6 +89,23 @@ python -m pytest -q tests/test_all.py
 
 `pytest` is optional and may not be installed in the active Python environment.
 
+## Future Cross-OS Proof
+
+The current canonical runner is the local source of truth for the Windows development environment. RSS should remain OS-neutral as a Python governance kernel, but portability is a proof surface, not an assumption.
+
+Future cross-OS gates should start with Linux CI before any public portability claim expands. The first Linux gate should run:
+
+```bash
+python tests/test_all.py
+python docs/check_public_hygiene.py
+python docs/build_pact_code_map.py --check
+git diff --check
+```
+
+Cross-OS review should pay special attention to path normalization, CRLF/LF handling, Genesis/hash-sensitive newline behavior, SQLite WAL and file-locking behavior, temp-file replacement semantics, subprocess behavior, and terminal/Unicode encoding.
+
+Android is an adapter/action-surface testbed, not a core kernel port. macOS proof can follow after Windows and Linux are stable.
+
 ## Test Layout
 
 `tests/test_all.py` remains the single acceptance surface and gives one truthful verdict.

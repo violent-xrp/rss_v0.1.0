@@ -8,6 +8,7 @@ Active proposals:
 
 - `V0_1_1_AMENDMENT_PLAN.md` - section-ordered plan for the first post-`v0.1.0` Pact amendment cycle. Option B is selected for Ceremony 1: Sections 1, 3, and 6 only, with Section 0 deferred to a dedicated Genesis-aware ceremony.
 - `PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md` - partially implemented workflow for exporting sealed Section 7 canon back to human-readable Pact files; the guarded Sections 1-7 exporter exists, while the Genesis-aware Section 0 path remains future work.
+- `THREE_WINDOW_GOVERNANCE_MODEL.md` - before/during/after governance model: pre-model exposure, observable output generation, and post-output action governance. Proposal only.
 - `SIGIL_SET_PROPOSAL.md` - encoding-stable seat-sigil candidates and future authority-marker caveats.
 
 Rules:
