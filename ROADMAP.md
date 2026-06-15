@@ -39,7 +39,7 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **162 test functions / 1490 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **162 test functions / 1494 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
 - **92.2% statement coverage** via `python run_coverage.py`
 - **162 claims / 162 tests / 114 Pact sections** in `docs/claim_matrix.md`
 - **24 kernel modules** in the `src/rss/` package tree plus `src/main.py`
@@ -48,7 +48,7 @@ Current code state:
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 162/1490 baseline
+- public docs are synced to the current 162/1494 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -112,7 +112,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - Cryptographic/mechanical T-0 identity gate for Safe-Stop clearing beyond the current soft `t0_command=True` fence.
 - Zero-trust hardening sequence: authenticated ingress, actor-bound request context, capability-scoped side-effect broker, per-action/tool-call authorization, signed TRACE exports, external timestamp anchoring, and auditable recovery/bypass paths.
 - Cross-OS proof: treat OS differences as proof surfaces, not assumptions. Windows is proven locally; Linux CI is the first portability target; Android belongs to adapter proof; macOS is a later completeness target.
-- OATH duration policy and stronger coercion-warning semantics.
+- OATH duration policy and stronger coercion-warning semantics; the current urgency-word helper is now honestly named as keyword-limited, not coercion detection.
 - RUNE scale path: current classification and embedded disallowed scanning are linear in active registry size and scan the global registry. Large-vocabulary support needs namespaced active registry partitions, a compiled multi-pattern matcher, and archived terms kept out of the hot path before RSS claims large-pack performance.
 - RUNE per-pack/domain term and synonym namespaces plus v0.1.1 synonym confidence semantics. MED and LOW currently collapse to AMBIGUOUS, so distinct confirmation-state behavior must be designed and tested before RSS claims it.
 - TECTON policy overlays: per-tenant overlays may tighten scope, terms, permissions, consent, and domain packs, but may not loosen or fork the global constitutional floor.
@@ -361,7 +361,7 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - CLOSED: OATH structured `check(detailed=True)` preserves the current string return while exposing consent source (`CONTAINER`, `GLOBAL`, `GLOBAL_FALLBACK`, `ABSENT`, `ERROR`) for audit/reviewer context.
 - OATH duration decision: either enforce expiry through deterministic time semantics or document `ConsentRecord.duration` as metadata-only
 - CLOSED: OATH explicit `DENIED` consent status and `deny()` operation now let a container-specific denial override GLOBAL authorization, and DENIED records survive restore/restart without being upgraded.
-- OATH coercion detection cleanup: rename the current keyword flag as limited, or build a real governed warning surface before claiming coercion defense
+- CLOSED: OATH coercion wording cleanup renamed the current urgency-word check as `detect_coercion_keyword_limited()` / `keyword_flagged` while preserving a legacy wrapper; real governed coercion-warning semantics remain future work.
 - OATH nested consent inheritance only if TECTON grows parent/child container hierarchy
 - last-resort consent failure receipt if durable consent persistence and TRACE failure notification fail at the same time
 - mechanical T-0 gate ordering for Pact-reserved powers: `authorize_t0(action, context)` now centralizes the current soft command check for Safe-Stop clearing, SEAL seal/ratification, and runtime RUNE term/synonym/disallowed mutations; seat changes, broader container lifecycle authority, and cryptographic/mechanical identity remain future hardening
@@ -440,7 +440,7 @@ Imported content and meaning:
 - **RUNE synonym namespace:** synonyms are global today; multi-pack/domain collisions must be namespaced before domain packs can be composed freely.
 - **OATH consent duration:** duration is recorded today but not enforced as expiry unless/until v0.1.1 hardening changes that contract.
 - **OATH audit dual-failure gap:** if consent persistence fails and the failure callback/audit path also fails, the caller still receives refusal but TRACE may not record the failed consent attempt.
-- **OATH coercion check:** current coercion detection is a narrow keyword flag, not a full coercion-defense system.
+- **OATH coercion check:** current support is a narrow urgency-keyword flag, not a full coercion-defense system.
 
 Persistence, audit, and Pact drift:
 - **External audit anchoring:** cold verification exists, but signing/timestamp anchoring is Phase H.

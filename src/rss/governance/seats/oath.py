@@ -322,10 +322,31 @@ class Oath:
 
         return {"status": "DENIED", "source": "ABSENT"} if detailed else "DENIED"
 
-    def detect_coercion(self, pattern: str, requester: str) -> dict:
+    def detect_coercion_keyword_limited(self, pattern: str, requester: str) -> dict:
+        """Limited urgency-keyword flag.
+
+        This is not coercion detection. It is a hardcoded keyword-presence
+        check, so the return field is named `keyword_flagged` instead of a
+        stronger claim like `coercion_detected`. A real coercion-defense
+        surface remains future hardening.
+        """
         flags = ["urgent", "override", "immediately", "bypass", "emergency"]
-        detected = any(f in pattern.lower() for f in flags)
-        return {"coercion_detected": detected, "pattern": pattern}
+        compare = pattern.lower()
+        matched_flags = [f for f in flags if f in compare]
+        return {
+            "keyword_flagged": bool(matched_flags),
+            "matched_flags": matched_flags,
+            "pattern": pattern,
+        }
+
+    def detect_coercion(self, pattern: str, requester: str) -> dict:
+        """Compatibility wrapper for the former method name.
+
+        Older callers can still resolve the method, but the payload remains the
+        honest keyword-limited contract and does not reintroduce a
+        `coercion_detected` field.
+        """
+        return self.detect_coercion_keyword_limited(pattern, requester)
 
     def status(self) -> dict:
         active = [k for k, v in self._consents.items() if v.status == "AUTHORIZED"]

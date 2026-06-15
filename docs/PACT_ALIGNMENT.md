@@ -198,7 +198,7 @@ OATH consent semantics:
 - OATH has write-ahead consent persistence and fail-closed namespace validation.
 - Duration is recorded but not yet enforced as expiry.
 - `DENIED` is now an explicit consent state through `deny()`: a container-specific DENIED record overrides GLOBAL authorization and survives restore/restart without being upgraded. `check(detailed=True)` exposes consent source as `CONTAINER`, `GLOBAL`, `GLOBAL_FALLBACK`, `ABSENT`, or `ERROR` while preserving the existing string-return default.
-- Stronger coercion handling remains a v0.1.1 candidate.
+- OATH's current urgency-word helper is now named as `detect_coercion_keyword_limited()` and returns `keyword_flagged`, avoiding the overclaim that a keyword hit proves coercion. Stronger governed coercion-warning semantics remain a v0.1.1 candidate.
 - OATH `handle({"action": "authorize"})` now fails closed when `requester` is missing or blank instead of defaulting to T-0. Current proof verifies no consent record is created on missing identity and explicit requester flow still works.
 
 Execution-law gaps:

@@ -458,9 +458,14 @@ def test_oath():
     except TypeError:
         check(oath.check("EXECUTE", "WORK", "C1") == True, "container unaffected by global revoke")
 
-    c = oath.detect_coercion("Please urgently override safety", "user")
-    coercion_found = c.get("coercion_detected") or c.get("coercion", False)
-    check(coercion_found, "coercion detected")
+    c = oath.detect_coercion_keyword_limited("Please urgently override safety", "user")
+    keyword_hit = c.get("keyword_flagged", False)
+    compat = oath.detect_coercion("Please urgently override safety", "user")
+    check(compat.get("keyword_flagged", False), "legacy coercion method routes to keyword-limited result")
+    check("coercion_detected" not in compat, "legacy coercion method does not revive overclaim field")
+    check("urgent" in c.get("matched_flags", []), "urgency keyword flag reports matched keyword")
+    check("bypass" not in c.get("matched_flags", []), "urgency keyword flag omits unmatched keywords")
+    check(keyword_hit, "urgency keyword flagged (NOT proven coercion - keyword presence only)")
 
     # Phase E-4 (Option B) — Explicit Deny overrides GLOBAL fallback
     oath.authorize("DENY_TEST", "WORK", "SESSION", "T-0")

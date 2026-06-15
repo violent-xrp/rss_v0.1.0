@@ -7,7 +7,7 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
 
 ### Current verified snapshot
-- **162 test functions / 1490 assertions / 0 failures** via `python tests/test_all.py`
+- **162 test functions / 1494 assertions / 0 failures** via `python tests/test_all.py`
 - **92.2% statement coverage** via `python run_coverage.py`
 - **162 claims / 162 tests / 114 Pact sections** in `docs/claim_matrix.md`
 - **24 source modules** in the `src/rss/` package tree (R1 restructure complete)
@@ -65,6 +65,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - LLM availability-check timeout is config-driven via `llm_availability_check_timeout`
 - `_PIPELINE_STAGES` promoted to module-level constant in `runtime.py`
 - OATH namespace hardening normalizes action/request/container inputs and fails closed on malformed delimiter-bearing bindings
+- OATH's urgency-word helper is now named and returned honestly as `detect_coercion_keyword_limited()` / `keyword_flagged`; the legacy `detect_coercion()` method remains as a compatibility wrapper, but real coercion-defense semantics remain future work.
 - SCRIBE proof and coverage density now covers duplicate drafts, missing write/promote paths, empty promotions, candidate editing, UAP/status, and dispatch
 - chain-hash migration scaffold now proves same-version no-op and version-change warning behavior
 - sustained audit-write failure proof now verifies threshold-triggered Safe-Stop persists across restart

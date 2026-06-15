@@ -31,7 +31,7 @@ scope.py                    92.6%
 llm_adapter.py              90.1%
 audit_log.py                87.4%
 runtime.py                  85.9%
-oath.py                     83.2%
+oath.py                     83.5%
 pav.py                      90.9%
 constitution.py             92.5%
 TOTAL                       92.2%
