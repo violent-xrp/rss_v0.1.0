@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Rose Sigil Systems is a test-backed Python prototype for pre-model AI workflow governance: scoped access, consent gates, audit traces, and fail-closed behavior."
+      content="Rose Sigil Systems is a test-backed Python alpha for AI workflow governance before model exposure, with a roadmap toward observable during and after-action control."
     >
     <link rel="canonical" href="https://rosesigilsystems.com/">
     <meta property="og:type" content="website">
@@ -13,13 +13,13 @@
     <meta property="og:title" content="Rose Sigil Systems | AI Workflow Governance">
     <meta
       property="og:description"
-      content="A test-backed Python prototype for pre-model AI workflow governance: scoped access, consent gates, audit traces, and fail-closed behavior."
+      content="A test-backed Python alpha for AI workflow governance before model exposure, with a roadmap toward observable during and after-action control."
     >
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Rose Sigil Systems | AI Workflow Governance">
     <meta
       name="twitter:description"
-      content="A test-backed Python prototype for pre-model AI workflow governance: scoped access, consent gates, audit traces, and fail-closed behavior."
+      content="A test-backed Python alpha for AI workflow governance before model exposure, with a roadmap toward observable during and after-action control."
     >
     <title>Rose Sigil Systems | AI Workflow Governance</title>
     <style>
@@ -474,6 +474,81 @@ h1 {
 
 .solution-card {
   border-top: 3px solid var(--green);
+}
+
+.window-section {
+  background:
+    linear-gradient(180deg, rgba(17, 24, 33, 0.96), rgba(12, 17, 24, 0.96));
+}
+
+.window-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  width: min(1120px, 100%);
+  margin: 34px auto 0;
+}
+
+.window-card {
+  position: relative;
+  min-height: 270px;
+  padding: 24px;
+  border: 1px solid var(--glass-line);
+  background:
+    linear-gradient(180deg, rgba(40, 50, 62, 0.62), rgba(20, 27, 36, 0.58));
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(16px) saturate(126%);
+  overflow: hidden;
+}
+
+.window-card::before {
+  content: attr(data-window);
+  position: absolute;
+  right: 18px;
+  top: 14px;
+  color: rgba(244, 240, 234, 0.08);
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 3.4rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.window-card.current {
+  border-color: rgba(224, 115, 129, 0.42);
+  background:
+    linear-gradient(180deg, rgba(72, 38, 48, 0.5), rgba(20, 27, 36, 0.64));
+}
+
+.window-card h3 {
+  position: relative;
+  margin-bottom: 14px;
+  color: var(--text);
+  font-size: 1.15rem;
+}
+
+.window-card p,
+.window-card li {
+  position: relative;
+  color: var(--muted);
+}
+
+.window-card ul {
+  position: relative;
+  display: grid;
+  gap: 9px;
+  margin: 18px 0 0;
+  padding-left: 18px;
+}
+
+.window-status {
+  position: relative;
+  display: inline-flex;
+  margin-bottom: 18px;
+  color: var(--amber);
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .architecture-section {
@@ -1158,11 +1233,12 @@ code {
   .trace-strip,
   .seat-grid,
   .zone-lane,
-    .metrics,
-    .boundary-list,
-    .contrast-grid,
-    .turbo-feature,
-    .lineage-feature {
+  .metrics,
+  .boundary-list,
+  .contrast-grid,
+  .window-grid,
+  .turbo-feature,
+  .lineage-feature {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1195,11 +1271,12 @@ code {
   .trace-strip,
   .seat-grid,
   .zone-lane,
-    .metrics,
-    .boundary-list,
-    .contrast-grid,
-    .turbo-feature,
-    .lineage-feature {
+  .metrics,
+  .boundary-list,
+  .contrast-grid,
+  .window-grid,
+  .turbo-feature,
+  .lineage-feature {
     grid-template-columns: 1fr;
   }
 
@@ -1609,6 +1686,7 @@ code {
       </a>
       <nav class="nav-links" aria-label="Page sections">
         <a href="#problem">Problem</a>
+        <a href="#windows">Lifecycle</a>
         <a href="#architecture">Architecture</a>
         <a href="#proof">Proof</a>
         <a href="#boundaries">Boundaries</a>
@@ -1624,9 +1702,10 @@ code {
           <h1>Rose Sigil Systems</h1>
           <p class="hero-line">An AI that Waits.</p>
           <p class="hero-copy">
-            RSS sits in front of the model path and decides what governed context an AI workflow may
-            receive before a model is asked to answer. Scope gets declared. Consent gets checked.
-            Audit evidence gets written. If the boundary is missing, the system stops.
+            Rose Sigils is the umbrella posture: govern AI work before models see context, during
+            observable generation or action streams, and after side effects are proposed. This alpha
+            proves the first window: scoped context, consent checks, audit evidence, and fail-closed
+            behavior before model exposure.
           </p>
           <div class="hero-actions" aria-label="Primary actions">
             <a class="button primary" href="https://github.com/violent-xrp/rss_v0.1.0">View repository</a>
@@ -1673,6 +1752,62 @@ code {
               meaning through RUNE, checks consent through OATH, bounds cadence through CYCLE, and builds
               a Prepared Advisory View instead of handing the model the full environment.
             </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="windows" class="section-band window-section">
+        <div class="section-heading">
+          <p class="eyebrow">Rose Sigils control surface</p>
+          <h2>The long-term shape is before, during, and after.</h2>
+          <p>
+            The public alpha is strongest at the before window. The broader Rose Sigils direction is
+            to keep governance alive across the observable lifecycle of AI work without claiming access
+            to hidden model thinking.
+          </p>
+        </div>
+        <div class="window-grid" aria-label="Before during after governance model">
+          <article class="window-card current" data-window="01">
+            <span class="window-status">Built alpha focus</span>
+            <h3>Before</h3>
+            <p>
+              Decide what the workflow may see and what authority exists before a model is asked to
+              answer.
+            </p>
+            <ul>
+              <li>scope and source limits</li>
+              <li>consent and cadence gates</li>
+              <li>PAV context construction</li>
+              <li>REDLINE exclusion and Safe-Stop</li>
+            </ul>
+          </article>
+          <article class="window-card" data-window="02">
+            <span class="window-status">Roadmap</span>
+            <h3>During</h3>
+            <p>
+              Watch observable output or action streams as they form, then narrow, pause, or halt when
+              governed boundaries are crossed.
+            </p>
+            <ul>
+              <li>stream-level enforcement</li>
+              <li>token and budget visibility</li>
+              <li>mid-output REDLINE checks</li>
+              <li>receipts for suppressed output</li>
+            </ul>
+          </article>
+          <article class="window-card" data-window="03">
+            <span class="window-status">Roadmap</span>
+            <h3>After</h3>
+            <p>
+              Keep the kernel active around proposed actions, side effects, audit receipts, recovery,
+              and long-running obligations.
+            </p>
+            <ul>
+              <li>structured action proposals</li>
+              <li>capability leases and revocation</li>
+              <li>post-output enforcement</li>
+              <li>container-level obligations</li>
+            </ul>
           </article>
         </div>
       </section>
@@ -1889,8 +2024,8 @@ code {
           <li>Not an enterprise or customer deployment.</li>
           <li>Not a certified security or compliance product.</li>
           <li>Not cryptographically authenticated at ingress yet.</li>
+          <li>Not inspection of hidden model thinking.</li>
           <li>Not per-action/tool-call enforced for every future side effect.</li>
-          <li>Not a complete zero-trust implementation.</li>
         </ul>
       </section>
 
@@ -1901,8 +2036,8 @@ code {
           <p>
             The direction is TECTON: isolated AI workspaces where each client, project, or
             operational domain has its own governed context, hub topology, and audit surface.
-            RSS remains the shared law underneath those worlds. The future product is the layer
-            agents plug into before they touch consequential work.
+            RSS remains the shared law underneath those worlds. The broader Rose Sigils surface
+            is the layer agents plug into before, during, and after consequential work.
           </p>
         </div>
       </section>
@@ -1939,7 +2074,8 @@ code {
                 AI is entering its own turbo era: stronger models, faster agents, more tool access,
                 and more autonomy. RSS treats that as a structural problem. It explores what happens
                 when scoped context, consent checks, audit traces, and fail-closed behavior are built
-                into the workflow before the model is asked to answer.
+                into the workflow before the model is asked to answer, then extended toward observable
+                output streams and governed side effects.
               </p>
             </article>
 
