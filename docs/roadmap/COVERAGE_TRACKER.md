@@ -18,10 +18,10 @@ audit/migrate.py           100.0%
 scribe.py                  100.0%
 reference_pack.py          100.0%
 trace_verify.py             94.3%
-trace_export.py             95.5%
+trace_export.py             89.9%
 tecton.py                   94.8%
 cycle.py                    94.2%
-persistence.py              94.4%
+persistence.py              93.3%
 meaning_law.py              94.2%
 hub_topology.py             92.7%
 seal.py                     94.0%
@@ -34,7 +34,7 @@ runtime.py                  85.9%
 oath.py                     83.5%
 pav.py                      90.9%
 constitution.py             92.5%
-TOTAL                       92.2%
+TOTAL                       91.8%
 ```
 
 ## Current Targets

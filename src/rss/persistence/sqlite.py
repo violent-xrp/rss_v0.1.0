@@ -704,6 +704,25 @@ class Persistence:
                 "SELECT COUNT(*) FROM trace_events"
             ).fetchone()[0]
 
+    def redline_entry_ids(self) -> List[str]:
+        """Return persisted REDLINE entry IDs across global and container hubs."""
+        redline_ids = set()
+        with self._lock, self.conn:
+            cur = self.conn.execute("SELECT id FROM hub_entries WHERE redline=1")
+            for row in cur.fetchall():
+                redline_ids.add(row[0])
+
+            try:
+                cur = self.conn.execute(
+                    "SELECT id FROM container_hub_entries WHERE redline=1"
+                )
+                for row in cur.fetchall():
+                    redline_ids.add(row[0])
+            except sqlite3.OperationalError as exc:
+                if "no such table: container_hub_entries" not in str(exc):
+                    raise
+        return list(redline_ids)
+
     def close(self) -> None:
         with self._lock:
             self.conn.close()

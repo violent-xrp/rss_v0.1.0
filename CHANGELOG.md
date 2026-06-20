@@ -7,8 +7,8 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
 
 ### Current verified snapshot
-- **162 test functions / 1494 assertions / 0 failures** via `python tests/test_all.py`
-- **92.2% statement coverage** via `python run_coverage.py`
+- **162 test functions / 1496 assertions / 0 failures** via `python tests/test_all.py`
+- **91.8% statement coverage** via `python run_coverage.py`
 - **162 claims / 162 tests / 114 Pact sections** in `docs/claim_matrix.md`
 - **24 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
@@ -94,6 +94,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - Added `docs/VERSIONING.md` as the canonical three-clock versioning model: semver project releases, `-rc.N` release-candidate iteration only, and Pact section versions through the Section 7 amendment ceremony
 - Added `rss.audit.pact_canon_drift`, a read-only Pact/canon drift detector that reports no-canon, in-sync, file-ahead, and canon-ahead states without mutating Pact files, sealed canon, or Genesis
 - Added `docs/build_pact_code_map.py` and generated `docs/pact_code_map.md` for reverse code-to-Pact traceability; public hygiene now checks the generated map, and the stale verifier citation to nonexistent Section 6.12.4 was corrected to Section 6.12.3
+- Cold TRACE export now collects REDLINE entry IDs through a persistence seam (`Persistence.redline_entry_ids()`) before falling back to SQLite internals, keeping export sanitization behind the storage boundary.
 
 ### Proof growth
 - constitution loader edges
@@ -116,6 +117,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - Phase G coverage-floor closure: every package module is now at or above the 85% floor; `cycle.py` and `trace_verify.py` both moved above 94%
 - default Genesis binding proof now verifies the live Section 0 path/hash, tamper-triggered Safe-Stop, and T-0 recovery after restoring the Section 0 artifact
 - TRACE export sanitizer failure proof covers both JSON and text live exports and verifies no trusted-looking artifact is written after sanitizer failure
+- cold TRACE export proof now verifies the REDLINE ID persistence seam is used before SQLite internals
 - restore skip visibility proof injects malformed or duplicate persisted terms, synonyms, consents, and hub entries, then verifies the runtime reports the skipped records
 
 ### Known limitations preserved honestly

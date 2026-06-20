@@ -42,6 +42,7 @@ from rss.audit.pact_canon_drift import (
     iter_pact_section_files,
     section_id_for_path,
 )
+from rss.audit.export import _collect_redline_ids_from_db
 
 
 def test_audit_log():
@@ -1860,6 +1861,29 @@ def test_trace_export_cold_container_redline_sanitization():
         rss.persistence.close()
 
         cold = Persistence(path)
+        check(entry.id in set(cold.redline_entry_ids()),
+              "cold persistence exposes container REDLINE ids through seam")
+
+        class SeamOnlyPersistence:
+            def __init__(self):
+                self.calls = 0
+
+            def redline_entry_ids(self):
+                self.calls += 1
+                return [entry.id]
+
+            @property
+            def conn(self):
+                raise AssertionError("collector should not touch conn when seam exists")
+
+            @property
+            def _lock(self):
+                raise AssertionError("collector should not touch _lock when seam exists")
+
+        seam_only = SeamOnlyPersistence()
+        check(_collect_redline_ids_from_db(seam_only) == {entry.id}
+              and seam_only.calls == 1,
+              "cold REDLINE collector uses persistence seam before SQLite internals")
         count_json = export_from_db(cold, out_json, fmt="json")
         check(count_json >= 1, "cold JSON export runs")
         with open(out_json, "r", encoding="utf-8") as f:

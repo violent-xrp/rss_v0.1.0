@@ -83,6 +83,9 @@ def _collect_redline_ids_from_db(persistence) -> set:
     """
     redline_ids = set()
     try:
+        if hasattr(persistence, "redline_entry_ids"):
+            return set(persistence.redline_entry_ids())
+
         with persistence._lock:
             cur = persistence.conn.execute(
                 "SELECT id FROM hub_entries WHERE redline=1"
