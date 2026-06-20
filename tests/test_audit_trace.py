@@ -27,6 +27,7 @@
 Mechanical split from tests/test_all.py; proof bodies and # CLAIM tags are preserved.
 """
 import io
+import threading
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -2220,6 +2221,58 @@ def test_trace_verify_human_report_branches():
     finally:
         _cleanup_db(path)
         _cleanup_db(schema_path)
+
+
+def test_trace_chain_survives_concurrent_governed_writes():
+    # CLAIM: §6.3.6, §6.5.2 — TRACE chain append and persistence order remain valid under concurrent governed writes.
+    section("TRACE Chain Concurrency")
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+        thread_count = 16
+        writes_per_thread = 25
+        errors = []
+        counts = {}
+
+        def worker(tid):
+            ok = 0
+            for i in range(writes_per_thread):
+                try:
+                    rss.save_hub_entry("WORK", f"t{tid}-i{i} concurrent governed write")
+                    ok += 1
+                except Exception as exc:
+                    errors.append((tid, i, repr(exc)))
+            counts[tid] = ok
+
+        threads = [
+            threading.Thread(target=worker, args=(tid,))
+            for tid in range(thread_count)
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=30)
+
+        expected = thread_count * writes_per_thread
+        total_ok = sum(counts.values())
+        check(len(errors) == 0,
+              f"no exceptions under concurrent governed writes (errors={len(errors)})")
+        check(total_ok == expected,
+              f"all concurrent governed writes completed ({total_ok}/{expected})")
+        check(len(rss.trace.events_by_code("HUB_ENTRY_ADDED")) == expected,
+              "no HUB_ENTRY_ADDED TRACE events lost under concurrency")
+
+        rss.persistence.close()
+
+        from rss.audit.verify import verify_trace_file
+        result = verify_trace_file(path)
+        check(result["verified"] is True,
+              f"cold TRACE verification survives concurrent writes "
+              f"(break_at={result.get('first_break_at_index')})")
+    finally:
+        _cleanup_db(path)
 
 
 def test_trace_export_additional_proof():

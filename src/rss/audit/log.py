@@ -47,6 +47,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime, UTC
 from typing import Any, List, Optional
@@ -120,6 +121,9 @@ class AuditLog:
     _known_codes: Optional[frozenset] = None
     _strict_codes: bool = False
     _warned_codes: set = field(default_factory=set)
+    # record_event reads the parent hash, computes the next hash, and appends.
+    # That sequence must be atomic or concurrent callers can fork the chain.
+    _lock: Any = field(default_factory=threading.RLock, compare=False, repr=False)
 
     def set_code_registry(self, registry, strict: bool = False) -> None:
         """§6.6.4 — Attach an event code registry for emission-time validation.
@@ -289,37 +293,38 @@ class AuditLog:
         # byte_length tracks the raw payload size (semantics unchanged).
         content_bytes = self._to_bytes(content)
 
-        # Auto-chain: use last event's hash as parent if not provided.
-        if parent_hash is None and self._events:
-            parent_hash = self._events[-1].content_hash
+        with self._lock:
+            # Auto-chain: use last event's hash as parent if not provided.
+            if parent_hash is None and self._events:
+                parent_hash = self._events[-1].content_hash
 
-        timestamp = datetime.now(UTC)
+            timestamp = datetime.now(UTC)
 
-        # §6.3.6 — Full-envelope hash. All fields that identify the event
-        # participate, so duplicate summary content cannot collide into the
-        # same hash, and any mutation breaks the downstream link check.
-        envelope = {
-            "v": CHAIN_HASH_VERSION,
-            "timestamp": timestamp.isoformat(),
-            "event_code": event_code,
-            "authority": authority,
-            "artifact_id": artifact_id,
-            "content": _normalize_content_for_hash(content),
-            "parent_hash": parent_hash or "",
-        }
-        content_hash = hashlib.sha256(canonical_json(envelope)).hexdigest()
+            # §6.3.6 — Full-envelope hash. All fields that identify the event
+            # participate, so duplicate summary content cannot collide into the
+            # same hash, and any mutation breaks the downstream link check.
+            envelope = {
+                "v": CHAIN_HASH_VERSION,
+                "timestamp": timestamp.isoformat(),
+                "event_code": event_code,
+                "authority": authority,
+                "artifact_id": artifact_id,
+                "content": _normalize_content_for_hash(content),
+                "parent_hash": parent_hash or "",
+            }
+            content_hash = hashlib.sha256(canonical_json(envelope)).hexdigest()
 
-        event = TraceEvent(
-            timestamp=timestamp,
-            event_code=event_code,
-            authority=authority,
-            artifact_id=artifact_id,
-            content_hash=content_hash,
-            byte_length=len(content_bytes),
-            parent_hash=parent_hash,
-        )
-        self.append(event)
-        return event
+            event = TraceEvent(
+                timestamp=timestamp,
+                event_code=event_code,
+                authority=authority,
+                artifact_id=artifact_id,
+                content_hash=content_hash,
+                byte_length=len(content_bytes),
+                parent_hash=parent_hash,
+            )
+            self.append(event)
+            return event
 
     def verify_chain(self) -> bool:
         """Verify the in-memory hash chain is link-consistent.

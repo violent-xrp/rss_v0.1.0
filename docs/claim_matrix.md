@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-06-15 22:10 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-06-20 05:37 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 114 distinct Pact sections referenced across 162 claim tags on 162 test functions.
+**Coverage:** 115 distinct Pact sections referenced across 163 claim tags on 163 test functions.
 
 ---
 
@@ -478,6 +478,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_s6_chain_hash_migration_scaffold` — chain-hash migration scaffold refuses silent CHAIN_HASH_VERSION drift
 - `test_probe_chain_catches_duplicate_content_tamper` — hash envelope uniqueness; chain detects middle-row deletion
 - `test_probe_hash_envelope_version_marker_present` — CHAIN_HASH_VERSION marker pinned at v1 for forward-compat
+- `test_trace_chain_survives_concurrent_governed_writes` — TRACE chain append and persistence order remain valid under concurrent governed writes.
 
 ## §6.4.4
 
@@ -489,6 +490,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_persistence_roundtrip` — bootstrap→save→restore integrity
 - `test_f2_entry_id_stability` — entry IDs stable across restart (no re-generation)
 - `test_a1_consent_persistence_roundtrip` — consent state persists and restores
+
+## §6.5.2
+
+- `test_trace_chain_survives_concurrent_governed_writes` — TRACE chain append and persistence order remain valid under concurrent governed writes.
 
 ## §6.6.3
 

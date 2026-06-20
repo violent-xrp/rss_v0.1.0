@@ -456,42 +456,45 @@ class Runtime:
         every successful write, so transient failures (brief lock contention,
         retryable errors) don't accumulate toward the threshold.
         """
-        event = self.trace.record_event(code, "RUNTIME", artifact_id, content)
-        try:
-            self.persistence.save_trace_event(event)
-            # §6.4.4 — Success resets the streak
-            self._audit_failure_streak = 0
-        except Exception as e:
-            # §6.4.4 — Increment consecutive-failure counter
-            self._audit_failure_streak += 1
-            threshold = getattr(self.config, "audit_failure_threshold", 3)
+        # Hold the TRACE chain lock across append and persistence so persisted
+        # row order matches hash-chain order under concurrent callers.
+        with self.trace._lock:
+            event = self.trace.record_event(code, "RUNTIME", artifact_id, content)
+            try:
+                self.persistence.save_trace_event(event)
+                # §6.4.4 — Success resets the streak
+                self._audit_failure_streak = 0
+            except Exception as e:
+                # §6.4.4 — Increment consecutive-failure counter
+                self._audit_failure_streak += 1
+                threshold = getattr(self.config, "audit_failure_threshold", 3)
 
-            # If we've hit the threshold, enter persistent Safe-Stop.
-            # We do this BEFORE raising the RuntimeError so the caller sees
-            # both signals: the write failed AND the system is now halted.
-            # The Safe-Stop write goes through persistence.enter_safe_stop(),
-            # which is a different code path from save_trace_event(), so it
-            # may succeed even when trace writes are failing (e.g., if the
-            # failure is specific to the trace_events table).
-            if self._audit_failure_streak >= threshold:
-                try:
-                    reason = (
-                        f"Persistent audit failure (§6.4.4): "
-                        f"{self._audit_failure_streak} consecutive write failures "
-                        f"(threshold={threshold}). Last error: {e}"
-                    )
-                    self.enter_safe_stop(reason)
-                except Exception:
-                    # If even Safe-Stop persistence fails, we've got nothing
-                    # left to fall back on. Still raise the original error.
-                    pass
+                # If we've hit the threshold, enter persistent Safe-Stop.
+                # We do this BEFORE raising the RuntimeError so the caller sees
+                # both signals: the write failed AND the system is now halted.
+                # The Safe-Stop write goes through persistence.enter_safe_stop(),
+                # which is a different code path from save_trace_event(), so it
+                # may succeed even when trace writes are failing (e.g., if the
+                # failure is specific to the trace_events table).
+                if self._audit_failure_streak >= threshold:
+                    try:
+                        reason = (
+                            f"Persistent audit failure (§6.4.4): "
+                            f"{self._audit_failure_streak} consecutive write failures "
+                            f"(threshold={threshold}). Last error: {e}"
+                        )
+                        self.enter_safe_stop(reason)
+                    except Exception:
+                        # If even Safe-Stop persistence fails, we've got nothing
+                        # left to fall back on. Still raise the original error.
+                        pass
 
-            raise RuntimeError(
-                f"WRITE-AHEAD FAILURE (Pact §0.8.3): Audit write failed for "
-                f"{code}/{artifact_id}. Aborting operation. "
-                f"Consecutive failures: {self._audit_failure_streak}/{threshold}. "
-                f"Detail: {e}"
-            ) from e
+                raise RuntimeError(
+                    f"WRITE-AHEAD FAILURE (Pact §0.8.3): Audit write failed for "
+                    f"{code}/{artifact_id}. Aborting operation. "
+                    f"Consecutive failures: {self._audit_failure_streak}/{threshold}. "
+                    f"Detail: {e}"
+                ) from e
 
     # §6.9.7 — Phase C G-6: State criticality classification.
     # CRITICAL categories trigger persistent Safe-Stop on load failure.

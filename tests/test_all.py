@@ -183,6 +183,7 @@ from test_audit_trace import (
     test_trace_verify_registry_load_failure_is_nonfatal,
     test_trace_verify_additional_proof,
     test_trace_verify_human_report_branches,
+    test_trace_chain_survives_concurrent_governed_writes,
     test_trace_export_additional_proof,
 )
 
@@ -365,6 +366,7 @@ TESTS = [
     test_seal_extended_edges,
     test_trace_verify_additional_proof,
     test_trace_verify_human_report_branches,
+    test_trace_chain_survives_concurrent_governed_writes,
     test_trace_export_additional_proof,
     test_pact_canon_export_dry_run_refuses_unsafe_paths,
     test_pact_canon_export_write_requires_t0_and_syncs_drift,

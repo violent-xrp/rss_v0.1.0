@@ -132,6 +132,7 @@ Section 6 / persistence and audit:
 - Consecutive audit-write failures are tracked through `audit_failure_threshold` and escalate to persistent Safe-Stop when the threshold is crossed. The default threshold is 3; `production_mode=True` forces the threshold to 1.
 - `production_mode` is a real single switch in `RSSConfig.__post_init__`: it forces strict event-code validation, lowers audit failure threshold to 1, disables console logging, and requires the Genesis file.
 - SQLite persistence uses WAL mode, `check_same_thread=False`, and a process-local `RLock` around persistence operations. This is a single-process/threaded posture, not a distributed database guarantee.
+- Runtime TRACE writes now hold the audit-chain lock across event append and persistence, so concurrent governed writes serialize into a cold-verifiable chain in the current single-process runtime. This preserves integrity under threaded input; it is not a multi-process or distributed throughput claim.
 - Section 6 implementation references now use the current package paths: `audit/log.py`, `audit/export.py`, `audit/verify.py`, and `persistence/sqlite.py`.
 - Section 6 state-category lists now name amendment proposals and amendment records, aligning Schema Stability and Round-Trip wording with the implemented `amendment_proposals` / `amendment_records` tables and the critical amendment restore path.
 - Cold export exists through `export_from_db()` and includes `chain_valid`, event summary, REDLINE artifact-id sanitization, JSON/text output, and SQLite source labeling.
