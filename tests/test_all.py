@@ -58,6 +58,7 @@ from test_cli import (
 
 from test_docs_tooling import (
     test_reverse_pact_code_map_generator_parses_pact_heading_variants,
+    test_project_status_generator_renders_bounded_public_status_view,
 )
 
 from test_governance_seats import (
@@ -384,6 +385,7 @@ TESTS = [
     test_cli_smoke_tests_treat_ambiguous_as_expected_classification,
     test_cli_vocabulary_commands_require_t0_command,
     test_reverse_pact_code_map_generator_parses_pact_heading_variants,
+    test_project_status_generator_renders_bounded_public_status_view,
     test_llm_availability_timeout_is_config_driven,
     test_archive_entry_returns_hub_entry,
 ]

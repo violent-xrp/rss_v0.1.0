@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-06-20 05:37 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-06-22 01:00 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 115 distinct Pact sections referenced across 163 claim tags on 163 test functions.
+**Coverage:** 115 distinct Pact sections referenced across 164 claim tags on 164 test functions.
 
 ---
 
@@ -72,6 +72,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_trace_seat` — TRACE as WARD-routed seat
 - `test_pre_seal_drift_check` — pre-seal drift guard
 - `test_reverse_pact_code_map_generator_parses_pact_heading_variants` — generated reverse Pact-code map detects code/law references across Pact heading formats
+- `test_project_status_generator_renders_bounded_public_status_view` — generated public status view reports proof state without becoming a new truth source
 
 ## §0.8.3
 
@@ -566,6 +567,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_trace_verify_additional_proof` — cold verifier: corrupted schema version degrades gracefully; mixed known/unknown codes reported; safe-stop state readable cold
 - `test_trace_verify_human_report_branches` — cold verifier reports expose filtered broken-chain detail, unknown codes, stats, and JSON schema errors
 - `test_reverse_pact_code_map_generator_parses_pact_heading_variants` — generated reverse Pact-code map detects code/law references across Pact heading formats
+- `test_project_status_generator_renders_bounded_public_status_view` — generated public status view reports proof state without becoming a new truth source
 
 ## §7.2
 

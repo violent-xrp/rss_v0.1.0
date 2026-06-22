@@ -7,6 +7,7 @@ This file is a routing layer for the public documentation. It is not a separate 
 ## Start Here
 
 - `../README.md` - project overview, reviewer path, quick start, and public positioning.
+- `PROJECT_STATUS.md` - generated current-state proof snapshot, drift light, and reviewer doc index.
 - `../ROADMAP.md` - current state, active focus, release boundary, and future queue.
 - `../TRUTH_REGISTER.md` - what RSS can claim now, what is partial, and what remains future.
 - `PROJECT_CONTROL_SURFACE.md` - routing map for which public document owns which type of claim.
@@ -16,6 +17,7 @@ This file is a routing layer for the public documentation. It is not a separate 
 - `TESTING.md` - canonical gate commands and runner discipline.
 - `claim_matrix.md` - generated Pact-to-test claim traceability.
 - `pact_code_map.md` - generated code-to-Pact reference map.
+- `build_project_status.py` - generated public project-status snapshot and check.
 - `../CLAIM_DISCIPLINE.md` - rules for keeping public claims tied to proof.
 - `../run_coverage.py` - coverage runner.
 - `sync_baseline.py` - public proof-number synchronization.
