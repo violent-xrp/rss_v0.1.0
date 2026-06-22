@@ -9,11 +9,13 @@ Usage:
     python docs/build_project_status.py
     python docs/build_project_status.py --stdout
     python docs/build_project_status.py --check
+    python docs/build_project_status.py --check --assume-gates-passed
 """
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -33,6 +35,12 @@ import sync_baseline  # noqa: E402
 STATUS_OK = "GREEN"
 STATUS_STALE = "YELLOW"
 STATUS_FAILED = "RED"
+
+DOC_ACCEPTANCE_RE = re.compile(
+    r"\*\*(\d+)\s+test functions\s+/\s+(\d+)\s+assertions\s+/\s+(\d+)\s+failures\*\*"
+)
+DOC_COVERAGE_RE = re.compile(r"\*\*(\d{1,3}(?:\.\d+)?)%\s+statement coverage\*\*")
+DOC_MODULES_RE = re.compile(r"\*\*(\d+)\s+(?:source|kernel) modules\*\*")
 
 FORBIDDEN_OUTPUT_TOKENS = (
     "local/",
@@ -198,6 +206,63 @@ def collect_pact_code_map_gate() -> GateResult:
     )
 
 
+def snapshot_from_synced_docs(repo_root: Path) -> ProjectSnapshot:
+    """Read proof numbers from synced public docs after hygiene gates have passed."""
+    roadmap_text = (repo_root / "ROADMAP.md").read_text(encoding="utf-8", errors="replace")
+    truth_text = (repo_root / "TRUTH_REGISTER.md").read_text(encoding="utf-8", errors="replace")
+    claim_text = (
+        repo_root / "docs" / "claim_matrix.md"
+    ).read_text(encoding="utf-8", errors="replace")
+    public_text = "\n".join([roadmap_text, truth_text])
+
+    acceptance = DOC_ACCEPTANCE_RE.search(public_text)
+    coverage = DOC_COVERAGE_RE.search(public_text)
+    modules = DOC_MODULES_RE.search(public_text)
+    claim_match = sync_baseline.CLAIM_FILE_RE.search(claim_text)
+
+    missing = []
+    if not acceptance:
+        missing.append("acceptance triplet")
+    if not coverage:
+        missing.append("coverage percent")
+    if not modules:
+        missing.append("source module count")
+    if not claim_match:
+        missing.append("claim matrix counts")
+    if missing:
+        raise RuntimeError(
+            "could not build assumed-green project status from synced docs: "
+            + ", ".join(missing)
+        )
+
+    return ProjectSnapshot(
+        test_functions=int(acceptance.group(1)),
+        assertions=int(acceptance.group(2)),
+        failures=int(acceptance.group(3)),
+        source_modules=int(modules.group(1)),
+        coverage_percent=float(coverage.group(1)),
+        claim_sections=int(claim_match.group(1)),
+        claim_tags=int(claim_match.group(2)),
+        claim_tests=int(claim_match.group(3)),
+    )
+
+
+def collect_assumed_green_gates(repo_root: Path) -> tuple[ProjectSnapshot, list[GateResult]]:
+    snapshot = snapshot_from_synced_docs(repo_root)
+    return snapshot, [
+        GateResult(
+            name="Baseline sync",
+            status=STATUS_OK,
+            detail="public proof docs are synced",
+        ),
+        GateResult(
+            name="Reverse Pact-code map",
+            status=STATUS_OK,
+            detail="docs/pact_code_map.md is current",
+        ),
+    ]
+
+
 def classify_drift_light(gates: list[GateResult]) -> str:
     if any(gate.status == STATUS_FAILED for gate in gates):
         return STATUS_FAILED
@@ -334,10 +399,14 @@ def forbidden_public_output_hits(markdown: str) -> list[str]:
     return [token for token in FORBIDDEN_OUTPUT_TOKENS if token in markdown]
 
 
-def build(repo_root: Path) -> str:
-    snapshot, sync_gate = collect_sync_baseline_gate()
-    pact_gate = collect_pact_code_map_gate()
-    markdown = render_markdown(snapshot, [sync_gate, pact_gate])
+def build(repo_root: Path, *, assume_gates_passed: bool = False) -> str:
+    if assume_gates_passed:
+        snapshot, gates = collect_assumed_green_gates(repo_root)
+    else:
+        snapshot, sync_gate = collect_sync_baseline_gate()
+        pact_gate = collect_pact_code_map_gate()
+        gates = [sync_gate, pact_gate]
+    markdown = render_markdown(snapshot, gates)
     hits = forbidden_public_output_hits(markdown)
     if hits:
         raise RuntimeError(
@@ -351,11 +420,19 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stdout", action="store_true", help="Print the generated status page.")
     parser.add_argument("--check", action="store_true", help="Fail if docs/PROJECT_STATUS.md is stale.")
+    parser.add_argument(
+        "--assume-gates-passed",
+        action="store_true",
+        help=(
+            "Do not rerun expensive proof gates. Use only inside docs/check_public_hygiene.py "
+            "after baseline sync and reverse Pact-code map gates have already passed."
+        ),
+    )
     args = parser.parse_args(argv)
 
     out_path = REPO_ROOT / "docs" / "PROJECT_STATUS.md"
     try:
-        markdown = build(REPO_ROOT)
+        markdown = build(REPO_ROOT, assume_gates_passed=args.assume_gates_passed)
     except RuntimeError as exc:
         print(f"build_project_status: {exc}", file=sys.stderr)
         return 2

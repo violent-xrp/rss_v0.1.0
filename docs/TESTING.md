@@ -15,7 +15,7 @@ python tests/test_all.py
 Current expected final line:
 
 ```text
-RSS v0.1.0 - 164 test functions, 1513 assertions passed, 0 failed
+RSS v0.1.0 - 164 test functions, 1517 assertions passed, 0 failed
 ```
 
 This custom runner is the local source of truth for the current Windows environment.
@@ -28,7 +28,7 @@ Public hygiene wrapper:
 python docs/check_public_hygiene.py
 ```
 
-This runs baseline sync in check mode, including public docs and the GitHub Pages proof block, then the contact/license-header check, reverse Pact-code map freshness check, and external provenance/name hygiene scan with intentional fixture allowlists.
+This runs baseline sync in check mode, including public docs and the GitHub Pages proof block, then the contact/license-header check, reverse Pact-code map freshness check, generated Project Status freshness check, and external provenance/name hygiene scan with intentional fixture allowlists.
 
 Coverage:
 

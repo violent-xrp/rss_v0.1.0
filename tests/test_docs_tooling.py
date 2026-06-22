@@ -166,3 +166,31 @@ def test_project_status_generator_renders_bounded_public_status_view():
     check(red == tool.STATUS_FAILED, "project status drift light turns red for failed proof gates")
     check(tool.forbidden_public_output_hits("private local/ note") == ["local/"],
           "project status forbidden-token guard catches private local references")
+
+    temp_root = Path(tempfile.mkdtemp(prefix="rss_project_status_"))
+    try:
+        docs_dir = temp_root / "docs"
+        docs_dir.mkdir(parents=True)
+        (temp_root / "ROADMAP.md").write_text(
+            "- **170 test functions / 1600 assertions / 0 failures** via `python tests/test_all.py`\n"
+            "- **93.1% statement coverage** via `python run_coverage.py`\n"
+            "- **25 kernel modules** in the `src/rss/` package tree plus `src/main.py`\n",
+            encoding="utf-8",
+        )
+        (temp_root / "TRUTH_REGISTER.md").write_text("", encoding="utf-8")
+        (docs_dir / "claim_matrix.md").write_text(
+            "**Coverage:** 116 distinct Pact sections referenced across 170 claim tags on 170 test functions.\n",
+            encoding="utf-8",
+        )
+        assumed = tool.snapshot_from_synced_docs(temp_root)
+        assumed_markdown = tool.build(temp_root, assume_gates_passed=True)
+        check(assumed.proof_triplet == "170 / 1600 / 0",
+              "project status hygiene-context path reads synced proof triplet")
+        check(assumed.coverage_text == "93.1%",
+              "project status hygiene-context path reads synced coverage")
+        check(assumed.claim_text == "170 claims / 170 tests / 116 Pact sections",
+              "project status hygiene-context path reads synced claim counts")
+        check("**Status:** GREEN" in assumed_markdown,
+              "project status hygiene-context path assumes prior hygiene gates passed")
+    finally:
+        shutil.rmtree(temp_root, ignore_errors=True)
