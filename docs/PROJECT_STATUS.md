@@ -10,7 +10,7 @@ canonical proof and alignment surfaces rather than replacing them.
 | Field | Value |
 | --- | --- |
 | Release posture | v0.1.0 alpha, single-process governance kernel |
-| Acceptance runner | 164 / 1519 / 0 |
+| Acceptance runner | 164 / 1521 / 0 |
 | Statement coverage | 91.9% |
 | Claim traceability | 164 claims / 164 tests / 115 Pact sections |
 | Tracked source modules | 24 |
@@ -58,7 +58,15 @@ For future before/during/after governance direction, see
 | [`docs/claim_matrix.md`](claim_matrix.md) | generated Pact-to-test traceability |
 | [`docs/pact_code_map.md`](pact_code_map.md) | generated code-to-Pact reverse map |
 | [`docs/TESTING.md`](TESTING.md) | gate commands and runner discipline |
+| [`docs/roadmap/PHASE_LEDGER.md`](roadmap/PHASE_LEDGER.md) | landed-work archive and history ledger |
 | [`docs/demo/DEMO_HANDOFF.md`](demo/DEMO_HANDOFF.md) | demo artifact meaning and reviewer path |
+
+## Manual Archive Check
+
+The drift light is mechanical. It does not prove hand-written archive
+surfaces are semantically current. After meaningful hardening, proof
+tooling, or release-boundary work lands, review `docs/roadmap/PHASE_LEDGER.md`
+and `CHANGELOG.md` so durable history stays aligned with the code.
 
 ## Excluded From This Page
 

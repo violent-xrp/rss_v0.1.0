@@ -150,6 +150,10 @@ def test_project_status_generator_renders_bounded_public_status_view():
           "project status links root docs relative to docs directory")
     check("[`docs/PACT_ALIGNMENT.md`](PACT_ALIGNMENT.md)" in markdown,
           "project status links docs-local files relative to docs directory")
+    check("[`docs/roadmap/PHASE_LEDGER.md`](roadmap/PHASE_LEDGER.md)" in markdown,
+          "project status links landed-work phase ledger")
+    check("Manual Archive Check" in markdown and "semantically current" in markdown,
+          "project status reminds reviewers that manual ledgers need semantic review")
     check("private working notes" in markdown,
           "project status names private context only generically")
     check(tool.forbidden_public_output_hits(markdown) == [],

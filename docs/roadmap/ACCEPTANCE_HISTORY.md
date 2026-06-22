@@ -8,7 +8,7 @@ This file preserves the count history and verification receipts that used to liv
 
 ## Current Baseline
 
-- **164 test functions / 1519 assertions / 0 failures**
+- **164 test functions / 1521 assertions / 0 failures**
 - **91.9% statement coverage**
 - **164 claims / 164 tests / 115 Pact sections**
 - Canonical runner: `python tests/test_all.py`
@@ -111,7 +111,7 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 - `THREAT_MODEL.md`
 
 Current synced public numbers:
-- **164 / 1519 / 0**
+- **164 / 1521 / 0**
 - **91.9%** coverage
 - **164 claims / 164 tests / 115 Pact sections**
 

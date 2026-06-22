@@ -311,6 +311,7 @@ def render_doc_index() -> list[str]:
         ("docs/claim_matrix.md", "claim_matrix.md", "generated Pact-to-test traceability"),
         ("docs/pact_code_map.md", "pact_code_map.md", "generated code-to-Pact reverse map"),
         ("docs/TESTING.md", "TESTING.md", "gate commands and runner discipline"),
+        ("docs/roadmap/PHASE_LEDGER.md", "roadmap/PHASE_LEDGER.md", "landed-work archive and history ledger"),
         ("docs/demo/DEMO_HANDOFF.md", "demo/DEMO_HANDOFF.md", "demo artifact meaning and reviewer path"),
     ]
     lines = [
@@ -375,6 +376,13 @@ def render_markdown(snapshot: ProjectSnapshot, gates: list[GateResult]) -> str:
     ])
     lines.extend(render_doc_index())
     lines.extend([
+        "",
+        "## Manual Archive Check",
+        "",
+        "The drift light is mechanical. It does not prove hand-written archive",
+        "surfaces are semantically current. After meaningful hardening, proof",
+        "tooling, or release-boundary work lands, review `docs/roadmap/PHASE_LEDGER.md`",
+        "and `CHANGELOG.md` so durable history stays aligned with the code.",
         "",
         "## Excluded From This Page",
         "",
