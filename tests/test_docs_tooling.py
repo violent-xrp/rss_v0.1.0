@@ -154,6 +154,10 @@ def test_project_status_generator_renders_bounded_public_status_view():
           "project status names private context only generically")
     check(tool.forbidden_public_output_hits(markdown) == [],
           "project status output omits private/model/provenance tokens")
+    check(tool.internal_link_targets_missing(tool.REPO_ROOT, markdown) == [],
+          "project status reviewer links all resolve to real docs")
+    check(tool.internal_link_targets_missing(tool.REPO_ROOT, "see [x](missing_doc_xyz.md)") == ["missing_doc_xyz.md"],
+          "project status dead-link guard catches a missing doc target")
 
     yellow = tool.classify_drift_light([
         tool.GateResult("Baseline sync", tool.STATUS_STALE, "1 stale target", stale_count=1),

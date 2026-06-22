@@ -399,6 +399,24 @@ def forbidden_public_output_hits(markdown: str) -> list[str]:
     return [token for token in FORBIDDEN_OUTPUT_TOKENS if token in markdown]
 
 
+def internal_link_targets_missing(repo_root: Path, markdown: str) -> list[str]:
+    """Return any relative markdown link target that does not exist on disk.
+
+    Links in PROJECT_STATUS.md resolve relative to the docs/ directory (the
+    page's own location). External (http/https/mailto) and pure-anchor links
+    are skipped. This makes generation/--check fail closed on a dead reviewer
+    link instead of silently shipping one."""
+    docs_dir = repo_root / "docs"
+    missing: list[str] = []
+    for raw in re.findall(r"\]\(([^)]+)\)", markdown):
+        target = raw.split("#", 1)[0].strip()
+        if not target or target.startswith(("http://", "https://", "mailto:")):
+            continue
+        if not (docs_dir / target).resolve().exists():
+            missing.append(target)
+    return missing
+
+
 def build(repo_root: Path, *, assume_gates_passed: bool = False) -> str:
     if assume_gates_passed:
         snapshot, gates = collect_assumed_green_gates(repo_root)
@@ -435,6 +453,17 @@ def main(argv: list[str] | None = None) -> int:
         markdown = build(REPO_ROOT, assume_gates_passed=args.assume_gates_passed)
     except RuntimeError as exc:
         print(f"build_project_status: {exc}", file=sys.stderr)
+        return 2
+
+    # Dead-link guard runs only against the real published page (REPO_ROOT),
+    # not arbitrary build contexts, so partial/temp-repo builds stay valid.
+    missing_links = internal_link_targets_missing(REPO_ROOT, markdown)
+    if missing_links:
+        print(
+            "build_project_status: links to missing doc target(s): "
+            + ", ".join(missing_links),
+            file=sys.stderr,
+        )
         return 2
 
     if args.stdout:
