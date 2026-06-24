@@ -40,16 +40,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **164 test functions / 1521 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **91.9% statement coverage** via `python run_coverage.py`
-- **164 claims / 164 tests / 115 Pact sections** in `docs/claim_matrix.md`
-- **24 kernel modules** in the `src/rss/` package tree plus `src/main.py`
+- **169 test functions / 1605 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **92.3% statement coverage** via `python run_coverage.py`
+- **169 claims / 169 tests / 115 Pact sections** in `docs/claim_matrix.md`
+- **26 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 164/1521 baseline
+- public docs are synced to the current 169/1605 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -77,7 +77,8 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **Connector-proof planning:** keep future browser/email/document/RAG/tool-return import tests mapped before adding real external adapters.
 - **Framework-facing reviewer map:** keep `docs/NIST_AI_RMF_MAPPING.md` aligned with the current proof surface so RSS can be explained in recognized AI risk-management language without claiming certification or production compliance.
 - **Pre-tag RUNE/OATH hardening map:** closed. OATH requester fallback, RUNE constraint-prompt proof, and RUNE longest bounded-match precedence are now proven.
-- **RUNE embedded disallowed scan:** closed as a code helper. RUNE can now audit longer payload strings for bounded disallowed terms via `scan_disallowed()` while preserving `classify()` exact-match semantics. The side-effect broker that will consume this helper remains future action-plane work.
+- **Action proposal / broker decision surface:** closed as a bounded code slice. RSS now has structured `ActionProposal` objects and a `SideEffectBroker` that reviews proposed side effects, emits TRACE receipts, issues short-lived in-process single-use authorization receipts, supports pre-execution claim/revocation, and imports claimed results as untrusted data-only evidence. It does not execute tools, persist leases, auto-wire into `Runtime.process_request`, or claim universal per-action enforcement.
+- **RUNE embedded disallowed scan:** closed as a code helper and used by the action broker to audit longer payload strings for bounded disallowed terms while preserving `classify()` exact-match semantics.
 - **Pact cleanup checkpoint:** the section-by-section Pact cleanup (Sections 0-7) is landed and pushed. Future Pact text changes move through the v0.1.1 amendment ceremony unless a release-gate review proves v0.1.0 would otherwise be false.
 - **Code-first Pact posture:** let kernel hardening move where it makes RSS more true; keep Pact edits section-bounded, reviewed, and version-sensitive so cleanup does not bundle unrelated lanes.
 
@@ -98,7 +99,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **T-0 identity seam:** the `authorize_t0(action, context)` chokepoint now centralizes current soft sovereign-command gates for Safe-Stop clearing, SEAL authority checks, and runtime RUNE vocabulary mutations. Cryptographic/mechanical identity enforcement remains future work.
 - **Recovery before keys:** cryptographic identity must be designed recovery-first. Keys may strengthen attestation, but they must not become the only way T-0 can recover lawful authority under Section 0.1.4.
 - **Operational identity:** future TECTON deployment users should carry operational credentials and role scopes separate from, subordinate to, and unable to amend constitutional T-0 authority. Key rotation, revocation, and recovery are governed/audited events; keys do not belong in repo, Pact text, or TRACE payloads.
-- **Action-proposal loop:** v0.1.0 is a single forward pass: model output is sanitized and logged, but it does not re-enter the gates. The v0.1.1+ frontier is a typed action proposal and side-effect broker where every proposed side effect re-enters SCOPE, RUNE, execution validation, OATH, and CYCLE before execution. The future design boundary is captured in `docs/ACTION_PLANE.md`.
+- **Action-proposal loop:** the typed proposal and in-process broker decision surface now exists. The remaining v0.1.1+ frontier is runtime integration, durable/actor-bound leases, contained execution wrappers, external connector harnesses, and post-action verifier reports. The design boundary is captured in `docs/ACTION_PLANE.md`.
 - **Three-window governance model:** future architecture is organized as before model exposure, during observable output generation, and after output when proposed actions re-enter governance. This is a planning model in `docs/proposals/THREE_WINDOW_GOVERNANCE_MODEL.md`, not a claim that RSS observes hidden model thinking.
 - **Cross-OS proof harness:** Windows is the current primary proof environment. Linux should be the first cross-OS CI target for the canonical runner, public hygiene, reverse map, cold verification, and file-write/export paths. Android remains an adapter/action-surface testbed, not a kernel port; macOS follows later.
 - **Tier 2.5 advisor layer:** future internal advisors may assess, narrow, and recommend through structured packets, including amendment/code consistency review. They remain non-authoritative: automate assessment, never authorization.
@@ -106,10 +107,10 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 
 ### Keep Warm
 - API/wrapper ingress boundary and caller identity propagation.
-- Per-action/tool-call enforcement before real side effects execute.
+- Per-action/tool-call enforcement before real side effects execute; the local broker decision surface exists, but universal runtime/tool wrapper enforcement does not.
 - Observable stream enforcement before release of generated output: buffer streamed chunks, meter token/byte/cost estimates, halt on governed violations, and emit completion/halt receipts without claiming hidden-reasoning visibility.
-- Structured Action Proposals: LLM output becomes a typed proposed task that must re-enter SCOPE, RUNE, Execution, OATH, and CYCLE before any side-effect broker acts. See `docs/ACTION_PLANE.md` for the planning-only boundary.
-- Minimum proposal shape to evaluate later: `proposal_id`, `source_task_id`, `action_class`, `target_resource`, `payload`, `container_id`, `proposed_at`, and a payload hash/TTL binding. The broker boundary must emit proposal, rejection, authorization, and execution receipts before any external file, API, network, or tool side effect.
+- Action-plane integration: current code proves typed proposals and broker review in-process; future work must bind model/operator output to that broker path before any real file, API, network, or tool side effect executes.
+- Durable capability leases: current broker receipts are in-process and single-use; future leases need actor/request binding, persistence or explicit non-persistence policy, budgets, result-import requirements, verification requirements, and TRACE obligations.
 - Runtime Obligation Ledger: future live record of active leases, container bindings, consent source, budget, result-import requirement, verification requirement, and TRACE obligations after authorization.
 - Cryptographic/mechanical T-0 identity gate for Safe-Stop clearing beyond the current soft `t0_command=True` fence.
 - Zero-trust hardening sequence: authenticated ingress, actor-bound request context, capability-scoped side-effect broker, per-action/tool-call authorization, signed TRACE exports, external timestamp anchoring, and auditable recovery/bypass paths.
@@ -323,6 +324,7 @@ Landed:
 - SEAL ceremony TRACE emission now fails closed when a trace callback is wired: proposal, review, and ratification do not mutate ceremony state if amendment audit emission fails
 - WARD registration now fails fast when a seat lacks the standard `status()` / `handle(task)` interface, so malformed routable seats cannot enter the registry.
 - Phase G coverage floor closed: `cycle.py` and `trace_verify.py` are both above 94% and every package module is at or above 85%
+- action-plane decision surface added: `rss.action` provides typed proposals, broker gate review, TRACE receipts, in-process claim/revocation, and untrusted result import without executing tools or persisting leases
 - demo handoff now names the 30/60/90-minute reviewer path, artifact review order, proof signals, and release boundary
 - demo artifact proof now records per-question proof rows, expected governed-evidence markers, and successful task IDs bound to TRACE artifacts so useful retrieval cannot pass on fluent but ungrounded answers
 - external vocabulary map added for engineers/reviewers who do not know RSS terms yet
@@ -348,7 +350,7 @@ These are not v0.1.0 blockers unless a release-gate review says otherwise:
 - structured authority-spoof probes: imported JSON/YAML/tool-return text cannot become consent, scope, or side-effect authorization
 - connector IPI acceptance matrix for PDF metadata/hidden text, HTML hidden spans/alt text, email MIME parts, RAG neighbor chunks, tool returns, and Unicode invisible/confusable text
 - shadow connector harness: fake browser/email/API/RAG/tool-return adapters that return poisoned, malformed, oversized, metadata-hidden, and authority-spoofing payloads before any live connector claims expand
-- capability leases for future side-effect work: short-lived, scoped, revocable authorization objects bound to actor/request, action class, target resource, container, TTL, budget, and payload hash
+- durable capability leases for future side-effect work: the current broker proves short-lived, in-process, revocable receipts; future leases need actor/request binding, persistence or explicit non-persistence policy, budgets, result-import requirements, verification requirements, and TRACE obligations
 - CYCLE budget/anomaly extension: prove bounded behavior for retry loops, repeated denied actions, abnormal bursts, execution-budget exhaustion, and token/cost budget exhaustion in addition to simple request cadence
 - PAV token-economy constraints: define entry-count, character/token-estimate, source, and total-context ceilings so governed PAV construction remains least-context evidence rather than a trusted context dump; audit/history material should stay outside model-facing prompts unless explicitly scoped back in
 - three-window governance proposal: use `docs/proposals/THREE_WINDOW_GOVERNANCE_MODEL.md` to keep before/during/after language precise; "during" means observable output stream enforcement, not hidden model-thought visibility
@@ -432,7 +434,7 @@ Identity and authority:
 
 Execution and side effects:
 - **Side effects:** only governable when they pass through the runtime boundary.
-- **Per-action enforcement:** current runtime is request/task-level with action-class gates; per-tool-call gating is active future hardening.
+- **Per-action enforcement:** current code includes an in-process broker decision surface for structured proposals, but it is not yet wired as universal runtime/tool-call enforcement for external side effects.
 - **Wrapper/API boundary:** context propagation across ASGI, worker threads, background jobs, and external tools remains unresolved.
 - **Cross-OS proof:** current proof is Windows-local. Linux, Android-adapter, and macOS claims require their own gates before public wording expands.
 

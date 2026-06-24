@@ -1,10 +1,10 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-06-22 01:00 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-06-24 18:51 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 115 distinct Pact sections referenced across 164 claim tags on 164 test functions.
+**Coverage:** 115 distinct Pact sections referenced across 169 claim tags on 169 test functions.
 
 ---
 
@@ -44,6 +44,8 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §0.5
 
+- `test_action_plane_broker_gates` — broker re-enters Safe-Stop, RUNE, OATH, CYCLE, and payload gates before action claims
+- `test_action_plane_capability_lease` — action authorizations are in-process, single-use, revocable pre-execution receipts
 - `test_idempotence_replay` — Safe-Stop/schema/declassify/revocation/verification are idempotent
 - `test_scenario_high_liability_flow` — high-liability review flow: REDLINE + revoke + resume + halt + recover
 - `test_scenario_tamper_recovery` — tamper → boot detection → Safe-Stop → T-0 recovery → resumed governance
@@ -86,6 +88,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §0.9
 
+- `test_action_plane_broker_gates` — broker re-enters Safe-Stop, RUNE, OATH, CYCLE, and payload gates before action claims
 - `test_oath_denied_consent_survives_restart` — DENIED consent survives restart; restore never upgrades a restrictive status to AUTHORIZED
 - `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
 
@@ -163,6 +166,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §2.3
 
+- `test_action_plane_broker_gates` — broker re-enters Safe-Stop, RUNE, OATH, CYCLE, and payload gates before action claims
 - `test_anti_trojan` — anti-trojan term-definition scanner
 - `test_anti_trojan_runtime` — anti-trojan in governed save path
 - `test_contextual_reinjection` — sealed term contextual reinjection format; constraints stay kernel metadata
@@ -217,6 +221,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §3.3
 
+- `test_action_plane_proposal_binding` — action proposals are typed, hash-bound, TTL-bound, and fully inspectable
+- `test_action_plane_broker_gates` — broker re-enters Safe-Stop, RUNE, OATH, CYCLE, and payload gates before action claims
+- `test_action_plane_result_import_and_replay` — action results re-enter only after a claim and as untrusted data-only evidence
+- `test_action_plane_capability_lease` — action authorizations are in-process, single-use, revocable pre-execution receipts
 - `test_adversarial_malformed_inputs` — pipeline survives 10K/empty/unicode/0/negative/50K malformed inputs
 - `test_runtime` — runtime full pipeline happy path and halt semantics
 
@@ -279,6 +287,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §4.3.4
 
+- `test_action_plane_result_import_and_replay` — action results re-enter only after a claim and as untrusted data-only evidence
 - `test_probe_untrusted_import_hash_binding` — untrusted import receipt hash-binds source and wrapped content
 - `test_s4_hub_provenance` — hub provenance chain: CREATED/ARCHIVED/PURGED/DECLASSIFIED
 - `test_s4_provenance_persistence` — provenance chain survives restart
@@ -464,6 +473,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §6.3.3
 
+- `test_action_plane_proposal_binding` — action proposals are typed, hash-bound, TTL-bound, and fully inspectable
 - `test_c_phase_regression_battery` — canonical JSON, profile freezing, strict mode, threshold Safe-Stop, REDLINE sanitization
 
 ## §6.3.5
@@ -505,6 +515,8 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §6.6.4
 
+- `test_action_plane_result_import_and_replay` — action results re-enter only after a claim and as untrusted data-only evidence
+- `test_action_plane_event_codes_registered` — action-plane TRACE codes are registered before emission
 - `test_c_phase_regression_battery` — canonical JSON, profile freezing, strict mode, threshold Safe-Stop, REDLINE sanitization
 
 ## §6.7.3

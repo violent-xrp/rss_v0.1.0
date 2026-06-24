@@ -98,6 +98,7 @@ Section 3 / execution law:
 - Section 3 now names sustained audit-write failure as Constitutional Drift / persistent Safe-Stop behavior once consecutive failures cross `audit_failure_threshold`; a single write-ahead failure still aborts only the operation that triggered it.
 - LLM fallback wording now matches the adapter: the deterministic offline fallback summarizes only governed PAV data, reports fallback state, refuses privacy-marked or unsupported queries, and does not echo raw user input.
 - LLM response validation implements external-name replacement, REDLINE leak redaction plus TRACE flagging, and governance artifact suppression. The code now states this is downstream sanitation; upstream SCOPE/PAV/OATH boundaries remain the real enforcement surface.
+- `rss.action` now provides a structured action-proposal and side-effect broker decision surface. It reviews proposed side effects through payload hash, TTL, tool policy, RUNE, OATH, CYCLE, and Safe-Stop gates; emits proposal/rejection/authorization/claim/revocation/result-import TRACE receipts; and imports claimed execution results as untrusted data-only evidence. It does not execute tools, persist leases across restart, auto-wire into `Runtime.process_request`, or claim universal connector enforcement.
 
 Section 4 / hub topology and data governance:
 - Hubs are represented as typed governance locations, not ordinary folders: `HubEntry` carries hub, original hub, REDLINE state, purge state, timestamp, version, and provenance.
@@ -190,7 +191,7 @@ RUNE authorization surface:
 - Direct low-level RUNE service calls, bootstrap, and restore remain trusted internal state paths; this is not cryptographic identity proof.
 - Per-pack synonym namespaces remain future hardening before domain packs can compose freely.
 - Anti-trojan scanning currently checks definitions. Runtime proof now captures the actual advisor prompt payload and verifies constraints remain kernel metadata, not advisor/model context. If a future adapter reinjects constraints, the scanner contract must expand before that change lands.
-- Embedded disallowed-term scanning is now available through `scan_disallowed()` for longer payload strings. This closes the RUNE-side helper gap, but it does not claim that a side-effect broker exists in v0.1.0.
+- Embedded disallowed-term scanning is now available through `scan_disallowed()` for longer payload strings and is used by the action broker's payload audit. This proves the helper and broker review path, not production connector execution.
 - Primary substring classification now prefers the longest bounded sealed-term match, so registration order cannot make a shorter term outrank a more specific phrase.
 - Boundary-sensitive labels, including punctuation-heavy, apostrophe-like, internal-hyphen, combining-mark, and confusable inputs, need tests or validation as the registry grows.
 - MED/LOW confidence behavior needs v0.1.1 resolution: preserve the Pact shape by adding explicit confirmation metadata/semantics, or amend future Pact text to collapse the confidence model to the states RSS actually uses.
@@ -255,15 +256,19 @@ Internal advisor layer / Tier 2.5 gap:
 - This also preserves the useful multi-voice review instinct while keeping external model output outside the authority boundary.
 - If this layer becomes real, later Pact work should decide where it sits in the tier model, how advisor output enters amendment/review workflows, which advisor classes are required for protected-section changes, and how TRACE proves that human/kernel authorization remained separate from advisor assessment.
 
-Structured Action Proposal / side-effect broker gap:
-- v0.1.0 has no side-effect broker and makes no claim that model/advisor text can execute tools, files, APIs, network calls, or other external effects.
-- v0.1.0 is a single forward pass: model output is sanitized and logged, but it does not re-enter the gates as a proposed action.
+Structured Action Proposal / side-effect broker boundary:
+- `rss.action` now implements typed `ActionProposal` construction and an in-process `SideEffectBroker` decision surface. This is a broker review and receipt surface, not execution.
+- The broker re-enters governance for proposed side effects through payload hash, TTL, registered tool policy, RUNE embedded-disallowed scan, OATH consent/source checks, CYCLE rate limits, and Safe-Stop checks.
+- The broker emits TRACE receipts for proposal, rejection, authorization, claim refusal, claim, revocation, and result import. These codes are registered in `audit/export.py`.
+- Authorization receipts are single-use, short-lived, and in-process. They are not durable/restart-surviving leases and do not yet bind a cryptographic actor identity.
+- Execution result import requires a prior claim and enters through `save_untrusted_content()` as data-only evidence; result text does not become authority.
+- RSS still makes no claim that model/advisor text can directly execute tools, files, APIs, network calls, or other external effects. External execution wrappers, connector sandboxes, runtime `process_request` integration, and universal per-tool-call enforcement remain future work.
 - Future architecture should use the three-window vocabulary from `docs/proposals/THREE_WINDOW_GOVERNANCE_MODEL.md`: before model exposure, during observable output generation, and after output action governance.
 - Do not describe RSS as observing model "thinking" unless future code has access to hidden model internals. Current/future application-layer wording should refer to observable streamed output, token/chunk boundaries, and proposed side effects.
 - Future Pact wording should define agentic systems explicitly: an external model operating in an action loop with tool access remains Tier 3. Agency is not authorization.
-- Future side-effect work should require a typed proposed-action object rather than free-text execution. Minimum fields to design around: proposal ID, source task ID, action class, target resource, payload or arguments, container binding, creation time, payload hash, and TTL/expiration.
-- Before any side effect executes, the proposed action should re-enter SCOPE, RUNE, execution validation, OATH, and CYCLE. Denial at any seat should produce a structured halt rather than a partial execution.
-- TRACE should record the proposal lifecycle separately from execution: proposed, rejected, authorized, executed, and failed. These event names are future design placeholders until the broker exists.
+- Future side-effect work should route model/operator output into the typed proposal object rather than free-text execution. The current minimum fields are proposal ID, source task ID, action class, tool name, target resource, payload, container binding, creation time, payload hash, and TTL/expiration.
+- Before any side effect executes, the proposed action should re-enter SCOPE/permission checks, RUNE, execution validation, OATH, and CYCLE. The current broker covers the local decision surface; execution containment and external wrapper enforcement remain future.
+- TRACE records the proposal lifecycle separately from result import today. Execution receipts and verifier reports remain future because the kernel still does not execute external actions.
 - Tool-return or connector-result ingestion remains a separate indirect-prompt-injection surface; executed results must enter through governed untrusted-content import paths before advisory use.
 - A future Runtime Obligation Ledger should record active constraints after authorization: container, actor/request, consent source, lease TTL, budget, payload hash, result-import requirement, verification requirement, and TRACE obligations. This would track obligations; it would not create authority.
 

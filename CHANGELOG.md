@@ -7,10 +7,10 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
 
 ### Current verified snapshot
-- **164 test functions / 1521 assertions / 0 failures** via `python tests/test_all.py`
-- **91.9% statement coverage** via `python run_coverage.py`
-- **164 claims / 164 tests / 115 Pact sections** in `docs/claim_matrix.md`
-- **24 source modules** in the `src/rss/` package tree (R1 restructure complete)
+- **169 test functions / 1605 assertions / 0 failures** via `python tests/test_all.py`
+- **92.3% statement coverage** via `python run_coverage.py`
+- **169 claims / 169 tests / 115 Pact sections** in `docs/claim_matrix.md`
+- **26 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
 - Added `docs/proposals/THREE_WINDOW_GOVERNANCE_MODEL.md` and `docs/PROJECT_CONTROL_SURFACE.md` to define the future before/during/after governance model, cross-OS proof posture, "An AI that waits" positioning boundary, and which public docs own which claims; planning/docs only, no current capability claim.
@@ -56,7 +56,8 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - `docs/check_public_hygiene.py` now includes the generated Project Status freshness check without rerunning the expensive proof gates already completed earlier in the wrapper.
 - `docs/build_project_status.py` now fails closed on dead internal reviewer links in the generated Project Status page.
 - Project Status now includes the Phase Ledger in its reviewer path and names the manual archive check so durable history updates are not hidden behind generated proof freshness.
-- `docs/ACTION_PLANE.md` defines the future action-plane boundary as planning-only work, separating the current v0.1.0 proof surface from later side-effect broker design.
+- `docs/ACTION_PLANE.md` defines the action-plane boundary, separating the current proposal/broker decision surface from future execution wrappers, durable leases, runtime auto-wiring, and connector enforcement.
+- Added `rss.action`, a structured action-proposal and side-effect broker decision surface that can review proposed side effects, issue short-lived in-process single-use authorization receipts, support pre-execution claim/revocation, and import claimed execution results as untrusted data-only evidence; it does not execute tools, persist leases across restart, auto-wire into `Runtime.process_request`, or claim production action-plane maturity.
 - live demo-suite normal-advisor lane uses SYSTEM-only scope so ordinary conversation does not open WORK/PERSONAL data
 - interactive `src/main.py demo` routes ordinary chat through SYSTEM-only scope while obvious seeded-data questions keep the governed WORK/PAV path
 - runner-truth hardening so the acceptance harness remains the single pass/fail truth source
