@@ -234,7 +234,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/persistence/sqlite.py:301`
 
 ### §4.4.5 -> pact/pact_section4_hub_topology.md
-- `src/rss/audit/export.py:179`
+- `src/rss/audit/export.py:186`
 - `src/rss/core/runtime.py:696`
 - `src/rss/core/runtime.py:891`
 - `src/rss/hubs/pav.py:32`
@@ -287,7 +287,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/core/runtime.py:931`
 
 ### §4.7.4 -> pact/pact_section4_hub_topology.md
-- `src/rss/audit/export.py:180`
+- `src/rss/audit/export.py:187`
 - `src/rss/core/runtime.py:900`
 - `src/rss/hubs/topology.py:33`
 - `src/rss/hubs/topology.py:362`
@@ -321,7 +321,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/persistence/sqlite.py:349`
 
 ### §5.2.2 -> pact/pact_section5_tenant_containers.md
-- `src/rss/audit/export.py:187`
+- `src/rss/audit/export.py:194`
 - `src/rss/hubs/tecton.py:33`
 - `src/rss/hubs/tecton.py:76`
 - `src/rss/hubs/tecton.py:444`
@@ -365,7 +365,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/hubs/tecton.py:412`
 
 ### §5.3.3 -> pact/pact_section5_tenant_containers.md
-- `src/rss/audit/export.py:190`
+- `src/rss/audit/export.py:197`
 - `src/rss/hubs/tecton.py:37`
 - `src/rss/hubs/tecton.py:88`
 - `src/rss/hubs/tecton.py:109`
@@ -418,9 +418,9 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/hubs/tecton.py:616`
 
 ### §5.8.3 -> pact/pact_section5_tenant_containers.md
-- `src/rss/audit/export.py:243`
-- `src/rss/audit/export.py:249`
-- `src/rss/audit/export.py:302`
+- `src/rss/audit/export.py:250`
+- `src/rss/audit/export.py:256`
+- `src/rss/audit/export.py:309`
 - `src/rss/audit/log.py:214`
 - `src/rss/audit/verify.py:152`
 - `src/rss/hubs/tecton.py:40`
@@ -453,7 +453,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/audit/log.py:268`
 
 ### §6.3.5 -> pact/pact_section6_persistence_&_audit.md
-- `src/rss/audit/export.py:195`
+- `src/rss/audit/export.py:202`
 - `src/rss/core/runtime.py:170`
 - `src/rss/core/runtime.py:419`
 - `src/rss/core/runtime.py:588`
@@ -504,7 +504,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/audit/log.py:148`
 
 ### §6.7.3 -> pact/pact_section6_persistence_&_audit.md
-- `src/rss/audit/export.py:194`
+- `src/rss/audit/export.py:201`
 - `src/rss/core/runtime.py:387`
 - `src/rss/core/runtime.py:390`
 - `src/rss/core/runtime.py:1259`
@@ -517,7 +517,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/persistence/sqlite.py:205`
 
 ### §6.8.3 -> pact/pact_section6_persistence_&_audit.md
-- `src/rss/audit/export.py:193`
+- `src/rss/audit/export.py:200`
 - `src/rss/core/runtime.py:387`
 - `src/rss/core/runtime.py:403`
 - `src/rss/core/runtime.py:1255`
@@ -549,8 +549,8 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/hubs/tecton.py:257`
 
 ### §6.10.3 -> pact/pact_section6_persistence_&_audit.md
-- `src/rss/audit/export.py:366`
-- `src/rss/audit/export.py:372`
+- `src/rss/audit/export.py:373`
+- `src/rss/audit/export.py:379`
 
 ### §6.10.5 -> pact/pact_section6_persistence_&_audit.md
 - `src/rss/audit/verify.py:152`
@@ -561,12 +561,12 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/audit/export.py:59`
 - `src/rss/audit/export.py:76`
 - `src/rss/audit/export.py:114`
-- `src/rss/audit/export.py:263`
-- `src/rss/audit/export.py:315`
-- `src/rss/audit/export.py:380`
+- `src/rss/audit/export.py:270`
+- `src/rss/audit/export.py:322`
+- `src/rss/audit/export.py:387`
 
 ### §6.11.3 -> pact/pact_section6_persistence_&_audit.md
-- `src/rss/audit/export.py:196`
+- `src/rss/audit/export.py:203`
 - `src/rss/core/runtime.py:419`
 - `src/rss/core/runtime.py:588`
 - `src/rss/core/runtime.py:1250`
@@ -1008,6 +1008,8 @@ These Pact sections have no explicit source reference in `src/rss/`.
 
 These `src/rss/` modules contain no explicit Pact section reference.
 
+- `src/rss/action/broker.py`
+- `src/rss/action/proposal.py`
 - `src/rss/audit/migrate.py`
 - `src/rss/audit/pact_canon_drift.py`
 - `src/rss/core/state_machine.py`
@@ -1021,4 +1023,4 @@ These `src/rss/` modules contain no explicit Pact section reference.
 - **Pact Sections with Code Refs:** 105
 - **Pact Sections without Code Refs:** 386
 - **Code References without Matching Pact Section:** 0
-- **Code Modules without Pact Refs:** 7
+- **Code Modules without Pact Refs:** 9

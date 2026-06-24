@@ -195,6 +195,14 @@ from test_audit_pact_canon_export import (
     test_pact_canon_export_cli_defaults_to_dry_run,
 )
 
+from test_action_plane import (
+    test_action_plane_proposal_binding,
+    test_action_plane_broker_gates,
+    test_action_plane_result_import_and_replay,
+    test_action_plane_capability_lease,
+    test_action_plane_event_codes_registered,
+)
+
 from test_adversarial_scenarios import (
     test_adversarial_ingress,
     test_adversarial_cross_container,
@@ -373,6 +381,11 @@ TESTS = [
     test_pact_canon_export_write_requires_t0_and_syncs_drift,
     test_pact_canon_export_first_canon_requires_explicit_base_hash,
     test_pact_canon_export_cli_defaults_to_dry_run,
+    test_action_plane_proposal_binding,
+    test_action_plane_broker_gates,
+    test_action_plane_result_import_and_replay,
+    test_action_plane_capability_lease,
+    test_action_plane_event_codes_registered,
     test_seal_ceremony_additional_proof,
     test_s7_amendment_persistence_roundtrip,
     test_genesis_binding_and_offline_fallback,

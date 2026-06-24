@@ -31,10 +31,10 @@ Do not say RSS v0.1.0 is:
 
 ## Metric discipline
 Current project-snapshot baseline:
-- **164 test functions / 1519 assertions / 0 failures**
-- **91.9% statement coverage**
-- **164 claims / 164 tests / 115 Pact sections**
-- **24 source modules in `src/rss/` package tree** (R1 restructure complete)
+- **169 test functions / 1603 assertions / 0 failures**
+- **92.3% statement coverage**
+- **169 claims / 169 tests / 115 Pact sections**
+- **26 source modules in `src/rss/` package tree** (R1 restructure complete)
 
 When metrics change:
 - run `python docs/sync_baseline.py`
