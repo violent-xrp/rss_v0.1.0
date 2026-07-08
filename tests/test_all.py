@@ -188,6 +188,9 @@ from test_audit_trace import (
     test_trace_verify_human_report_branches,
     test_trace_chain_survives_concurrent_governed_writes,
     test_trace_export_additional_proof,
+    test_v2_envelope_recomputation_detects_metadata_tamper,
+    test_v2_mixed_chain_migration_and_roundtrip,
+    test_ratified_amendment_atomicity,
 )
 
 from test_audit_pact_canon_export import (
@@ -379,6 +382,9 @@ TESTS = [
     test_trace_verify_human_report_branches,
     test_trace_chain_survives_concurrent_governed_writes,
     test_trace_export_additional_proof,
+    test_v2_envelope_recomputation_detects_metadata_tamper,
+    test_v2_mixed_chain_migration_and_roundtrip,
+    test_ratified_amendment_atomicity,
     test_pact_canon_export_dry_run_refuses_unsafe_paths,
     test_pact_canon_export_write_requires_t0_and_syncs_drift,
     test_pact_canon_export_first_canon_requires_explicit_base_hash,

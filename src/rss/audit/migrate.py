@@ -22,22 +22,53 @@
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
 # ==============================================================================
-"""RSS v0.1.0 — TRACE chain-hash migration scaffold.
+"""RSS v0.1.0 — TRACE chain-hash migration policy (v1 -> v2).
 
-This module is intentionally a scaffold, not an active migrator. Its purpose is
-to force future maintainers to confront historical-chain compatibility BEFORE
-bumping audit_log.CHAIN_HASH_VERSION.
+This module is the explicit home for chain-hash version compatibility. It was
+a scaffold until CHAIN_HASH_VERSION bumped to 2; it now records the real
+v1 -> v2 policy.
 
-When a future version changes the TRACE hash envelope, this file should become
-the explicit home for:
-  - version-to-version migration policy
-  - cold-verifier branching rules
-  - export/import compatibility notes
-  - operator guidance for mixed historical chains
+## v1 -> v2 policy (§6.3.6, §6.8.1)
 
-v0.1.0 ships only CHAIN_HASH_VERSION = 1, so there is nothing to migrate yet.
-The honest thing to ship now is a visible placeholder rather than silent future
-debt.
+- Historical v1 events are NEVER rewritten. §6.8.1 prohibits rewriting past
+  events; a v1 row's hash cannot be recomputed anyway (its envelope included
+  the raw payload, which is not persisted).
+- Chains are MIXED, not migrated: rows keep their per-event hash_version
+  (schema v3 adds `payload_hash` and `hash_version` columns additively;
+  pre-existing rows default to hash_version=1, payload_hash=NULL). New events
+  are written as v2.
+- Linkage across the version boundary is unaffected: a v2 event's parent_hash
+  is simply the previous (possibly v1) event's content_hash.
+
+## Verification branching rules
+
+- v1 rows: linkage-only (parent_hash == previous content_hash). In-place
+  stored-field edits on v1 rows are NOT detectable post-hoc; this is the
+  disclosed v1 limitation the v2 envelope exists to close.
+- v2 rows: linkage PLUS full envelope recomputation from persisted columns
+  (audit_log.verify_chain_deep for live/boot; the inline mirror in
+  audit/verify.py for cold files; both use the identical envelope shape).
+- Downgrade guard: hash_version must be monotonically non-decreasing in append
+  order, and a v2 row must carry payload_hash. Re-marking a single v2 row as
+  v1 (to dodge recomputation) is detected. Residual risk: wholesale downgrade
+  of EVERY row to v1 cannot be distinguished from a legitimately old database
+  by the walk alone — the verifier's recomputed-count line makes it loud, and
+  external anchoring (§6.12.3, Phase H) is the full remediation.
+
+## Export / import compatibility
+
+- JSON exports include payload_hash and hash_version per event, so a third
+  party holding an export can recompute v2 envelope hashes independently
+  (closes the §6.3.6 recomputability gap for v2 rows).
+- Older databases without the v3 columns remain verifiable: the cold verifier
+  treats every row as v1 when the columns are absent.
+
+## Operator guidance for mixed chains
+
+A mixed chain is the EXPECTED state of any database that predates v2. The
+cold verifier reports how many rows were recomputed (v2) versus linkage-only
+(v1). A chain whose old head is v1 and whose tail is v2 is healthy; the
+verification guarantee simply strengthens at the boundary.
 """
 
 from __future__ import annotations
@@ -49,11 +80,21 @@ def migration_required(from_version: int, to_version: int) -> bool:
 
 
 def describe_migration_path(from_version: int, to_version: int) -> str:
-    """Human-readable placeholder until a real migration lands."""
+    """Human-readable summary of the chain-hash compatibility policy."""
     if not migration_required(from_version, to_version):
         return "No chain-hash migration required."
+    if int(from_version) == 1 and int(to_version) == 2:
+        return (
+            "v1 -> v2: no rewrite of historical events (§6.8.1). Chains become "
+            "mixed: existing rows stay v1 (linkage-only verification); new rows "
+            "are v2 (payload_hash + hash_version persisted; envelope hashes "
+            "recomputable from stored columns). Schema v3 adds the columns "
+            "additively. Cold verifier and verify_chain_deep branch per-row on "
+            "hash_version."
+        )
     return (
-        "TRACE chain-hash migration policy not yet implemented. "
-        "Do not bump CHAIN_HASH_VERSION without updating this module, "
-        "the cold verifier, persistence handling, and export guidance."
+        f"TRACE chain-hash migration policy for v{int(from_version)} -> "
+        f"v{int(to_version)} not yet defined. Do not bump CHAIN_HASH_VERSION "
+        "without updating this module, the cold verifier, persistence "
+        "handling, and export guidance."
     )

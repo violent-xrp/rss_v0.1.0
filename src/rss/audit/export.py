@@ -283,6 +283,10 @@ def export_trace_json(trace: AuditLog, path: str, container_id: Optional[str] = 
             "content_hash": e.content_hash,
             "byte_length": e.byte_length,
             "parent_hash": e.parent_hash,
+            # §6.3.6 v2 — with payload_hash + hash_version in the export, a
+            # third party can recompute v2 envelope hashes independently.
+            "payload_hash": getattr(e, "payload_hash", None),
+            "hash_version": getattr(e, "hash_version", 1),
         })
 
     output = {
@@ -401,11 +405,18 @@ def export_from_db(persistence: Persistence, path: str, fmt: str = "json") -> in
                 "content_hash": e.content_hash,
                 "byte_length": e.byte_length,
                 "parent_hash": e.parent_hash,
+                # §6.3.6 v2 — same recomputability fields as the live export;
+                # the cold path is the auditor surface, so it must not carry
+                # less evidence than the live one.
+                "payload_hash": getattr(e, "payload_hash", None),
+                "hash_version": getattr(e, "hash_version", 1),
             })
 
         output = {
             "export_time": datetime.now(UTC).isoformat(),
             "event_count": len(records),
+            # chain_valid reports linkage-level validity (§6.10.3). Envelope
+            # recomputation is the cold verifier's job (audit/verify.py).
             "chain_valid": chain_valid,
             "source": "SQLite",
             "redline_sanitized": len(redline_ids) > 0,

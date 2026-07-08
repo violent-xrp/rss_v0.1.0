@@ -7,9 +7,9 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
 
 ### Current verified snapshot
-- **171 test functions / 1617 assertions / 0 failures** via `python tests/test_all.py`
+- **174 test functions / 1648 assertions / 0 failures** via `python tests/test_all.py`
 - **92.3% statement coverage** via `python run_coverage.py`
-- **171 claims / 171 tests / 115 Pact sections** in `docs/claim_matrix.md`
+- **174 claims / 174 tests / 118 Pact sections** in `docs/claim_matrix.md`
 - **26 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -43,6 +43,7 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - Baseline sync now covers `docs/AI_GOVERNANCE_PROJECT_BRIEF.md`, including plain coverage and mapped-proof-claim lines, so outreach-facing proof numbers stay current mechanically.
 - Runtime boot now loads persisted TRACE history before emitting new boot events even when `restore=False`, preserving audit-chain continuity across sessions, and TECTON restore now re-locks restored ACTIVE profiles so §5.3.3 immutability survives SQLite round-trip.
 - TRACE audit writes now serialize chain append plus persistence through the audit lock, preserving cold-verifiable hash-chain order under concurrent governed writes in the current single-process runtime.
+- TRACE now uses a v2 persisted-field hash envelope for new events, with schema v3 `payload_hash` / `hash_version` migration, cold verifier recomputation and downgrade detection, boot-time deep verification, config-driven SQLite synchronous posture, and atomic ratified-amendment persistence.
 - Default CLI smoke tests now treat AMBIGUOUS as an expected classification rather than a failure, and post-LLM REDLINE validation now redacts matched REDLINE content before output while still TRACE-logging the leak.
 - Added `docs/NIST_AI_RMF_MAPPING.md` and `docs/README.md` to map RSS mechanisms to NIST AI RMF functions conservatively and route reviewers through the documentation set without creating a new truth source.
 - Added `docs/proposals/PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md` to define the proposed canon-to-file export path: Sections 1-7 use a guarded common exporter, while Section 0 remains a separate Genesis-aware ceremony.

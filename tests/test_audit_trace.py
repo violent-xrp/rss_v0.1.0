@@ -71,6 +71,19 @@ def test_audit_log():
     except AuditLogError:
         check(True, "rejects empty event_code")
 
+    # §6.2.1/§6.2.2 — append() validates the full mandatory envelope:
+    # authority and content_hash are required fields, not optional ones.
+    try:
+        log.append(TraceEvent(datetime.now(UTC), "CODE", "", "a", "hash", 0))
+        check(False, "should reject empty authority")
+    except AuditLogError:
+        check(True, "rejects empty authority (§6.2.1 mandatory envelope)")
+    try:
+        log.append(TraceEvent(datetime.now(UTC), "CODE", "a", "a", "", 0))
+        check(False, "should reject empty content_hash")
+    except AuditLogError:
+        check(True, "rejects empty content_hash (§6.2.1 mandatory envelope)")
+
 
 def test_trace_export():
     # CLAIM: §0.5, §6.10 — TRACE export format and REDLINE sanitization
@@ -689,8 +702,11 @@ def test_s6_chain_hash_migration_scaffold():
     check(no_op == "No chain-hash migration required.",
           "same-version migration path is explicit no-op")
     path = describe_migration_path(1, 2)
-    check("not yet implemented" in path and "Do not bump CHAIN_HASH_VERSION" in path,
-          "version-change path warns against silent hash-version bump")
+    check("mixed" in path and "linkage-only" in path,
+          "v1 -> v2 path documents the real mixed-chain policy (no rewrite of history)")
+    undefined = describe_migration_path(2, 3)
+    check("not yet defined" in undefined and "Do not bump CHAIN_HASH_VERSION" in undefined,
+          "undefined version-change paths still warn against silent hash-version bump")
 
 
 def test_s6_boot_chain_verification():
@@ -1026,23 +1042,39 @@ def test_s6_cold_verifier():
         )
         last_hash = cur.fetchone()[0]
 
+        # §6.3.6 v2 — synthetic rows must be honest v2 rows (real envelope
+        # hashes + payload_hash + hash_version), or the verifier's downgrade
+        # guard correctly flags them as raw-insert tamper.
+        from rss.audit.log import envelope_hash_v2
         for i in range(3):
-            import hashlib as _hl
             content = f"synthetic container event {i}"
-            new_hash = _hl.sha256(content.encode()).hexdigest()
+            payload_hash = AuditLog.hash_content(content)
+            ts = datetime.now(UTC).isoformat()
+            artifact = f"{container_id}:RUNE:task{i:03d}"
+            new_hash = envelope_hash_v2(
+                timestamp_iso=ts,
+                event_code="CONTAINER_REQUEST_RUNE",
+                authority="TECTON",
+                artifact_id=artifact,
+                payload_hash=payload_hash,
+                byte_length=len(content),
+                parent_hash=last_hash,
+            )
             raw.execute(
                 "INSERT INTO trace_events "
                 "(timestamp, event_code, authority, artifact_id, content_hash, "
-                "byte_length, parent_hash) "
-                "VALUES (?,?,?,?,?,?,?)",
+                "byte_length, parent_hash, payload_hash, hash_version) "
+                "VALUES (?,?,?,?,?,?,?,?,?)",
                 (
-                    datetime.now(UTC).isoformat(),
+                    ts,
                     "CONTAINER_REQUEST_RUNE",
                     "TECTON",
-                    f"{container_id}:RUNE:task{i:03d}",
+                    artifact,
                     new_hash,
                     len(content),
                     last_hash,
+                    payload_hash,
+                    2,
                 ),
             )
             last_hash = new_hash
@@ -1096,19 +1128,36 @@ def test_s6_cold_verifier():
             "SELECT content_hash FROM trace_events ORDER BY id DESC LIMIT 1"
         )
         last_hash = cur.fetchone()[0]
+        # v2-honest synthetic row: real envelope hash so the recompute pass
+        # (and downgrade guard) accept it — we are testing the registry here,
+        # not chain breakage.
+        from rss.audit.log import envelope_hash_v2
+        _ts = datetime.now(UTC).isoformat()
+        _payload_hash = AuditLog.hash_content("synthetic registry payload")
+        _new_hash = envelope_hash_v2(
+            timestamp_iso=_ts,
+            event_code="TOTALLY_MADE_UP_CODE",
+            authority="TEST",
+            artifact_id="ARTIFACT-SYNTHETIC",
+            payload_hash=_payload_hash,
+            byte_length=42,
+            parent_hash=last_hash,
+        )
         raw.execute(
             "INSERT INTO trace_events "
             "(timestamp, event_code, authority, artifact_id, content_hash, "
-            "byte_length, parent_hash) "
-            "VALUES (?,?,?,?,?,?,?)",
+            "byte_length, parent_hash, payload_hash, hash_version) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
             (
-                datetime.now(UTC).isoformat(),
+                _ts,
                 "TOTALLY_MADE_UP_CODE",
                 "TEST",
                 "ARTIFACT-SYNTHETIC",
-                "a" * 64,  # synthetic hash
+                _new_hash,
                 42,
                 last_hash,  # maintain chain so we test registry, not chain break
+                _payload_hash,
+                2,
             ),
         )
         raw.commit()
@@ -1364,8 +1413,13 @@ def test_a1_unified_container_filter():
         )
         last_hash = cur.fetchone()[0]
 
-        import hashlib as _hl
         container_id = "TECTON-filter01"
+
+        # §6.3.6 v2 — synthetic rows are inserted as honest v2 rows (real
+        # envelope hashes + payload_hash + hash_version); raw v1-style
+        # inserts after v2 bootstrap events are correctly treated as tamper
+        # by the downgrade guard and would Safe-Stop the session-2 boot.
+        from rss.audit.log import envelope_hash_v2
 
         # Event A: container as prefix with ":" separator (the documented
         # runtime convention — see runtime.process_request and
@@ -1373,25 +1427,37 @@ def test_a1_unified_container_filter():
         # "{container_id}:{sigil}:{hex}"). F-1 exact-boundary filter
         # requires the ":" separator.
         c1 = "prefix match event"
-        h1 = _hl.sha256(c1.encode()).hexdigest()
+        p1 = AuditLog.hash_content(c1)
+        t1 = datetime.now(UTC).isoformat()
+        a1 = f"{container_id}:RUNE:task01"
+        h1 = envelope_hash_v2(timestamp_iso=t1, event_code="CONTAINER_REQUEST_RUNE",
+                              authority="TECTON", artifact_id=a1,
+                              payload_hash=p1, byte_length=len(c1),
+                              parent_hash=last_hash)
         raw.execute(
             "INSERT INTO trace_events (timestamp, event_code, authority, "
-            "artifact_id, content_hash, byte_length, parent_hash) "
-            "VALUES (?,?,?,?,?,?,?)",
-            (datetime.now(UTC).isoformat(), "CONTAINER_REQUEST_RUNE", "TECTON",
-             f"{container_id}:RUNE:task01", h1, len(c1), last_hash),
+            "artifact_id, content_hash, byte_length, parent_hash, "
+            "payload_hash, hash_version) VALUES (?,?,?,?,?,?,?,?,?)",
+            (t1, "CONTAINER_REQUEST_RUNE", "TECTON", a1, h1, len(c1),
+             last_hash, p1, 2),
         )
 
         # Event B: container as substring, NOT prefix. Must NOT match the
         # F-1 boundary-aware filter.
         c2 = "substring match event"
-        h2 = _hl.sha256(c2.encode()).hexdigest()
+        p2 = AuditLog.hash_content(c2)
+        t2 = datetime.now(UTC).isoformat()
+        a2 = f"OTHER-{container_id}-TRAILING"
+        h2 = envelope_hash_v2(timestamp_iso=t2, event_code="CONTAINER_REQUEST_RUNE",
+                              authority="TECTON", artifact_id=a2,
+                              payload_hash=p2, byte_length=len(c2),
+                              parent_hash=h1)
         raw.execute(
             "INSERT INTO trace_events (timestamp, event_code, authority, "
-            "artifact_id, content_hash, byte_length, parent_hash) "
-            "VALUES (?,?,?,?,?,?,?)",
-            (datetime.now(UTC).isoformat(), "CONTAINER_REQUEST_RUNE", "TECTON",
-             f"OTHER-{container_id}-TRAILING", h2, len(c2), h1),
+            "artifact_id, content_hash, byte_length, parent_hash, "
+            "payload_hash, hash_version) VALUES (?,?,?,?,?,?,?,?,?)",
+            (t2, "CONTAINER_REQUEST_RUNE", "TECTON", a2, h2, len(c2),
+             h1, p2, 2),
         )
         raw.commit()
         raw.close()
@@ -1404,6 +1470,9 @@ def test_a1_unified_container_filter():
 
         # In-memory filter should also match only Event A
         rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
+        check(rss2.is_safe_stopped()["active"] is False,
+              "v2-honest synthetic rows do not trip boot verification "
+              "(deep verify + downgrade guard accept the chain)")
         in_mem = rss2.trace.events_by_container(container_id)
         check(len(in_mem) == 1,
               f"audit_log.events_by_container boundary match: 1 event (got {len(in_mem)})")
@@ -1621,7 +1690,7 @@ def test_probe_hash_envelope_version_marker_present():
     verifier plus persistence layer MUST branch on it to preserve
     detectability of historical chains. This probe pins the marker so it
     cannot be silently removed."""
-    # CLAIM: §6.3.6 — CHAIN_HASH_VERSION marker pinned at v1 for forward-compat
+    # CLAIM: §6.3.6 — CHAIN_HASH_VERSION marker pinned at v2 for forward-compat
     section("Probe E — Chain Hash Version Marker (§6.3.6)")
 
     from rss.audit.log import CHAIN_HASH_VERSION
@@ -1630,10 +1699,13 @@ def test_probe_hash_envelope_version_marker_present():
     check(CHAIN_HASH_VERSION >= 1,
           f"Probe-E2: CHAIN_HASH_VERSION >= 1 (got {CHAIN_HASH_VERSION})")
     # If this ever bumps, update the migration path in persistence and
-    # trace_verify before changing the assertion below.
-    check(CHAIN_HASH_VERSION == 1,
-          "Probe-E3: CHAIN_HASH_VERSION is at v1 "
-          "(bump requires cold-verifier + persistence migration)")
+    # trace_verify before changing the assertion below (the v1 -> v2 bump
+    # followed exactly that order: schema v3 columns + cold-verifier branch
+    # + migrate.py policy landed before this pin moved).
+    check(CHAIN_HASH_VERSION == 2,
+          "Probe-E3: CHAIN_HASH_VERSION is at v2 — payload_hash envelope, "
+          "recomputable from persisted columns "
+          "(next bump requires cold-verifier + persistence migration)")
 
 
 def test_probe_container_filter_prefix_boundary():
@@ -2344,6 +2416,232 @@ def test_trace_export_additional_proof():
         for pth in (live_json, cold_json):
             if os.path.exists(pth):
                 os.unlink(pth)
+        _cleanup_db(path)
+
+
+def test_v2_envelope_recomputation_detects_metadata_tamper():
+    """§6.3.6 v2 — the previously-undetectable tamper class is now caught:
+    an in-place edit to a stored metadata field that leaves the hash columns
+    untouched passes linkage but fails v2 envelope recomputation. Also proves
+    the hash_version downgrade guard."""
+    # CLAIM: §6.3.6 v2 — stored-field tamper on v2 rows detected by recomputation; downgrade re-marking detected by monotonicity guard
+    section("S6 v2: Recomputation Detects Metadata Tamper (§6.3.6)")
+
+    from rss.audit.verify import verify_trace_file
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        rss = bootstrap(config)
+        rss._log("GLOBAL_EVT", "ART-v2-1", "first governed event")
+        rss._log("GLOBAL_EVT", "ART-v2-2", "second governed event")
+        rss.persistence.close()
+
+        # Baseline: clean DB verifies, and v2 rows are actually recomputed.
+        clean = verify_trace_file(path)
+        check(clean["verified"] is True, "clean v2 DB verifies cold")
+        check(clean["recomputed_events"] >= 2,
+              "v2 rows verified by recomputation, not linkage alone")
+
+        # Tamper: rewrite authority in place, leave BOTH hash columns intact.
+        # Linkage still holds; only recomputation can catch this (§6.1.2 gap
+        # closed by the v2 envelope).
+        raw = sqlite3.connect(path)
+        raw.execute(
+            "UPDATE trace_events SET authority='FORGED-SEAT' "
+            "WHERE id=(SELECT MAX(id) FROM trace_events)"
+        )
+        raw.commit()
+        raw.close()
+
+        tampered = verify_trace_file(path)
+        check(tampered["verified"] is False,
+              "in-place metadata edit on a v2 row is detected cold")
+        check("recomputation" in tampered["reason"],
+              "failure reason names envelope recomputation")
+
+        # Downgrade attack: re-mark the tampered row as v1 to dodge
+        # recomputation. The monotonicity guard treats it as tamper because a
+        # later row may not carry a lower hash_version than an earlier one.
+        raw = sqlite3.connect(path)
+        raw.execute(
+            "UPDATE trace_events SET hash_version=1, payload_hash=NULL "
+            "WHERE authority='FORGED-SEAT'"
+        )
+        raw.commit()
+        raw.close()
+
+        downgraded = verify_trace_file(path)
+        check(downgraded["verified"] is False,
+              "re-marking a v2 row as v1 is detected (downgrade guard)")
+        check("downgrade" in downgraded["reason"],
+              "failure reason names the hash_version downgrade")
+    finally:
+        _cleanup_db(path)
+
+
+def test_v2_mixed_chain_migration_and_roundtrip():
+    """§6.3.6 / §6.8.2 — pre-v2 databases migrate additively (schema v3
+    columns), historical v1 rows are never rewritten, new v2 events chain
+    onto the v1 tail, and both hot deep-verify and cold verify accept the
+    mixed chain while recomputing only the v2 rows."""
+    # CLAIM: §6.8.1/§6.8.2 — additive trace_events migration; mixed v1/v2 chain valid; v2 fields round-trip through SQLite
+    section("S6 v2: Mixed Chain Migration + Round-Trip (§6.3.6, §6.8.2)")
+
+    from rss.audit.verify import verify_trace_file
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        # Build a pre-v2 database by hand: old 8-column trace_events with a
+        # hand-linked two-event v1 chain (content hashes are opaque strings
+        # from the walk's perspective; linkage is what v1 verification checks).
+        raw = sqlite3.connect(path)
+        raw.execute("""CREATE TABLE trace_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT, event_code TEXT, authority TEXT, artifact_id TEXT,
+            content_hash TEXT, byte_length INTEGER, parent_hash TEXT
+        )""")
+        raw.execute(
+            "INSERT INTO trace_events "
+            "(timestamp,event_code,authority,artifact_id,content_hash,byte_length,parent_hash) "
+            "VALUES(?,?,?,?,?,?,?)",
+            (datetime.now(UTC).isoformat(), "LEGACY_EVT", "TRACE", "ART-old-1",
+             "legacyhash-aaa", 5, None),
+        )
+        raw.execute(
+            "INSERT INTO trace_events "
+            "(timestamp,event_code,authority,artifact_id,content_hash,byte_length,parent_hash) "
+            "VALUES(?,?,?,?,?,?,?)",
+            (datetime.now(UTC).isoformat(), "LEGACY_EVT", "TRACE", "ART-old-2",
+             "legacyhash-bbb", 5, "legacyhash-aaa"),
+        )
+        raw.commit()
+        raw.close()
+
+        # Opening Persistence migrates: payload_hash + hash_version added.
+        p = Persistence(path)
+        check(p.migration_occurred is True, "pre-v2 DB triggers migration")
+        check("trace_events.payload_hash" in p.migration_details
+              and "trace_events.hash_version" in p.migration_details,
+              "migration details name both new trace_events columns")
+
+        # Historical rows load as v1, untouched (§6.8.1: no rewrite).
+        loaded = p.load_all_trace()
+        check(len(loaded) == 2, "legacy rows survive migration")
+        check(all(e.hash_version == 1 and e.payload_hash is None for e in loaded),
+              "legacy rows remain v1 with no payload_hash (never rewritten)")
+
+        # Continue the chain with a v2 event: links onto the v1 tail.
+        log = AuditLog()
+        log._events = list(loaded)  # mirror the runtime restore path
+        new_event = log.record_event("GLOBAL_EVT", "TRACE", "ART-new-1", "v2 payload")
+        check(new_event.parent_hash == "legacyhash-bbb",
+              "v2 event auto-chains onto the v1 tail")
+        check(new_event.hash_version == 2 and new_event.payload_hash is not None,
+              "new event is v2 with payload_hash")
+        check(log.verify_chain_deep() is True,
+              "hot deep-verify accepts the mixed v1/v2 chain")
+
+        # Round-trip the v2 event and cold-verify the mixed chain.
+        p.save_trace_event(new_event)
+        reloaded = p.load_all_trace()
+        check(reloaded[-1].payload_hash == new_event.payload_hash
+              and reloaded[-1].hash_version == 2,
+              "v2 fields round-trip through SQLite")
+
+        cold = verify_trace_file(path)
+        check(cold["verified"] is True, "cold verify accepts the mixed chain")
+        check(cold["recomputed_events"] == 1 and cold["linkage_only_events"] == 2,
+              "cold verify recomputes exactly the v2 rows (v1 stay linkage-only)")
+        p.close()
+
+        # CHARACTERIZATION (KNOWN_LIMITS_LEDGER KL-1): the disclosed v1
+        # limitation. An in-place metadata edit on a LEGACY v1 row preserves
+        # linkage and — because v1 payloads were never persisted — cannot be
+        # caught by recomputation. This test pins the boundary exactly where
+        # the docs say it is: v1 rows are linkage-only evidence.
+        raw = sqlite3.connect(path)
+        raw.execute(
+            "UPDATE trace_events SET authority='FORGED-LEGACY' "
+            "WHERE id=(SELECT MIN(id) FROM trace_events)"
+        )
+        raw.commit()
+        raw.close()
+        v1_tampered = verify_trace_file(path)
+        check(v1_tampered["verified"] is True,
+              "KL-1 characterization: metadata edit on a v1 row passes "
+              "verification (disclosed limitation — §6.1.2 note, migrate.py "
+              "policy); v2 rows exist precisely to close this for new events")
+        check(v1_tampered["recomputed_events"] == 1,
+              "KL-1: v2 rows remain recomputed even in the tampered-v1 chain")
+    finally:
+        _cleanup_db(path)
+
+
+def test_ratified_amendment_atomicity():
+    """§6.5.3 — save_ratified_amendment commits both rows or neither. A
+    failure between the proposal INSERT and the record INSERT must roll the
+    proposal back; a ratified proposal without its amendment record is the
+    half-written ceremony state the transaction exists to prevent."""
+    # CLAIM: §6.5.3 — ratified proposal + amendment record persist atomically (both or neither)
+    section("S6: Ratified Amendment Atomicity (§6.5.3)")
+
+    import types
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        p = Persistence(path)
+
+        def make_proposal(pid):
+            return types.SimpleNamespace(
+                proposal_id=pid, section_id="S6", rationale="test",
+                proposed_text="text", proposed_at=datetime.now(UTC),
+                status="RATIFIED", reviewer="REVIEWER", review_verdict="APPROVE",
+                review_notes="ok", reviewed_at=None, sovereign_override=False,
+            )
+
+        def make_record(pid, ratified_at):
+            return types.SimpleNamespace(
+                proposal_id=pid, section_id="S6", old_version="1.0",
+                new_version="1.1", old_hash="aaa", new_hash="bbb",
+                rationale="test", ratified_at=ratified_at,
+                sovereign_override=False, reviewer="REVIEWER", review_notes="ok",
+            )
+
+        # Sabotage: ratified_at=None makes the SECOND insert's parameter
+        # construction raise AFTER the proposal INSERT has executed inside
+        # the open transaction — exactly the mid-ceremony failure window.
+        bad = make_record("AMEND-atomic-1", ratified_at=None)
+        raised = False
+        try:
+            p.save_ratified_amendment(make_proposal("AMEND-atomic-1"), bad)
+        except AttributeError:
+            raised = True
+        check(raised, "failure between the two ceremony INSERTs surfaces")
+
+        proposals = [r["proposal_id"] for r in p.load_amendment_proposals()]
+        records = [r["proposal_id"] for r in p.load_amendment_records()]
+        check("AMEND-atomic-1" not in proposals,
+              "proposal INSERT rolled back — no ratified proposal without its record")
+        check("AMEND-atomic-1" not in records, "no partial amendment record")
+
+        # Clean path: both rows land together.
+        good = make_record("AMEND-atomic-2", ratified_at=datetime.now(UTC))
+        p.save_ratified_amendment(make_proposal("AMEND-atomic-2"), good)
+        proposals = [r["proposal_id"] for r in p.load_amendment_proposals()]
+        records = [r["proposal_id"] for r in p.load_amendment_records()]
+        check("AMEND-atomic-2" in proposals and "AMEND-atomic-2" in records,
+              "successful ceremony persists both rows together")
+
+        # The connection stays usable after a rollback.
+        p.save_trace_event(TraceEvent(datetime.now(UTC), "GLOBAL_EVT", "TRACE",
+                                      "ART-post-rollback", "hash", 4, None))
+        check(p.event_count() == 1, "connection remains usable after rollback")
+        p.close()
+    finally:
         _cleanup_db(path)
 
 

@@ -17,7 +17,7 @@ audit/pact_canon_drift.py   98.1%
 audit/migrate.py           100.0%
 scribe.py                  100.0%
 reference_pack.py          100.0%
-trace_verify.py             94.3%
+trace_verify.py             94.9%
 trace_export.py             89.9%
 tecton.py                   94.8%
 cycle.py                    94.2%
@@ -29,7 +29,7 @@ ward.py                     87.9%
 governance/t0.py           100.0%
 scope.py                    92.6%
 llm_adapter.py              90.1%
-audit_log.py                87.7%
+audit_log.py                87.1%
 runtime.py                  86.0%
 oath.py                     83.5%
 pav.py                      90.9%

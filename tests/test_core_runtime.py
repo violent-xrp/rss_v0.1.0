@@ -505,6 +505,35 @@ def test_write_ahead_guarantee():
         check("error" not in r, "system recovers after audit restored")
 
         rss.persistence.close()
+
+        # §6.4.1/§6.5.1 — Durability posture is config-driven. Under WAL,
+        # synchronous=NORMAL can lose the last commit(s) on power loss;
+        # production_mode forces FULL so "durable audit record" (§6.4.1)
+        # holds through power failure.
+        check(RSSConfig(production_mode=True).sqlite_synchronous == "FULL",
+              "production_mode forces sqlite_synchronous=FULL (§6.4.1)")
+        check(RSSConfig().sqlite_synchronous == "NORMAL",
+              "dev default remains synchronous=NORMAL (disclosed posture)")
+
+        fd2, path2 = tempfile.mkstemp(suffix=".db")
+        os.close(fd2)
+        try:
+            p_full = Persistence(path2, synchronous="FULL")
+            level = p_full.conn.execute("PRAGMA synchronous").fetchone()[0]
+            check(level == 2, f"PRAGMA synchronous applied as FULL (got {level})")
+            p_full.close()
+
+            raised_bad_sync = False
+            try:
+                Persistence(path2, synchronous="OFF")
+            except ValueError:
+                raised_bad_sync = True
+            check(raised_bad_sync,
+                  "invalid synchronous level rejected (whitelist, no PRAGMA injection)")
+        finally:
+            for pth in (path2, path2 + "-wal", path2 + "-shm"):
+                if os.path.exists(pth):
+                    os.unlink(pth)
     finally:
         if os.path.exists(path):
             os.unlink(path)

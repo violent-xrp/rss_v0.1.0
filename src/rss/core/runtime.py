@@ -160,7 +160,10 @@ class Runtime:
         self.seal = Seal()
 
         # Infra
-        self.persistence = Persistence(self.config.db_path)
+        self.persistence = Persistence(
+            self.config.db_path,
+            synchronous=getattr(self.config, "sqlite_synchronous", "NORMAL"),
+        )
         self.llm = LLMAdapter(self.config)
         self.restore_warnings = []
 
@@ -419,9 +422,12 @@ class Runtime:
         """§6.3.5, §6.11.3 — Boot-time TRACE chain verification.
         Called during bootstrap after state restoration. If the chain is broken,
         enters persistent Safe-Stop. Returns {verified: bool, reason: str}.
-        Emits BOOT_CHAIN_VERIFIED on success, BOOT_CHAIN_BROKEN on failure."""
+        Emits BOOT_CHAIN_VERIFIED on success, BOOT_CHAIN_BROKEN on failure.
+        Uses the deep walk (§6.3.6 v2): linkage for all events plus envelope
+        recomputation for v2 events, so in-place field edits on persisted v2
+        rows are caught at boot, not just hash-column edits."""
         try:
-            chain_valid = self.trace.verify_chain()
+            chain_valid = self.trace.verify_chain_deep()
         except Exception as e:
             reason = f"Chain verification raised exception: {e}"
             self._log("BOOT_CHAIN_BROKEN", "TRACE", reason)

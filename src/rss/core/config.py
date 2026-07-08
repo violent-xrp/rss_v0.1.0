@@ -95,6 +95,13 @@ class RSSConfig:
     # False (default), missing Genesis file passes in dev mode.
     require_genesis_file: bool = False
 
+    # §6.4.1/§6.5.1 — SQLite durability posture. Under WAL, synchronous=NORMAL
+    # is durable against application crash but the most recent commit(s) can
+    # roll back on OS crash / power loss. FULL closes that window at a write
+    # cost. Dev default stays NORMAL; production_mode forces FULL so the §6.4
+    # "durable audit record" guarantee holds through power loss.
+    sqlite_synchronous: str = "NORMAL"
+
     def __post_init__(self):
         """Phase E-1 — Apply production_mode lockdown if engaged."""
         if self.production_mode:
@@ -102,3 +109,4 @@ class RSSConfig:
             self.audit_failure_threshold = 1
             self.log_to_console = False
             self.require_genesis_file = True
+            self.sqlite_synchronous = "FULL"

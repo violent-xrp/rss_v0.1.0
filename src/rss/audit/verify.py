@@ -50,11 +50,17 @@ What this verifier proves:
   - The trace_events table exists and is readable
   - Every event after the first has a parent_hash linking it to the previous
   - No rows are missing from the expected sequence (as recorded by SQLite id)
+  - For v2 rows (hash_version >= 2, §6.3.6): content_hash recomputes exactly
+    from the stored columns — any in-place edit to ANY stored field of a v2
+    row is detected, not just edits to the hash columns
   - Optional: event codes appear in a provided registry (--registry flag)
 
 What this verifier does NOT prove:
-  - That the hashes were computed from any specific original payload (v0.1.0
-    exports don't include raw payloads, only hashes — see §6.3.6)
+  - Stored-field integrity of v1 (legacy) rows — payloads were hashed directly
+    into v1 envelopes and never persisted, so v1 hashes cannot be recomputed;
+    v1 rows are verified by linkage only
+  - That any payload_hash matches a specific original payload (payloads are
+    not stored; payload authenticity requires the original content)
   - That the database itself wasn't replaced wholesale between audits
     (external signing / timestamp anchoring is Phase 6 — see §6.12.3)
 
@@ -96,6 +102,39 @@ EXIT_FILE_ERROR = 4
 
 
 # ── Core verification primitives ──
+
+# §6.3.6 v2 — Inline, zero-dependency mirrors of rss.audit.log.canonical_json
+# and rss.audit.log.envelope_hash_v2. This module deliberately imports no RSS
+# code (it must verify a cold file even when the runtime is broken), so these
+# MUST stay byte-identical with their counterparts in audit/log.py. Any change
+# there requires a CHAIN_HASH_VERSION bump and a mirrored change here.
+
+def _canonical_json_bytes(value: Any) -> bytes:
+    return json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        default=str,
+    ).encode("utf-8")
+
+
+def _envelope_hash_v2(timestamp_iso: str, event_code: str, authority: str,
+                      artifact_id: str, payload_hash: str, byte_length: int,
+                      parent_hash: Optional[str]) -> str:
+    import hashlib
+    envelope = {
+        "v": 2,
+        "timestamp": timestamp_iso,
+        "event_code": event_code,
+        "authority": authority,
+        "artifact_id": artifact_id,
+        "payload_hash": payload_hash,
+        "byte_length": byte_length,
+        "parent_hash": parent_hash or "",
+    }
+    return hashlib.sha256(_canonical_json_bytes(envelope)).hexdigest()
+
 
 class ColdVerifyError(Exception):
     """Raised when cold verification cannot proceed (file missing, schema
@@ -164,6 +203,14 @@ def _load_events(conn: sqlite3.Connection,
     Returns a list of dicts rather than a generator so the caller can count,
     verify, and iterate multiple times without re-querying."""
     try:
+        # §6.3.6 v2 — payload_hash / hash_version exist only on schema v3+
+        # databases. Older archived databases remain verifiable (v1 linkage
+        # semantics), so the columns are optional here, never required.
+        cur = conn.execute("PRAGMA table_info(trace_events)")
+        cols = {row[1] for row in cur.fetchall()}
+        has_v2_cols = "payload_hash" in cols and "hash_version" in cols
+        v2_select = ", payload_hash, hash_version" if has_v2_cols else ""
+
         if container_filter:
             # Two SQL conditions, OR'd: exact match or prefix + ":"
             # The LIKE pattern uses "%" only as a suffix, not as an embedded
@@ -172,7 +219,7 @@ def _load_events(conn: sqlite3.Connection,
             like_prefix = f"{container_filter}:%"
             cur = conn.execute(
                 "SELECT id, timestamp, event_code, authority, artifact_id, "
-                "content_hash, byte_length, parent_hash "
+                f"content_hash, byte_length, parent_hash{v2_select} "
                 "FROM trace_events "
                 "WHERE artifact_id = ? OR artifact_id LIKE ? "
                 "ORDER BY id ASC",
@@ -181,7 +228,7 @@ def _load_events(conn: sqlite3.Connection,
         else:
             cur = conn.execute(
                 "SELECT id, timestamp, event_code, authority, artifact_id, "
-                "content_hash, byte_length, parent_hash "
+                f"content_hash, byte_length, parent_hash{v2_select} "
                 "FROM trace_events ORDER BY id ASC"
             )
         rows = cur.fetchall()
@@ -199,6 +246,8 @@ def _load_events(conn: sqlite3.Connection,
             "content_hash": r[5],
             "byte_length": r[6],
             "parent_hash": r[7],
+            "payload_hash": r[8] if has_v2_cols else None,
+            "hash_version": (r[9] if r[9] is not None else 1) if has_v2_cols else 1,
         })
     return events
 
@@ -284,6 +333,91 @@ def _verify_chain_links(events: List[Dict[str, Any]],
     }
 
 
+def _verify_v2_recomputation(events: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """§6.3.6 v2 — Recompute the envelope hash of every v2 row from its
+    stored columns and compare against content_hash. Detects in-place edits
+    to any stored field of a v2 row. v1 rows are skipped (payloads were not
+    persisted; linkage-only semantics preserved for historical chains)."""
+    recomputed = 0
+    max_version_seen = 0
+    for idx, e in enumerate(events):
+        version = e.get("hash_version", 1)
+        # Downgrade guard: hash_version is monotonically non-decreasing in
+        # append order (v1 prefix, v2 tail). A later row marked below an
+        # earlier row's version is a downgrade — the cheap way to dodge
+        # recomputation — and is treated as tamper.
+        if version < max_version_seen:
+            return {
+                "verified": False,
+                "reason": "hash_version downgrade detected (later row carries lower version)",
+                "first_break_at_index": idx,
+                "break_details": {
+                    "previous_event": None,
+                    "current_event": {
+                        "id": e["id"],
+                        "event_code": e["event_code"],
+                        "parent_hash": e["parent_hash"],
+                    },
+                    "expected_parent_hash": f"hash_version >= {max_version_seen}",
+                    "actual_parent_hash": f"hash_version = {version}",
+                },
+                "recomputed_events": recomputed,
+            }
+        max_version_seen = max(max_version_seen, version)
+        if version >= 2 and not e.get("payload_hash"):
+            return {
+                "verified": False,
+                "reason": "v2 row missing payload_hash (required for envelope recomputation)",
+                "first_break_at_index": idx,
+                "break_details": {
+                    "previous_event": None,
+                    "current_event": {
+                        "id": e["id"],
+                        "event_code": e["event_code"],
+                        "parent_hash": e["parent_hash"],
+                    },
+                    "expected_parent_hash": "payload_hash present",
+                    "actual_parent_hash": "payload_hash NULL/empty",
+                },
+                "recomputed_events": recomputed,
+            }
+        if version >= 2 and e.get("payload_hash"):
+            expected = _envelope_hash_v2(
+                timestamp_iso=e["timestamp"],
+                event_code=e["event_code"],
+                authority=e["authority"],
+                artifact_id=e["artifact_id"],
+                payload_hash=e["payload_hash"],
+                byte_length=e["byte_length"],
+                parent_hash=e["parent_hash"],
+            )
+            if expected != e["content_hash"]:
+                return {
+                    "verified": False,
+                    "reason": "v2 envelope recomputation mismatch (stored field edited in place)",
+                    "first_break_at_index": idx,
+                    "break_details": {
+                        "previous_event": None,
+                        "current_event": {
+                            "id": e["id"],
+                            "event_code": e["event_code"],
+                            "parent_hash": e["parent_hash"],
+                        },
+                        "expected_parent_hash": expected,
+                        "actual_parent_hash": e["content_hash"],
+                    },
+                    "recomputed_events": recomputed,
+                }
+            recomputed += 1
+    return {
+        "verified": True,
+        "reason": None,
+        "first_break_at_index": None,
+        "break_details": None,
+        "recomputed_events": recomputed,
+    }
+
+
 def _compute_stats(events: List[Dict[str, Any]],
                    registry: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Build a summary of event codes, authorities, and registry coverage.
@@ -360,12 +494,36 @@ def verify_trace_file(db_path: str,
         stats = _compute_stats(events, registry=registry)
         schema_version = _read_schema_version(conn)
 
+        # §6.3.6 v2 — After linkage passes, recompute v2 envelope hashes from
+        # stored columns. A linkage-valid chain can still carry an in-place
+        # field edit on a v2 row; recomputation catches it.
+        recompute_result = {"verified": True, "recomputed_events": 0}
+        if chain_result["verified"]:
+            recompute_result = _verify_v2_recomputation(events)
+
+        verified = chain_result["verified"] and recompute_result["verified"]
+        if not chain_result["verified"]:
+            reason = chain_result["reason"]
+            break_index = chain_result["first_break_at_index"]
+            break_details = chain_result["break_details"]
+        elif not recompute_result["verified"]:
+            reason = recompute_result["reason"]
+            break_index = recompute_result["first_break_at_index"]
+            break_details = recompute_result["break_details"]
+        else:
+            reason = chain_result["reason"]
+            break_index = None
+            break_details = None
+
+        recomputed = recompute_result.get("recomputed_events", 0)
         result = {
-            "verified": chain_result["verified"],
-            "reason": chain_result["reason"],
+            "verified": verified,
+            "reason": reason,
             "event_count": chain_result["event_count"],
-            "first_break_at_index": chain_result["first_break_at_index"],
-            "break_details": chain_result["break_details"],
+            "first_break_at_index": break_index,
+            "break_details": break_details,
+            "recomputed_events": recomputed,
+            "linkage_only_events": len(events) - recomputed,
             "stats": stats,
             "schema_version": schema_version,
             "filter": container_filter,
@@ -442,6 +600,12 @@ def _format_human_report(result: Dict[str, Any]) -> str:
     lines.append(f"Events examined: {result['event_count']}")
     lines.append(f"Chain status:    {'VERIFIED' if result['verified'] else 'BROKEN'}")
     lines.append(f"Reason:          {result['reason']}")
+    if "recomputed_events" in result:
+        lines.append(
+            f"Recomputed (v2): {result['recomputed_events']} of "
+            f"{result['event_count']} events "
+            f"({result.get('linkage_only_events', 0)} legacy v1, linkage-only)"
+        )
 
     if not result["verified"] and result["break_details"]:
         d = result["break_details"]
