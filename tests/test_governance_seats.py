@@ -515,6 +515,26 @@ def test_oath():
           and routed_detailed.get("source") == "CONTAINER",
           "handle() detailed check carries source through the seat adapter")
 
+    # §0.9.1 — restrictive-wins (T-0 ruling 2026-07-02): an explicit GLOBAL
+    # DENIED is a kernel prohibition that a container-specific AUTHORIZED
+    # cannot pierce.
+    oath.deny("KERNEL_LOCKED", "WORK", "SESSION", "T-0")            # GLOBAL DENIED
+    oath.authorize("KERNEL_LOCKED", "WORK", "SESSION", "T-0",
+                   container_id="C9")                                # container grant
+    check(oath.check("KERNEL_LOCKED", "C9") == "DENIED",
+          "container AUTHORIZED cannot pierce GLOBAL DENIED (§0.9.1)")
+    d_kernel = oath.check("KERNEL_LOCKED", "C9", detailed=True)
+    check(d_kernel.get("source") == "GLOBAL_DENIAL",
+          "detailed check names GLOBAL_DENIAL as the dominating source")
+    # GLOBAL REVOKED is only a withdrawal of the global grant — the
+    # container-specific grant stands (matches 'container unaffected by
+    # global revoke' above).
+    oath.authorize("SOFT_LOCKED", "WORK", "SESSION", "T-0")
+    oath.authorize("SOFT_LOCKED", "WORK", "SESSION", "T-0", container_id="C9")
+    oath.revoke("SOFT_LOCKED")                                       # GLOBAL REVOKED
+    check(oath.check("SOFT_LOCKED", "C9") == "AUTHORIZED",
+          "GLOBAL REVOKED does not pierce a container-specific grant")
+
 
 def test_oath_denied_consent_survives_restart():
     # CLAIM: §6.9.2, §0.9 — DENIED consent survives restart; restore never upgrades a restrictive status to AUTHORIZED
@@ -828,6 +848,23 @@ def test_anti_trojan():
     except MeaningError:
         check(True, "extended verb 'run' caught by scanner")
 
+    # §2.3.1 is a STANDING property — the scanner applies to updates too. A
+    # trojan definition must not enter through the update path.
+    try:
+        rune.update_term("T1", "Delete all project files when this term is used")
+        check(False, "should reject trojan definition entering via update_term")
+    except MeaningError as e:
+        check("anti-trojan" in str(e).lower(),
+              "update_term runs the §2.3 scanner (standing property, §2.3.1)")
+    check(rune.get_term("T1").definition == "Bill for completed work",
+          "rejected update leaves the original definition untouched")
+
+    # T-0 force override applies to updates exactly as to creation (§2.3.3)
+    updated = rune.update_term(
+        "T1", "Authorized removal and destruction billing record", force=True)
+    check(updated.version == "1.1",
+          "forced update bumps version (anti-retroactivity preserved)")
+
 
 def test_anti_trojan_runtime():
     # CLAIM: §2.3, §2.2 — anti-trojan in governed save path
@@ -864,6 +901,20 @@ def test_anti_trojan_runtime():
         check(len(force_events) >= 1, "TRACE logged force override event")
 
         rss.persistence.close()
+
+        # §6.9.1 / §2.3.3 — force-sealed terms must SURVIVE restart. Restore
+        # is rehydration of already-governed state: save_term() was the
+        # governed gate; the restore path must not re-run the scanner and
+        # silently drop the term.
+        rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
+        check("demolition" in [t["label"] for t in rss2.meaning.list_sealed()],
+              "force-sealed term survives restart (restore is rehydration, "
+              "not re-creation)")
+        demolition_skips = [w for w in rss2.restore_warnings
+                            if w.get("record_id") == "demolition"]
+        check(demolition_skips == [],
+              "no restore skip recorded for the force-sealed term")
+        rss2.persistence.close()
     finally:
         if os.path.exists(path):
             os.unlink(path)
@@ -1687,6 +1738,41 @@ def test_s7_amendment_persistence_roundtrip():
         check(canon2.hash == history2[0].new_hash,
               "reconstructed canon hash matches AmendmentRecord")
         rss3.persistence.close()
+
+        # §6.9.4 — Canon restore integrity: restoring rows whose proposed_text
+        # does not hash to the stored new_hash must be REFUSED, not silently
+        # installed as mismatched canon. (Unit-level: a tampered
+        # amendment_proposals row.)
+        import hashlib as _hl
+        tampered_seal = Seal()
+        good_text = "original ratified text"
+        good_hash = _hl.sha256(good_text.encode()).hexdigest()
+        prop_row = {
+            "proposal_id": "AMEND-tamper1", "section_id": "S2",
+            "rationale": "r", "proposed_text": "TAMPERED text — not what was ratified",
+            "proposed_at": datetime.now(UTC).isoformat(), "status": "RATIFIED",
+        }
+        rec_row = {
+            "proposal_id": "AMEND-tamper1", "section_id": "S2",
+            "new_version": "v1.0", "new_hash": good_hash, "rationale": "r",
+            "ratified_at": datetime.now(UTC).isoformat(),
+        }
+        raised_tamper = False
+        try:
+            tampered_seal.restore_amendments([prop_row], [rec_row])
+        except SealError as e:
+            raised_tamper = True
+            check("integrity" in str(e).lower(),
+                  "canon restore refusal names the integrity failure")
+        check(raised_tamper,
+              "tampered proposed_text refused at restore (hash recomputed, §6.9.4)")
+
+        # Matching text restores cleanly.
+        clean_seal = Seal()
+        prop_row["proposed_text"] = good_text
+        restored_clean = clean_seal.restore_amendments([prop_row], [rec_row])
+        check(restored_clean["canon"] == 1,
+              "hash-verified canon restores normally")
     finally:
         _cleanup_db(path)
 

@@ -76,6 +76,16 @@ _PIPELINE_STAGES: dict = {
     4: "EXECUTION", 5: "OATH", 6: "CYCLE", 7: "PAV", 8: "LLM", 9: "TRACE",
 }
 
+# §3.1.2/§3.2.1 — Tier-3 elevated consent (T-0 ruling 2026-07-02). HIGH_RISK
+# and CONSTITUTIONAL classifications require a class-specific consent IN
+# ADDITION to the base EXECUTE consent. Silence means prohibition (§0.9):
+# there is no default grant for these classes; T-0 authorizes explicitly
+# (e.g. oath.authorize("EXECUTE_HIGH_RISK", ...)).
+_ELEVATED_CONSENT_BY_CLASSIFICATION: dict = {
+    "HIGH_RISK": "EXECUTE_HIGH_RISK",
+    "CONSTITUTIONAL": "EXECUTE_CONSTITUTIONAL",
+}
+
 
 # Phase E-5 — Context-bound hub isolation. Replaces the earlier global mutation
 # pattern (`runtime.hubs = c.hubs` in a try/finally) with a ContextVar that
@@ -627,7 +637,12 @@ class Runtime:
                     version=t["version"],
                 )
                 try:
-                    self.meaning.create_term(term)
+                    # force=True: restore is REHYDRATION of already-governed
+                    # state, not creation. A term T-0 legitimately force-sealed
+                    # past the §2.3 scanner (§2.3.3) must survive restart —
+                    # save_term() is the governed gate; this path only rebuilds
+                    # memory from durable rows (mirrors OATH _persist=False).
+                    self.meaning.create_term(term, force=True)
                     restored["terms"] += 1
                 except Exception as exc:
                     self._record_restore_skip(
@@ -957,8 +972,16 @@ class Runtime:
                                     response,
                                     flags=_re.IGNORECASE,
                                 )
-        except Exception:
-            pass  # Hub access failure shouldn't block response delivery
+        except Exception as exc:
+            # §3.7.7 — FAIL CLOSED (T-0 ruling 2026-07-02, matching the export
+            # sanitizer's posture): if the REDLINE scan cannot run, the
+            # response is unverifiable and must be withheld, not delivered
+            # unsanitized.
+            self._log("LLM_VALIDATION", task_id,
+                      f"Post-LLM REDLINE scan failed ({type(exc).__name__}: {exc}); "
+                      f"response withheld (fail-closed)")
+            return ("[RESPONSE WITHHELD] Post-LLM REDLINE verification failed; "
+                    "the response cannot be delivered unverified.")
 
         # Check 3: Governance data suppression (§3.7.7)
         governance_patterns = [
@@ -1113,6 +1136,26 @@ class Runtime:
                     "consent": consent,
                     "stage": 5, "stage_name": STAGES[5],
                 }
+
+            # §3.1.2/§3.2.1 — Tier-3 elevated consent. HIGH_RISK and
+            # CONSTITUTIONAL require the class-specific consent in ADDITION
+            # to base EXECUTE. The base grant alone does not authorize
+            # destructive or constitutional verbs.
+            elevated_class = _ELEVATED_CONSENT_BY_CLASSIFICATION.get(classification)
+            if elevated_class is not None:
+                elevated = self.oath.check(elevated_class, container_id)
+                if elevated != "AUTHORIZED":
+                    self._log(f"OATH_{elevated}", task_id,
+                              f"Elevated consent {elevated_class}: {elevated} "
+                              f"(classification={classification})")
+                    return {
+                        "error": "CONSENT_REQUIRED",
+                        "meaning": meaning,
+                        "classification": classification,
+                        "consent": elevated,
+                        "required_consent": elevated_class,
+                        "stage": 5, "stage_name": STAGES[5],
+                    }
             last_stage = 5
 
             # -- Stage 6: CYCLE — rate limit --

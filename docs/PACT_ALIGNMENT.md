@@ -77,13 +77,14 @@ Section 1 / seat law:
 - TRACE's dual role is implemented intentionally: runtime audit writes can reach TRACE directly so WARD failure cannot prevent audit recording.
 - Runtime-mediated callbacks, such as OATH persistence-failure notification into TRACE, preserve the no-lateral-authority rule because the runtime bridges the concern; seats do not directly command each other.
 - WARD registration now rejects seats that do not expose callable `status()` and `handle(task)` methods, so malformed seats fail before entering the routable seat registry.
-- WARD hook protection is mechanically present for known protected task/result keys. This protection must be revisited whenever new governance-relevant fields are added.
+- WARD hook protection is mechanically present for known protected task/result keys. Alteration, injection, and removal of protected task/result keys are rejected. This protection must be revisited whenever new governance-relevant fields are added.
 - Operational seats and constitutional seats differ by rhythm, not rank. WARD, SCOPE, RUNE, OATH, CYCLE, and TRACE participate in governed request flow; SCRIBE and SEAL participate in drafting, review, canonization, and amendment surfaces.
 
 Section 2 / meaning law:
 - RUNE's classification order matches the Pact: DISALLOWED, direct, substring, synonym, default.
 - RUNE defaults unknown phrases to AMBIGUOUS and does not produce SEALED without registry/synonym membership.
 - RUNE now exposes `scan_disallowed()` for payload-audit callers that need to detect bounded disallowed terms embedded inside longer strings; this preserves `classify()` exact-match disallowed semantics while giving future action-plane/broker work a safer anti-trojan primitive.
+- RUNE anti-trojan scanning applies to definition updates as well as term creation. Legitimate descriptive uses can still pass through the explicit `force=True` override, and runtime restore treats persisted terms as rehydrated already-governed state so force-sealed terms survive restart.
 - Runtime contextual reinjection is present: canonical `label: definition` term pairs are sent through the LLM adapter's `terms` parameter.
 - MED and LOW synonym confidence are not yet behaviorally distinct in the returned `TermStatus`; both become AMBIGUOUS with the same confirmation wording. Distinct MED/LOW confirmation semantics are v0.1.1 design work, not a v0.1.0 claim.
 
@@ -94,10 +95,11 @@ Section 3 / execution law:
 - Intent verb detection now matches Section 3.1.4: the execution state machine uses word-boundary / whole-word matching, not substring matching.
 - Execution intents carry a SHA-256 `payload_hash` of the original text, and validation re-hashes `raw_text` before execution so tampered intent payloads fail closed.
 - Runtime-created TTLs are bounded internally by intent class (`HIGH_RISK`, `CONSTITUTIONAL`, `REQUEST`), and Stage 4 validates both expiration and unreasonably distant TTLs before OATH/CYCLE/PAV/LLM.
+- Runtime HIGH_RISK and CONSTITUTIONAL requests require elevated consent classes (`EXECUTE_HIGH_RISK` / `EXECUTE_CONSTITUTIONAL`) in addition to base `EXECUTE`; a base grant alone does not authorize elevated intents.
 - Section 3 now fences `UNAUTHORIZED_INGRESS` as a pre-pipeline architectural rejection for non-GLOBAL container spoofing without the TECTON sentinel. It is tested, TRACE-recorded, and intentionally described below the stage table rather than as a numbered pipeline stage.
 - Section 3 now names sustained audit-write failure as Constitutional Drift / persistent Safe-Stop behavior once consecutive failures cross `audit_failure_threshold`; a single write-ahead failure still aborts only the operation that triggered it.
 - LLM fallback wording now matches the adapter: the deterministic offline fallback summarizes only governed PAV data, reports fallback state, refuses privacy-marked or unsupported queries, and does not echo raw user input.
-- LLM response validation implements external-name replacement, REDLINE leak redaction plus TRACE flagging, and governance artifact suppression. The code now states this is downstream sanitation; upstream SCOPE/PAV/OATH boundaries remain the real enforcement surface.
+- LLM response validation implements external-name replacement, REDLINE leak redaction plus TRACE flagging, governance artifact suppression, and fail-closed withholding when the REDLINE scan cannot run. The code now states this is downstream sanitation; upstream SCOPE/PAV/OATH boundaries remain the real enforcement surface.
 - `rss.action` now provides a structured action-proposal and side-effect broker decision surface. It reviews proposed side effects through payload hash, TTL, tool policy, RUNE, OATH, CYCLE, and Safe-Stop gates; emits proposal/rejection/authorization/claim/revocation/result-import TRACE receipts; and imports claimed execution results as untrusted data-only evidence. It does not execute tools, persist leases across restart, auto-wire into `Runtime.process_request`, or claim universal connector enforcement.
 
 Section 4 / hub topology and data governance:
@@ -117,6 +119,7 @@ Section 5 / tenant containers:
 - The current proof is honestly bounded: thread-level isolation, exception-safe restore, and main-thread fallback are tested. Section 5 now explicitly names the child-thread `ACTIVE_HUBS` context-inheritance edge and `contextvars.copy_context()` / worker re-binding mitigation; the code-level fix remains Phase F/H deployment work.
 - ACTIVE profile immutability is mechanically enforced. `ContainerProfile` and nested `ContainerPermissions` lock on activation, `scope_policy` is wrapped in `MappingProxyType`, restored ACTIVE profiles are re-locked after SQLite round-trip, and sanctioned mutations go through `mutate_active_profile()` with a mandatory reason and `PROFILE_MUTATED` event.
 - Container request lifecycle checks run before seat routing. SUSPENDED, ARCHIVED, DESTROYED, and other non-ACTIVE states return `CONTAINER_NOT_ACTIVE` before OATH or downstream seat logic.
+- SUSPENDED containers preserve hub read access while blocking request processing; DESTROYED is the normal unreadable state. This keeps suspension operational rather than silently treating it as consent revocation or data destruction.
 - The sigil registry contains the eight canonical seat sigils and supports reverse resolution from sigil to seat name. Invalid sigils are rejected before delegation.
 - Current permission enforcement is explicit by field: `can_draft` gates SCRIBE, `can_request_seal` gates SEAL, `can_call_advisors` gates LLM/advisor invocation, `can_access_system_hub` composes with SCOPE allowed sources, and positive `max_requests_per_minute` values feed CYCLE.
 - `risk_tier` is serialized profile metadata today; it is not yet a runtime decision point.
@@ -151,6 +154,7 @@ Section 7 / amendment and evolution:
 - Review is a real gate: verdicts normalize to APPROVE/REJECT, blank reviewers are rejected, rejected proposals become terminal, and rejected proposals cannot be ratified.
 - Ratification requires explicit `t0_command=True`, an APPROVE review verdict, and a non-terminal proposal. Repeat ratification returns `ALREADY_RATIFIED` and does not duplicate amendment history.
 - Amendment proposals now run the external advisor attribution guard before proposal state is created, and ratification still flows through `seal()` with the same guard before canonizing the proposed text.
+- Amendment restore recomputes the ratified canon text hash and refuses mismatched `proposed_text` / `new_hash` rows rather than reconstructing silently corrupted canon.
 - When a TRACE callback is wired, proposal, review, and ratification emit the corresponding amendment event before mutating ceremony state. TRACE callback failure returns `AMENDMENT_TRACE_FAILED` and leaves proposal/canon/history state unchanged for that step.
 - Amendment persistence is implemented for the Runtime-wired SEAL path: proposal objects, review state, ratified amendment records, queryable amendment history, and reconstructed canon state survive restart. The durable ordering is TRACE emission first, amendment persistence second, and in-memory mutation last; persistence failure returns `AMENDMENT_PERSISTENCE_FAILED` and leaves proposal/canon/history state unchanged for the failed step. Ratified proposal state and ratified amendment records persist through one explicit SQLite transaction, so the two-row ratification write commits or rolls back as a unit.
 - The current ceremony persists sealed canon in SQLite amendment state. A guarded Sections 1-7 canon-to-file exporter now exists in `rss.audit.pact_canon_export`; Section 0 export remains deliberately separate because it requires Genesis re-anchor proof.
@@ -201,7 +205,7 @@ RUNE authorization surface:
 OATH consent semantics:
 - OATH has write-ahead consent persistence and fail-closed namespace validation.
 - Duration is recorded but not yet enforced as expiry.
-- `DENIED` is now an explicit consent state through `deny()`: a container-specific DENIED record overrides GLOBAL authorization and survives restore/restart without being upgraded. `check(detailed=True)` exposes consent source as `CONTAINER`, `GLOBAL`, `GLOBAL_FALLBACK`, `ABSENT`, or `ERROR` while preserving the existing string-return default.
+- `DENIED` is now an explicit consent state through `deny()`: a container-specific DENIED record overrides GLOBAL authorization and survives restore/restart without being upgraded. A GLOBAL `DENIED` is more restrictive than a container-specific AUTHORIZED and returns `GLOBAL_DENIAL` in detailed checks. `check(detailed=True)` exposes consent source as `CONTAINER`, `GLOBAL`, `GLOBAL_FALLBACK`, `GLOBAL_DENIAL`, `ABSENT`, or `ERROR` while preserving the existing string-return default.
 - OATH's current urgency-word helper is now named as `detect_coercion_keyword_limited()` and returns `keyword_flagged`, avoiding the overclaim that a keyword hit proves coercion. Stronger governed coercion-warning semantics remain a v0.1.1 candidate.
 - OATH `handle({"action": "authorize"})` now fails closed when `requester` is missing or blank instead of defaulting to T-0. Current proof verifies no consent record is created on missing identity and explicit requester flow still works.
 
@@ -349,6 +353,7 @@ Before v0.1.1:
 - Decide whether LEDGER brainstorming belongs in SCOPE as a first-class envelope field or remains a PAV-builder-only expert mode.
 - Keep the Section 5 permission map current as fields move from declared metadata to enforced behavior.
 - CLOSED: non-positive or malformed container rate limits are rejected at creation/mutation boundaries and invalid legacy persisted values sanitize visibly on restore.
+- CLOSED: WARD protected-field hook tests now cover alteration, injection, and removal.
 - CLOSED at OATH API boundary: consent-source reporting exists through structured `check(detailed=True)`; decide later whether runtime responses and TRACE should surface that source.
 - Keep Section 6 audit/export claims split between internal consistency, cold export, and future external recomputability.
 - Decide whether `UNTRUSTED_IMPORT` round-trip needs a dedicated global/container restore test beyond the current persistence-row proof.

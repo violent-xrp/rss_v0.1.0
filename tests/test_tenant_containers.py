@@ -212,6 +212,25 @@ def test_s5_destroyed_inaccessibility():
         check(resp.result["error"] == "CONTAINER_NOT_ACTIVE",
               "DESTROYED container blocks requests (§5.2.5)")
 
+        # §5.2.8 / §5.2.5 boundary (Phase-4 eval fix): SUSPENDED blocks request
+        # PROCESSING but preserves read access — suspension is operational,
+        # not consent revocation. Only DESTROYED is unreadable.
+        c2 = tecton.create_container("Johnson", "T-0")
+        tecton.activate_container(c2.container_id)
+        tecton.add_container_entry(c2.container_id, "WORK", "Johnson data")
+        tecton.suspend_container(c2.container_id, reason="test: suspension read semantics")
+        check(c2.is_readable() is True,
+              "SUSPENDED container remains readable (§5.2.8: operational, not revocation)")
+        suspended_entries = tecton.get_container_hubs(c2.container_id, "WORK")
+        check(len(suspended_entries) == 1,
+              "SUSPENDED hub data reachable through get_container_hubs")
+        resp2 = tecton.process_request(
+            ContainerRequest(c2.container_id, "ᚱ", {"text": "quote"}), runtime)
+        check(resp2.result["error"] == "CONTAINER_NOT_ACTIVE",
+              "SUSPENDED still blocks request processing (§5.2.4 only-ACTIVE)")
+        check(c.is_readable() is False,
+              "DESTROYED is the only unreadable state (is_readable authority)")
+
         runtime.persistence.close()
     finally:
         if os.path.exists(path):

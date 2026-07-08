@@ -89,14 +89,21 @@ class Ward:
         if seat_name not in self._seats:
             raise WardError(f"Unknown seat: {seat_name}")
 
-        # Pre-hooks (§1.2.6: enforce protected key immutability)
+        # Pre-hooks (§1.2.6: enforce protected key immutability).
+        # Alteration, INJECTION, and REMOVAL are all violations: a hook that
+        # adds t0_command=True to a task that lacked it, or drops
+        # forbidden_sources, is altering a governance decision just as surely
+        # as changing an existing value.
         for hook in self._pre_hooks:
             modified = hook(seat_name, task)
             if modified is not None:
                 for key in self.PROTECTED_TASK_KEYS:
-                    if key in task and key in modified and modified[key] != task[key]:
+                    in_orig, in_mod = key in task, key in modified
+                    if in_orig != in_mod or (in_orig and modified[key] != task[key]):
+                        verb = ("alter" if in_orig and in_mod
+                                else "inject" if in_mod else "remove")
                         raise WardError(
-                            f"Hook violated §1.2.6: attempted to alter protected key '{key}' "
+                            f"Hook violated §1.2.6: attempted to {verb} protected key '{key}' "
                             f"in task routed to {seat_name}"
                         )
                 task = modified
@@ -110,14 +117,18 @@ class Ward:
         if not isinstance(result, dict):
             raise WardError(f"Seat '{seat_name}' returned non-dict result: {type(result)}")
 
-        # Post-hooks (§1.2.6: enforce protected key immutability)
+        # Post-hooks (§1.2.6: enforce protected key immutability — alteration,
+        # injection, and removal all rejected, same rule as pre-hooks)
         for hook in self._post_hooks:
             modified = hook(seat_name, task, result)
             if modified is not None:
                 for key in self.PROTECTED_RESULT_KEYS:
-                    if key in result and key in modified and modified[key] != result[key]:
+                    in_orig, in_mod = key in result, key in modified
+                    if in_orig != in_mod or (in_orig and modified[key] != result[key]):
+                        verb = ("alter" if in_orig and in_mod
+                                else "inject" if in_mod else "remove")
                         raise WardError(
-                            f"Hook violated §1.2.6: attempted to alter protected key '{key}' "
+                            f"Hook violated §1.2.6: attempted to {verb} protected key '{key}' "
                             f"in result from {seat_name}"
                         )
                 result = modified

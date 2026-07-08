@@ -298,8 +298,14 @@ class Oath:
         return {"revoked": True, "action_class": normalized_action}
 
     def check(self, action_class: str, container_id: str = "GLOBAL", detailed: bool = False) -> str | dict:
-        """Check consent. Container-specific first, then GLOBAL fallback.
-        If detailed=True, returns a dict exposing the consent source (CONTAINER, GLOBAL_FALLBACK, GLOBAL, or ABSENT)."""
+        """Check consent. Container-specific first, then GLOBAL fallback —
+        with one restrictive exception (§0.9.1, T-0 ruling 2026-07-02): an
+        explicit GLOBAL DENIED is a kernel-level prohibition that a
+        container-specific AUTHORIZED cannot pierce. (GLOBAL REVOKED is a
+        withdrawal of the global grant only; container-specific grants stand
+        until individually revoked.)
+        If detailed=True, returns a dict exposing the consent source
+        (CONTAINER, GLOBAL_FALLBACK, GLOBAL, GLOBAL_DENIAL, or ABSENT)."""
         try:
             normalized_action = self._normalize_action_class(action_class)
             if not normalized_action:
@@ -309,13 +315,21 @@ class Oath:
             return {"status": "DENIED", "source": "ERROR"} if detailed else "DENIED"
 
         key = self._key(normalized_action, normalized_container)
+        global_key = self._key(normalized_action, "GLOBAL")
+
+        # §0.9.1 — restrictive-wins: GLOBAL DENIED dominates any
+        # container-specific record. No PERMIT over the kernel's DENY.
+        if (normalized_container != "GLOBAL"
+                and global_key in self._consents
+                and self._consents[global_key].status == "DENIED"):
+            return {"status": "DENIED", "source": "GLOBAL_DENIAL"} if detailed else "DENIED"
+
         if key in self._consents:
             status = self._consents[key].status
             source = "CONTAINER" if normalized_container != "GLOBAL" else "GLOBAL"
             return {"status": status, "source": source} if detailed else status
 
         # Fallback to GLOBAL
-        global_key = self._key(normalized_action, "GLOBAL")
         if global_key in self._consents:
             status = self._consents[global_key].status
             return {"status": status, "source": "GLOBAL_FALLBACK"} if detailed else status

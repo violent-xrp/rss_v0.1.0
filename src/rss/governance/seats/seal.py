@@ -457,6 +457,21 @@ class Seal:
             proposal = restored_proposals.get(record.proposal_id)
             if proposal is None:
                 continue
+            # §6.9.4 — Canon restore integrity: the stored new_hash must match
+            # a recomputation over the restored text. Restoring text=X with
+            # hash=Y would silently defeat the point of carrying the hash; a
+            # mismatch means the persisted rows were tampered or corrupted.
+            # Raising here propagates through the runtime's CRITICAL
+            # 'amendments' restore path (§6.9.7) and halts boot.
+            recomputed = hashlib.sha256(proposal.proposed_text.encode()).hexdigest()
+            if recomputed != record.new_hash:
+                raise SealError(
+                    f"Canon restore integrity failure (§6.9.4): section "
+                    f"'{record.section_id}' proposal '{record.proposal_id}' — "
+                    f"stored new_hash does not match recomputed hash of the "
+                    f"restored proposed_text. Possible tamper or corruption; "
+                    f"refusing to restore mismatched canon."
+                )
             self._canon_index[record.section_id] = CanonArtifact(
                 section_id=record.section_id,
                 version=record.new_version,

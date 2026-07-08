@@ -305,9 +305,17 @@ class TenantContainer:
         return self.state == "ACTIVE"
 
     def is_readable(self) -> bool:
-        """§5.2.5 — DESTROYED containers are inaccessible. SUSPENDED preserves data but blocks.
-        Only ACTIVE, CONFIGURED, and CREATED allow hub reads."""
-        return self.state not in ("DESTROYED", "SUSPENDED")
+        """§5.2.5 — DESTROYED containers are operationally inaccessible; every
+        other state preserves read access to hub data (ARCHIVED = "preserved
+        and non-operational"). SUSPENDED blocks request PROCESSING (§5.2.4:
+        only ACTIVE processes), not evidence reads — suspension is
+        operational, not consent revocation (§5.2.8).
+
+        (Phase-4 eval fix: this method previously claimed SUSPENDED blocked
+        reads, contradicting both the Pact and the actual read path, and had
+        no callers. It now matches §5.2.5 and is the single authority used by
+        get_container_hubs.)"""
+        return self.state != "DESTROYED"
 
 
 @dataclass
@@ -566,9 +574,11 @@ class Tecton:
     # ── Hub Access (§5.2.5, §5.9) ──
 
     def get_container_hubs(self, cid: str, hub: str) -> List[HubEntry]:
-        """§5.2.5 — DESTROYED containers are inaccessible through normal access."""
+        """§5.2.5 — DESTROYED containers are inaccessible through normal access.
+        Readability is decided by TenantContainer.is_readable() — one authority
+        for the rule instead of a duplicated state check."""
         c = self._get(cid)
-        if c.state == "DESTROYED":
+        if not c.is_readable():
             raise TectonError(f"Cannot access hubs on DESTROYED container: {cid} (§5.2.5)")
         return c.hubs.list_hub(hub)
 

@@ -19,22 +19,22 @@ scribe.py                  100.0%
 reference_pack.py          100.0%
 trace_verify.py             94.9%
 trace_export.py             89.9%
-tecton.py                   94.8%
+tecton.py                   95.1%
 cycle.py                    94.2%
 persistence.py              93.3%
-meaning_law.py              94.2%
+meaning_law.py              94.4%
 hub_topology.py             92.7%
 seal.py                     94.0%
-ward.py                     87.9%
+ward.py                     88.6%
 governance/t0.py           100.0%
 scope.py                    92.6%
 llm_adapter.py              90.1%
 audit_log.py                87.1%
-runtime.py                  86.0%
-oath.py                     83.5%
+runtime.py                  86.6%
+oath.py                     83.7%
 pav.py                      90.9%
 constitution.py             92.5%
-TOTAL                       92.3%
+TOTAL                       92.4%
 ```
 
 ## Current Targets

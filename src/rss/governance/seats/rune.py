@@ -296,11 +296,25 @@ class MeaningLaw:
 
         self._registry[term.id] = term
 
-    def update_term(self, term_id: str, new_def: str) -> Term:
+    def update_term(self, term_id: str, new_def: str, force: bool = False) -> Term:
         """Update definition with version bump (anti-retroactivity).
-        Returns updated term."""
+        Returns updated term.
+
+        §2.3.1 is a STANDING property of definitions, not a creation-time-only
+        check, so the anti-trojan scan runs here exactly as in create_term().
+        `force` is the same T-0 override as §2.3.3 (logged by TRACE upstream)."""
         if term_id not in self._registry:
             raise MeaningError(f"Unknown TERM_ID: {term_id}")
+        if not force:
+            high_risk = self._get_high_risk_verbs()
+            for verb in high_risk:
+                if verb.lower() in new_def.lower():
+                    raise MeaningError(
+                        f"Updated definition contains high-risk verb '{verb}' "
+                        f"(§2.3 anti-trojan applies to updates too — §2.3.1 is a "
+                        f"standing property). Use force=True for legitimate "
+                        f"descriptive use (logged by TRACE)."
+                    )
         term = self._registry[term_id]
         major, minor = term.version.split(".")
         term.version = f"{major}.{int(minor) + 1}"
