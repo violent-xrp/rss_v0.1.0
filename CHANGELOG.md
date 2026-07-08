@@ -7,9 +7,9 @@ _Licensed under AGPLv3; see `LICENSE/README.md`._
 Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
 
 ### Current verified snapshot
-- **169 test functions / 1605 assertions / 0 failures** via `python tests/test_all.py`
+- **171 test functions / 1617 assertions / 0 failures** via `python tests/test_all.py`
 - **92.3% statement coverage** via `python run_coverage.py`
-- **169 claims / 169 tests / 115 Pact sections** in `docs/claim_matrix.md`
+- **171 claims / 171 tests / 115 Pact sections** in `docs/claim_matrix.md`
 - **26 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened

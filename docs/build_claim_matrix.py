@@ -9,8 +9,17 @@ matrix — the Phase G deliverable.
 Usage:
     python build_claim_matrix.py                 # writes docs/claim_matrix.md
     python build_claim_matrix.py --stdout        # prints to stdout
+    python build_claim_matrix.py --floor-only    # verify the fidelity floor only
+
+Fidelity floor (KL-17 hardening): the matrix and the count invariant prove claim
+PRESENCE, not claim TRUTH. This tool additionally enforces a mechanical floor —
+every CLAIM must cite at least one Pact section, and every test function must
+contain at least one real assertion call — so a vacuous test cannot be counted
+as proof. Semantic fidelity (does the test body actually prove the cited
+clause?) remains a REVIEW responsibility; no gate can verify it.
 """
 from __future__ import annotations
+import ast
 import re
 import sys
 from collections import defaultdict
@@ -21,6 +30,67 @@ from pathlib import Path
 CLAIM_RE = re.compile(r"^\s*#\s*CLAIM:\s*(.+?)\s*$")
 TEST_DEF_RE = re.compile(r"^def\s+(test_\w+)\s*\(\s*\)\s*:", re.MULTILINE)
 SECTION_REF_RE = re.compile(r"§[0-9]+(?:\.[0-9]+)*|§[A-Z]-[0-9]+")
+
+# Call names that count as real assertions for the fidelity floor. `check` is
+# the acceptance harness's assertion; `raises`/`assertRaises` cover exception
+# proofs written without a wrapping check().
+ASSERTION_CALL_NAMES = {"check", "raises", "assertRaises"}
+
+
+def _function_has_assertion(node: ast.FunctionDef) -> bool:
+    """True when the test body contains at least one assert/check-style call."""
+    for child in ast.walk(node):
+        if isinstance(child, ast.Assert):
+            return True
+        if isinstance(child, ast.Call):
+            func = child.func
+            name = None
+            if isinstance(func, ast.Name):
+                name = func.id
+            elif isinstance(func, ast.Attribute):
+                name = func.attr
+            if name in ASSERTION_CALL_NAMES:
+                return True
+    return False
+
+
+def verify_floor(test_files: list[Path]) -> list[str]:
+    """KL-17 fidelity floor. Returns a list of violation strings (empty = pass).
+
+    Enforced floor:
+      1. Every `# CLAIM:` tag cites at least one Pact section reference.
+      2. Every `# CLAIM:` tag is attributable to an enclosing test function.
+      3. Every test function contains at least one real assertion
+         (check(...), assert, raises/assertRaises).
+    """
+    violations: list[str] = []
+    for test_file in test_files:
+        src = test_file.read_text(encoding="utf-8")
+        rel = test_file.name
+
+        for test_name, body, secs, _desc in extract_claims(src):
+            if not secs:
+                violations.append(
+                    f"{rel}: CLAIM on '{test_name}' cites no Pact section: {body[:80]}"
+                )
+            if test_name == "(unknown)":
+                violations.append(
+                    f"{rel}: CLAIM not attributable to a test function: {body[:80]}"
+                )
+
+        try:
+            tree = ast.parse(src)
+        except SyntaxError as exc:
+            violations.append(f"{rel}: unparseable test module: {exc}")
+            continue
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef) and node.name.startswith("test_"):
+                if not _function_has_assertion(node):
+                    violations.append(
+                        f"{rel}: '{node.name}' contains no assertion call — "
+                        f"vacuous test cannot count as proof (KL-17 floor)"
+                    )
+    return violations
 
 
 def extract_claims(src: str) -> list[tuple[str, str, list[str], str]]:
@@ -99,6 +169,14 @@ def render_markdown(matrix: dict, total_tests: int, total_claims: int) -> str:
         "`python build_claim_matrix.py`."
     )
     lines.append("")
+    lines.append(
+        "**Boundary:** the gate enforces claim presence, one-claim-per-test "
+        "counts, and a non-vacuity floor (every claim cites a Pact section; "
+        "every test contains a real assertion). It does not — and cannot — "
+        "verify that a test body semantically proves the clause it cites. "
+        "Claim fidelity is a review responsibility."
+    )
+    lines.append("")
     lines.append(f"**Coverage:** {len(matrix)} distinct Pact sections referenced across "
                  f"{total_claims} claim tags on {total_tests} test functions.")
     lines.append("")
@@ -134,6 +212,17 @@ def main() -> int:
     if not test_files:
         print(f"no split test modules found under {tests_dir}", file=sys.stderr)
         return 1
+
+    # KL-17 fidelity floor — runs on every build and via --floor-only.
+    floor_violations = verify_floor(test_files)
+    if floor_violations:
+        print("[claim-matrix] FIDELITY FLOOR FAILED:", file=sys.stderr)
+        for violation in floor_violations:
+            print(f"  - {violation}", file=sys.stderr)
+        return 1
+    if "--floor-only" in sys.argv:
+        print(f"[claim-matrix] fidelity floor passed across {len(test_files)} modules")
+        return 0
 
     claims = []
     total_tests = 0

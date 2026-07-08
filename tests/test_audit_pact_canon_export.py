@@ -157,7 +157,7 @@ def _build_export_fixture(root: Path):
 
 
 def test_pact_canon_export_dry_run_refuses_unsafe_paths():
-    # CLAIM: Section 7.11.1 - canon-to-file export stays guarded and refuses unsafe bases
+    # CLAIM: §7.11.1 — canon-to-file export stays guarded and refuses unsafe bases
     section("Pact Canon Export: Dry-Run Refusals")
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -183,7 +183,7 @@ def test_pact_canon_export_dry_run_refuses_unsafe_paths():
 
 
 def test_pact_canon_export_write_requires_t0_and_syncs_drift():
-    # CLAIM: Section 7.11.1 - canon-to-file export writes require T-0 and converge drift to IN_SYNC
+    # CLAIM: §7.11.1 — canon-to-file export writes require T-0 and converge drift to IN_SYNC
     section("Pact Canon Export: Guarded Write")
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -206,7 +206,7 @@ def test_pact_canon_export_write_requires_t0_and_syncs_drift():
 
 
 def test_pact_canon_export_first_canon_requires_explicit_base_hash():
-    # CLAIM: Section 7.11.1 - first canon export needs an explicit accepted base hash
+    # CLAIM: §7.11.1 — first canon export needs an explicit accepted base hash
     section("Pact Canon Export: First Canon Base Hash")
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -229,7 +229,7 @@ def test_pact_canon_export_first_canon_requires_explicit_base_hash():
 
 
 def test_pact_canon_export_cli_defaults_to_dry_run():
-    # CLAIM: Section 7.11.1 - canon export CLI defaults to dry-run and refuses unsafe writes
+    # CLAIM: §7.11.1 — canon export CLI defaults to dry-run and refuses unsafe writes
     section("Pact Canon Export: CLI Safety")
 
     with tempfile.TemporaryDirectory() as tmp:

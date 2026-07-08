@@ -1,10 +1,12 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-06-24 18:51 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-07-08 03:10 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
-**Coverage:** 115 distinct Pact sections referenced across 169 claim tags on 169 test functions.
+**Boundary:** the gate enforces claim presence, one-claim-per-test counts, and a non-vacuity floor (every claim cites a Pact section; every test contains a real assertion). It does not — and cannot — verify that a test body semantically proves the clause it cites. Claim fidelity is a review responsibility.
+
+**Coverage:** 115 distinct Pact sections referenced across 171 claim tags on 171 test functions.
 
 ---
 
@@ -75,6 +77,8 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_pre_seal_drift_check` — pre-seal drift guard
 - `test_reverse_pact_code_map_generator_parses_pact_heading_variants` — generated reverse Pact-code map detects code/law references across Pact heading formats
 - `test_project_status_generator_renders_bounded_public_status_view` — generated public status view reports proof state without becoming a new truth source
+- `test_orphan_number_guard_flags_unrecognized_stale_counts` — orphan-number guard flags numeric proof-claims outside recognized phrasings that mismatch the live baseline (KL-18)
+- `test_claim_fidelity_floor_catches_vacuous_and_unanchored_claims` — fidelity floor rejects claim tags without Pact sections and tests without assertions (KL-17 floor)
 
 ## §0.8.3
 
@@ -561,6 +565,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §6.11
 
 - `test_adversarial_audit_tamper` — cold verifier and boot verifier catch tamper modes
+- `test_orphan_number_guard_flags_unrecognized_stale_counts` — orphan-number guard flags numeric proof-claims outside recognized phrasings that mismatch the live baseline (KL-18)
 
 ## §6.11.3
 
@@ -602,6 +607,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §7.11.1
 
+- `test_pact_canon_export_dry_run_refuses_unsafe_paths` — canon-to-file export stays guarded and refuses unsafe bases
+- `test_pact_canon_export_write_requires_t0_and_syncs_drift` — canon-to-file export writes require T-0 and converge drift to IN_SYNC
+- `test_pact_canon_export_first_canon_requires_explicit_base_hash` — first canon export needs an explicit accepted base hash
+- `test_pact_canon_export_cli_defaults_to_dry_run` — canon export CLI defaults to dry-run and refuses unsafe writes
 - `test_pact_canon_drift_detector_no_canon` — Pact/canon drift detector reports no sealed canon without mutation
 - `test_pact_canon_drift_detector_compares_latest_records` — Pact/canon drift detector reports in-sync, canon-ahead, and file-ahead states
 - `test_pact_canon_drift_detector_helpers_and_db_edges` — drift detector helper and DB edge paths remain read-only and explicit
