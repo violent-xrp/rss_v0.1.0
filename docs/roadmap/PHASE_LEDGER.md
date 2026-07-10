@@ -1,6 +1,6 @@
 # RSS Phase Ledger
 
-_Licensed under AGPLv3; see `../../LICENSE/README.md`._
+_Licensed under AGPLv3; see `../../LICENSE/LICENSE_INDEX.md`._
 
 This file preserves the landed-work ledger that used to live in `ROADMAP.md`.
 

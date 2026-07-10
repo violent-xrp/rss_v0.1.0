@@ -1,6 +1,6 @@
 # RSS Documentation Map
 
-_Licensed under AGPLv3; see `../LICENSE/README.md`._
+_Licensed under AGPLv3; see `../LICENSE/LICENSE_INDEX.md`._
 
 This file is a routing layer for the public documentation. It is not a separate truth register and should not introduce new claims that are not supported elsewhere.
 
@@ -25,6 +25,7 @@ This file is a routing layer for the public documentation. It is not a separate 
 ## Governance Alignment
 
 - `PACT_ALIGNMENT.md` - human-maintained Pact-to-kernel alignment map and known gaps.
+- `BUILD_DISCIPLINE.md` - how RSS is built: role-based AI construction under human authority, cross-family review independence, gates-first acceptance, and the lab-to-main promotion flow.
 - `NIST_AI_RMF_MAPPING.md` - RSS mapped to the NIST AI RMF functions as a reviewer aid.
 - `../THREAT_MODEL.md` - current threat boundaries and non-goals.
 - `ACTION_PLANE.md` - future side-effect and action-broker boundary; not a v0.1.0 claim.

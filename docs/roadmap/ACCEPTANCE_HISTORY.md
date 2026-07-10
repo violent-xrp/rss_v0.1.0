@@ -1,6 +1,6 @@
 # RSS Acceptance History
 
-_Licensed under AGPLv3; see `../../LICENSE/README.md`._
+_Licensed under AGPLv3; see `../../LICENSE/LICENSE_INDEX.md`._
 
 This file preserves the count history and verification receipts that used to live in `ROADMAP.md`.
 
@@ -8,7 +8,7 @@ This file preserves the count history and verification receipts that used to liv
 
 ## Current Baseline
 
-- **174 test functions / 1671 assertions / 0 failures**
+- **174 test functions / 1673 assertions / 0 failures**
 - **92.4% statement coverage**
 - **174 claims / 174 tests / 118 Pact sections**
 - Canonical runner: `python tests/test_all.py`
@@ -111,7 +111,7 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 - `THREAT_MODEL.md`
 
 Current synced public numbers:
-- **174 / 1671 / 0**
+- **174 / 1673 / 0**
 - **92.4%** coverage
 - **174 claims / 174 tests / 118 Pact sections**
 

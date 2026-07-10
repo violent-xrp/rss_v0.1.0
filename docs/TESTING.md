@@ -1,6 +1,6 @@
 # RSS Testing Guide
 
-_Licensed under AGPLv3; see `../LICENSE/README.md`._
+_Licensed under AGPLv3; see `../LICENSE/LICENSE_INDEX.md`._
 
 This file preserves test-layout and runner details that used to live in `ROADMAP.md`.
 
@@ -15,7 +15,7 @@ python tests/test_all.py
 Current expected final line:
 
 ```text
-RSS v0.1.0 - 174 test functions, 1671 assertions passed, 0 failed
+RSS v0.1.0 - 174 test functions, 1673 assertions passed, 0 failed
 ```
 
 This custom runner is the local source of truth for the current Windows environment.

@@ -1,6 +1,6 @@
 # RSS v0.1.0 — Roadmap
 
-_Licensed under AGPLv3; see `LICENSE/README.md`._
+_Licensed under AGPLv3; see `LICENSE/LICENSE_INDEX.md`._
 
 Release target: **v0.1.0**
 
@@ -28,7 +28,7 @@ Historical receipts live in supporting docs:
 - versioning model: `docs/VERSIONING.md`
 - demo handoff and artifact usage: `docs/demo/DEMO_HANDOFF.md`
 - external vocabulary / reviewer map: `docs/EXTERNAL_MAP.md`
-- documentation map: `docs/README.md`
+- documentation map: `docs/DOCS_INDEX.md`
 - NIST AI RMF reviewer map: `docs/NIST_AI_RMF_MAPPING.md`
 - future action-plane design boundary: `docs/ACTION_PLANE.md`
 - active design proposals: `docs/proposals/`
@@ -40,7 +40,7 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **174 test functions / 1671 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **174 test functions / 1673 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
 - **92.4% statement coverage** via `python run_coverage.py`
 - **174 claims / 174 tests / 118 Pact sections** in `docs/claim_matrix.md`
 - **26 kernel modules** in the `src/rss/` package tree plus `src/main.py`
@@ -49,7 +49,7 @@ Current code state:
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 174/1671 baseline
+- public docs are synced to the current 174/1673 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:

@@ -1,6 +1,6 @@
 # AI Governance Project Brief: Rose Sigil Systems
 
-_Licensed under AGPLv3; see `../LICENSE/README.md`._
+_Licensed under AGPLv3; see `../LICENSE/LICENSE_INDEX.md`._
 
 _Public site: [rosesigilsystems.com](https://rosesigilsystems.com/). Contact: [christain@rosesigilsystems.com](mailto:christain@rosesigilsystems.com)._
 
@@ -37,7 +37,7 @@ The model receives a Prepared Advisory View (PAV), not the whole data environmen
 
 Current v0.1.0 proof surface:
 - independent Python project with a modular `src/rss/` package
-- 174 test functions, 1671 assertions, 0 failures
+- 174 test functions, 1673 assertions, 0 failures
 - 92.4% statement coverage
 - 174 mapped proof claims across 118 Pact sections
 - scoped data access and PAV construction

@@ -1,6 +1,6 @@
 # RSS Versioning
 
-_Licensed under AGPLv3; see `../LICENSE/README.md`._
+_Licensed under AGPLv3; see `../LICENSE/LICENSE_INDEX.md`._
 
 RSS uses three version clocks. They are related, but they do not mean the same thing.
 
