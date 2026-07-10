@@ -2,6 +2,8 @@
 
 The RSS codebase is licensed under **AGPLv3**. See `AGPLv3.md` for full terms.
 
+**Licensor:** Christain Robert Rose, copyright holder of the RSS codebase. Commercial exceptions are granted by the licensor only, by signed agreement.
+
 A commercial license is available **on request** for deployments where AGPLv3 terms do not fit the intended use — for example:
 
 - Closed-source proprietary integration

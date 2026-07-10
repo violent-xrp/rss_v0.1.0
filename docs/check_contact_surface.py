@@ -21,6 +21,8 @@ EXPECTED_HEADER = (
     '# Contact: christain@rosesigilsystems.com  '
     '(Subject: "RSS Commercial License")'
 )
+# Legal spelling is "Christain" — same canonical-string discipline as the email.
+EXPECTED_COPYRIGHT = "Copyright (c) 2025-2026 Christain Robert Rose"
 FORBIDDEN_STRINGS = (
     "rose.systems@outlook.com",
     "christian@rosesigilsystems.com",
@@ -77,8 +79,11 @@ def main() -> int:
             continue
         if path.suffix != ".py":
             continue
-        if EXPECTED_HEADER not in read_text(path):
+        text = read_text(path)
+        if EXPECTED_HEADER not in text:
             failures.append(f"{rel}: missing canonical commercial-license contact header")
+        if EXPECTED_COPYRIGHT not in text:
+            failures.append(f"{rel}: missing canonical copyright line ({EXPECTED_COPYRIGHT!r})")
 
     if failures:
         print("Contact surface check failed:")
