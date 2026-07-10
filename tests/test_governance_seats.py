@@ -1105,15 +1105,31 @@ def test_redline_suppression():
         check("redline_excluded" not in r,
               "redline count suppressed from response (§2.10.2)")
 
-        # But TRACE should still have the count
+        # A PAV_OK event must exist for the request (the audit point where the
+        # REDLINE count is recorded).
         pav_events = rss.trace.events_by_code("PAV_OK")
         check(len(pav_events) >= 1, "PAV_OK event exists in TRACE")
-        # The TRACE event content contains the redline count
-        last_pav = pav_events[-1]
-        check("REDLINE excluded" in last_pav.artifact_id or
-              "REDLINE excluded" in str(last_pav.content_hash) or
-              True,  # Content is hashed; we verified logging exists
-              "REDLINE count logged to TRACE (not in response)")
+
+        # §2.10.2 — the count is REAL and the exclusion actually happened:
+        # WORK held 2 entries (1 public, 1 REDLINE); the response's PAV view
+        # must contain only the 1 public entry. This proves the count exists
+        # (one entry was excluded) AND that it never leaked into the response.
+        # (Phase-2b eval fix: the prior assertion was `... or True`, which
+        # always passed — the raw PAV_OK content string is hashed into the
+        # event, not stored, so it cannot be recovered post-hoc; this checks
+        # the observable behavior instead of asserting an unobservable string.)
+        check(r.get("pav_entries") == 1,
+              "PAV view excludes the REDLINE entry (1 of 2 WORK entries reached the view)")
+
+        # Independently confirm the count via a directly-built PAV over the same
+        # hubs, so the "REDLINE excluded" quantity is proven, not inferred.
+        env = Scope().declare("T-REDLINE", ["WORK"], [], "EXCLUDE", CONTENT_ONLY)
+        direct_pav = PAVBuilder().build(env, rss.hubs)
+        check(direct_pav.redline_excluded == 1,
+              "PAVBuilder reports exactly 1 REDLINE entry excluded (§2.10.2 count is real)")
+        check(all("Secret salary info" not in e.get("content", "")
+                  for e in direct_pav.entries),
+              "REDLINE content never appears in the PAV entries")
 
         rss.persistence.close()
     finally:
