@@ -1,6 +1,6 @@
 # RSS v0.1.0 — Roadmap
 
-_Licensed under AGPLv3; see `LICENSE/README.md`._
+_Licensed under AGPLv3; see `LICENSE/LICENSE_INDEX.md`._
 
 Release target: **v0.1.0**
 
@@ -28,7 +28,7 @@ Historical receipts live in supporting docs:
 - versioning model: `docs/VERSIONING.md`
 - demo handoff and artifact usage: `docs/demo/DEMO_HANDOFF.md`
 - external vocabulary / reviewer map: `docs/EXTERNAL_MAP.md`
-- documentation map: `docs/README.md`
+- documentation map: `docs/DOCS_INDEX.md`
 - NIST AI RMF reviewer map: `docs/NIST_AI_RMF_MAPPING.md`
 - future action-plane design boundary: `docs/ACTION_PLANE.md`
 - active design proposals: `docs/proposals/`
@@ -40,16 +40,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **169 test functions / 1605 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **92.3% statement coverage** via `python run_coverage.py`
-- **169 claims / 169 tests / 115 Pact sections** in `docs/claim_matrix.md`
+- **174 test functions / 1673 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **92.4% statement coverage** via `python run_coverage.py`
+- **174 claims / 174 tests / 118 Pact sections** in `docs/claim_matrix.md`
 - **26 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 169/1605 baseline
+- public docs are synced to the current 174/1673 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -79,6 +79,8 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **Pre-tag RUNE/OATH hardening map:** closed. OATH requester fallback, RUNE constraint-prompt proof, and RUNE longest bounded-match precedence are now proven.
 - **Action proposal / broker decision surface:** closed as a bounded code slice. RSS now has structured `ActionProposal` objects and a `SideEffectBroker` that reviews proposed side effects, emits TRACE receipts, issues short-lived in-process single-use authorization receipts, supports pre-execution claim/revocation, and imports claimed results as untrusted data-only evidence. It does not execute tools, persist leases, auto-wire into `Runtime.process_request`, or claim universal per-action enforcement.
 - **RUNE embedded disallowed scan:** closed as a code helper and used by the action broker to audit longer payload strings for bounded disallowed terms while preserving `classify()` exact-match semantics.
+- **TRACE v2 audit integrity:** closed as a persistence/audit hardening slice. New TRACE rows carry a versioned stored-field hash envelope (`payload_hash` + `hash_version`), the cold verifier recomputes v2 envelopes and detects downgrade attempts, boot verification uses the deep verifier, production mode forces SQLite `synchronous=FULL`, and ratified amendment persistence is atomic. This improves local stored-field integrity; it does not claim external signing, timestamp anchoring, or payload-inclusive third-party recomputation.
+- **Governance boundary hardening:** closed as a code-backed pre-release slice. OATH now treats GLOBAL `DENIED` as a restrictive kernel prohibition, runtime HIGH_RISK/CONSTITUTIONAL requests require elevated consent classes, WARD blocks protected-field injection/removal, RUNE update paths run the anti-trojan scanner while force-sealed terms survive restore, SEAL refuses mismatched restored canon hashes, post-LLM REDLINE scan failure withholds output, and TECTON separates suspended-read access from suspended request processing.
 - **Pact cleanup checkpoint:** the section-by-section Pact cleanup (Sections 0-7) is landed and pushed. Future Pact text changes move through the v0.1.1 amendment ceremony unless a release-gate review proves v0.1.0 would otherwise be false.
 - **Code-first Pact posture:** let kernel hardening move where it makes RSS more true; keep Pact edits section-bounded, reviewed, and version-sensitive so cleanup does not bundle unrelated lanes.
 
@@ -123,7 +125,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - Tier 2.5 internal advisor design: future advisors should reduce false-positive halts through graduated response (`SERVE` / `NARROW` / `ESCALATE` / `HALT`) while staying below the authority line. Principle: automate assessment, never authorization.
 - Agent terminology amendment candidate: an agentic system remains Tier 3 even when it has a loop and tool access. Agency is not authorization; any proposed side effect must re-enter governance before execution.
 - CLOSED: Seat interface decision for SCOPE/RUNE resolved by adding WARD-compatible adapters while preserving direct runtime request-path calls.
-- WARD hook protected-field audit as governance-relevant task/result fields grow.
+- WARD hook protected-field audit is closed for current protected task/result keys; revisit only when new governance-relevant fields are added.
 - CLOSED: CYCLE fail-closed proof now covers internal runtime-stage exceptions as `UNEXPECTED_ERROR` at Stage 6, in addition to strict-mode unknown-domain rejection.
 - CLOSED: SEAL external attribution scanner now blocks generic external-advisor/model authorship and authority-attribution phrases, including common verb/preposition/actor evasions, while still allowing bare non-authority mentions.
 - Governed pack selection/versioning once multiple demo worlds or tenant-specific packs exist.
@@ -145,7 +147,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - cross-machine audit portability
 - confusables/homoglyph hardening beyond current normalization
 - larger-event-count TRACE verification characterization
-- payload-inclusive TRACE export / recomputable envelope verification so third-party cold verifiers can validate event hashes from canonical exported material, not only parent-link continuity; design must preserve REDLINE/privacy boundaries, version the proof envelope, define whether payload material lives in a sovereign-only sidecar/receipt bundle, and stay future-work until the verifier can recompute hashes from exported material
+- payload-inclusive TRACE export / external recomputation bundles so third-party cold verifiers can validate event hashes from canonical exported material, not only local stored v2 fields; design must preserve REDLINE/privacy boundaries, version the proof envelope, define whether payload material lives in a sovereign-only sidecar/receipt bundle, and stay future-work until the verifier can recompute hashes from exported material
 - product/operator console structure that does not outrun kernel truth
 - internal advisor layer design: structured, auditable, non-authoritative advisors between external models and the kernel/operator, primarily to reduce false-positive halts through graduated response rather than to grant authority
 - advisory packet contract before advisor execution: typed evidence, concern kind, severity, proposed response class (`SERVE` / `NARROW` / `ESCALATE` / `HALT`), source-advisor attribution, packet hash, authority set to none, and TRACE-recorded invocation/output
@@ -472,7 +474,7 @@ Public surface:
 - Generated maps are regenerated, not hand-edited.
 - Usefulness matters. Do not optimize only for refusal or rigidity.
 - Preserve the distinction between **current truth**, **future phase work**, **aspiration**, and **non-goals**.
-- Cold TRACE verification, cold export, and future payload-inclusive external recomputation are separate claims until canonical payload/export proof exists.
+- Cold TRACE verification, cold export, local v2 stored-field recomputation, and future payload-inclusive external recomputation are separate claims until canonical payload/export proof exists.
 - Product design may move forward as structure/spec before every kernel feature is fully complete. The kernel still holds final authority over what is lawful, bounded, auditable, and provable.
 
 ---

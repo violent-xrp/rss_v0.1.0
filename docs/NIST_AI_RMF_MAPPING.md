@@ -1,6 +1,6 @@
 # RSS and the NIST AI RMF
 
-_Licensed under AGPLv3; see `../LICENSE/README.md`._
+_Licensed under AGPLv3; see `../LICENSE/LICENSE_INDEX.md`._
 
 This document maps Rose Sigil Systems (RSS) to the NIST AI Risk Management Framework (AI RMF) as a reviewer aid.
 

@@ -1,6 +1,6 @@
 # RSS v0.1.0 — Threat Model
 
-_Licensed under AGPLv3; see `LICENSE/README.md`._
+_Licensed under AGPLv3; see `LICENSE/LICENSE_INDEX.md`._
 
 ## Scope
 RSS is an **application-layer governance kernel**. It is designed to constrain what data an AI system may access and what governed paths are allowed before the model runs.
@@ -48,7 +48,7 @@ Mitigation: OATH write-ahead persistence semantics and persistence-failure surfa
 - side effects are only governable when they pass through the runtime boundary; per-action/tool-call enforcement remains future hardening
 - future importers, browsers, email connectors, RAG indexes, and tool adapters could reintroduce indirect prompt injection risk if retrieved text is passed as instruction, if hidden/metadata text is not labeled as untrusted, or if model output can trigger side effects without a fresh OATH/CYCLE gate
 - live model fluency is not evidence; governed data claims still need scoped PAV context and TRACE-backed runtime flow
-- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 169/1605 baseline
+- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 174/1673 baseline
 
 ## Current honesty line
 RSS v0.1.0 is strong at **governance-before-model** inside a single-process governed runtime. It is not yet the whole deployment security story.

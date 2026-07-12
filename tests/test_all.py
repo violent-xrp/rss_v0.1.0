@@ -1,18 +1,18 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: Acceptance Test Runner
-# Copyright (c) 2025-2026 Christian Robert Rose
+# Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
 # This software is released under a Dual-License model.
 #
 # 1. GNU Affero General Public License v3.0 (AGPLv3)
 #    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
+#    If you convey this software, or a work based on it, the combined work must
+#    be licensed as a whole under the AGPLv3 with source made available.
+#    Network use counts: if you run a modified version on a server and let users
+#    interact with it remotely, you must offer those users the complete
+#    corresponding source under the AGPLv3.
 #
 # 2. Commercial / Contractor License Exception
 #    If you wish to use this software in a closed-source, proprietary, or
@@ -21,6 +21,9 @@
 #    a separate Contractor License from the author.
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
+#
+# This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
+# where executed, a signed commercial agreement.
 # ==============================================================================
 """Canonical acceptance runner for RSS v0.1.0.
 
@@ -59,6 +62,8 @@ from test_cli import (
 from test_docs_tooling import (
     test_reverse_pact_code_map_generator_parses_pact_heading_variants,
     test_project_status_generator_renders_bounded_public_status_view,
+    test_orphan_number_guard_flags_unrecognized_stale_counts,
+    test_claim_fidelity_floor_catches_vacuous_and_unanchored_claims,
 )
 
 from test_governance_seats import (
@@ -186,6 +191,9 @@ from test_audit_trace import (
     test_trace_verify_human_report_branches,
     test_trace_chain_survives_concurrent_governed_writes,
     test_trace_export_additional_proof,
+    test_v2_envelope_recomputation_detects_metadata_tamper,
+    test_v2_mixed_chain_migration_and_roundtrip,
+    test_ratified_amendment_atomicity,
 )
 
 from test_audit_pact_canon_export import (
@@ -377,6 +385,9 @@ TESTS = [
     test_trace_verify_human_report_branches,
     test_trace_chain_survives_concurrent_governed_writes,
     test_trace_export_additional_proof,
+    test_v2_envelope_recomputation_detects_metadata_tamper,
+    test_v2_mixed_chain_migration_and_roundtrip,
+    test_ratified_amendment_atomicity,
     test_pact_canon_export_dry_run_refuses_unsafe_paths,
     test_pact_canon_export_write_requires_t0_and_syncs_drift,
     test_pact_canon_export_first_canon_requires_explicit_base_hash,
@@ -399,6 +410,8 @@ TESTS = [
     test_cli_vocabulary_commands_require_t0_command,
     test_reverse_pact_code_map_generator_parses_pact_heading_variants,
     test_project_status_generator_renders_bounded_public_status_view,
+    test_orphan_number_guard_flags_unrecognized_stale_counts,
+    test_claim_fidelity_floor_catches_vacuous_and_unanchored_claims,
     test_llm_availability_timeout_is_config_driven,
     test_archive_entry_returns_hub_entry,
 ]

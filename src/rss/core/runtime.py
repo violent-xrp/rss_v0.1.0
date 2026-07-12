@@ -1,18 +1,18 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: S3 — Governed Runtime Pipeline (Layer 6)
-# Copyright (c) 2025-2026 Christian Robert Rose
+# Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
 # This software is released under a Dual-License model.
 #
 # 1. GNU Affero General Public License v3.0 (AGPLv3)
 #    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
+#    If you convey this software, or a work based on it, the combined work must
+#    be licensed as a whole under the AGPLv3 with source made available.
+#    Network use counts: if you run a modified version on a server and let users
+#    interact with it remotely, you must offer those users the complete
+#    corresponding source under the AGPLv3.
 #
 # 2. Commercial / Contractor License Exception
 #    If you wish to use this software in a closed-source, proprietary, or
@@ -21,6 +21,9 @@
 #    a separate Contractor License from the author.
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
+#
+# This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
+# where executed, a signed commercial agreement.
 # ==============================================================================
 """
 RSS v0.1.0 — Runtime (Layer 6)
@@ -74,6 +77,16 @@ _TECTON_INGRESS_TOKEN = object()
 _PIPELINE_STAGES: dict = {
     0: "SAFE_STOP", 1: "GENESIS", 2: "SCOPE", 3: "RUNE",
     4: "EXECUTION", 5: "OATH", 6: "CYCLE", 7: "PAV", 8: "LLM", 9: "TRACE",
+}
+
+# §3.1.2/§3.2.1 — Tier-3 elevated consent (T-0 ruling 2026-07-02). HIGH_RISK
+# and CONSTITUTIONAL classifications require a class-specific consent IN
+# ADDITION to the base EXECUTE consent. Silence means prohibition (§0.9):
+# there is no default grant for these classes; T-0 authorizes explicitly
+# (e.g. oath.authorize("EXECUTE_HIGH_RISK", ...)).
+_ELEVATED_CONSENT_BY_CLASSIFICATION: dict = {
+    "HIGH_RISK": "EXECUTE_HIGH_RISK",
+    "CONSTITUTIONAL": "EXECUTE_CONSTITUTIONAL",
 }
 
 
@@ -160,7 +173,10 @@ class Runtime:
         self.seal = Seal()
 
         # Infra
-        self.persistence = Persistence(self.config.db_path)
+        self.persistence = Persistence(
+            self.config.db_path,
+            synchronous=getattr(self.config, "sqlite_synchronous", "NORMAL"),
+        )
         self.llm = LLMAdapter(self.config)
         self.restore_warnings = []
 
@@ -419,9 +435,12 @@ class Runtime:
         """§6.3.5, §6.11.3 — Boot-time TRACE chain verification.
         Called during bootstrap after state restoration. If the chain is broken,
         enters persistent Safe-Stop. Returns {verified: bool, reason: str}.
-        Emits BOOT_CHAIN_VERIFIED on success, BOOT_CHAIN_BROKEN on failure."""
+        Emits BOOT_CHAIN_VERIFIED on success, BOOT_CHAIN_BROKEN on failure.
+        Uses the deep walk (§6.3.6 v2): linkage for all events plus envelope
+        recomputation for v2 events, so in-place field edits on persisted v2
+        rows are caught at boot, not just hash-column edits."""
         try:
-            chain_valid = self.trace.verify_chain()
+            chain_valid = self.trace.verify_chain_deep()
         except Exception as e:
             reason = f"Chain verification raised exception: {e}"
             self._log("BOOT_CHAIN_BROKEN", "TRACE", reason)
@@ -621,7 +640,12 @@ class Runtime:
                     version=t["version"],
                 )
                 try:
-                    self.meaning.create_term(term)
+                    # force=True: restore is REHYDRATION of already-governed
+                    # state, not creation. A term T-0 legitimately force-sealed
+                    # past the §2.3 scanner (§2.3.3) must survive restart —
+                    # save_term() is the governed gate; this path only rebuilds
+                    # memory from durable rows (mirrors OATH _persist=False).
+                    self.meaning.create_term(term, force=True)
                     restored["terms"] += 1
                 except Exception as exc:
                     self._record_restore_skip(
@@ -951,8 +975,16 @@ class Runtime:
                                     response,
                                     flags=_re.IGNORECASE,
                                 )
-        except Exception:
-            pass  # Hub access failure shouldn't block response delivery
+        except Exception as exc:
+            # §3.7.7 — FAIL CLOSED (T-0 ruling 2026-07-02, matching the export
+            # sanitizer's posture): if the REDLINE scan cannot run, the
+            # response is unverifiable and must be withheld, not delivered
+            # unsanitized.
+            self._log("LLM_VALIDATION", task_id,
+                      f"Post-LLM REDLINE scan failed ({type(exc).__name__}: {exc}); "
+                      f"response withheld (fail-closed)")
+            return ("[RESPONSE WITHHELD] Post-LLM REDLINE verification failed; "
+                    "the response cannot be delivered unverified.")
 
         # Check 3: Governance data suppression (§3.7.7)
         governance_patterns = [
@@ -1107,6 +1139,26 @@ class Runtime:
                     "consent": consent,
                     "stage": 5, "stage_name": STAGES[5],
                 }
+
+            # §3.1.2/§3.2.1 — Tier-3 elevated consent. HIGH_RISK and
+            # CONSTITUTIONAL require the class-specific consent in ADDITION
+            # to base EXECUTE. The base grant alone does not authorize
+            # destructive or constitutional verbs.
+            elevated_class = _ELEVATED_CONSENT_BY_CLASSIFICATION.get(classification)
+            if elevated_class is not None:
+                elevated = self.oath.check(elevated_class, container_id)
+                if elevated != "AUTHORIZED":
+                    self._log(f"OATH_{elevated}", task_id,
+                              f"Elevated consent {elevated_class}: {elevated} "
+                              f"(classification={classification})")
+                    return {
+                        "error": "CONSENT_REQUIRED",
+                        "meaning": meaning,
+                        "classification": classification,
+                        "consent": elevated,
+                        "required_consent": elevated_class,
+                        "stage": 5, "stage_name": STAGES[5],
+                    }
             last_stage = 5
 
             # -- Stage 6: CYCLE — rate limit --

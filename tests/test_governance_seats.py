@@ -1,18 +1,18 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: Governance Seat Acceptance Proofs
-# Copyright (c) 2025-2026 Christian Robert Rose
+# Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
 # This software is released under a Dual-License model.
 #
 # 1. GNU Affero General Public License v3.0 (AGPLv3)
 #    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
+#    If you convey this software, or a work based on it, the combined work must
+#    be licensed as a whole under the AGPLv3 with source made available.
+#    Network use counts: if you run a modified version on a server and let users
+#    interact with it remotely, you must offer those users the complete
+#    corresponding source under the AGPLv3.
 #
 # 2. Commercial / Contractor License Exception
 #    If you wish to use this software in a closed-source, proprietary, or
@@ -21,6 +21,9 @@
 #    a separate Contractor License from the author.
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
+#
+# This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
+# where executed, a signed commercial agreement.
 # ==============================================================================
 """Governance seat, meaning-law, OATH, SCRIBE, and SEAL proofs.
 
@@ -515,6 +518,26 @@ def test_oath():
           and routed_detailed.get("source") == "CONTAINER",
           "handle() detailed check carries source through the seat adapter")
 
+    # §0.9.1 — restrictive-wins (T-0 ruling 2026-07-02): an explicit GLOBAL
+    # DENIED is a kernel prohibition that a container-specific AUTHORIZED
+    # cannot pierce.
+    oath.deny("KERNEL_LOCKED", "WORK", "SESSION", "T-0")            # GLOBAL DENIED
+    oath.authorize("KERNEL_LOCKED", "WORK", "SESSION", "T-0",
+                   container_id="C9")                                # container grant
+    check(oath.check("KERNEL_LOCKED", "C9") == "DENIED",
+          "container AUTHORIZED cannot pierce GLOBAL DENIED (§0.9.1)")
+    d_kernel = oath.check("KERNEL_LOCKED", "C9", detailed=True)
+    check(d_kernel.get("source") == "GLOBAL_DENIAL",
+          "detailed check names GLOBAL_DENIAL as the dominating source")
+    # GLOBAL REVOKED is only a withdrawal of the global grant — the
+    # container-specific grant stands (matches 'container unaffected by
+    # global revoke' above).
+    oath.authorize("SOFT_LOCKED", "WORK", "SESSION", "T-0")
+    oath.authorize("SOFT_LOCKED", "WORK", "SESSION", "T-0", container_id="C9")
+    oath.revoke("SOFT_LOCKED")                                       # GLOBAL REVOKED
+    check(oath.check("SOFT_LOCKED", "C9") == "AUTHORIZED",
+          "GLOBAL REVOKED does not pierce a container-specific grant")
+
 
 def test_oath_denied_consent_survives_restart():
     # CLAIM: §6.9.2, §0.9 — DENIED consent survives restart; restore never upgrades a restrictive status to AUTHORIZED
@@ -828,6 +851,23 @@ def test_anti_trojan():
     except MeaningError:
         check(True, "extended verb 'run' caught by scanner")
 
+    # §2.3.1 is a STANDING property — the scanner applies to updates too. A
+    # trojan definition must not enter through the update path.
+    try:
+        rune.update_term("T1", "Delete all project files when this term is used")
+        check(False, "should reject trojan definition entering via update_term")
+    except MeaningError as e:
+        check("anti-trojan" in str(e).lower(),
+              "update_term runs the §2.3 scanner (standing property, §2.3.1)")
+    check(rune.get_term("T1").definition == "Bill for completed work",
+          "rejected update leaves the original definition untouched")
+
+    # T-0 force override applies to updates exactly as to creation (§2.3.3)
+    updated = rune.update_term(
+        "T1", "Authorized removal and destruction billing record", force=True)
+    check(updated.version == "1.1",
+          "forced update bumps version (anti-retroactivity preserved)")
+
 
 def test_anti_trojan_runtime():
     # CLAIM: §2.3, §2.2 — anti-trojan in governed save path
@@ -864,6 +904,20 @@ def test_anti_trojan_runtime():
         check(len(force_events) >= 1, "TRACE logged force override event")
 
         rss.persistence.close()
+
+        # §6.9.1 / §2.3.3 — force-sealed terms must SURVIVE restart. Restore
+        # is rehydration of already-governed state: save_term() was the
+        # governed gate; the restore path must not re-run the scanner and
+        # silently drop the term.
+        rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
+        check("demolition" in [t["label"] for t in rss2.meaning.list_sealed()],
+              "force-sealed term survives restart (restore is rehydration, "
+              "not re-creation)")
+        demolition_skips = [w for w in rss2.restore_warnings
+                            if w.get("record_id") == "demolition"]
+        check(demolition_skips == [],
+              "no restore skip recorded for the force-sealed term")
+        rss2.persistence.close()
     finally:
         if os.path.exists(path):
             os.unlink(path)
@@ -1054,15 +1108,31 @@ def test_redline_suppression():
         check("redline_excluded" not in r,
               "redline count suppressed from response (§2.10.2)")
 
-        # But TRACE should still have the count
+        # A PAV_OK event must exist for the request (the audit point where the
+        # REDLINE count is recorded).
         pav_events = rss.trace.events_by_code("PAV_OK")
         check(len(pav_events) >= 1, "PAV_OK event exists in TRACE")
-        # The TRACE event content contains the redline count
-        last_pav = pav_events[-1]
-        check("REDLINE excluded" in last_pav.artifact_id or
-              "REDLINE excluded" in str(last_pav.content_hash) or
-              True,  # Content is hashed; we verified logging exists
-              "REDLINE count logged to TRACE (not in response)")
+
+        # §2.10.2 — the count is REAL and the exclusion actually happened:
+        # WORK held 2 entries (1 public, 1 REDLINE); the response's PAV view
+        # must contain only the 1 public entry. This proves the count exists
+        # (one entry was excluded) AND that it never leaked into the response.
+        # (Phase-2b eval fix: the prior assertion was `... or True`, which
+        # always passed — the raw PAV_OK content string is hashed into the
+        # event, not stored, so it cannot be recovered post-hoc; this checks
+        # the observable behavior instead of asserting an unobservable string.)
+        check(r.get("pav_entries") == 1,
+              "PAV view excludes the REDLINE entry (1 of 2 WORK entries reached the view)")
+
+        # Independently confirm the count via a directly-built PAV over the same
+        # hubs, so the "REDLINE excluded" quantity is proven, not inferred.
+        env = Scope().declare("T-REDLINE", ["WORK"], [], "EXCLUDE", CONTENT_ONLY)
+        direct_pav = PAVBuilder().build(env, rss.hubs)
+        check(direct_pav.redline_excluded == 1,
+              "PAVBuilder reports exactly 1 REDLINE entry excluded (§2.10.2 count is real)")
+        check(all("Secret salary info" not in e.get("content", "")
+                  for e in direct_pav.entries),
+              "REDLINE content never appears in the PAV entries")
 
         rss.persistence.close()
     finally:
@@ -1687,6 +1757,41 @@ def test_s7_amendment_persistence_roundtrip():
         check(canon2.hash == history2[0].new_hash,
               "reconstructed canon hash matches AmendmentRecord")
         rss3.persistence.close()
+
+        # §6.9.4 — Canon restore integrity: restoring rows whose proposed_text
+        # does not hash to the stored new_hash must be REFUSED, not silently
+        # installed as mismatched canon. (Unit-level: a tampered
+        # amendment_proposals row.)
+        import hashlib as _hl
+        tampered_seal = Seal()
+        good_text = "original ratified text"
+        good_hash = _hl.sha256(good_text.encode()).hexdigest()
+        prop_row = {
+            "proposal_id": "AMEND-tamper1", "section_id": "S2",
+            "rationale": "r", "proposed_text": "TAMPERED text — not what was ratified",
+            "proposed_at": datetime.now(UTC).isoformat(), "status": "RATIFIED",
+        }
+        rec_row = {
+            "proposal_id": "AMEND-tamper1", "section_id": "S2",
+            "new_version": "v1.0", "new_hash": good_hash, "rationale": "r",
+            "ratified_at": datetime.now(UTC).isoformat(),
+        }
+        raised_tamper = False
+        try:
+            tampered_seal.restore_amendments([prop_row], [rec_row])
+        except SealError as e:
+            raised_tamper = True
+            check("integrity" in str(e).lower(),
+                  "canon restore refusal names the integrity failure")
+        check(raised_tamper,
+              "tampered proposed_text refused at restore (hash recomputed, §6.9.4)")
+
+        # Matching text restores cleanly.
+        clean_seal = Seal()
+        prop_row["proposed_text"] = good_text
+        restored_clean = clean_seal.restore_amendments([prop_row], [rec_row])
+        check(restored_clean["canon"] == 1,
+              "hash-verified canon restores normally")
     finally:
         _cleanup_db(path)
 

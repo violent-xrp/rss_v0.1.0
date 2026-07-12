@@ -1,6 +1,6 @@
 # RSS Demo Handoff
 
-_Licensed under AGPLv3; see `../../LICENSE/README.md`._
+_Licensed under AGPLv3; see `../../LICENSE/LICENSE_INDEX.md`._
 
 This file is the operator/engineer handoff for the Phase G governed demo.
 

@@ -1,18 +1,18 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: WARD — Council Router & Hook Enforcement (Layer 2)
-# Copyright (c) 2025-2026 Christian Robert Rose
+# Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
 # This software is released under a Dual-License model.
 #
 # 1. GNU Affero General Public License v3.0 (AGPLv3)
 #    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
+#    If you convey this software, or a work based on it, the combined work must
+#    be licensed as a whole under the AGPLv3 with source made available.
+#    Network use counts: if you run a modified version on a server and let users
+#    interact with it remotely, you must offer those users the complete
+#    corresponding source under the AGPLv3.
 #
 # 2. Commercial / Contractor License Exception
 #    If you wish to use this software in a closed-source, proprietary, or
@@ -21,6 +21,9 @@
 #    a separate Contractor License from the author.
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
+#
+# This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
+# where executed, a signed commercial agreement.
 # ==============================================================================
 """
 RSS v0.1.0 — Layer 2: WARD (Orchestrator)
@@ -89,14 +92,21 @@ class Ward:
         if seat_name not in self._seats:
             raise WardError(f"Unknown seat: {seat_name}")
 
-        # Pre-hooks (§1.2.6: enforce protected key immutability)
+        # Pre-hooks (§1.2.6: enforce protected key immutability).
+        # Alteration, INJECTION, and REMOVAL are all violations: a hook that
+        # adds t0_command=True to a task that lacked it, or drops
+        # forbidden_sources, is altering a governance decision just as surely
+        # as changing an existing value.
         for hook in self._pre_hooks:
             modified = hook(seat_name, task)
             if modified is not None:
                 for key in self.PROTECTED_TASK_KEYS:
-                    if key in task and key in modified and modified[key] != task[key]:
+                    in_orig, in_mod = key in task, key in modified
+                    if in_orig != in_mod or (in_orig and modified[key] != task[key]):
+                        verb = ("alter" if in_orig and in_mod
+                                else "inject" if in_mod else "remove")
                         raise WardError(
-                            f"Hook violated §1.2.6: attempted to alter protected key '{key}' "
+                            f"Hook violated §1.2.6: attempted to {verb} protected key '{key}' "
                             f"in task routed to {seat_name}"
                         )
                 task = modified
@@ -110,14 +120,18 @@ class Ward:
         if not isinstance(result, dict):
             raise WardError(f"Seat '{seat_name}' returned non-dict result: {type(result)}")
 
-        # Post-hooks (§1.2.6: enforce protected key immutability)
+        # Post-hooks (§1.2.6: enforce protected key immutability — alteration,
+        # injection, and removal all rejected, same rule as pre-hooks)
         for hook in self._post_hooks:
             modified = hook(seat_name, task, result)
             if modified is not None:
                 for key in self.PROTECTED_RESULT_KEYS:
-                    if key in result and key in modified and modified[key] != result[key]:
+                    in_orig, in_mod = key in result, key in modified
+                    if in_orig != in_mod or (in_orig and modified[key] != result[key]):
+                        verb = ("alter" if in_orig and in_mod
+                                else "inject" if in_mod else "remove")
                         raise WardError(
-                            f"Hook violated §1.2.6: attempted to alter protected key '{key}' "
+                            f"Hook violated §1.2.6: attempted to {verb} protected key '{key}' "
                             f"in result from {seat_name}"
                         )
                 result = modified

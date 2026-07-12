@@ -1,18 +1,18 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: OATH — Consent Law
-# Copyright (c) 2025-2026 Christian Robert Rose
+# Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
 # This software is released under a Dual-License model.
 #
 # 1. GNU Affero General Public License v3.0 (AGPLv3)
 #    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
+#    If you convey this software, or a work based on it, the combined work must
+#    be licensed as a whole under the AGPLv3 with source made available.
+#    Network use counts: if you run a modified version on a server and let users
+#    interact with it remotely, you must offer those users the complete
+#    corresponding source under the AGPLv3.
 #
 # 2. Commercial / Contractor License Exception
 #    If you wish to use this software in a closed-source, proprietary, or
@@ -21,6 +21,9 @@
 #    a separate Contractor License from the author.
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
+#
+# This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
+# where executed, a signed commercial agreement.
 # ==============================================================================
 """
 RSS v0.1.0 — OATH (Consent Law)
@@ -298,8 +301,14 @@ class Oath:
         return {"revoked": True, "action_class": normalized_action}
 
     def check(self, action_class: str, container_id: str = "GLOBAL", detailed: bool = False) -> str | dict:
-        """Check consent. Container-specific first, then GLOBAL fallback.
-        If detailed=True, returns a dict exposing the consent source (CONTAINER, GLOBAL_FALLBACK, GLOBAL, or ABSENT)."""
+        """Check consent. Container-specific first, then GLOBAL fallback —
+        with one restrictive exception (§0.9.1, T-0 ruling 2026-07-02): an
+        explicit GLOBAL DENIED is a kernel-level prohibition that a
+        container-specific AUTHORIZED cannot pierce. (GLOBAL REVOKED is a
+        withdrawal of the global grant only; container-specific grants stand
+        until individually revoked.)
+        If detailed=True, returns a dict exposing the consent source
+        (CONTAINER, GLOBAL_FALLBACK, GLOBAL, GLOBAL_DENIAL, or ABSENT)."""
         try:
             normalized_action = self._normalize_action_class(action_class)
             if not normalized_action:
@@ -309,13 +318,21 @@ class Oath:
             return {"status": "DENIED", "source": "ERROR"} if detailed else "DENIED"
 
         key = self._key(normalized_action, normalized_container)
+        global_key = self._key(normalized_action, "GLOBAL")
+
+        # §0.9.1 — restrictive-wins: GLOBAL DENIED dominates any
+        # container-specific record. No PERMIT over the kernel's DENY.
+        if (normalized_container != "GLOBAL"
+                and global_key in self._consents
+                and self._consents[global_key].status == "DENIED"):
+            return {"status": "DENIED", "source": "GLOBAL_DENIAL"} if detailed else "DENIED"
+
         if key in self._consents:
             status = self._consents[key].status
             source = "CONTAINER" if normalized_container != "GLOBAL" else "GLOBAL"
             return {"status": status, "source": source} if detailed else status
 
         # Fallback to GLOBAL
-        global_key = self._key(normalized_action, "GLOBAL")
         if global_key in self._consents:
             status = self._consents[global_key].status
             return {"status": status, "source": "GLOBAL_FALLBACK"} if detailed else status

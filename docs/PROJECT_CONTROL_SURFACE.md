@@ -1,6 +1,6 @@
 # Rose Sigil Systems Control Surface
 
-_Licensed under AGPLv3; see `../LICENSE/README.md`._
+_Licensed under AGPLv3; see `../LICENSE/LICENSE_INDEX.md`._
 
 ## Purpose
 
@@ -27,6 +27,7 @@ Each document should own one job. Do not copy the same live claim across multipl
 | `docs/ACTION_PLANE.md` | future action/broker boundary vocabulary | current release claims | keep explicitly future until code proof lands |
 | `docs/NIST_AI_RMF_MAPPING.md` | reviewer mapping to NIST AI RMF language | certification or compliance claims | keep conservative and evidence-linked |
 | `docs/AI_GOVERNANCE_PROJECT_BRIEF.md` | concise outside-facing project brief | detailed release tracking | sync proof numbers mechanically |
+| `docs/BUILD_DISCIPLINE.md` | how RSS is built: build roles, review independence, gates-first acceptance, promotion flow | product capability claims or proof counts | update only when the build process itself changes |
 | `docs/EXTERNAL_MAP.md` | plain-English vocabulary translation | proof status | update when terminology changes |
 | `docs/SUBSYSTEM_HANDLES.md` | Tier 2 handle convention | seat authority changes | keep lowercase subsystem handles separate from seats |
 | `docs/VERSIONING.md` | release, rc, and Pact section version clocks | release history | update only when version policy changes |
@@ -55,7 +56,7 @@ That wrapper checks baseline sync, contact surface, reverse Pact-code map freshn
 ## Proposal Lifecycle
 
 1. Put future architecture in `docs/proposals/`.
-2. Link it from `docs/proposals/README.md`.
+2. Link it from `docs/proposals/PROPOSALS_INDEX.md`.
 3. Summarize sequencing in `ROADMAP.md`.
 4. Add claim/wording cautions to `docs/PACT_ALIGNMENT.md` only when needed.
 5. Do not expand `README.md` until code proof or release positioning justifies it.

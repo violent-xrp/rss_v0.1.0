@@ -1,18 +1,18 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: Core Runtime Acceptance Proofs
-# Copyright (c) 2025-2026 Christian Robert Rose
+# Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
 # This software is released under a Dual-License model.
 #
 # 1. GNU Affero General Public License v3.0 (AGPLv3)
 #    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
+#    If you convey this software, or a work based on it, the combined work must
+#    be licensed as a whole under the AGPLv3 with source made available.
+#    Network use counts: if you run a modified version on a server and let users
+#    interact with it remotely, you must offer those users the complete
+#    corresponding source under the AGPLv3.
 #
 # 2. Commercial / Contractor License Exception
 #    If you wish to use this software in a closed-source, proprietary, or
@@ -21,6 +21,9 @@
 #    a separate Contractor License from the author.
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
+#
+# This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
+# where executed, a signed commercial agreement.
 # ==============================================================================
 """Core runtime, bootstrap, and execution proofs.
 
@@ -366,9 +369,28 @@ def test_runtime():
         r = rss.process_request("estimate", use_llm=False)
         check("error" not in r, "'estimate' -> passes through (AMBIGUOUS allowed)")
 
+        # §3.1.2/§3.2.1 — Tier-3 elevated consent (T-0 ruling 2026-07-02):
+        # HIGH_RISK requires EXECUTE_HIGH_RISK in addition to base EXECUTE.
+        # With no elevated grant, the destructive verb halts at Stage 5.
+        r = rss.process_request("delete everything", use_llm=False)
+        check(r.get("error") == "CONSENT_REQUIRED"
+              and r.get("classification") == "HIGH_RISK"
+              and r.get("required_consent") == "EXECUTE_HIGH_RISK"
+              and r.get("stage") == 5,
+              "'delete everything' HIGH_RISK halts without elevated consent, "
+              "naming EXECUTE_HIGH_RISK at stage 5")
+
+        # T-0 grants the elevated consent explicitly — now it proceeds.
+        rss.oath.authorize("EXECUTE_HIGH_RISK", "WORK", "SESSION", "T-0")
         r = rss.process_request("delete everything", use_llm=False)
         check("error" not in r and r.get("classification") == "HIGH_RISK",
-              "'delete everything' -> passes through, classified HIGH_RISK")
+              "'delete everything' proceeds once EXECUTE_HIGH_RISK is granted")
+
+        # CONSTITUTIONAL verbs need their own elevated class.
+        r = rss.process_request("seal the new document", use_llm=False)
+        check(r.get("error") == "CONSENT_REQUIRED"
+              and r.get("required_consent") == "EXECUTE_CONSTITUTIONAL",
+              "constitutional verb halts without EXECUTE_CONSTITUTIONAL")
 
         r = rss.process_request("RFI", use_llm=False)
         check(r["meaning"] == "SEALED" and r["classification"] == "REQUEST", "'RFI' -> SEALED")
@@ -505,6 +527,35 @@ def test_write_ahead_guarantee():
         check("error" not in r, "system recovers after audit restored")
 
         rss.persistence.close()
+
+        # §6.4.1/§6.5.1 — Durability posture is config-driven. Under WAL,
+        # synchronous=NORMAL can lose the last commit(s) on power loss;
+        # production_mode forces FULL so "durable audit record" (§6.4.1)
+        # holds through power failure.
+        check(RSSConfig(production_mode=True).sqlite_synchronous == "FULL",
+              "production_mode forces sqlite_synchronous=FULL (§6.4.1)")
+        check(RSSConfig().sqlite_synchronous == "NORMAL",
+              "dev default remains synchronous=NORMAL (disclosed posture)")
+
+        fd2, path2 = tempfile.mkstemp(suffix=".db")
+        os.close(fd2)
+        try:
+            p_full = Persistence(path2, synchronous="FULL")
+            level = p_full.conn.execute("PRAGMA synchronous").fetchone()[0]
+            check(level == 2, f"PRAGMA synchronous applied as FULL (got {level})")
+            p_full.close()
+
+            raised_bad_sync = False
+            try:
+                Persistence(path2, synchronous="OFF")
+            except ValueError:
+                raised_bad_sync = True
+            check(raised_bad_sync,
+                  "invalid synchronous level rejected (whitelist, no PRAGMA injection)")
+        finally:
+            for pth in (path2, path2 + "-wal", path2 + "-shm"):
+                if os.path.exists(pth):
+                    os.unlink(pth)
     finally:
         if os.path.exists(path):
             os.unlink(path)
@@ -741,6 +792,25 @@ def test_llm_response_validation():
         clean_output = rss._validate_llm_response(clean_input, "TEST-5")
         check(clean_input == clean_output, "clean response passes through unchanged")
 
+        # Test 5: §3.7.7 FAIL-CLOSED (T-0 ruling 2026-07-02) — if the REDLINE
+        # scan cannot run, the response is withheld, not delivered unverified.
+        events_before = len(rss.trace.events_by_code("LLM_VALIDATION"))
+        def _broken_list_hub(hub_name):
+            raise RuntimeError(f"{hub_name} unavailable")
+        original_list_hub = rss._global_hubs.list_hub
+        rss._global_hubs.list_hub = _broken_list_hub
+        try:
+            withheld = rss._validate_llm_response("any model output", "TEST-6")
+        finally:
+            rss._global_hubs.list_hub = original_list_hub
+        check("[RESPONSE WITHHELD]" in withheld,
+              "REDLINE-scan failure withholds the response (fail-closed)")
+        check("any model output" not in withheld,
+              "withheld response does not carry the unverified content")
+        events_after = len(rss.trace.events_by_code("LLM_VALIDATION"))
+        check(events_after > events_before,
+              "fail-closed withholding is TRACEd as LLM_VALIDATION")
+
         rss.persistence.close()
     finally:
         if os.path.exists(path):
@@ -818,6 +888,52 @@ def test_ward_hook_enforcement():
 
     check(len(Ward.PROTECTED_TASK_KEYS) >= 5, "PROTECTED_TASK_KEYS has governance keys")
     check(len(Ward.PROTECTED_RESULT_KEYS) >= 5, "PROTECTED_RESULT_KEYS has governance keys")
+
+    # §1.2.6 hardening — INJECTION of a protected key absent from the original
+    # task is a violation too (adding t0_command=True is altering a governance
+    # decision, not adding metadata).
+    def injecting_pre_hook(seat_name, task):
+        return {**task, "t0_command": True}
+
+    ward5 = Ward()
+    ward5.register_seat(DummySeat())
+    ward5.add_pre_hook(injecting_pre_hook)
+    try:
+        ward5.route("TEST", {"action": "test"})
+        check(False, "should have blocked hook that INJECTS t0_command")
+    except WardError as e:
+        check("inject" in str(e).lower(),
+              "pre-hook blocked from injecting protected key (t0_command)")
+
+    # §1.2.6 hardening — REMOVAL of a protected key is a violation (dropping
+    # forbidden_sources from a task alters the governance decision).
+    def removing_pre_hook(seat_name, task):
+        stripped = {k: v for k, v in task.items() if k != "forbidden_sources"}
+        return stripped
+
+    ward6 = Ward()
+    ward6.register_seat(DummySeat())
+    ward6.add_pre_hook(removing_pre_hook)
+    try:
+        ward6.route("TEST", {"action": "test", "forbidden_sources": ["PERSONAL"]})
+        check(False, "should have blocked hook that REMOVES forbidden_sources")
+    except WardError as e:
+        check("remove" in str(e).lower(),
+              "pre-hook blocked from removing protected key (forbidden_sources)")
+
+    # Post-hook injection of a protected RESULT key (e.g. fabricating 'valid')
+    def injecting_post_hook(seat_name, task, result):
+        return {**result, "valid": True}
+
+    ward7 = Ward()
+    ward7.register_seat(DummySeat())
+    ward7.add_post_hook(injecting_post_hook)
+    try:
+        ward7.route("TEST", {"action": "test"})
+        check(False, "should have blocked post-hook that INJECTS 'valid'")
+    except WardError as e:
+        check("inject" in str(e).lower(),
+              "post-hook blocked from injecting protected result key ('valid')")
 
 
 def test_runtime_default_term_pack_is_config_driven():

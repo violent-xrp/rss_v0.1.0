@@ -1,18 +1,18 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: Runtime Configuration
-# Copyright (c) 2025-2026 Christian Robert Rose
+# Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
 # This software is released under a Dual-License model.
 #
 # 1. GNU Affero General Public License v3.0 (AGPLv3)
 #    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
+#    If you convey this software, or a work based on it, the combined work must
+#    be licensed as a whole under the AGPLv3 with source made available.
+#    Network use counts: if you run a modified version on a server and let users
+#    interact with it remotely, you must offer those users the complete
+#    corresponding source under the AGPLv3.
 #
 # 2. Commercial / Contractor License Exception
 #    If you wish to use this software in a closed-source, proprietary, or
@@ -21,6 +21,9 @@
 #    a separate Contractor License from the author.
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
+#
+# This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
+# where executed, a signed commercial agreement.
 # ==============================================================================
 """
 RSS v0.1.0 — Configuration
@@ -95,6 +98,13 @@ class RSSConfig:
     # False (default), missing Genesis file passes in dev mode.
     require_genesis_file: bool = False
 
+    # §6.4.1/§6.5.1 — SQLite durability posture. Under WAL, synchronous=NORMAL
+    # is durable against application crash but the most recent commit(s) can
+    # roll back on OS crash / power loss. FULL closes that window at a write
+    # cost. Dev default stays NORMAL; production_mode forces FULL so the §6.4
+    # "durable audit record" guarantee holds through power loss.
+    sqlite_synchronous: str = "NORMAL"
+
     def __post_init__(self):
         """Phase E-1 — Apply production_mode lockdown if engaged."""
         if self.production_mode:
@@ -102,3 +112,4 @@ class RSSConfig:
             self.audit_failure_threshold = 1
             self.log_to_console = False
             self.require_genesis_file = True
+            self.sqlite_synchronous = "FULL"

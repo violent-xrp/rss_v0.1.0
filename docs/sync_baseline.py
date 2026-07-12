@@ -150,6 +150,96 @@ COVERAGE_LABELS = {
 }
 
 
+# ── Orphan-number guard (KL-18) ────────────────────────────────────────────
+# rewrite_common only touches numbers written in its known phrasings; a count
+# written any other way ("over 1,600 assertions", a number mid-sentence) went
+# stale silently and --check stayed clean. This guard scans the REWRITTEN text
+# for numbers adjacent to proof-claim trigger words and flags any that do not
+# match a live baseline value. Orphans cannot be auto-fixed (unknown phrasing):
+# fix the doc, extend the rewrite patterns, or add an explicit allowlist entry.
+
+# Historical archives legitimately carry old numbers and are excluded.
+ORPHAN_SCAN_EXCLUDE = {
+    "CHANGELOG.md",
+    "docs/roadmap/ACCEPTANCE_HISTORY.md",
+}
+
+# Explicit allowlist: (relative path, substring that must appear in the full
+# flagged line). Reserve for INTENTIONAL historical numbers in living docs;
+# archives (CHANGELOG, ACCEPTANCE_HISTORY) are already excluded wholesale.
+ORPHAN_ALLOWED: tuple = (
+    # ROADMAP CLOSED item recording the rc.1 acceptance snapshot — historical
+    # record, not a current claim (first live catch of this guard, 2026-07-06).
+    ("ROADMAP.md", "final rc.1 acceptance/sync pass was clean at 145 tests"),
+    ("ROADMAP.md", "assertions, 0 failures, and 92.2% coverage"),
+)
+
+ORPHAN_PATTERNS = (
+    re.compile(
+        r"\b(\d[\d,]*)\s+(?:test\s+functions?|assertions?|failures?|"
+        r"claim\s+tags?|mapped\s+(?:proof\s+)?claims?|claims\b|"
+        r"Pact\s+sections)",
+        re.IGNORECASE,
+    ),
+    re.compile(r"\b(\d[\d,]*)\s+tests\b"),
+    re.compile(r"\b(\d{1,3}(?:\.\d+)?)%\s*(?:statement\s+)?coverage\b", re.IGNORECASE),
+    re.compile(
+        r"<dt>([\d,]+(?:\.\d+)?%?)</dt>\s*<dd>(?:test functions|assertions|"
+        r"failures|statement coverage|mapped claims)</dd>"
+    ),
+)
+
+ORPHAN_THRESHOLD_RE = re.compile(
+    r"\b(?:floor|threshold|target|minimum|min|at\s+least|at\s+or\s+above|"
+    r"above|below|under)\b|>=|<=",
+    re.IGNORECASE,
+)
+
+
+def _orphan_allowed_values(baseline: Baseline) -> tuple[set, set]:
+    ints = {
+        value for value in (
+            baseline.test_functions, baseline.assertions, baseline.failures,
+            baseline.claim_tags, baseline.claim_tests, baseline.claim_sections,
+            baseline.source_modules,
+        ) if value is not None
+    }
+    floats = set()
+    if baseline.coverage_percent is not None:
+        floats.add(round(baseline.coverage_percent, 1))
+    for value in baseline.coverage_modules.values():
+        floats.add(round(value, 1))
+    return ints, floats
+
+
+def find_orphan_numbers(text: str, baseline: Baseline) -> list[tuple[int, str]]:
+    """Return (line_number, snippet) for numeric proof-claims that do not match
+    any live baseline value. Run on REWRITTEN text so numbers the sync already
+    maintains are current and anything left mismatched is a true orphan."""
+    allowed_ints, allowed_floats = _orphan_allowed_values(baseline)
+    orphans: list[tuple[int, str]] = []
+    for line_no, line in enumerate(text.splitlines(), start=1):
+        for pattern in ORPHAN_PATTERNS:
+            for match in pattern.finditer(line):
+                raw = match.group(1).replace(",", "").rstrip("%")
+                is_percent = "%" in match.group(0)
+                if is_percent and ORPHAN_THRESHOLD_RE.search(line):
+                    continue
+                try:
+                    if is_percent:
+                        # Coverage skipped (--no-cov) -> unverifiable, skip.
+                        if not allowed_floats:
+                            continue
+                        matched = round(float(raw), 1) in allowed_floats
+                    else:
+                        matched = int(raw) in allowed_ints
+                except ValueError:
+                    continue
+                if not matched:
+                    orphans.append((line_no, line.strip()))
+    return orphans
+
+
 def run_command(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         args,
@@ -447,10 +537,21 @@ def sync_one(relative: str, baseline: Baseline, check: bool) -> dict[str, object
     if changed and not check:
         path.write_text(rewritten, encoding="utf-8")
 
+    # KL-18 orphan-number guard — scan the rewritten text so anything the
+    # sync maintains is already current; leftovers are true orphans.
+    orphans: list[str] = []
+    if relative not in ORPHAN_SCAN_EXCLUDE:
+        for line_no, snippet in find_orphan_numbers(rewritten, baseline):
+            if any(relative == allowed_file and allowed_sub in snippet
+                   for allowed_file, allowed_sub in ORPHAN_ALLOWED):
+                continue
+            orphans.append(f"{relative}:{line_no}: {snippet}")
+
     return {
         "file": relative,
         "changed": changed,
         "status": "stale" if changed and check else "updated" if changed else "ok",
+        "orphans": orphans,
     }
 
 
@@ -563,9 +664,20 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(f"  [{marker:7}] {result['file']}")
 
     stale = any(result["changed"] for result in results)
+
+    # KL-18 — orphaned numeric claims block in BOTH modes: they cannot be
+    # auto-fixed and represent silent public-claim rot.
+    all_orphans = [line for result in results for line in result.get("orphans", [])]
+    if all_orphans:
+        print()
+        print("ORPHAN numeric claims (do not match live baseline; fix the doc,")
+        print("extend the rewrite patterns, or allowlist intentionally):")
+        for line in all_orphans:
+            print(f"  [ORPHAN ] {line}")
+
     print()
     if args.check:
-        print("RESULT: stale docs found." if stale else "RESULT: docs are synced.")
+        print("RESULT: stale docs found." if stale or all_orphans else "RESULT: docs are synced.")
     else:
         print("RESULT: docs updated." if stale else "RESULT: no doc changes needed.")
 
@@ -574,10 +686,13 @@ def main(argv: Optional[list[str]] = None) -> int:
         "results": results,
         "check": args.check,
         "stale_or_changed": stale,
+        "orphans": all_orphans,
     }
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))
 
+    if all_orphans:
+        return 1
     if args.check and stale:
         return 1
     if not baseline.clean:

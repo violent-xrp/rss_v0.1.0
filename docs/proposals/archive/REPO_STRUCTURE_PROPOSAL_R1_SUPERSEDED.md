@@ -1,6 +1,6 @@
 # RSS v0.1.0 — Repo Structure Proposal
 
-_Licensed under AGPLv3; see `../../../LICENSE/README.md`._
+_Licensed under AGPLv3; see `../../../LICENSE/LICENSE_INDEX.md`._
 
 **Archive status:** Superseded by the R1 package restructure. RSS now uses the
 `src/rss/` package tree with bounded subpackages, so this proposal is retained

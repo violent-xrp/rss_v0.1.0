@@ -1,6 +1,6 @@
 # RSS Action Plane
 
-_Licensed under AGPLv3; see `../LICENSE/README.md`._
+_Licensed under AGPLv3; see `../LICENSE/LICENSE_INDEX.md`._
 
 ## Status
 

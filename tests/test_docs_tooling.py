@@ -1,18 +1,18 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: Documentation Tooling Acceptance Proofs
-# Copyright (c) 2025-2026 Christian Robert Rose
+# Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
 # This software is released under a Dual-License model.
 #
 # 1. GNU Affero General Public License v3.0 (AGPLv3)
 #    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
+#    If you convey this software, or a work based on it, the combined work must
+#    be licensed as a whole under the AGPLv3 with source made available.
+#    Network use counts: if you run a modified version on a server and let users
+#    interact with it remotely, you must offer those users the complete
+#    corresponding source under the AGPLv3.
 #
 # 2. Commercial / Contractor License Exception
 #    If you wish to use this software in a closed-source, proprietary, or
@@ -21,6 +21,9 @@
 #    a separate Contractor License from the author.
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
+#
+# This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
+# where executed, a signed commercial agreement.
 # ==============================================================================
 """Generated documentation tooling proofs."""
 import importlib.util
@@ -200,5 +203,114 @@ def test_project_status_generator_renders_bounded_public_status_view():
               "project status hygiene-context path reads synced claim counts")
         check("**Status:** GREEN" in assumed_markdown,
               "project status hygiene-context path assumes prior hygiene gates passed")
+    finally:
+        shutil.rmtree(temp_root, ignore_errors=True)
+
+
+def _load_sync_baseline_module():
+    module_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "docs", "sync_baseline.py"))
+    spec = importlib.util.spec_from_file_location("rss_sync_baseline_for_test", module_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # required for @dataclass under 3.12+
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_claim_matrix_module():
+    module_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "docs", "build_claim_matrix.py"))
+    spec = importlib.util.spec_from_file_location("rss_build_claim_matrix_for_test", module_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_orphan_number_guard_flags_unrecognized_stale_counts():
+    # CLAIM: §0.7.3, §6.11 — orphan-number guard flags numeric proof-claims outside recognized phrasings that mismatch the live baseline (KL-18)
+    """KL-18: numbers near proof trigger words must match the live baseline."""
+    section("Orphan-Number Guard (KL-18)")
+
+    sb = _load_sync_baseline_module()
+    baseline = sb.Baseline(
+        test_functions=172, assertions=1655, failures=0,
+        source_modules=36, coverage_percent=87.0,
+        claim_sections=60, claim_tags=172, claim_tests=172,
+        coverage_modules={"oath.py": 97.3},
+    )
+
+    clean_text = """The suite holds 172 test functions and 1655 assertions with 0 failures.
+Coverage sits at 87.0% statement coverage across 36 source modules.
+172 claims mapped over 60 Pact sections; module oath.py at 97.3% coverage."""
+    check(sb.find_orphan_numbers(clean_text, baseline) == [],
+          "numbers matching the live baseline raise no orphans")
+
+    stale_text = """We now ship over 1,700 assertions in the suite.
+There are 999 test functions today.
+Coverage reached 50.0% statement coverage."""
+    orphans = sb.find_orphan_numbers(stale_text, baseline)
+    snippets = " | ".join(snippet for _line, snippet in orphans)
+    check(len(orphans) == 3, f"three mismatched claims flagged (got {len(orphans)})")
+    check("1,700 assertions" in snippets, "comma-formatted stale count caught")
+    check("999 test functions" in snippets, "unrecognized-phrasing stale count caught")
+    check("50.0%" in snippets, "stale coverage percent caught")
+
+    html_hit = sb.find_orphan_numbers("<dt>999</dt><dd>assertions</dd>", baseline)
+    check(len(html_hit) == 1, "site index dt/dd numeric claim validated too")
+
+    neutral = """Copyright 2026. Pact section 6.3.6 applies. The Morrison quote is $245,000.
+The 30/60/90-minute reviewer path is unchanged."""
+    check(sb.find_orphan_numbers(neutral, baseline) == [],
+          "dates, section refs, and dollar amounts do not false-positive")
+
+    thresholds = """every package module at or above 80% coverage
+every package module is at or above 85% coverage, or a documented exception is accepted
+current floor is >=85%"""
+    check(sb.find_orphan_numbers(thresholds, baseline) == [],
+          "coverage threshold/floor requirements do not false-positive as stale proof counts")
+
+    no_cov = sb.Baseline(test_functions=172, assertions=1655, failures=0)
+    check(sb.find_orphan_numbers("Coverage reached 50.0% statement coverage.", no_cov) == [],
+          "percent claims are skipped (not flagged) when coverage proof is unavailable")
+
+
+def test_claim_fidelity_floor_catches_vacuous_and_unanchored_claims():
+    # CLAIM: §0.7.3 — fidelity floor rejects claim tags without Pact sections and tests without assertions (KL-17 floor)
+    """KL-17 floor: vacuous tests and section-less claims cannot count as proof."""
+    section("Claim Fidelity Floor (KL-17)")
+
+    cm = _load_claim_matrix_module()
+    temp_root = tempfile.mkdtemp(prefix="rss_fidelity_floor_")
+    try:
+        good = Path(temp_root) / "test_good.py"
+        good.write_text(
+            "def test_real_proof():\n"
+            "    # CLAIM: §6.3.6 — something real\n"
+            "    check(1 == 1, 'real assertion')\n",
+            encoding="utf-8",
+        )
+        check(cm.verify_floor([good]) == [],
+              "assertion-bearing, section-cited claim passes the floor")
+
+        vacuous = Path(temp_root) / "test_vacuous.py"
+        vacuous.write_text(
+            "def test_hollow():\n"
+            "    # CLAIM: §6.3.6 — claims tamper detection\n"
+            "    value = 1 + 1\n",
+            encoding="utf-8",
+        )
+        violations = cm.verify_floor([vacuous])
+        check(len(violations) == 1 and "no assertion" in violations[0],
+              "claim-tagged test with no assertions is rejected as vacuous")
+
+        unanchored = Path(temp_root) / "test_unanchored.py"
+        unanchored.write_text(
+            "def test_floating():\n"
+            "    # CLAIM: Section 7.11.1 - written without the section glyph\n"
+            "    check(True, 'asserts fine but cites nothing parseable')\n",
+            encoding="utf-8",
+        )
+        violations2 = cm.verify_floor([unanchored])
+        check(len(violations2) == 1 and "no Pact section" in violations2[0],
+              "claim without a parseable §-reference is rejected "
+              "(the exact defect this floor caught live in test_audit_pact_canon_export)")
     finally:
         shutil.rmtree(temp_root, ignore_errors=True)

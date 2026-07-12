@@ -1,6 +1,6 @@
 # RSS External Map
 
-_Licensed under AGPLv3; see `../LICENSE/README.md`._
+_Licensed under AGPLv3; see `../LICENSE/LICENSE_INDEX.md`._
 
 This is a plain-English bridge for engineers and reviewers who are new to the RSS vocabulary.
 

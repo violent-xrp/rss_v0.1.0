@@ -1,18 +1,18 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: S5 — Tenant Containers (TECTON) (Layer 7)
-# Copyright (c) 2025-2026 Christian Robert Rose
+# Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
 # This software is released under a Dual-License model.
 #
 # 1. GNU Affero General Public License v3.0 (AGPLv3)
 #    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
+#    If you convey this software, or a work based on it, the combined work must
+#    be licensed as a whole under the AGPLv3 with source made available.
+#    Network use counts: if you run a modified version on a server and let users
+#    interact with it remotely, you must offer those users the complete
+#    corresponding source under the AGPLv3.
 #
 # 2. Commercial / Contractor License Exception
 #    If you wish to use this software in a closed-source, proprietary, or
@@ -21,6 +21,9 @@
 #    a separate Contractor License from the author.
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
+#
+# This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
+# where executed, a signed commercial agreement.
 # ==============================================================================
 """
 Tier 2 subsystem handle: tecton (serves the seats; holds no constitutional authority).
@@ -305,9 +308,17 @@ class TenantContainer:
         return self.state == "ACTIVE"
 
     def is_readable(self) -> bool:
-        """§5.2.5 — DESTROYED containers are inaccessible. SUSPENDED preserves data but blocks.
-        Only ACTIVE, CONFIGURED, and CREATED allow hub reads."""
-        return self.state not in ("DESTROYED", "SUSPENDED")
+        """§5.2.5 — DESTROYED containers are operationally inaccessible; every
+        other state preserves read access to hub data (ARCHIVED = "preserved
+        and non-operational"). SUSPENDED blocks request PROCESSING (§5.2.4:
+        only ACTIVE processes), not evidence reads — suspension is
+        operational, not consent revocation (§5.2.8).
+
+        (Phase-4 eval fix: this method previously claimed SUSPENDED blocked
+        reads, contradicting both the Pact and the actual read path, and had
+        no callers. It now matches §5.2.5 and is the single authority used by
+        get_container_hubs.)"""
+        return self.state != "DESTROYED"
 
 
 @dataclass
@@ -566,9 +577,11 @@ class Tecton:
     # ── Hub Access (§5.2.5, §5.9) ──
 
     def get_container_hubs(self, cid: str, hub: str) -> List[HubEntry]:
-        """§5.2.5 — DESTROYED containers are inaccessible through normal access."""
+        """§5.2.5 — DESTROYED containers are inaccessible through normal access.
+        Readability is decided by TenantContainer.is_readable() — one authority
+        for the rule instead of a duplicated state check."""
         c = self._get(cid)
-        if c.state == "DESTROYED":
+        if not c.is_readable():
             raise TectonError(f"Cannot access hubs on DESTROYED container: {cid} (§5.2.5)")
         return c.hubs.list_hub(hub)
 

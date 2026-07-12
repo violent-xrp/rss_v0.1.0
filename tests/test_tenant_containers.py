@@ -1,18 +1,18 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: Tenant Container Acceptance Proofs
-# Copyright (c) 2025-2026 Christian Robert Rose
+# Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
 # This software is released under a Dual-License model.
 #
 # 1. GNU Affero General Public License v3.0 (AGPLv3)
 #    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
+#    If you convey this software, or a work based on it, the combined work must
+#    be licensed as a whole under the AGPLv3 with source made available.
+#    Network use counts: if you run a modified version on a server and let users
+#    interact with it remotely, you must offer those users the complete
+#    corresponding source under the AGPLv3.
 #
 # 2. Commercial / Contractor License Exception
 #    If you wish to use this software in a closed-source, proprietary, or
@@ -21,6 +21,9 @@
 #    a separate Contractor License from the author.
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
+#
+# This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
+# where executed, a signed commercial agreement.
 # ==============================================================================
 """TECTON tenant/container lifecycle and isolation proofs.
 
@@ -211,6 +214,25 @@ def test_s5_destroyed_inaccessibility():
             ContainerRequest(c.container_id, "ᚱ", {"text": "quote"}), runtime)
         check(resp.result["error"] == "CONTAINER_NOT_ACTIVE",
               "DESTROYED container blocks requests (§5.2.5)")
+
+        # §5.2.8 / §5.2.5 boundary (Phase-4 eval fix): SUSPENDED blocks request
+        # PROCESSING but preserves read access — suspension is operational,
+        # not consent revocation. Only DESTROYED is unreadable.
+        c2 = tecton.create_container("Johnson", "T-0")
+        tecton.activate_container(c2.container_id)
+        tecton.add_container_entry(c2.container_id, "WORK", "Johnson data")
+        tecton.suspend_container(c2.container_id, reason="test: suspension read semantics")
+        check(c2.is_readable() is True,
+              "SUSPENDED container remains readable (§5.2.8: operational, not revocation)")
+        suspended_entries = tecton.get_container_hubs(c2.container_id, "WORK")
+        check(len(suspended_entries) == 1,
+              "SUSPENDED hub data reachable through get_container_hubs")
+        resp2 = tecton.process_request(
+            ContainerRequest(c2.container_id, "ᚱ", {"text": "quote"}), runtime)
+        check(resp2.result["error"] == "CONTAINER_NOT_ACTIVE",
+              "SUSPENDED still blocks request processing (§5.2.4 only-ACTIVE)")
+        check(c.is_readable() is False,
+              "DESTROYED is the only unreadable state (is_readable authority)")
 
         runtime.persistence.close()
     finally:

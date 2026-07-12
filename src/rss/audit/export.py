@@ -1,18 +1,18 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: TRACE Export — JSON & Text Audit Reports
-# Copyright (c) 2025-2026 Christian Robert Rose
+# Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
 # This software is released under a Dual-License model.
 #
 # 1. GNU Affero General Public License v3.0 (AGPLv3)
 #    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
+#    If you convey this software, or a work based on it, the combined work must
+#    be licensed as a whole under the AGPLv3 with source made available.
+#    Network use counts: if you run a modified version on a server and let users
+#    interact with it remotely, you must offer those users the complete
+#    corresponding source under the AGPLv3.
 #
 # 2. Commercial / Contractor License Exception
 #    If you wish to use this software in a closed-source, proprietary, or
@@ -21,6 +21,9 @@
 #    a separate Contractor License from the author.
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
+#
+# This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
+# where executed, a signed commercial agreement.
 # ==============================================================================
 """
 RSS v0.1.0 — TRACE Export
@@ -283,6 +286,10 @@ def export_trace_json(trace: AuditLog, path: str, container_id: Optional[str] = 
             "content_hash": e.content_hash,
             "byte_length": e.byte_length,
             "parent_hash": e.parent_hash,
+            # §6.3.6 v2 — with payload_hash + hash_version in the export, a
+            # third party can recompute v2 envelope hashes independently.
+            "payload_hash": getattr(e, "payload_hash", None),
+            "hash_version": getattr(e, "hash_version", 1),
         })
 
     output = {
@@ -401,11 +408,18 @@ def export_from_db(persistence: Persistence, path: str, fmt: str = "json") -> in
                 "content_hash": e.content_hash,
                 "byte_length": e.byte_length,
                 "parent_hash": e.parent_hash,
+                # §6.3.6 v2 — same recomputability fields as the live export;
+                # the cold path is the auditor surface, so it must not carry
+                # less evidence than the live one.
+                "payload_hash": getattr(e, "payload_hash", None),
+                "hash_version": getattr(e, "hash_version", 1),
             })
 
         output = {
             "export_time": datetime.now(UTC).isoformat(),
             "event_count": len(records),
+            # chain_valid reports linkage-level validity (§6.10.3). Envelope
+            # recomputation is the cold verifier's job (audit/verify.py).
             "chain_valid": chain_valid,
             "source": "SQLite",
             "redline_sanitized": len(redline_ids) > 0,

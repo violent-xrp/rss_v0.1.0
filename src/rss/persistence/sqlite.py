@@ -1,18 +1,18 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: Persistence Layer (SQLite + WAL)
-# Copyright (c) 2025-2026 Christian Robert Rose
+# Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
 # This software is released under a Dual-License model.
 #
 # 1. GNU Affero General Public License v3.0 (AGPLv3)
 #    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
+#    If you convey this software, or a work based on it, the combined work must
+#    be licensed as a whole under the AGPLv3 with source made available.
+#    Network use counts: if you run a modified version on a server and let users
+#    interact with it remotely, you must offer those users the complete
+#    corresponding source under the AGPLv3.
 #
 # 2. Commercial / Contractor License Exception
 #    If you wish to use this software in a closed-source, proprietary, or
@@ -21,6 +21,9 @@
 #    a separate Contractor License from the author.
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
+#
+# This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
+# where executed, a signed commercial agreement.
 # ==============================================================================
 """
 Tier 2 subsystem handle: store (serves the seats; holds no constitutional authority).
@@ -49,13 +52,28 @@ from rss.audit.log import TraceEvent
 # Bump this whenever a migration lands in _migrate_hub_entries() or elsewhere.
 # On bootstrap, a mismatch between stored version and this constant triggers
 # migration + a SCHEMA_MIGRATED TRACE event (emitted by Runtime, not Persistence,
-# because Persistence is constructed before Runtime has a TRACE log).
-CURRENT_SCHEMA_VERSION = 2
+# because Persistence is constructed first).
+# v3: trace_events gains payload_hash + hash_version (§6.3.6 v2 chain envelope).
+CURRENT_SCHEMA_VERSION = 3
+
+
+# §6.5.1 — PRAGMA synchronous levels this layer will accept. Whitelisted
+# because PRAGMA statements cannot take bound parameters.
+_VALID_SYNCHRONOUS = ("NORMAL", "FULL", "EXTRA")
 
 
 class Persistence:
-    def __init__(self, db_path: str):
+    def __init__(self, db_path: str, synchronous: str = "NORMAL"):
         self.db_path = db_path
+
+        # §6.4.1 durability posture — see RSSConfig.sqlite_synchronous.
+        sync = str(synchronous).strip().upper()
+        if sync not in _VALID_SYNCHRONOUS:
+            raise ValueError(
+                f"Invalid synchronous level '{synchronous}' "
+                f"(expected one of {_VALID_SYNCHRONOUS})"
+            )
+        self._synchronous = sync
 
         # allow multi-thread access
         self.conn = sqlite3.connect(
@@ -76,6 +94,7 @@ class Persistence:
         self._configure_db()
         self._create_tables()
         self._migrate_hub_entries()
+        self._migrate_trace_events()
 
     # -----------------------------------------------------
     # DB Configuration (Production Safety)
@@ -83,7 +102,9 @@ class Persistence:
     def _configure_db(self) -> None:
         with self.conn:
             self.conn.execute("PRAGMA journal_mode=WAL;")
-            self.conn.execute("PRAGMA synchronous=NORMAL;")
+            # Value whitelisted in __init__ (_VALID_SYNCHRONOUS); PRAGMAs
+            # cannot take bound parameters.
+            self.conn.execute(f"PRAGMA synchronous={self._synchronous};")
             self.conn.execute("PRAGMA foreign_keys=ON;")
 
     # -----------------------------------------------------
@@ -99,7 +120,9 @@ class Persistence:
                 artifact_id TEXT,
                 content_hash TEXT,
                 byte_length INTEGER,
-                parent_hash TEXT
+                parent_hash TEXT,
+                payload_hash TEXT,
+                hash_version INTEGER DEFAULT 1
             )""",
             """CREATE TABLE IF NOT EXISTS hub_entries (
                 id TEXT PRIMARY KEY,
@@ -229,6 +252,30 @@ class Persistence:
             self.migration_occurred = True
             self.migration_details = changes
 
+    def _migrate_trace_events(self) -> None:
+        """§6.3.6 v2 / §6.8.2 — Add payload_hash + hash_version columns when
+        upgrading from a pre-v2-envelope database. Additive and idempotent.
+        Existing rows keep hash_version's DEFAULT of 1 (legacy linkage-only
+        verification); historical events are never rewritten (§6.8.1)."""
+        changes: list = []
+        with self._lock:
+            cur = self.conn.execute("PRAGMA table_info(trace_events)")
+            columns = {row[1] for row in cur.fetchall()}
+            if "payload_hash" not in columns:
+                self.conn.execute(
+                    "ALTER TABLE trace_events ADD COLUMN payload_hash TEXT"
+                )
+                changes.append("trace_events.payload_hash")
+            if "hash_version" not in columns:
+                self.conn.execute(
+                    "ALTER TABLE trace_events ADD COLUMN hash_version INTEGER DEFAULT 1"
+                )
+                changes.append("trace_events.hash_version")
+
+        if changes:
+            self.migration_occurred = True
+            self.migration_details = list(self.migration_details) + changes
+
     # -----------------------------------------------------
     # Schema Version (§6.7.3)
     # -----------------------------------------------------
@@ -263,8 +310,8 @@ class Persistence:
             self.conn.execute(
                 """INSERT INTO trace_events
                 (timestamp,event_code,authority,artifact_id,
-                 content_hash,byte_length,parent_hash)
-                 VALUES(?,?,?,?,?,?,?)""",
+                 content_hash,byte_length,parent_hash,payload_hash,hash_version)
+                 VALUES(?,?,?,?,?,?,?,?,?)""",
                 (
                     event.timestamp.isoformat(),
                     event.event_code,
@@ -273,6 +320,8 @@ class Persistence:
                     event.content_hash,
                     event.byte_length,
                     event.parent_hash,
+                    event.payload_hash,
+                    event.hash_version,
                 ),
             )
 
@@ -280,7 +329,8 @@ class Persistence:
         with self._lock:
             cur = self.conn.execute(
                 """SELECT timestamp,event_code,authority,artifact_id,
-                          content_hash,byte_length,parent_hash
+                          content_hash,byte_length,parent_hash,
+                          payload_hash,hash_version
                    FROM trace_events ORDER BY id"""
             )
 
@@ -293,6 +343,8 @@ class Persistence:
                     content_hash=r[4],
                     byte_length=r[5],
                     parent_hash=r[6],
+                    payload_hash=r[7],
+                    hash_version=r[8] if r[8] is not None else 1,
                 )
                 for r in cur.fetchall()
             ]
@@ -460,40 +512,62 @@ class Persistence:
             )
 
     def save_ratified_amendment(self, proposal, record) -> None:
-        """Persist ratified proposal state and AmendmentRecord atomically."""
-        with self._lock, self.conn:
-            self.conn.execute(
-                "INSERT OR REPLACE INTO amendment_proposals VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                (
-                    proposal.proposal_id,
-                    proposal.section_id,
-                    proposal.rationale,
-                    proposal.proposed_text,
-                    proposal.proposed_at.isoformat(),
-                    proposal.status,
-                    proposal.reviewer,
-                    proposal.review_verdict,
-                    proposal.review_notes,
-                    proposal.reviewed_at.isoformat() if proposal.reviewed_at else None,
-                    int(proposal.sovereign_override),
-                ),
-            )
-            self.conn.execute(
-                "INSERT OR REPLACE INTO amendment_records VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                (
-                    record.proposal_id,
-                    record.section_id,
-                    record.old_version,
-                    record.new_version,
-                    record.old_hash,
-                    record.new_hash,
-                    record.rationale,
-                    record.ratified_at.isoformat(),
-                    int(record.sovereign_override),
-                    record.reviewer,
-                    record.review_notes,
-                ),
-            )
+        """Persist ratified proposal state and AmendmentRecord atomically.
+
+        §6.5.3 — This is the one multi-statement governed write in the layer.
+        The connection runs with isolation_level=None (autocommit), where the
+        `with self.conn:` context manager issues no BEGIN and provides no
+        atomicity, so this method opens an explicit transaction: either both
+        rows commit or neither does. A crash mid-ceremony must never leave a
+        proposal marked ratified without its amendment record (§7 history).
+        """
+        with self._lock:
+            self.conn.execute("BEGIN IMMEDIATE")
+            try:
+                self._insert_ratified_rows(proposal, record)
+                self.conn.execute("COMMIT")
+            except BaseException:
+                try:
+                    self.conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass  # connection unusable; the open transaction dies with it
+                raise
+
+    def _insert_ratified_rows(self, proposal, record) -> None:
+        """The two INSERTs of save_ratified_amendment. Split out so the
+        transaction wrapper stays readable; caller owns lock + transaction."""
+        self.conn.execute(
+            "INSERT OR REPLACE INTO amendment_proposals VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                proposal.proposal_id,
+                proposal.section_id,
+                proposal.rationale,
+                proposal.proposed_text,
+                proposal.proposed_at.isoformat(),
+                proposal.status,
+                proposal.reviewer,
+                proposal.review_verdict,
+                proposal.review_notes,
+                proposal.reviewed_at.isoformat() if proposal.reviewed_at else None,
+                int(proposal.sovereign_override),
+            ),
+        )
+        self.conn.execute(
+            "INSERT OR REPLACE INTO amendment_records VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                record.proposal_id,
+                record.section_id,
+                record.old_version,
+                record.new_version,
+                record.old_hash,
+                record.new_hash,
+                record.rationale,
+                record.ratified_at.isoformat(),
+                int(record.sovereign_override),
+                record.reviewer,
+                record.review_notes,
+            ),
+        )
 
     def load_amendment_proposals(self) -> List[dict]:
         """Load all SEAL amendment proposal lifecycle objects."""

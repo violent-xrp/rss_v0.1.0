@@ -1,8 +1,22 @@
 # Contributing to RSS v0.1.0
 
-_Licensed under AGPLv3; see `LICENSE/README.md`._
+_Licensed under AGPLv3; see `LICENSE/LICENSE_INDEX.md`._
 
 Thank you for helping harden RSS.
+
+## Contribution licensing
+
+RSS is dual-licensed: AGPLv3 by default, with a commercial exception path granted only by signed agreement (see `LICENSE/COMMERCIAL_LICENSE.md`). For that model to stay honest, contribution terms must be explicit rather than implied.
+
+By submitting a contribution (pull request, patch, or otherwise), you agree that:
+- your contribution is licensed under AGPLv3, the same terms as the codebase (inbound = outbound)
+- you additionally grant the maintainer a perpetual, worldwide, non-exclusive, royalty-free right to license your contribution, as part of RSS, under alternative terms — including the commercial exception path. Without this grant, the dual-license model would silently break on the first merged contribution.
+- you wrote the contribution yourself, or otherwise have the right to submit it under these terms
+- you retain your own copyright; this is a license grant, not an assignment
+
+The Pact (`pact/`) is licensed separately under CC BY-ND 4.0 and is not open to contribution. Pact text changes are sovereign amendments (§7 ceremony), not pull requests; PRs that modify `pact/*.md` will be closed.
+
+If you cannot agree to these terms, do not submit code — open an issue describing the change instead, so it can be implemented independently.
 
 ## Merge standard
 A change is only acceptable if it improves or preserves truth.
@@ -29,7 +43,7 @@ python tests/test_all.py
 ```
 Current expected final line:
 ```text
-RSS v0.1.0 - 169 test functions, 1605 assertions passed, 0 failed
+RSS v0.1.0 - 174 test functions, 1673 assertions passed, 0 failed
 ```
 
 If `pytest` is installed, parity check:

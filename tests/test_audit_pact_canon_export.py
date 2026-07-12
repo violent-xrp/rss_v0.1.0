@@ -1,18 +1,18 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: Pact Canon Export Acceptance Proofs
-# Copyright (c) 2025-2026 Christian Robert Rose
+# Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
 # This software is released under a Dual-License model.
 #
 # 1. GNU Affero General Public License v3.0 (AGPLv3)
 #    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
+#    If you convey this software, or a work based on it, the combined work must
+#    be licensed as a whole under the AGPLv3 with source made available.
+#    Network use counts: if you run a modified version on a server and let users
+#    interact with it remotely, you must offer those users the complete
+#    corresponding source under the AGPLv3.
 #
 # 2. Commercial / Contractor License Exception
 #    If you wish to use this software in a closed-source, proprietary, or
@@ -21,6 +21,9 @@
 #    a separate Contractor License from the author.
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
+#
+# This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
+# where executed, a signed commercial agreement.
 # ==============================================================================
 """Pact canon-to-file export proofs."""
 import io
@@ -157,7 +160,7 @@ def _build_export_fixture(root: Path):
 
 
 def test_pact_canon_export_dry_run_refuses_unsafe_paths():
-    # CLAIM: Section 7.11.1 - canon-to-file export stays guarded and refuses unsafe bases
+    # CLAIM: §7.11.1 — canon-to-file export stays guarded and refuses unsafe bases
     section("Pact Canon Export: Dry-Run Refusals")
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -183,7 +186,7 @@ def test_pact_canon_export_dry_run_refuses_unsafe_paths():
 
 
 def test_pact_canon_export_write_requires_t0_and_syncs_drift():
-    # CLAIM: Section 7.11.1 - canon-to-file export writes require T-0 and converge drift to IN_SYNC
+    # CLAIM: §7.11.1 — canon-to-file export writes require T-0 and converge drift to IN_SYNC
     section("Pact Canon Export: Guarded Write")
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -206,7 +209,7 @@ def test_pact_canon_export_write_requires_t0_and_syncs_drift():
 
 
 def test_pact_canon_export_first_canon_requires_explicit_base_hash():
-    # CLAIM: Section 7.11.1 - first canon export needs an explicit accepted base hash
+    # CLAIM: §7.11.1 — first canon export needs an explicit accepted base hash
     section("Pact Canon Export: First Canon Base Hash")
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -229,7 +232,7 @@ def test_pact_canon_export_first_canon_requires_explicit_base_hash():
 
 
 def test_pact_canon_export_cli_defaults_to_dry_run():
-    # CLAIM: Section 7.11.1 - canon export CLI defaults to dry-run and refuses unsafe writes
+    # CLAIM: §7.11.1 — canon export CLI defaults to dry-run and refuses unsafe writes
     section("Pact Canon Export: CLI Safety")
 
     with tempfile.TemporaryDirectory() as tmp:

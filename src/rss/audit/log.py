@@ -1,18 +1,18 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
 # Module: TRACE — Hash-Chained Audit Log (Layer 1)
-# Copyright (c) 2025-2026 Christian Robert Rose
+# Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
 # This software is released under a Dual-License model.
 #
 # 1. GNU Affero General Public License v3.0 (AGPLv3)
 #    You may use, distribute, and modify this code under the terms of the AGPLv3.
-#    If you modify or distribute this software, or integrate it into your own
-#    project, your entire project must also be open-sourced under the AGPLv3.
-#    Network use is distribution: if you run a modified version of this software
-#    on a server and allow users to interact with it remotely, you must make the
-#    complete corresponding source code available to those users under AGPLv3.
+#    If you convey this software, or a work based on it, the combined work must
+#    be licensed as a whole under the AGPLv3 with source made available.
+#    Network use counts: if you run a modified version on a server and let users
+#    interact with it remotely, you must offer those users the complete
+#    corresponding source under the AGPLv3.
 #
 # 2. Commercial / Contractor License Exception
 #    If you wish to use this software in a closed-source, proprietary, or
@@ -21,6 +21,9 @@
 #    a separate Contractor License from the author.
 #
 # Contact: christain@rosesigilsystems.com  (Subject: "RSS Commercial License")
+#
+# This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
+# where executed, a signed commercial agreement.
 # ==============================================================================
 """
 RSS v0.1.0 — Layer 1: TRACE (Audit Log)
@@ -31,17 +34,29 @@ Callers may pass strings, bytes, or structured values (dict/list). Structured
 values are serialized via canonical_json (sorted keys, compact separators,
 UTF-8) before hashing to ensure cross-platform determinism.
 
-§6.3.6 — Full-envelope chain hashing (v0.1.0 pre-release hardening).
-Each event's content_hash is computed over a canonical envelope that includes
-timestamp, event_code, authority, artifact_id, the content payload, and the
-parent_hash. This makes every event's hash unique even when the free-text
-summary string repeats across rows, and makes any mutation — insertion,
-deletion, reordering, substitution — detectable at the chain-walk level.
+§6.3.6 — Full-envelope chain hashing.
+v1 (historical): content_hash was computed over {timestamp, event_code,
+authority, artifact_id, raw content, parent_hash}. Because the raw payload is
+never persisted, v1 hashes cannot be recomputed after the fact — verification
+of v1 events is linkage-only (parent_hash == previous content_hash). Linkage
+detects insertion, deletion, reordering, and edits to the hash columns
+themselves; it does NOT detect in-place edits to the stored metadata fields
+(timestamp, event_code, authority, artifact_id, byte_length) of an existing
+row when the hash columns are left untouched.
+
+v2 (current): the envelope hashes {timestamp, event_code, authority,
+artifact_id, payload_hash, byte_length, parent_hash}, where payload_hash is
+the content-only SHA-256 (hash_content). Every field that participates in the
+v2 envelope is persisted, so content_hash is fully recomputable from stored
+columns — any mutation of any stored field on a v2 row is detectable by
+recomputation (verify_chain_deep, boot verification, cold verifier) without
+ever persisting the raw payload. Payload *authenticity* still requires the
+original payload; what v2 adds is stored-field tamper evidence.
 
 CHAIN_HASH_VERSION is a forward-compatibility marker. Any future change to
 the hash envelope MUST bump this constant, and the cold verifier and
 persistence layer MUST branch on it to preserve detectability of historical
-chains. Older chains without an explicit version are treated as v1.
+chains (see audit/migrate.py). Events without an explicit version are v1.
 """
 from __future__ import annotations
 
@@ -54,9 +69,11 @@ from typing import Any, List, Optional
 
 
 # §6.3.6 — Chain-hash algorithm version. Bumped on any envelope-shape change.
-# Current envelope (v1):
+# v1 envelope (historical, linkage-only verification):
 #   {timestamp, event_code, authority, artifact_id, content, parent_hash}
-CHAIN_HASH_VERSION = 1
+# v2 envelope (current, fully recomputable from persisted columns):
+#   {timestamp, event_code, authority, artifact_id, payload_hash, byte_length, parent_hash}
+CHAIN_HASH_VERSION = 2
 
 
 def canonical_json(value: Any) -> bytes:
@@ -97,6 +114,33 @@ class AuditLogError(Exception):
     """Raised when an audit log operation fails."""
 
 
+def envelope_hash_v2(
+    timestamp_iso: str,
+    event_code: str,
+    authority: str,
+    artifact_id: str,
+    payload_hash: str,
+    byte_length: int,
+    parent_hash: Optional[str],
+) -> str:
+    """§6.3.6 — Compute the v2 chain envelope hash from persisted-field values.
+    Used by record_event at creation AND by verify_chain_deep at recomputation
+    time. The cold verifier (audit/verify.py) keeps a byte-identical inline
+    copy because it is deliberately zero-dependency; any change here must be
+    mirrored there and requires a CHAIN_HASH_VERSION bump."""
+    envelope = {
+        "v": 2,
+        "timestamp": timestamp_iso,
+        "event_code": event_code,
+        "authority": authority,
+        "artifact_id": artifact_id,
+        "payload_hash": payload_hash,
+        "byte_length": byte_length,
+        "parent_hash": parent_hash or "",
+    }
+    return hashlib.sha256(canonical_json(envelope)).hexdigest()
+
+
 @dataclass
 class TraceEvent:
     timestamp: datetime
@@ -106,6 +150,11 @@ class TraceEvent:
     content_hash: str
     byte_length: int
     parent_hash: Optional[str] = None
+    # §6.3.6 v2 — content-only SHA-256 of the payload; None on historical v1
+    # rows (payload was hashed into the envelope directly, never persisted).
+    payload_hash: Optional[str] = None
+    # §6.3.6 — per-event chain-hash version. 1 = legacy linkage-only rows.
+    hash_version: int = 1
 
 
 @dataclass
@@ -192,13 +241,23 @@ class AuditLog:
         return {"error": f"Unknown action: {action}"}
 
     def append(self, event: TraceEvent) -> None:
+        """§6.2.2 — Append-time envelope validation. Malformed events do not
+        enter the chain. Full mandatory-field validation (§6.2.1) applies:
+        record_event() is the governed constructor; this is the last gate.
+        Takes the chain lock so a direct append cannot interleave with a
+        record_event() parent-read in another thread."""
         if not event.event_code:
             raise AuditLogError("TraceEvent.event_code must not be empty.")
         if not event.artifact_id:
             raise AuditLogError("TraceEvent.artifact_id must not be empty.")
+        if not event.authority:
+            raise AuditLogError("TraceEvent.authority must not be empty.")
+        if not event.content_hash:
+            raise AuditLogError("TraceEvent.content_hash must not be empty.")
         if event.byte_length < 0:
             raise AuditLogError("TraceEvent.byte_length must be non-negative.")
-        self._events.append(event)
+        with self._lock:
+            self._events.append(event)
 
     def all_events(self) -> List[TraceEvent]:
         return list(self._events)
@@ -267,11 +326,12 @@ class AuditLog:
     ) -> TraceEvent:
         """§6.3.3, §6.3.6 — Append a new event to the chain.
 
-        Hash envelope (v1) includes timestamp, event_code, authority,
-        artifact_id, content, and parent_hash. Every event therefore has a
-        unique content_hash even when the free-text summary repeats across
-        rows, so the chain walk detects insertion, deletion, reordering,
-        and substitution — not only direct hash-field edits.
+        Hash envelope (v2) covers timestamp, event_code, authority,
+        artifact_id, payload_hash, byte_length, and parent_hash — every field
+        that is persisted. content_hash is therefore recomputable from stored
+        columns alone: any mutation of a stored field on a v2 row is
+        detectable by recomputation, and duplicate summary content cannot
+        collide into the same hash.
 
         Args:
             event_code: Registered event code (§6.6.4).
@@ -300,19 +360,20 @@ class AuditLog:
 
             timestamp = datetime.now(UTC)
 
-            # §6.3.6 — Full-envelope hash. All fields that identify the event
-            # participate, so duplicate summary content cannot collide into the
-            # same hash, and any mutation breaks the downstream link check.
-            envelope = {
-                "v": CHAIN_HASH_VERSION,
-                "timestamp": timestamp.isoformat(),
-                "event_code": event_code,
-                "authority": authority,
-                "artifact_id": artifact_id,
-                "content": _normalize_content_for_hash(content),
-                "parent_hash": parent_hash or "",
-            }
-            content_hash = hashlib.sha256(canonical_json(envelope)).hexdigest()
+            # §6.3.6 v2 — Full-envelope hash over persisted fields only.
+            # payload_hash stands in for the raw content, so the envelope is
+            # recomputable post-hoc from the stored row without ever
+            # persisting the payload itself.
+            payload_hash = self.hash_content(content)
+            content_hash = envelope_hash_v2(
+                timestamp_iso=timestamp.isoformat(),
+                event_code=event_code,
+                authority=authority,
+                artifact_id=artifact_id,
+                payload_hash=payload_hash,
+                byte_length=len(content_bytes),
+                parent_hash=parent_hash,
+            )
 
             event = TraceEvent(
                 timestamp=timestamp,
@@ -322,24 +383,67 @@ class AuditLog:
                 content_hash=content_hash,
                 byte_length=len(content_bytes),
                 parent_hash=parent_hash,
+                payload_hash=payload_hash,
+                hash_version=CHAIN_HASH_VERSION,
             )
             self.append(event)
             return event
 
     def verify_chain(self) -> bool:
-        """Verify the in-memory hash chain is link-consistent.
+        """Verify the in-memory hash chain is link-consistent (fast path).
 
         Walks each event and checks that parent_hash equals the previous
-        event's content_hash. This catches insertion, deletion, reordering,
-        and substitution, subject to the §6.3.6 envelope covering all
-        identifying fields.
+        event's content_hash. Linkage catches insertion, deletion, and
+        reordering. It does NOT recompute envelope hashes, so an in-place
+        field edit that preserves the hash columns is not detected here —
+        use verify_chain_deep() for that (v2 rows only; §6.3.6).
 
-        NOTE: This check cannot detect coordinated rewrites performed with
-        full knowledge of the hash algorithm (see THREAT_MODEL §2.7) and
-        cannot detect truncation of the chain's tail. External anchoring
-        is the Phase H remediation.
+        NOTE: No walk can detect coordinated rewrites performed with full
+        knowledge of the hash algorithm (see THREAT_MODEL §2.7) or
+        truncation of the chain's tail. External anchoring is the Phase H
+        remediation.
         """
         for i in range(1, len(self._events)):
             if self._events[i].parent_hash != self._events[i - 1].content_hash:
                 return False
+        return True
+
+    def verify_chain_deep(self) -> bool:
+        """§6.3.6 v2 — Linkage check PLUS envelope-hash recomputation.
+
+        For every event with hash_version >= 2 (which persists payload_hash),
+        recomputes the v2 envelope hash from the event's stored fields and
+        compares it to content_hash — detecting in-place mutation of ANY
+        stored field, not just the hash columns. v1 events (hash_version 1 /
+        no payload_hash) are verified by linkage only, preserving historical
+        chains (§6.8.1: no rewrite of past events).
+
+        Used by boot verification (§6.11.3). The cold verifier applies the
+        same rule to cold SQLite files.
+        """
+        if not self.verify_chain():
+            return False
+        max_version_seen = 0
+        for e in self._events:
+            # Downgrade guard: versions are monotonically non-decreasing in
+            # append order (v1 prefix from before the upgrade, v2 tail after).
+            # A v2 row re-marked v1 to dodge recomputation breaks this rule.
+            if e.hash_version < max_version_seen:
+                return False
+            max_version_seen = max(max_version_seen, e.hash_version)
+            if e.hash_version >= 2:
+                # A v2 row must carry its payload_hash; a NULLed one is tamper.
+                if e.payload_hash is None:
+                    return False
+                recomputed = envelope_hash_v2(
+                    timestamp_iso=e.timestamp.isoformat(),
+                    event_code=e.event_code,
+                    authority=e.authority,
+                    artifact_id=e.artifact_id,
+                    payload_hash=e.payload_hash,
+                    byte_length=e.byte_length,
+                    parent_hash=e.parent_hash,
+                )
+                if recomputed != e.content_hash:
+                    return False
         return True
