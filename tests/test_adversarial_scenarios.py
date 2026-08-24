@@ -527,7 +527,7 @@ def test_domain_pack_equivalence():
 
 
 def test_exception_context_leak():
-    """Gemini Addition #1: Crash mid-pipeline for Tenant A, then immediately
+    """Adversarial probe: crash mid-pipeline for Tenant A, then immediately
     fire Tenant B. Verify B doesn't wake up inside A's ghost context."""
     # CLAIM: §5.1.1 — exception in tenant A does not leak context or data to tenant B
     section("ADVERSARIAL: Exception Context Leak (Panic Bleed)")
@@ -658,7 +658,7 @@ def test_idempotence_replay():
 
 
 def test_instructional_override():
-    """Gemini Addition #2: Feed the LLM a prompt demanding SCOPE bypass.
+    """Adversarial probe: feed the LLM a prompt demanding SCOPE bypass.
     Prove the semantic routing physically cannot access restricted hubs
     regardless of how aggressively the prompt demands it."""
     # CLAIM: §4.2.3, §4.7.6 — jailbreak attempts cannot surface PERSONAL or REDLINE
@@ -997,13 +997,16 @@ def test_scenario_tamper_recovery():
         # Tamper the database
         import sqlite3
         conn = sqlite3.connect(path)
+        original_hash = conn.execute(
+            "SELECT content_hash FROM trace_events WHERE id=3"
+        ).fetchone()[0]
         conn.execute("UPDATE trace_events SET content_hash='TAMPERED' WHERE id=3")
         conn.commit()
         conn.close()
 
         # Session 2: Boot detects tamper
         rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
-        boot = rss2.verify_boot_chain()
+        boot = rss2.pre_emission_boot_chain_verification
         check(boot["verified"] is False,
               "SCEN-TR2: boot-time verification detects tamper")
         check(rss2.is_safe_stopped()["active"] is True,
@@ -1014,17 +1017,43 @@ def test_scenario_tamper_recovery():
         check(r.get("error") == "SAFE_STOP_ACTIVE",
               "SCEN-TR4: all requests blocked during Safe-Stop")
 
-        # T-0 recovery
-        rss2.clear_safe_stop(t0_command=True)
-        check(rss2.is_safe_stopped()["active"] is False,
-              "SCEN-TR5: T-0 clears Safe-Stop")
+        # T-0 cannot clear an integrity halt while the audit head is unknown.
+        clear_refused = False
+        try:
+            rss2.clear_safe_stop(t0_command=True)
+        except AuditLogError:
+            clear_refused = True
+        check(clear_refused and rss2.is_safe_stopped()["active"] is True,
+              "SCEN-TR5: T-0 clear is refused until TRACE is repaired")
+        rss2.persistence.close()
+
+        # Out-of-band evidence repair restores the exact archived hash. A fresh
+        # bootstrap must verify that repair before the explicit T-0 clear.
+        conn = sqlite3.connect(path)
+        conn.execute(
+            "UPDATE trace_events SET content_hash=? WHERE id=3",
+            (original_hash,),
+        )
+        conn.commit()
+        conn.close()
+
+        rss3 = bootstrap(RSSConfig(db_path=path), restore=True)
+        check(
+            rss3.pre_emission_boot_chain_verification["verified"] is True
+            and rss3.is_safe_stopped()["active"] is True,
+            "SCEN-TR6: repaired TRACE verifies while Safe-Stop remains active",
+        )
+        cleared = rss3.clear_safe_stop(t0_command=True)
+        check(cleared.get("status") == "CLEARED"
+              and rss3.is_safe_stopped()["active"] is False,
+              "SCEN-TR7: T-0 clears Safe-Stop only after verified restart")
 
         # System resumes
-        r2 = rss2.process_request("quote", use_llm=False)
+        r2 = rss3.process_request("quote", use_llm=False)
         check("error" not in r2,
-              "SCEN-TR6: governed operation resumes after recovery")
+              "SCEN-TR8: governed operation resumes after verified recovery")
 
-        rss2.persistence.close()
+        rss3.persistence.close()
     finally:
         _cleanup_db(path)
 

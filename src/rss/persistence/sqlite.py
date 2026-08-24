@@ -306,6 +306,13 @@ class Persistence:
     # TRACE
     # -----------------------------------------------------
     def save_trace_event(self, event: TraceEvent) -> None:
+        """Atomically insert one TRACE row and return only after commit.
+
+        This connection uses SQLite autocommit, so the single INSERT is the
+        atomic commit boundary. ``has_trace_event`` lets the governed AuditLog
+        resolve an adapter that reports an exception after the INSERT already
+        committed.
+        """
         with self._lock, self.conn:
             self.conn.execute(
                 """INSERT INTO trace_events
@@ -324,6 +331,25 @@ class Persistence:
                     event.hash_version,
                 ),
             )
+
+    def has_trace_event(self, event: TraceEvent) -> bool:
+        """Return whether this exact v2 envelope hash is durably present.
+
+        ``content_hash`` commits every persisted envelope field for v2 events,
+        so an exact hash lookup is the canonical commit-outcome confirmation.
+        Historical rows are never staged through the current durable writer.
+        """
+        with self._lock:
+            # A row visible only inside an open transaction is not yet durable.
+            # The governed writer commits before returning; treat any lingering
+            # transaction as an unconfirmed outcome rather than a success.
+            if self.conn.in_transaction:
+                return False
+            row = self.conn.execute(
+                "SELECT 1 FROM trace_events WHERE content_hash=? LIMIT 1",
+                (event.content_hash,),
+            ).fetchone()
+            return row is not None
 
     def load_all_trace(self) -> List[TraceEvent]:
         with self._lock:

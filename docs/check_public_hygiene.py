@@ -68,11 +68,6 @@ ALLOWED_PROVENANCE_NAME_HITS = (
         line_contains=("Co" + "pilot",),
     ),
     AllowedProvenanceNameHit(
-        "tests/test_adversarial_scenarios.py",
-        "Intentional historical reviewer labels in test docstrings.",
-        line_contains=("Addition #",),
-    ),
-    AllowedProvenanceNameHit(
         "tests/test_core_runtime.py",
         "Intentional external-name sanitizer fixture.",
         line_contains=("Chat" + "GPT",),
@@ -92,11 +87,6 @@ ALLOWED_PROVENANCE_NAME_HITS = (
         "Intentional amendment-attribution fixture.",
         line_contains=("reviewer ==", "Chat" + "GPT"),
     ),
-    AllowedProvenanceNameHit(
-        "tests/test_tenant_containers.py",
-        "Intentional reviewer-label comment for tenant scenarios.",
-        line_contains=("D-5", "five scenarios"),
-    ),
 )
 
 
@@ -105,11 +95,11 @@ ALLOWED_PROVENANCE_NAME_HITS = (
 # tracked/public docs (the "agnostic promotion boundary"). T-0 is intentionally excluded:
 # it is the constitutional sovereign term and appears legitimately across the Pact and
 # public docs.
-CALLSIGN_TERMS = ("AGIDE", "AG", "GM", "CL", "CX", "CR")
+CALLSIGN_TERMS = ("A" + "GIDE", "A" + "G", "G" + "M", "C" + "L", "C" + "X", "C" + "R")
 
 # Scoped surface: tracked *markdown* docs most at risk of leaking a callsign. Code (src/,
 # tests/, lab/) and built HTML/asset output are skipped on purpose — the short callsigns
-# (AG, GM, CL, CX, CR) are high false-positive substrings there (e.g. base64 image blobs
+# operational labels are high false-positive substrings there (e.g. base64 image blobs
 # in generated HTML). Unambiguous external names are already covered for all files by the
 # provenance scan above.
 CALLSIGN_SCAN_DIRS = ("docs/", "pact/")

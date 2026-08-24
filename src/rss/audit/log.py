@@ -65,7 +65,7 @@ import json
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, UTC
-from typing import Any, List, Optional
+from typing import Any, Callable, List, Optional
 
 
 # §6.3.6 — Chain-hash algorithm version. Bumped on any envelope-shape change.
@@ -157,6 +157,36 @@ class TraceEvent:
     hash_version: int = 1
 
 
+class AuditPersistenceError(AuditLogError):
+    """Raised when durable TRACE persistence fails before memory append.
+
+    ``cause`` preserves the storage-layer exception so Runtime can maintain its
+    consecutive-failure policy without confusing event-construction errors
+    with persistence failures.
+    """
+
+    def __init__(
+        self,
+        event: TraceEvent,
+        cause: Exception,
+        confirmation_error: Optional[Exception] = None,
+    ):
+        self.event = event
+        self.cause = cause
+        self.confirmation_error = confirmation_error
+        self.outcome_unknown = confirmation_error is not None
+        confirmation_detail = (
+            f"; commit confirmation also failed: {confirmation_error}"
+            if confirmation_error is not None
+            else ""
+        )
+        super().__init__(
+            f"Durable TRACE persistence failed for "
+            f"{event.event_code}/{event.artifact_id}: {cause}"
+            f"{confirmation_detail}"
+        )
+
+
 @dataclass
 class AuditLog:
     """Append-only, hash-chained audit log. No delete method exists.
@@ -170,6 +200,10 @@ class AuditLog:
     _known_codes: Optional[frozenset] = None
     _strict_codes: bool = False
     _warned_codes: set = field(default_factory=set)
+    # Set only when a persistence callback raises and the durable store cannot
+    # answer whether the staged row committed. Governed durable appends remain
+    # blocked until a fresh runtime restores and verifies the cold chain.
+    _durability_uncertain: bool = field(default=False, compare=False, repr=False)
     # record_event reads the parent hash, computes the next hash, and appends.
     # That sequence must be atomic or concurrent callers can fork the chain.
     _lock: Any = field(default_factory=threading.RLock, compare=False, repr=False)
@@ -219,6 +253,7 @@ class AuditLog:
             "event_count": len(self._events),
             "chain_valid": self.verify_chain(),
             "last_event": self._events[-1].event_code if self._events else None,
+            "durability_uncertain": self._durability_uncertain,
         }
 
     def handle(self, task: dict) -> dict:
@@ -240,12 +275,9 @@ class AuditLog:
             return {"event_code": None}
         return {"error": f"Unknown action: {action}"}
 
-    def append(self, event: TraceEvent) -> None:
-        """§6.2.2 — Append-time envelope validation. Malformed events do not
-        enter the chain. Full mandatory-field validation (§6.2.1) applies:
-        record_event() is the governed constructor; this is the last gate.
-        Takes the chain lock so a direct append cannot interleave with a
-        record_event() parent-read in another thread."""
+    @staticmethod
+    def _validate_event(event: TraceEvent) -> None:
+        """Validate the complete persisted envelope before any append/write."""
         if not event.event_code:
             raise AuditLogError("TraceEvent.event_code must not be empty.")
         if not event.artifact_id:
@@ -256,6 +288,58 @@ class AuditLog:
             raise AuditLogError("TraceEvent.content_hash must not be empty.")
         if event.byte_length < 0:
             raise AuditLogError("TraceEvent.byte_length must be non-negative.")
+
+    def _build_event_locked(
+        self,
+        event_code: str,
+        authority: str,
+        artifact_id: str,
+        content: Any,
+        parent_hash: Optional[str] = None,
+    ) -> TraceEvent:
+        """Build and fully validate an event without mutating the chain.
+
+        The caller must hold ``self._lock`` from this parent read through the
+        eventual append. Both governed constructors below do so.
+        """
+        self._validate_code(event_code)
+        content_bytes = self._to_bytes(content)
+
+        if parent_hash is None and self._events:
+            parent_hash = self._events[-1].content_hash
+
+        timestamp = datetime.now(UTC)
+        payload_hash = self.hash_content(content)
+        content_hash = envelope_hash_v2(
+            timestamp_iso=timestamp.isoformat(),
+            event_code=event_code,
+            authority=authority,
+            artifact_id=artifact_id,
+            payload_hash=payload_hash,
+            byte_length=len(content_bytes),
+            parent_hash=parent_hash,
+        )
+        event = TraceEvent(
+            timestamp=timestamp,
+            event_code=event_code,
+            authority=authority,
+            artifact_id=artifact_id,
+            content_hash=content_hash,
+            byte_length=len(content_bytes),
+            parent_hash=parent_hash,
+            payload_hash=payload_hash,
+            hash_version=CHAIN_HASH_VERSION,
+        )
+        self._validate_event(event)
+        return event
+
+    def append(self, event: TraceEvent) -> None:
+        """§6.2.2 — Append-time envelope validation. Malformed events do not
+        enter the chain. Full mandatory-field validation (§6.2.1) applies:
+        record_event() is the governed constructor; this is the last gate.
+        Takes the chain lock so a direct append cannot interleave with a
+        record_event() parent-read in another thread."""
+        self._validate_event(event)
         with self._lock:
             self._events.append(event)
 
@@ -348,45 +432,77 @@ class AuditLog:
         Raises:
             AuditLogError: When the event_code is not registered (strict mode).
         """
-        self._validate_code(event_code)
+        with self._lock:
+            event = self._build_event_locked(
+                event_code,
+                authority,
+                artifact_id,
+                content,
+                parent_hash,
+            )
+            self._events.append(event)
+            return event
 
-        # byte_length tracks the raw payload size (semantics unchanged).
-        content_bytes = self._to_bytes(content)
+    def record_event_durable(
+        self,
+        event_code: str,
+        authority: str,
+        artifact_id: str,
+        content: Any,
+        persist_event: Callable[[TraceEvent], None],
+        confirm_persisted: Optional[Callable[[TraceEvent], bool]] = None,
+        parent_hash: Optional[str] = None,
+    ) -> TraceEvent:
+        """Build, persist, then expose an event under one chain lock.
+
+        The complete event is validated before the persistence callback runs.
+        The callback must return only after its durable commit. If it raises,
+        ``confirm_persisted`` resolves the otherwise ambiguous commit outcome:
+        a confirmed row is appended in memory, while a confirmed rejection
+        leaves memory unchanged and raises AuditPersistenceError. Runtime wires
+        both callbacks to the same SQLite store and lock order. Callers that do
+        not provide confirmation must guarantee that callback failure means no
+        durable row was committed. The ordinary record_event() method remains
+        the explicit in-memory-only path.
+        """
+        if not callable(persist_event):
+            raise AuditLogError("persist_event must be callable.")
+        if confirm_persisted is not None and not callable(confirm_persisted):
+            raise AuditLogError("confirm_persisted must be callable when provided.")
 
         with self._lock:
-            # Auto-chain: use last event's hash as parent if not provided.
-            if parent_hash is None and self._events:
-                parent_hash = self._events[-1].content_hash
-
-            timestamp = datetime.now(UTC)
-
-            # §6.3.6 v2 — Full-envelope hash over persisted fields only.
-            # payload_hash stands in for the raw content, so the envelope is
-            # recomputable post-hoc from the stored row without ever
-            # persisting the payload itself.
-            payload_hash = self.hash_content(content)
-            content_hash = envelope_hash_v2(
-                timestamp_iso=timestamp.isoformat(),
-                event_code=event_code,
-                authority=authority,
-                artifact_id=artifact_id,
-                payload_hash=payload_hash,
-                byte_length=len(content_bytes),
-                parent_hash=parent_hash,
+            if self._durability_uncertain:
+                raise AuditLogError(
+                    "Durable TRACE outcome is unresolved; restart and cold-verify "
+                    "before another governed append."
+                )
+            event = self._build_event_locked(
+                event_code,
+                authority,
+                artifact_id,
+                content,
+                parent_hash,
             )
-
-            event = TraceEvent(
-                timestamp=timestamp,
-                event_code=event_code,
-                authority=authority,
-                artifact_id=artifact_id,
-                content_hash=content_hash,
-                byte_length=len(content_bytes),
-                parent_hash=parent_hash,
-                payload_hash=payload_hash,
-                hash_version=CHAIN_HASH_VERSION,
-            )
-            self.append(event)
+            try:
+                persist_event(event)
+            except Exception as exc:
+                if confirm_persisted is not None:
+                    try:
+                        committed = confirm_persisted(event)
+                    except Exception as confirmation_error:
+                        self._durability_uncertain = True
+                        raise AuditPersistenceError(
+                            event,
+                            exc,
+                            confirmation_error=confirmation_error,
+                        ) from confirmation_error
+                    if committed:
+                        # The adapter reported an error after the durable commit.
+                        # Durable truth wins: reconcile memory to the stored head.
+                        self._events.append(event)
+                        return event
+                raise AuditPersistenceError(event, exc) from exc
+            self._events.append(event)
             return event
 
     def verify_chain(self) -> bool:

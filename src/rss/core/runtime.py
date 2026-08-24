@@ -37,7 +37,7 @@ from typing import Any, Dict, Optional
 
 from rss.governance.constitution import verify_integrity, SafeStopTriggered
 from rss.core.config import RSSConfig
-from rss.audit.log import AuditLog
+from rss.audit.log import AuditLog, AuditLogError, AuditPersistenceError
 from rss.governance.seats.ward import Ward
 from rss.governance.seats.scope import Scope, ScopeError
 from rss.hubs.topology import HubTopology
@@ -179,6 +179,10 @@ class Runtime:
         )
         self.llm = LLMAdapter(self.config)
         self.restore_warnings = []
+        # Populated by bootstrap after TRACE restoration and before normal boot
+        # emissions. This non-emitting result is the restart recovery gate for
+        # both persisted halts and unmarked prior audit uncertainty.
+        self.pre_emission_boot_chain_verification = None
 
         # Phase D-0 — Unified TRACE: construct TECTON here and attach this
         # runtime so container lifecycle/request events flow through
@@ -342,11 +346,24 @@ class Runtime:
         if not t0.allowed:
             return {"error": "T0_COMMAND_REQUIRED",
                     "reason": "Only T-0 may clear Safe-Stop (§0.5.2)"}
-        if not self.persistence.is_safe_stopped().get("active"):
-            return {"status": "NO_OP", "reason": "not_halted"}
-        self.persistence.clear_safe_stop()
-        self._log("SAFE_STOP_CLEARED", "SYSTEM", "T-0 cleared Safe-Stop")
-        return {"status": "CLEARED"}
+        # Linearize the uncertainty check, durable clear, and receipt with the
+        # same lock as _log. Otherwise a concurrent unknown TRACE outcome can
+        # latch between the check and deletion, leaving the system unhalted
+        # with no trustworthy receipt. This does not yet solve a direct receipt
+        # persistence failure after deletion; that is the next atomic-clear
+        # invariant.
+        with self.trace._lock:
+            if not self.persistence.is_safe_stopped().get("active"):
+                return {"status": "NO_OP", "reason": "not_halted"}
+            if self.trace.status()["durability_uncertain"]:
+                raise AuditLogError(
+                    "Cannot clear Safe-Stop while TRACE durability is unresolved; "
+                    "repair the chain and restart so pre-emission verification can "
+                    "establish a known durable head."
+                )
+            self.persistence.clear_safe_stop()
+            self._log("SAFE_STOP_CLEARED", "SYSTEM", "T-0 cleared Safe-Stop")
+            return {"status": "CLEARED"}
 
     def is_safe_stopped(self) -> dict:
         """Check persistent Safe-Stop state."""
@@ -463,10 +480,62 @@ class Runtime:
                   f"Chain valid across {event_count} events")
         return {"verified": True, "reason": f"Chain valid across {event_count} events"}
 
+    def verify_pre_emission_boot_chain(self) -> dict:
+        """Verify restored TRACE before bootstrap emits any new event.
+
+        This non-emitting gate ensures that an ambiguous prior commit or
+        tampered chain is verified from SQLite before the fresh runtime can
+        append. It runs on every bootstrap because a prior attempt to persist
+        Safe-Stop may itself have failed, leaving no durable uncertainty
+        marker. Failure latches AuditLog closed; bootstrap persists Safe-Stop
+        directly where possible without emitting onto the invalid chain.
+        """
+        try:
+            memory_hashes = [
+                event.content_hash for event in self.trace.all_events()
+            ]
+            durable_hashes = [
+                event.content_hash for event in self.persistence.load_all_trace()
+            ]
+            if memory_hashes != durable_hashes:
+                reason = "Pre-emission TRACE memory/SQLite parity check failed"
+                self.trace._durability_uncertain = True
+                return {"verified": False, "reason": reason, "mode": "PARITY"}
+
+            db_path = str(self.config.db_path)
+            if db_path == ":memory:":
+                verified = self.trace.verify_chain_deep()
+                reason = (
+                    "In-memory TRACE deep verification passed"
+                    if verified
+                    else "In-memory TRACE deep verification failed"
+                )
+                mode = "IN_MEMORY_DEEP"
+            else:
+                from rss.audit.verify import verify_trace_file
+
+                result = verify_trace_file(db_path)
+                verified = bool(result.get("verified"))
+                reason = result.get("reason", "Cold TRACE verification failed")
+                mode = "COLD_FILE"
+
+            if not verified:
+                self.trace._durability_uncertain = True
+            return {"verified": verified, "reason": reason, "mode": mode}
+        except Exception as exc:
+            self.trace._durability_uncertain = True
+            return {
+                "verified": False,
+                "reason": f"Pre-emission TRACE verification raised: {exc}",
+                "mode": "ERROR",
+            }
+
     def _log(self, code: str, artifact_id: str, content: str):
         """Record event to TRACE and persist.
-        Write-Ahead Guarantee (Pact §0.8.3): if audit write fails, execution aborts.
-        No operation may proceed without a durable audit record.
+        Write-Ahead Guarantee (Pact §0.8.3): if audit persistence fails, this
+        logging path raises before exposing the event in memory. Callers that
+        mutate governed state before invoking _log still require separate
+        transaction/state coupling to provide operation-level atomicity.
 
         §6.4.4 — Phase C G-7: Consecutive-failure tracking. A single write
         failure aborts the current operation. N consecutive failures (where
@@ -475,18 +544,63 @@ class Runtime:
         every successful write, so transient failures (brief lock contention,
         retryable errors) don't accumulate toward the threshold.
         """
-        # Hold the TRACE chain lock across append and persistence so persisted
-        # row order matches hash-chain order under concurrent callers.
+        # Keep event outcome AND streak bookkeeping under the same ordering
+        # lock. AuditLog re-enters this RLock while staging/persisting/appending;
+        # the outer hold prevents a later failure from being reset by an earlier
+        # successful write whose bookkeeping had not yet completed.
         with self.trace._lock:
-            event = self.trace.record_event(code, "RUNTIME", artifact_id, content)
             try:
-                self.persistence.save_trace_event(event)
-                # §6.4.4 — Success resets the streak
+                self.trace.record_event_durable(
+                    code,
+                    "RUNTIME",
+                    artifact_id,
+                    content,
+                    persist_event=self.persistence.save_trace_event,
+                    confirm_persisted=self.persistence.has_trace_event,
+                )
+                # §6.4.4 — Success (including a reconciled durable commit)
+                # resets the streak.
                 self._audit_failure_streak = 0
-            except Exception as e:
+            except AuditPersistenceError as failure:
+                error = failure.cause
                 # §6.4.4 — Increment consecutive-failure counter
                 self._audit_failure_streak += 1
                 threshold = getattr(self.config, "audit_failure_threshold", 3)
+
+                if failure.outcome_unknown:
+                    # The store could not confirm whether the staged row
+                    # committed. AuditLog latches durable appends closed so a
+                    # later event cannot choose the wrong parent. Persist the
+                    # halt directly: emitting a TRACE receipt is unsafe until a
+                    # fresh runtime restores and cold-verifies the real head.
+                    reason = (
+                        "TRACE commit outcome unknown; governed appends are "
+                        f"blocked pending restart and cold verification. {failure}"
+                    )
+                    halt_error = None
+                    try:
+                        self.persistence.enter_safe_stop(reason)
+                    except Exception as exc:
+                        halt_error = exc
+                    halt_detail = (
+                        " Safe-Stop persistence also failed; no durable "
+                        "recovery fence was recorded. Do not resume until an "
+                        f"operator completes cold TRACE verification: {halt_error}."
+                        if halt_error is not None
+                        else ""
+                    )
+                    recovery_direction = (
+                        "This runtime remains audit-latched. "
+                        if halt_error is not None
+                        else "Restart will cold-verify the SQLite chain before "
+                             "appends resume. "
+                    )
+                    raise RuntimeError(
+                        f"TRACE COMMIT OUTCOME UNKNOWN for {code}/{artifact_id}. "
+                        "Further governed audit appends in this runtime are "
+                        f"blocked. {recovery_direction}"
+                        f"Detail: {failure}.{halt_detail}"
+                    ) from error
 
                 # If we've hit the threshold, enter persistent Safe-Stop.
                 # We do this BEFORE raising the RuntimeError so the caller sees
@@ -500,7 +614,7 @@ class Runtime:
                         reason = (
                             f"Persistent audit failure (§6.4.4): "
                             f"{self._audit_failure_streak} consecutive write failures "
-                            f"(threshold={threshold}). Last error: {e}"
+                            f"(threshold={threshold}). Last error: {error}"
                         )
                         self.enter_safe_stop(reason)
                     except Exception:
@@ -512,8 +626,8 @@ class Runtime:
                     f"WRITE-AHEAD FAILURE (Pact §0.8.3): Audit write failed for "
                     f"{code}/{artifact_id}. Aborting operation. "
                     f"Consecutive failures: {self._audit_failure_streak}/{threshold}. "
-                    f"Detail: {e}"
-                ) from e
+                    f"Detail: {error}"
+                ) from error
 
     # §6.9.7 — Phase C G-6: State criticality classification.
     # CRITICAL categories trigger persistent Safe-Stop on load failure.
@@ -591,8 +705,28 @@ class Runtime:
         try:
             saved_events = self.persistence.load_all_trace()
         except Exception as e:
-            self._handle_restore_failure("trace_events", e)
-            return 0
+            # TRACE is the evidence surface needed to emit a trustworthy
+            # restore-failure receipt. If its rows cannot even deserialize,
+            # the generic critical-state handler would call enter_safe_stop()
+            # and fork a new event from an empty in-memory head. Latch first
+            # and persist the halt directly, without touching TRACE.
+            reason = (
+                "§6.9.7 CRITICAL state restore failure: "
+                f"category='trace_events' raised {type(e).__name__}: {e}. "
+                "System cannot safely continue without this state."
+            )
+            self.trace._durability_uncertain = True
+            halt_error = None
+            try:
+                self.persistence.enter_safe_stop(reason)
+            except Exception as exc:
+                halt_error = exc
+            halt_detail = (
+                f" Safe-Stop persistence also failed: {halt_error}."
+                if halt_error is not None
+                else ""
+            )
+            raise RuntimeError(reason + halt_detail) from e
         if saved_events:
             self.trace._events = list(saved_events)
         return len(saved_events)
@@ -1303,6 +1437,40 @@ def bootstrap(config=None, restore: bool = False) -> Runtime:
     # any new TRACE event. This preserves parent_hash continuity even when the
     # caller intentionally leaves non-audit state unrestored with restore=False.
     runtime.restore_trace_chain_for_boot()
+
+    # Verify every restored TRACE head before migration TRACE emission, schema
+    # stamping, restore, default authority, or any other normal boot work can
+    # emit against it. This must not depend on Safe-Stop: the attempt to persist
+    # that recovery fence can fail. Persistence.__init__ may already have
+    # applied a schema migration before Runtime exists; constructor ordering is
+    # a separately tracked hardening phase.
+    runtime.pre_emission_boot_chain_verification = (
+        runtime.verify_pre_emission_boot_chain()
+    )
+    if not runtime.pre_emission_boot_chain_verification["verified"]:
+        reason = runtime.pre_emission_boot_chain_verification["reason"]
+        halt_error = None
+        if not ss["active"]:
+            try:
+                runtime.persistence.enter_safe_stop(
+                    f"Pre-emission TRACE chain verification failed: {reason}"
+                )
+            except Exception as exc:
+                halt_error = exc
+        halt_detail = (
+            f"; Safe-Stop persistence also failed: {halt_error}"
+            if halt_error is not None
+            else ""
+        )
+        print(
+            "  *** PRE-EMISSION TRACE VERIFICATION FAILED: "
+            f"{reason}{halt_detail} ***"
+        )
+        print(
+            "  *** Repair TRACE and restart before attempting T-0 "
+            "Safe-Stop clear. ***"
+        )
+        return runtime
 
     # §6.8.3 — If Persistence applied migrations during construction, emit the
     # SCHEMA_MIGRATED event now that TRACE is wired up.

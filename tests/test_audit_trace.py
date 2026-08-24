@@ -1337,11 +1337,12 @@ def test_a1_restore_false_boot_continues_persisted_trace_chain():
 
 
 def test_a1_boot_verification_catches_persisted_tamper():
-    """A1-2: Boot-time verification now detects tampering in the persisted chain.
+    """A1-2: Pre-emission boot verification detects persisted tampering.
 
     This is the bug fix test: previously, tampering a persisted row would
     NOT be detected at boot because restore_from_db never loaded the events.
-    Now, verify_boot_chain() walks the loaded historical chain and catches it."""
+    The non-emitting preflight now walks the restored historical chain and
+    refuses normal boot work before adding evidence to a broken chain."""
     # CLAIM: §6.3.5, §6.11.3 — persisted-chain tamper caught at boot
     section("Phase A.1: Boot Verification Catches Persisted Chain Tamper")
 
@@ -1352,6 +1353,7 @@ def test_a1_boot_verification_catches_persisted_tamper():
         rss1 = bootstrap(RSSConfig(db_path=path))
         rss1.process_request("quote", use_llm=False)
         rss1.process_request("RFI", use_llm=False)
+        persisted_count = rss1.persistence.event_count()
         rss1.persistence.close()
 
         # Tamper with a row directly in SQLite (cold tamper)
@@ -1363,8 +1365,8 @@ def test_a1_boot_verification_catches_persisted_tamper():
         raw.commit()
         raw.close()
 
-        # Session 2: boot with restore — this should detect the tamper
-        # and enter Safe-Stop during verify_boot_chain()
+        # Session 2: boot with restore — this should detect the tamper before
+        # any migration, restore, authority, or verification receipt is emitted.
         rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
 
         check(rss2.is_safe_stopped()["active"] is True,
@@ -1374,11 +1376,13 @@ def test_a1_boot_verification_catches_persisted_tamper():
         check("chain" in ss["reason"].lower() or "integrity" in ss["reason"].lower(),
               "Safe-Stop reason mentions chain/integrity failure")
 
-        # BOOT_CHAIN_BROKEN should be the last substantive event (may be
-        # followed by SAFE_STOP_ENTERED which is also expected)
-        codes = [e.event_code for e in rss2.trace.all_events()]
-        check("BOOT_CHAIN_BROKEN" in codes,
-              "BOOT_CHAIN_BROKEN event emitted when persisted chain is tampered")
+        preflight = rss2.pre_emission_boot_chain_verification
+        check(preflight is not None and preflight["verified"] is False,
+              "pre-emission verifier returns a negative verdict on persisted tamper")
+        check(rss2.trace.status()["durability_uncertain"] is True,
+              "persisted tamper latches governed TRACE append closed")
+        check(rss2.persistence.event_count() == persisted_count,
+              "persisted tamper boot emits no event onto the invalid chain")
 
         rss2.persistence.close()
     finally:
@@ -1709,6 +1713,65 @@ def test_probe_hash_envelope_version_marker_present():
           "Probe-E3: CHAIN_HASH_VERSION is at v2 — payload_hash envelope, "
           "recomputable from persisted columns "
           "(next bump requires cold-verifier + persistence migration)")
+
+
+def test_v2_runtime_cold_verifier_hash_parity():
+    """§6.3.6 — Runtime and zero-dependency cold hashing stay byte-identical.
+
+    The cold verifier deliberately mirrors the runtime's canonical JSON and
+    v2 envelope functions instead of importing them. Boot preflight now relies
+    on that independent implementation, so this registered proof localizes any
+    future drift between the two copies before it can change boot decisions.
+    """
+    # CLAIM: §6.3.6 — runtime and cold-verifier v2 canonical bytes and envelope hashes are identical
+    section("Probe E2 — Runtime / Cold-Verifier Hash Parity (§6.3.6)")
+
+    from rss.audit.log import canonical_json, envelope_hash_v2
+    from rss.audit.verify import _canonical_json_bytes, _envelope_hash_v2
+
+    log = AuditLog()
+    event = log.record_event(
+        "PARITY_EVT",
+        "TRACE",
+        "ART-parity-α",
+        {"z": "snowman ☃", "a": [1, True, None]},
+    )
+    envelope = {
+        "v": 2,
+        "timestamp": event.timestamp.isoformat(),
+        "event_code": event.event_code,
+        "authority": event.authority,
+        "artifact_id": event.artifact_id,
+        "payload_hash": event.payload_hash,
+        "byte_length": event.byte_length,
+        "parent_hash": event.parent_hash or "",
+    }
+
+    runtime_bytes = canonical_json(envelope)
+    cold_bytes = _canonical_json_bytes(envelope)
+    check(runtime_bytes == cold_bytes,
+          "Probe-E2.1: runtime and cold verifier emit byte-identical canonical JSON")
+
+    runtime_hash = envelope_hash_v2(
+        timestamp_iso=event.timestamp.isoformat(),
+        event_code=event.event_code,
+        authority=event.authority,
+        artifact_id=event.artifact_id,
+        payload_hash=event.payload_hash,
+        byte_length=event.byte_length,
+        parent_hash=event.parent_hash,
+    )
+    cold_hash = _envelope_hash_v2(
+        event.timestamp.isoformat(),
+        event.event_code,
+        event.authority,
+        event.artifact_id,
+        event.payload_hash,
+        event.byte_length,
+        event.parent_hash,
+    )
+    check(runtime_hash == cold_hash == event.content_hash,
+          "Probe-E2.2: runtime event and cold verifier produce the same v2 envelope hash")
 
 
 def test_probe_container_filter_prefix_boundary():

@@ -484,8 +484,11 @@ def test_pre_seal_drift_check():
 
 
 def test_write_ahead_guarantee():
-    # CLAIM: §0.8.3, §6.4.4 — audit write-ahead guarantee
-    section("Write-Ahead Guarantee (Pact §0.8.3)")
+    # CLAIM: §0.8.3, §6.4.4 — TRACE append parity and ordered audit-failure tracking; governed-state/receipt coupling is a separate open invariant
+    section("TRACE Write-Ahead Parity (Pact §0.8.3)")
+
+    import threading
+    from rss.audit.verify import verify_trace_file
 
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
@@ -500,6 +503,15 @@ def test_write_ahead_guarantee():
         r = rss.process_request("quote", use_llm=False)
         check("error" not in r, "normal request works with audit")
 
+        memory_before = rss.trace.all_events()
+        durable_before = rss.persistence.load_all_trace()
+        hashes_before = [event.content_hash for event in memory_before]
+        check(
+            hashes_before == [event.content_hash for event in durable_before],
+            "pre-failure TRACE memory and SQLite chains are identical",
+        )
+        head_before = rss.trace.last_event().content_hash
+
         # Test 1: _log raises RuntimeError when audit write fails
         original_save = rss.persistence.save_trace_event
         def broken_save(event):
@@ -513,11 +525,34 @@ def test_write_ahead_guarantee():
             raised = True
             check("WRITE-AHEAD" in str(e), "error message cites Pact §0.8.3")
         check(raised, "_log raises RuntimeError when audit write fails")
+        check(
+            [event.content_hash for event in rss.trace.all_events()] == hashes_before,
+            "failed durable append leaves the in-memory chain unchanged",
+        )
+        check(
+            [event.content_hash for event in rss.persistence.load_all_trace()]
+            == hashes_before,
+            "failed durable append leaves the SQLite chain unchanged",
+        )
+        check(
+            rss.trace.last_event().content_hash == head_before,
+            "failed durable append preserves the shared TRACE head",
+        )
+        check(
+            rss.trace.verify_chain_deep(),
+            "in-memory TRACE remains deep-valid after failed persistence",
+        )
 
         # Test 2: Pipeline returns error when audit write fails mid-request
         r = rss.process_request("RFI", use_llm=False)
         check(r.get("error") == "UNEXPECTED_ERROR",
               "pipeline aborts when audit write fails")
+        check(
+            [event.content_hash for event in rss.trace.all_events()] == hashes_before
+            and [event.content_hash for event in rss.persistence.load_all_trace()]
+            == hashes_before,
+            "aborted pipeline leaves memory and SQLite at the same prior head",
+        )
 
         # Test 3: Restore audit and verify system recovers
         rss.persistence.save_trace_event = original_save
@@ -526,7 +561,746 @@ def test_write_ahead_guarantee():
         r = rss.process_request("quote", use_llm=False)
         check("error" not in r, "system recovers after audit restored")
 
+        # Test 4: If an adapter reports an exception after SQLite already
+        # committed, durable-outcome confirmation must reconcile memory to the
+        # stored head instead of manufacturing the inverse divergence.
+        def committed_then_raised(event):
+            original_save(event)
+            raise sqlite3.OperationalError("adapter failed after commit")
+
+        rss.persistence.save_trace_event = committed_then_raised
+        rss._audit_failure_streak = 7
+        rss._log("TEST", "POST-COMMIT", "durable before adapter exception")
+        check(
+            rss._audit_failure_streak == 0,
+            "confirmed post-commit adapter error reconciles as durable success",
+        )
+        check(
+            [event.content_hash for event in rss.trace.all_events()]
+            == [event.content_hash for event in rss.persistence.load_all_trace()],
+            "post-commit exception reconciliation preserves TRACE parity",
+        )
+        rss.persistence.save_trace_event = original_save
+
+        # Test 5: Success/failure streak bookkeeping follows the same serialized
+        # order as TRACE persistence. The successful writer pauses after its
+        # durable append; the failed writer must not overtake its streak reset.
+        original_record_durable = rss.trace.record_event_durable
+        success_ready = threading.Event()
+        release_success = threading.Event()
+        failed_writer_entered_persistence = threading.Event()
+        success_errors = []
+        failure_results = []
+
+        def paused_record_durable(event_code, authority, artifact_id, content,
+                                  **kwargs):
+            event = original_record_durable(
+                event_code, authority, artifact_id, content, **kwargs
+            )
+            if artifact_id == "RACE-SUCCESS":
+                success_ready.set()
+                if not release_success.wait(timeout=5):
+                    raise RuntimeError("timed out waiting to release success writer")
+            return event
+
+        def race_save(event):
+            if event.artifact_id == "RACE-FAIL":
+                failed_writer_entered_persistence.set()
+                raise sqlite3.OperationalError("ordered race failure")
+            original_save(event)
+
+        def successful_writer():
+            try:
+                rss._log("TEST", "RACE-SUCCESS", "success")
+            except Exception as exc:
+                success_errors.append(exc)
+
+        def failed_writer():
+            try:
+                rss._log("TEST", "RACE-FAIL", "failure")
+            except RuntimeError as exc:
+                failure_results.append("WRITE-AHEAD" in str(exc))
+
+        rss.trace.record_event_durable = paused_record_durable
+        rss.persistence.save_trace_event = race_save
+        success_thread = threading.Thread(target=successful_writer)
+        failure_thread = threading.Thread(target=failed_writer)
+        success_thread.start()
+        ready = success_ready.wait(timeout=5)
+        failure_thread.start()
+        failure_overtook = failed_writer_entered_persistence.wait(timeout=0.5)
+        release_success.set()
+        success_thread.join(timeout=5)
+        failure_thread.join(timeout=5)
+        rss.trace.record_event_durable = original_record_durable
+        rss.persistence.save_trace_event = original_save
+
+        check(ready, "successful writer reached the deterministic race barrier")
+        check(
+            not failure_overtook,
+            "later failed writer cannot overtake earlier success bookkeeping",
+        )
+        check(
+            not success_thread.is_alive() and not failure_thread.is_alive(),
+            "ordered audit writers both complete without deadlock",
+        )
+        check(not success_errors, "serialized successful audit writer stays clean")
+        check(
+            failure_results == [True],
+            "serialized failed audit writer preserves WRITE-AHEAD failure",
+        )
+        check(
+            rss._audit_failure_streak == 1,
+            "final failure streak reflects the actual serialized outcome order",
+        )
+        check(
+            [event.content_hash for event in rss.trace.all_events()]
+            == [event.content_hash for event in rss.persistence.load_all_trace()]
+            and rss.trace.verify_chain_deep(),
+            "mixed concurrent outcome leaves TRACE in durable deep-valid parity",
+        )
+        rss._audit_failure_streak = 0
+
+        memory_after = rss.trace.all_events()
+        durable_after = rss.persistence.load_all_trace()
+        check(
+            len(memory_after) > len(memory_before),
+            "recovered request advances TRACE beyond the pre-failure head",
+        )
+        check(
+            [event.content_hash for event in memory_after]
+            == [event.content_hash for event in durable_after],
+            "recovered TRACE memory and SQLite chains remain identical",
+        )
+        check(
+            rss.trace.verify_chain() and rss.trace.verify_chain_deep(),
+            "recovered in-memory TRACE passes linkage and envelope checks",
+        )
+
         rss.persistence.close()
+
+        cold = verify_trace_file(path)
+        check(cold["verified"], "cold TRACE verification passes after recovery")
+        check(
+            cold["event_count"] == len(memory_after),
+            "cold verifier sees the complete recovered chain",
+        )
+
+        restarted = bootstrap(config)
+        check(
+            not restarted.is_safe_stopped()["active"],
+            "restart after a transient audit failure does not enter Safe-Stop",
+        )
+        check(
+            restarted.trace.verify_chain_deep(),
+            "restarted runtime restores a deep-valid TRACE chain",
+        )
+        check(
+            len(restarted.trace.all_events()) == restarted.persistence.event_count(),
+            "restarted TRACE memory and SQLite counts remain in parity",
+        )
+        restarted.persistence.close()
+
+        # Test 6: If both the write and its durable-outcome confirmation fail,
+        # the runtime cannot truthfully choose either head. It must persist a
+        # halt, latch governed appends closed, and require cold recovery.
+        fd_uncertain, path_uncertain = tempfile.mkstemp(suffix=".db")
+        os.close(fd_uncertain)
+        try:
+            uncertain = bootstrap(RSSConfig(
+                db_path=path_uncertain,
+                audit_failure_threshold=100,
+            ))
+            uncertain_hashes = [
+                event.content_hash for event in uncertain.trace.all_events()
+            ]
+
+            def unavailable_save(event):
+                raise sqlite3.OperationalError("write outcome unavailable")
+
+            def unavailable_confirmation(event):
+                raise sqlite3.OperationalError("confirmation unavailable")
+
+            uncertain.persistence.save_trace_event = unavailable_save
+            uncertain.persistence.has_trace_event = unavailable_confirmation
+            unknown_raised = False
+            try:
+                uncertain._log("TEST", "UNKNOWN-COMMIT", "ambiguous")
+            except RuntimeError as exc:
+                unknown_raised = "OUTCOME UNKNOWN" in str(exc)
+            check(
+                unknown_raised,
+                "unconfirmable TRACE outcome raises an explicit recovery error",
+            )
+            check(
+                uncertain.is_safe_stopped()["active"],
+                "unconfirmable TRACE outcome immediately persists Safe-Stop",
+            )
+            check(
+                uncertain.trace.status()["durability_uncertain"],
+                "unconfirmable TRACE outcome latches durable appends closed",
+            )
+
+            latch_raised = False
+            try:
+                uncertain._log("TEST", "AFTER-UNKNOWN", "must not append")
+            except AuditLogError as exc:
+                latch_raised = "restart and cold-verify" in str(exc)
+            check(
+                latch_raised,
+                "latched TRACE refuses a later governed append in the same runtime",
+            )
+            check(
+                [event.content_hash for event in uncertain.trace.all_events()]
+                == uncertain_hashes
+                and [event.content_hash
+                     for event in uncertain.persistence.load_all_trace()]
+                == uncertain_hashes,
+                "unconfirmable outcome and latch refusal do not advance either known head",
+            )
+            uncertain.persistence.close()
+
+            # A fresh runtime must not erase the volatile uncertainty latch by
+            # merely noticing the durable halt. Bootstrap cold-verifies the
+            # restored chain before it emits or exposes further audit writes.
+            uncertain_restarted = bootstrap(RSSConfig(
+                db_path=path_uncertain,
+                audit_failure_threshold=100,
+            ))
+            halted_verification = (
+                uncertain_restarted.pre_emission_boot_chain_verification
+            )
+            check(
+                halted_verification is not None
+                and halted_verification["verified"]
+                and halted_verification["mode"] == "COLD_FILE",
+                "halted restart cold-verifies TRACE before normal boot emissions",
+            )
+            check(
+                not uncertain_restarted.trace.status()["durability_uncertain"],
+                "successful halted-boot verification restores a known TRACE head",
+            )
+            check(
+                uncertain_restarted.is_safe_stopped()["active"],
+                "TRACE verification does not silently clear the durable halt",
+            )
+            uncertain_restarted._log(
+                "TEST", "AFTER-VERIFIED-RESTART", "verified head"
+            )
+            check(
+                [event.content_hash
+                 for event in uncertain_restarted.trace.all_events()]
+                == [event.content_hash
+                    for event in uncertain_restarted.persistence.load_all_trace()]
+                and uncertain_restarted.trace.verify_chain_deep(),
+                "post-verification append preserves hot/durable TRACE parity",
+            )
+            uncertain_restarted.persistence.close()
+            check(
+                verify_trace_file(path_uncertain)["verified"],
+                "halted-restart recovery remains cold-verifiable",
+            )
+        finally:
+            for pth in (
+                path_uncertain,
+                path_uncertain + "-wal",
+                path_uncertain + "-shm",
+            ):
+                if os.path.exists(pth):
+                    os.unlink(pth)
+
+        # Test 7: The opposite unknown-outcome cell must also reconcile. Here
+        # the row really commits, confirmation fails, and Safe-Stop persists.
+        # Halted restart must restore that durable head before any append.
+        fd_unknown_commit, path_unknown_commit = tempfile.mkstemp(suffix=".db")
+        os.close(fd_unknown_commit)
+        try:
+            unknown_commit = bootstrap(RSSConfig(
+                db_path=path_unknown_commit,
+                audit_failure_threshold=100,
+            ))
+            commit_save = unknown_commit.persistence.save_trace_event
+
+            def committed_then_confirmation_unavailable(event):
+                commit_save(event)
+                raise sqlite3.OperationalError("post-commit adapter unavailable")
+
+            unknown_commit.persistence.save_trace_event = (
+                committed_then_confirmation_unavailable
+            )
+            unknown_commit.persistence.has_trace_event = unavailable_confirmation
+            committed_unknown_raised = False
+            try:
+                unknown_commit._log(
+                    "TEST", "UNKNOWN-COMMITTED-HALTED", "ambiguous"
+                )
+            except RuntimeError as exc:
+                committed_unknown_raised = "OUTCOME UNKNOWN" in str(exc)
+            check(
+                committed_unknown_raised
+                and unknown_commit.is_safe_stopped()["active"]
+                and unknown_commit.trace.status()["durability_uncertain"],
+                "committed unknown outcome persists halt and latches current runtime",
+            )
+            check(
+                len(unknown_commit.persistence.load_all_trace())
+                == len(unknown_commit.trace.all_events()) + 1,
+                "committed unknown outcome leaves durable head one event ahead",
+            )
+            unknown_commit.persistence.close()
+
+            unknown_commit_restarted = bootstrap(RSSConfig(
+                db_path=path_unknown_commit,
+                audit_failure_threshold=100,
+            ))
+            commit_preflight = (
+                unknown_commit_restarted.pre_emission_boot_chain_verification
+            )
+            check(
+                commit_preflight is not None
+                and commit_preflight["verified"]
+                and unknown_commit_restarted.is_safe_stopped()["active"],
+                "halted restart verifies the actually committed unknown head",
+            )
+            check(
+                [event.content_hash
+                 for event in unknown_commit_restarted.trace.all_events()]
+                == [event.content_hash for event in
+                    unknown_commit_restarted.persistence.load_all_trace()]
+                and any(
+                    event.artifact_id == "UNKNOWN-COMMITTED-HALTED"
+                    for event in unknown_commit_restarted.trace.all_events()
+                ),
+                "halted restart reconciles memory to the committed unknown event",
+            )
+            unknown_commit_restarted.persistence.close()
+            check(
+                verify_trace_file(path_unknown_commit)["verified"],
+                "reconciled committed-unknown chain remains cold-valid",
+            )
+        finally:
+            for pth in (
+                path_unknown_commit,
+                path_unknown_commit + "-wal",
+                path_unknown_commit + "-shm",
+            ):
+                if os.path.exists(pth):
+                    os.unlink(pth)
+
+        # Test 8: A pre-existing durable halt must not let bootstrap append to
+        # a tampered chain. The cold gate returns the still-halted runtime with
+        # audit writes latched and leaves the durable evidence untouched.
+        fd_halted_bad, path_halted_bad = tempfile.mkstemp(suffix=".db")
+        os.close(fd_halted_bad)
+        try:
+            halted_bad = bootstrap(RSSConfig(db_path=path_halted_bad))
+            halted_bad._log("TEST", "HALTED-TAMPER-SEED", "seed")
+            halted_bad.enter_safe_stop("halted cold-verification proof")
+            halted_bad.persistence.close()
+
+            tamper_conn = sqlite3.connect(path_halted_bad)
+            try:
+                event_count_before_refusal = tamper_conn.execute(
+                    "SELECT COUNT(*) FROM trace_events"
+                ).fetchone()[0]
+                tamper_conn.execute(
+                    "UPDATE trace_events SET artifact_id=? WHERE id=("
+                    "SELECT MIN(id) FROM trace_events)",
+                    ("TAMPERED-HALTED-BOOT",),
+                )
+                tamper_conn.commit()
+            finally:
+                tamper_conn.close()
+
+            halted_bad_restarted = bootstrap(RSSConfig(
+                db_path=path_halted_bad,
+            ))
+            refused_verification = (
+                halted_bad_restarted.pre_emission_boot_chain_verification
+            )
+            check(
+                refused_verification is not None
+                and not refused_verification["verified"]
+                and refused_verification["mode"] == "COLD_FILE",
+                "halted bootstrap refuses a cold-invalid TRACE chain",
+            )
+            check(
+                halted_bad_restarted.is_safe_stopped()["active"]
+                and halted_bad_restarted.trace.status()["durability_uncertain"],
+                "cold-invalid halted bootstrap preserves halt and audit latch",
+            )
+            check(
+                halted_bad_restarted.persistence.event_count()
+                == event_count_before_refusal,
+                "cold-invalid halted bootstrap emits no additional TRACE event",
+            )
+            tampered_append_refused = False
+            try:
+                halted_bad_restarted._log(
+                    "TEST", "AFTER-HALTED-TAMPER", "must not append"
+                )
+            except AuditLogError:
+                tampered_append_refused = True
+            check(
+                tampered_append_refused,
+                "cold-invalid halted bootstrap keeps governed audit append closed",
+            )
+            clear_refused = False
+            try:
+                halted_bad_restarted.clear_safe_stop(t0_command=True)
+            except AuditLogError as exc:
+                clear_refused = "TRACE durability is unresolved" in str(exc)
+            check(
+                clear_refused,
+                "T-0 clear cannot remove the halt while TRACE is uncertain",
+            )
+            check(
+                halted_bad_restarted.is_safe_stopped()["active"]
+                and halted_bad_restarted.persistence.event_count()
+                == event_count_before_refusal,
+                "refused clear preserves durable halt and TRACE row count",
+            )
+            halted_bad_restarted.persistence.close()
+        finally:
+            for pth in (
+                path_halted_bad,
+                path_halted_bad + "-wal",
+                path_halted_bad + "-shm",
+            ):
+                if os.path.exists(pth):
+                    os.unlink(pth)
+
+        # Test 9: If both TRACE outcome confirmation and durable Safe-Stop
+        # persistence are unavailable, surface both failures. The current
+        # runtime stays latched; the universal pre-emission boot gate must
+        # restore and verify the actual durable head before audit writes resume.
+        fd_halt_fail, path_halt_fail = tempfile.mkstemp(suffix=".db")
+        os.close(fd_halt_fail)
+        try:
+            halt_fail = bootstrap(RSSConfig(
+                db_path=path_halt_fail,
+                audit_failure_threshold=100,
+            ))
+            original_save_trace_event = (
+                halt_fail.persistence.save_trace_event
+            )
+            original_enter_safe_stop = halt_fail.persistence.enter_safe_stop
+
+            def committed_but_unavailable(event):
+                original_save_trace_event(event)
+                raise sqlite3.OperationalError("post-commit adapter unavailable")
+
+            halt_fail.persistence.save_trace_event = committed_but_unavailable
+            halt_fail.persistence.has_trace_event = unavailable_confirmation
+
+            def unavailable_halt(reason):
+                raise sqlite3.OperationalError("halt persistence unavailable")
+
+            halt_fail.persistence.enter_safe_stop = unavailable_halt
+            combined_failure = ""
+            try:
+                halt_fail._log("TEST", "UNKNOWN-NO-HALT", "ambiguous")
+            except RuntimeError as exc:
+                combined_failure = str(exc)
+            check(
+                "OUTCOME UNKNOWN" in combined_failure
+                and "Safe-Stop persistence also failed" in combined_failure
+                and "no durable recovery fence was recorded" in combined_failure,
+                "unknown TRACE outcome surfaces the failed durable halt",
+            )
+            check(
+                halt_fail.trace.status()["durability_uncertain"]
+                and not halt_fail.is_safe_stopped()["active"],
+                "same runtime remains audit-latched when Safe-Stop cannot persist",
+            )
+            check(
+                len(halt_fail.persistence.load_all_trace())
+                == len(halt_fail.trace.all_events()) + 1,
+                "failed confirmation leaves the committed head unknown in-process",
+            )
+            halt_fail.persistence.enter_safe_stop = original_enter_safe_stop
+            halt_fail.persistence.close()
+
+            halt_fail_restarted = bootstrap(RSSConfig(
+                db_path=path_halt_fail,
+                audit_failure_threshold=100,
+            ))
+            check(
+                not halt_fail_restarted.trace.status()["durability_uncertain"]
+                and halt_fail_restarted.trace.verify_chain_deep(),
+                "restart restores and deep-verifies TRACE after halt persistence failure",
+            )
+            check(
+                [event.content_hash
+                 for event in halt_fail_restarted.trace.all_events()]
+                == [event.content_hash
+                    for event in halt_fail_restarted.persistence.load_all_trace()],
+                "restart after halt persistence failure restores TRACE parity",
+            )
+            halt_fail_restarted._log(
+                "TEST", "AFTER-NO-HALT-RESTART", "verified head"
+            )
+            halt_fail_restarted.persistence.close()
+            check(
+                verify_trace_file(path_halt_fail)["verified"],
+                "post-restart append remains cold-valid when the halt could not persist",
+            )
+        finally:
+            for pth in (
+                path_halt_fail,
+                path_halt_fail + "-wal",
+                path_halt_fail + "-shm",
+            ):
+                if os.path.exists(pth):
+                    os.unlink(pth)
+
+        # Test 10: Cross-case from independent review. The unknown row commits,
+        # confirmation and Safe-Stop persistence fail, and the durable row is
+        # then tampered before restart. Even without a halt marker, universal
+        # pre-emission verification must latch, persist Safe-Stop directly, and
+        # add no TRACE row to the invalid chain.
+        fd_cross, path_cross = tempfile.mkstemp(suffix=".db")
+        os.close(fd_cross)
+        try:
+            cross = bootstrap(RSSConfig(
+                db_path=path_cross,
+                audit_failure_threshold=100,
+            ))
+            cross_save = cross.persistence.save_trace_event
+
+            def cross_commit_then_unavailable(event):
+                cross_save(event)
+                raise sqlite3.OperationalError("post-commit adapter unavailable")
+
+            cross.persistence.save_trace_event = cross_commit_then_unavailable
+            cross.persistence.has_trace_event = unavailable_confirmation
+            cross.persistence.enter_safe_stop = unavailable_halt
+            cross_unknown_raised = False
+            try:
+                cross._log("TEST", "UNKNOWN-TAMPER-CROSS", "ambiguous")
+            except RuntimeError as exc:
+                cross_unknown_raised = (
+                    "OUTCOME UNKNOWN" in str(exc)
+                    and "no durable recovery fence was recorded" in str(exc)
+                )
+            check(
+                cross_unknown_raised
+                and not cross.is_safe_stopped()["active"]
+                and cross.trace.status()["durability_uncertain"],
+                "cross-case begins with committed unknown head and no durable halt",
+            )
+            cross.persistence.close()
+
+            cross_tamper = sqlite3.connect(path_cross)
+            try:
+                cross_count_before_restart = cross_tamper.execute(
+                    "SELECT COUNT(*) FROM trace_events"
+                ).fetchone()[0]
+                cross_tamper.execute(
+                    "UPDATE trace_events SET artifact_id=? WHERE id=("
+                    "SELECT MAX(id) FROM trace_events)",
+                    ("TAMPERED-UNKNOWN-CROSS",),
+                )
+                cross_tamper.commit()
+            finally:
+                cross_tamper.close()
+
+            cross_restarted = bootstrap(RSSConfig(
+                db_path=path_cross,
+                audit_failure_threshold=100,
+            ))
+            cross_preflight = (
+                cross_restarted.pre_emission_boot_chain_verification
+            )
+            check(
+                cross_preflight is not None
+                and not cross_preflight["verified"]
+                and cross_restarted.trace.status()["durability_uncertain"],
+                "unmarked tampered restart is refused by universal preflight",
+            )
+            check(
+                cross_restarted.is_safe_stopped()["active"],
+                "unmarked tampered restart directly persists Safe-Stop",
+            )
+            check(
+                cross_restarted.persistence.event_count()
+                == cross_count_before_restart,
+                "unmarked tampered restart adds no event to invalid TRACE",
+            )
+            cross_restarted.persistence.close()
+        finally:
+            for pth in (
+                path_cross,
+                path_cross + "-wal",
+                path_cross + "-shm",
+            ):
+                if os.path.exists(pth):
+                    os.unlink(pth)
+
+        # Test 11: TRACE that cannot deserialize must fail before preflight
+        # without the generic restore handler emitting from an empty hot head.
+        fd_unloadable, path_unloadable = tempfile.mkstemp(suffix=".db")
+        os.close(fd_unloadable)
+        try:
+            unloadable = bootstrap(RSSConfig(db_path=path_unloadable))
+            unloadable._log("TEST", "UNLOADABLE-SEED", "seed")
+            unloadable_count = unloadable.persistence.event_count()
+            unloadable.persistence.close()
+
+            unloadable_tamper = sqlite3.connect(path_unloadable)
+            try:
+                unloadable_tamper.execute(
+                    "UPDATE trace_events SET timestamp=? WHERE id=("
+                    "SELECT MAX(id) FROM trace_events)",
+                    ("NOT-ISO-8601",),
+                )
+                unloadable_tamper.commit()
+            finally:
+                unloadable_tamper.close()
+
+            unloadable_refused = False
+            try:
+                bootstrap(RSSConfig(db_path=path_unloadable))
+            except RuntimeError as exc:
+                unloadable_refused = (
+                    "category='trace_events'" in str(exc)
+                    and "cannot safely continue" in str(exc)
+                )
+            check(
+                unloadable_refused,
+                "unloadable TRACE row refuses bootstrap explicitly",
+            )
+
+            unloadable_check = sqlite3.connect(path_unloadable)
+            try:
+                unloadable_rows = unloadable_check.execute(
+                    "SELECT COUNT(*) FROM trace_events"
+                ).fetchone()[0]
+                unloadable_halt = unloadable_check.execute(
+                    "SELECT value FROM system_state WHERE key='SAFE_STOP'"
+                ).fetchone()
+            finally:
+                unloadable_check.close()
+            check(
+                unloadable_halt is not None
+                and "trace_events" in unloadable_halt[0],
+                "unloadable TRACE row persists a direct Safe-Stop fence",
+            )
+            check(
+                unloadable_rows == unloadable_count,
+                "unloadable TRACE failure emits no event from an empty hot head",
+            )
+        finally:
+            _cleanup_db(path_unloadable)
+
+        # Test 12: Safe-Stop clear and a concurrent unknown audit outcome must
+        # share one linear order. This schedule pauses clear after it owns the
+        # TRACE lock; the writer cannot latch uncertainty until clear's receipt
+        # is durable. The later unknown outcome then re-enters Safe-Stop.
+        fd_clear_race, path_clear_race = tempfile.mkstemp(suffix=".db")
+        os.close(fd_clear_race)
+        try:
+            clear_race = bootstrap(RSSConfig(
+                db_path=path_clear_race,
+                audit_failure_threshold=100,
+            ))
+            clear_race.enter_safe_stop("clear/uncertainty ordering proof")
+            race_original_clear = clear_race.persistence.clear_safe_stop
+            race_original_save = clear_race.persistence.save_trace_event
+            race_original_confirm = clear_race.persistence.has_trace_event
+            clear_at_barrier = threading.Event()
+            release_clear = threading.Event()
+            writer_started = threading.Event()
+            writer_entered_persistence = threading.Event()
+            clear_results = []
+            writer_results = []
+
+            def paused_clear():
+                clear_at_barrier.set()
+                if not release_clear.wait(timeout=5):
+                    raise RuntimeError("timed out waiting to release Safe-Stop clear")
+                race_original_clear()
+
+            def clear_race_save(event):
+                if event.artifact_id == "CLEAR-RACE-UNKNOWN":
+                    writer_entered_persistence.set()
+                    raise sqlite3.OperationalError("unknown writer failed")
+                race_original_save(event)
+
+            def clear_race_confirm(event):
+                if event.artifact_id == "CLEAR-RACE-UNKNOWN":
+                    raise sqlite3.OperationalError("unknown confirmation failed")
+                return race_original_confirm(event)
+
+            def clearer():
+                try:
+                    clear_results.append(
+                        clear_race.clear_safe_stop(t0_command=True)
+                    )
+                except Exception as exc:
+                    clear_results.append(exc)
+
+            def uncertain_writer():
+                writer_started.set()
+                try:
+                    clear_race._log(
+                        "TEST", "CLEAR-RACE-UNKNOWN", "ambiguous"
+                    )
+                except RuntimeError as exc:
+                    writer_results.append("OUTCOME UNKNOWN" in str(exc))
+
+            clear_race.persistence.clear_safe_stop = paused_clear
+            clear_race.persistence.save_trace_event = clear_race_save
+            clear_race.persistence.has_trace_event = clear_race_confirm
+            clear_thread = threading.Thread(target=clearer)
+            writer_thread = threading.Thread(target=uncertain_writer)
+            clear_thread.start()
+            clear_ready = clear_at_barrier.wait(timeout=5)
+            writer_thread.start()
+            writer_ready = writer_started.wait(timeout=5)
+            writer_overtook_clear = writer_entered_persistence.wait(timeout=0.5)
+            release_clear.set()
+            clear_thread.join(timeout=5)
+            writer_thread.join(timeout=5)
+
+            check(
+                clear_ready and writer_ready and not writer_overtook_clear,
+                "unknown writer cannot latch between clear check and receipt",
+            )
+            check(
+                not clear_thread.is_alive() and not writer_thread.is_alive(),
+                "clear/unknown ordering proof completes without deadlock",
+            )
+            check(
+                clear_results == [{"status": "CLEARED"}]
+                and writer_results == [True],
+                "clear linearizes first and later unknown outcome is explicit",
+            )
+            check(
+                clear_race.is_safe_stopped()["active"]
+                and clear_race.trace.status()["durability_uncertain"],
+                "later unknown outcome re-enters halt and latches TRACE",
+            )
+            check(
+                [event.content_hash for event in clear_race.trace.all_events()]
+                == [event.content_hash
+                    for event in clear_race.persistence.load_all_trace()]
+                and clear_race.trace.verify_chain_deep(),
+                "serialized clear/unknown race leaves known TRACE heads in parity",
+            )
+            clear_race.persistence.close()
+            check(
+                verify_trace_file(path_clear_race)["verified"],
+                "serialized clear/unknown race remains cold-valid",
+            )
+        finally:
+            for pth in (
+                path_clear_race,
+                path_clear_race + "-wal",
+                path_clear_race + "-shm",
+            ):
+                if os.path.exists(pth):
+                    os.unlink(pth)
 
         # §6.4.1/§6.5.1 — Durability posture is config-driven. Under WAL,
         # synchronous=NORMAL can lose the last commit(s) on power loss;

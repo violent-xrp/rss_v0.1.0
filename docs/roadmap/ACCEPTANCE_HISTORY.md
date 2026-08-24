@@ -8,9 +8,9 @@ This file preserves the count history and verification receipts that used to liv
 
 ## Current Baseline
 
-- **174 test functions / 1673 assertions / 0 failures**
-- **92.4% statement coverage**
-- **174 claims / 174 tests / 118 Pact sections**
+- **175 test functions / 1742 assertions / 0 failures**
+- **92.2% statement coverage**
+- **175 claims / 175 tests / 118 Pact sections**
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
 - Claim matrix: `python docs/build_claim_matrix.py`
@@ -100,6 +100,18 @@ Verified after the untrusted import hash-binding proof:
 - claim matrix: **101 sections / 139 claims / 139 tests**
 - coverage: **92.3% total**
 
+Verified after the 2026-08-21 Phase 1 TRACE durability hardening and
+independent-review follow-up:
+- the registered proof set expanded the durable-append, post-commit
+  reconciliation, unknown-outcome, pre-emission boot, and Safe-Stop clear-race
+  branches, plus direct runtime/cold-verifier hash parity
+- statement coverage moved from **92.4%** to **92.2%** because the new guarded
+  failure and concurrency branches grew faster than exercised statements; the
+  decrease is recorded here explicitly and does not represent a removed test
+  or a weakened acceptance claim
+- final canonical, coverage, and claim-matrix counts are recorded in the
+  Current Baseline and Public Doc Sync blocks above and below
+
 ## Public Doc Sync
 
 All public-facing docs listed below were synced during the 2026-04-29 public-doc pass:
@@ -111,8 +123,8 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 - `THREAT_MODEL.md`
 
 Current synced public numbers:
-- **174 / 1673 / 0**
-- **92.4%** coverage
-- **174 claims / 174 tests / 118 Pact sections**
+- **175 / 1742 / 0**
+- **92.2%** coverage
+- **175 claims / 175 tests / 118 Pact sections**
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.

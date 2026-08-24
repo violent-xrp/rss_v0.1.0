@@ -1,12 +1,12 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-07-10 23:36 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-08-21 14:47 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
 **Boundary:** the gate enforces claim presence, one-claim-per-test counts, and a non-vacuity floor (every claim cites a Pact section; every test contains a real assertion). It does not — and cannot — verify that a test body semantically proves the clause it cites. Claim fidelity is a review responsibility.
 
-**Coverage:** 118 distinct Pact sections referenced across 174 claim tags on 174 test functions.
+**Coverage:** 118 distinct Pact sections referenced across 175 claim tags on 175 test functions.
 
 ---
 
@@ -83,7 +83,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §0.8.3
 
 - `test_pre_seal_drift_check` — pre-seal drift guard
-- `test_write_ahead_guarantee` — audit write-ahead guarantee
+- `test_write_ahead_guarantee` — TRACE append parity and ordered audit-failure tracking; governed-state/receipt coupling is a separate open invariant
 - `test_phase_d_regression_battery` — UUID ingress, scope-on-permission, OATH persistence-failure visibility
 
 ## §0.8.4
@@ -493,12 +493,13 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_s6_chain_hash_migration_scaffold` — chain-hash migration scaffold refuses silent CHAIN_HASH_VERSION drift
 - `test_probe_chain_catches_duplicate_content_tamper` — hash envelope uniqueness; chain detects middle-row deletion
 - `test_probe_hash_envelope_version_marker_present` — CHAIN_HASH_VERSION marker pinned at v2 for forward-compat
+- `test_v2_runtime_cold_verifier_hash_parity` — runtime and cold-verifier v2 canonical bytes and envelope hashes are identical
 - `test_trace_chain_survives_concurrent_governed_writes` — TRACE chain append and persistence order remain valid under concurrent governed writes.
 - `test_v2_envelope_recomputation_detects_metadata_tamper` — stored-field tamper on v2 rows detected by recomputation; downgrade re-marking detected by monotonicity guard
 
 ## §6.4.4
 
-- `test_write_ahead_guarantee` — audit write-ahead guarantee
+- `test_write_ahead_guarantee` — TRACE append parity and ordered audit-failure tracking; governed-state/receipt coupling is a separate open invariant
 
 ## §6.5
 

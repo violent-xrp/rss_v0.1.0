@@ -21,7 +21,7 @@ trace_verify.py             94.9%
 trace_export.py             89.9%
 tecton.py                   95.1%
 cycle.py                    94.2%
-persistence.py              93.3%
+persistence.py              93.1%
 meaning_law.py              94.4%
 hub_topology.py             92.7%
 seal.py                     94.0%
@@ -29,12 +29,12 @@ ward.py                     88.6%
 governance/t0.py           100.0%
 scope.py                    92.6%
 llm_adapter.py              90.1%
-audit_log.py                87.1%
-runtime.py                  86.6%
+audit_log.py                88.8%
+runtime.py                  85.7%
 oath.py                     83.7%
 pav.py                      90.9%
 constitution.py             92.5%
-TOTAL                       92.4%
+TOTAL                       92.2%
 ```
 
 ## Current Targets
