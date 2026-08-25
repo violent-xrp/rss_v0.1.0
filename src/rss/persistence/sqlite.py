@@ -305,6 +305,31 @@ class Persistence:
     # -----------------------------------------------------
     # TRACE
     # -----------------------------------------------------
+    def _insert_trace_event_row(self, event: TraceEvent) -> None:
+        """Insert one TRACE row on the caller's current transaction boundary.
+
+        The caller must hold ``self._lock``. Keeping the SQL in one helper lets
+        ordinary single-row appends and transactionally coupled state changes
+        use the exact same persisted envelope.
+        """
+        self.conn.execute(
+            """INSERT INTO trace_events
+            (timestamp,event_code,authority,artifact_id,
+             content_hash,byte_length,parent_hash,payload_hash,hash_version)
+             VALUES(?,?,?,?,?,?,?,?,?)""",
+            (
+                event.timestamp.isoformat(),
+                event.event_code,
+                event.authority,
+                event.artifact_id,
+                event.content_hash,
+                event.byte_length,
+                event.parent_hash,
+                event.payload_hash,
+                event.hash_version,
+            ),
+        )
+
     def save_trace_event(self, event: TraceEvent) -> None:
         """Atomically insert one TRACE row and return only after commit.
 
@@ -314,23 +339,7 @@ class Persistence:
         committed.
         """
         with self._lock, self.conn:
-            self.conn.execute(
-                """INSERT INTO trace_events
-                (timestamp,event_code,authority,artifact_id,
-                 content_hash,byte_length,parent_hash,payload_hash,hash_version)
-                 VALUES(?,?,?,?,?,?,?,?,?)""",
-                (
-                    event.timestamp.isoformat(),
-                    event.event_code,
-                    event.authority,
-                    event.artifact_id,
-                    event.content_hash,
-                    event.byte_length,
-                    event.parent_hash,
-                    event.payload_hash,
-                    event.hash_version,
-                ),
-            )
+            self._insert_trace_event_row(event)
 
     def has_trace_event(self, event: TraceEvent) -> bool:
         """Return whether this exact v2 envelope hash is durably present.
@@ -796,6 +805,73 @@ class Persistence:
         """Clear Safe-Stop. Only T-0 may call this."""
         with self._lock, self.conn:
             self.conn.execute("DELETE FROM system_state WHERE key='SAFE_STOP'")
+
+    def clear_safe_stop_with_trace_event(self, event: TraceEvent) -> None:
+        """Atomically persist a clear receipt and remove persistent Safe-Stop.
+
+        This connection runs with ``isolation_level=None``. A connection context
+        manager therefore cannot couple multiple statements; this method uses an
+        explicit transaction so the TRACE insert and halt deletion commit or
+        roll back together. The runtime stages and validates ``event`` before
+        calling this method and exposes it in memory only after this transaction
+        is known committed.
+        """
+        with self._lock:
+            if self.conn.in_transaction:
+                raise sqlite3.OperationalError(
+                    "Cannot begin atomic Safe-Stop clear while another "
+                    "transaction is active."
+                )
+            try:
+                self.conn.execute("BEGIN IMMEDIATE")
+                halt = self.conn.execute(
+                    "SELECT 1 FROM system_state WHERE key='SAFE_STOP'"
+                ).fetchone()
+                if halt is None:
+                    raise sqlite3.IntegrityError(
+                        "Atomic Safe-Stop clear requires an active durable halt."
+                    )
+                self._insert_trace_event_row(event)
+                deleted = self.conn.execute(
+                    "DELETE FROM system_state WHERE key='SAFE_STOP'"
+                )
+                if deleted.rowcount != 1:
+                    raise sqlite3.IntegrityError(
+                        "Atomic Safe-Stop clear did not remove exactly one halt."
+                    )
+                self.conn.execute("COMMIT")
+            except Exception as exc:
+                if self.conn.in_transaction:
+                    try:
+                        self.conn.execute("ROLLBACK")
+                    except Exception as rollback_exc:
+                        raise sqlite3.OperationalError(
+                            "Atomic Safe-Stop clear failed and rollback could "
+                            f"not be confirmed: {rollback_exc}"
+                        ) from exc
+                raise
+
+    def has_completed_safe_stop_clear(self, event: TraceEvent) -> bool:
+        """Confirm the exact atomic clear outcome after an adapter exception.
+
+        A committed clear requires both halves: the staged v2 event exists and
+        the durable Safe-Stop row does not. An open transaction is unresolved,
+        not a confirmed rejection, so callers must latch and recover instead of
+        selecting a new TRACE parent.
+        """
+        with self._lock:
+            if self.conn.in_transaction:
+                raise sqlite3.OperationalError(
+                    "Atomic Safe-Stop clear outcome is unresolved inside an "
+                    "open transaction."
+                )
+            row = self.conn.execute(
+                """SELECT
+                    EXISTS(SELECT 1 FROM trace_events WHERE content_hash=?),
+                    EXISTS(SELECT 1 FROM system_state WHERE key='SAFE_STOP')""",
+                (event.content_hash,),
+            ).fetchone()
+            return bool(row and row[0] and not row[1])
 
     # -----------------------------------------------------
     def event_count(self) -> int:

@@ -1,12 +1,12 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-08-21 14:47 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-08-25 15:28 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
 **Boundary:** the gate enforces claim presence, one-claim-per-test counts, and a non-vacuity floor (every claim cites a Pact section; every test contains a real assertion). It does not — and cannot — verify that a test body semantically proves the clause it cites. Claim fidelity is a review responsibility.
 
-**Coverage:** 118 distinct Pact sections referenced across 175 claim tags on 175 test functions.
+**Coverage:** 118 distinct Pact sections referenced across 176 claim tags on 176 test functions.
 
 ---
 
@@ -60,6 +60,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §0.5.2
 
 - `test_safe_stop_persistent` — Safe-Stop persists across restart
+- `test_safe_stop_clear_atomicity` — Safe-Stop clear receipt and halt deletion commit atomically; failed or unknown outcomes remain fail-closed
 - `test_clear_safe_stop_idempotence` — clear_safe_stop is idempotent: returns NO_OP without emitting audit event when system is not halted; emits SAFE_STOP_CLEARED only on real clear
 
 ## §0.5.4
@@ -83,7 +84,8 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §0.8.3
 
 - `test_pre_seal_drift_check` — pre-seal drift guard
-- `test_write_ahead_guarantee` — TRACE append parity and ordered audit-failure tracking; governed-state/receipt coupling is a separate open invariant
+- `test_write_ahead_guarantee` — TRACE append parity and ordered audit-failure tracking; governed-state/receipt coupling beyond Safe-Stop clear is a separate open invariant
+- `test_safe_stop_clear_atomicity` — Safe-Stop clear receipt and halt deletion commit atomically; failed or unknown outcomes remain fail-closed
 - `test_phase_d_regression_battery` — UUID ingress, scope-on-permission, OATH persistence-failure visibility
 
 ## §0.8.4
@@ -499,7 +501,8 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §6.4.4
 
-- `test_write_ahead_guarantee` — TRACE append parity and ordered audit-failure tracking; governed-state/receipt coupling is a separate open invariant
+- `test_write_ahead_guarantee` — TRACE append parity and ordered audit-failure tracking; governed-state/receipt coupling beyond Safe-Stop clear is a separate open invariant
+- `test_safe_stop_clear_atomicity` — Safe-Stop clear receipt and halt deletion commit atomically; failed or unknown outcomes remain fail-closed
 
 ## §6.5
 

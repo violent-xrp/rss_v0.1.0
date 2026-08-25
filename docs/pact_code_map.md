@@ -24,17 +24,17 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/core/runtime.py:134`
 - `src/rss/core/runtime.py:135`
 - `src/rss/core/runtime.py:135`
-- `src/rss/core/runtime.py:383`
-- `src/rss/core/runtime.py:385`
-- `src/rss/core/runtime.py:386`
-- `src/rss/core/runtime.py:389`
-- `src/rss/core/runtime.py:396`
+- `src/rss/core/runtime.py:388`
+- `src/rss/core/runtime.py:390`
+- `src/rss/core/runtime.py:391`
+- `src/rss/core/runtime.py:394`
 - `src/rss/core/runtime.py:401`
-- `src/rss/core/runtime.py:404`
-- `src/rss/core/runtime.py:405`
 - `src/rss/core/runtime.py:406`
-- `src/rss/core/runtime.py:406`
-- `src/rss/core/runtime.py:417`
+- `src/rss/core/runtime.py:409`
+- `src/rss/core/runtime.py:410`
+- `src/rss/core/runtime.py:411`
+- `src/rss/core/runtime.py:411`
+- `src/rss/core/runtime.py:422`
 - `src/rss/governance/constitution.py:49`
 - `src/rss/governance/constitution.py:68`
 - `src/rss/governance/constitution.py:80`
@@ -49,8 +49,8 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/governance/seats/seal.py:228`
 
 ### §0.2.1 -> pact/pact_section0_root_physics.md
-- `src/rss/core/runtime.py:383`
-- `src/rss/core/runtime.py:1186`
+- `src/rss/core/runtime.py:388`
+- `src/rss/core/runtime.py:1208`
 
 ### §0.3.1 -> pact/pact_section0_root_physics.md
 - `src/rss/audit/log.py:193`
@@ -63,14 +63,14 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 
 ### §0.5 -> pact/pact_section0_root_physics.md
 - `src/rss/core/runtime.py:328`
-- `src/rss/core/runtime.py:1175`
+- `src/rss/core/runtime.py:1197`
 
 ### §0.5.2 -> pact/pact_section0_root_physics.md
 - `src/rss/core/runtime.py:338`
 - `src/rss/core/runtime.py:348`
 
 ### §0.5.4 -> pact/pact_section0_root_physics.md
-- `src/rss/core/runtime.py:1405`
+- `src/rss/core/runtime.py:1427`
 
 ### §0.7.3 -> pact/pact_section0_root_physics.md
 - `src/rss/core/runtime.py:212`
@@ -79,15 +79,15 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 
 ### §0.8.3 -> pact/pact_section0_root_physics.md
 - `src/rss/core/runtime.py:190`
-- `src/rss/core/runtime.py:535`
-- `src/rss/core/runtime.py:626`
+- `src/rss/core/runtime.py:548`
+- `src/rss/core/runtime.py:648`
 - `src/rss/governance/seats/oath.py:131`
 - `src/rss/hubs/tecton.py:348`
 
 ### §0.9 -> pact/pact_section0_root_physics.md
 - `src/rss/core/runtime.py:84`
 - `src/rss/core/runtime.py:314`
-- `src/rss/core/runtime.py:905`
+- `src/rss/core/runtime.py:927`
 - `src/rss/governance/seats/oath.py:131`
 
 ### §0.9.1 -> pact/pact_section0_root_physics.md
@@ -135,7 +135,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/governance/seats/rune.py:278`
 
 ### §2.3 -> pact/pact_section2_meaning_law.md
-- `src/rss/core/runtime.py:779`
+- `src/rss/core/runtime.py:801`
 - `src/rss/governance/seats/rune.py:43`
 - `src/rss/governance/seats/rune.py:238`
 - `src/rss/governance/seats/rune.py:278`
@@ -150,17 +150,17 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 
 ### §2.3.3 -> pact/pact_section2_meaning_law.md
 - `src/rss/audit/export.py:152`
-- `src/rss/core/runtime.py:779`
-- `src/rss/core/runtime.py:961`
-- `src/rss/core/runtime.py:972`
+- `src/rss/core/runtime.py:801`
+- `src/rss/core/runtime.py:983`
+- `src/rss/core/runtime.py:994`
 - `src/rss/governance/seats/rune.py:308`
 
 ### §2.4.4 -> pact/pact_section2_meaning_law.md
 - `src/rss/audit/export.py:154`
-- `src/rss/core/runtime.py:1008`
+- `src/rss/core/runtime.py:1030`
 - `src/rss/governance/seats/rune.py:44`
 - `src/rss/governance/seats/rune.py:343`
-- `src/rss/persistence/sqlite.py:745`
+- `src/rss/persistence/sqlite.py:754`
 
 ### §2.7 -> pact/pact_section2_meaning_law.md
 - `src/rss/audit/log.py:518`
@@ -180,54 +180,54 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/governance/seats/rune.py:218`
 
 ### §2.9 -> pact/pact_section2_meaning_law.md
-- `src/rss/core/runtime.py:1335`
+- `src/rss/core/runtime.py:1357`
 - `src/rss/llm/adapter.py:65`
 
 ### §2.9.3 -> pact/pact_section2_meaning_law.md
 - `src/rss/llm/adapter.py:66`
 
 ### §2.10.2 -> pact/pact_section2_meaning_law.md
-- `src/rss/core/runtime.py:1353`
+- `src/rss/core/runtime.py:1375`
 
 ### §3.1.2 -> pact/pact_section3_execution_law.md
 - `src/rss/core/runtime.py:82`
-- `src/rss/core/runtime.py:1277`
+- `src/rss/core/runtime.py:1299`
 
 ### §3.1.3 -> pact/pact_section3_execution_law.md
 - `src/rss/core/runtime.py:162`
 
 ### §3.2.1 -> pact/pact_section3_execution_law.md
 - `src/rss/core/runtime.py:82`
-- `src/rss/core/runtime.py:1277`
+- `src/rss/core/runtime.py:1299`
 
 ### §3.3 -> pact/pact_section3_execution_law.md
-- `src/rss/core/runtime.py:1145`
-- `src/rss/core/runtime.py:1247`
+- `src/rss/core/runtime.py:1167`
+- `src/rss/core/runtime.py:1269`
 
 ### §3.3.4 -> pact/pact_section3_execution_law.md
 - `src/rss/core/runtime.py:76`
-- `src/rss/core/runtime.py:1148`
 - `src/rss/core/runtime.py:1170`
+- `src/rss/core/runtime.py:1192`
 
 ### §3.4.4 -> pact/pact_section3_execution_law.md
-- `src/rss/core/runtime.py:1369`
+- `src/rss/core/runtime.py:1391`
 
 ### §3.4.5 -> pact/pact_section3_execution_law.md
-- `src/rss/core/runtime.py:1149`
+- `src/rss/core/runtime.py:1171`
 
 ### §3.7.5 -> pact/pact_section3_execution_law.md
 - `src/rss/core/config.py:45`
 
 ### §3.7.7 -> pact/pact_section3_execution_law.md
-- `src/rss/core/runtime.py:1066`
-- `src/rss/core/runtime.py:1080`
 - `src/rss/core/runtime.py:1088`
-- `src/rss/core/runtime.py:1113`
-- `src/rss/core/runtime.py:1123`
-- `src/rss/core/runtime.py:1343`
+- `src/rss/core/runtime.py:1102`
+- `src/rss/core/runtime.py:1110`
+- `src/rss/core/runtime.py:1135`
+- `src/rss/core/runtime.py:1145`
+- `src/rss/core/runtime.py:1365`
 
 ### §4.2.3 -> pact/pact_section4_hub_topology.md
-- `src/rss/core/runtime.py:1209`
+- `src/rss/core/runtime.py:1231`
 - `src/rss/governance/seats/scope.py:35`
 - `src/rss/governance/seats/scope.py:69`
 - `src/rss/governance/seats/scope.py:104`
@@ -236,7 +236,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/hubs/topology.py:296`
 
 ### §4.3.4 -> pact/pact_section4_hub_topology.md
-- `src/rss/core/runtime.py:857`
+- `src/rss/core/runtime.py:879`
 - `src/rss/hubs/topology.py:37`
 - `src/rss/hubs/topology.py:145`
 - `src/rss/hubs/topology.py:171`
@@ -245,18 +245,18 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/hubs/topology.py:373`
 
 ### §4.4.3 -> pact/pact_section4_hub_topology.md
-- `src/rss/core/runtime.py:851`
+- `src/rss/core/runtime.py:873`
 - `src/rss/hubs/topology.py:33`
 - `src/rss/hubs/topology.py:143`
 - `src/rss/hubs/topology.py:170`
 - `src/rss/hubs/topology.py:325`
 - `src/rss/persistence/sqlite.py:34`
-- `src/rss/persistence/sqlite.py:379`
+- `src/rss/persistence/sqlite.py:388`
 
 ### §4.4.5 -> pact/pact_section4_hub_topology.md
 - `src/rss/audit/export.py:189`
-- `src/rss/core/runtime.py:854`
-- `src/rss/core/runtime.py:1049`
+- `src/rss/core/runtime.py:876`
+- `src/rss/core/runtime.py:1071`
 - `src/rss/hubs/pav.py:35`
 - `src/rss/hubs/pav.py:72`
 - `src/rss/hubs/pav.py:102`
@@ -269,7 +269,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/hubs/topology.py:352`
 - `src/rss/hubs/topology.py:369`
 - `src/rss/persistence/sqlite.py:35`
-- `src/rss/persistence/sqlite.py:379`
+- `src/rss/persistence/sqlite.py:388`
 
 ### §4.5.2 -> pact/pact_section4_hub_topology.md
 - `src/rss/hubs/topology.py:35`
@@ -283,7 +283,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/hubs/pav.py:70`
 
 ### §4.5.4 -> pact/pact_section4_hub_topology.md
-- `src/rss/core/runtime.py:1208`
+- `src/rss/core/runtime.py:1230`
 - `src/rss/governance/seats/scope.py:34`
 - `src/rss/governance/seats/scope.py:67`
 
@@ -304,11 +304,11 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/hubs/pav.py:85`
 
 ### §4.7 -> pact/pact_section4_hub_topology.md
-- `src/rss/core/runtime.py:1089`
+- `src/rss/core/runtime.py:1111`
 
 ### §4.7.4 -> pact/pact_section4_hub_topology.md
 - `src/rss/audit/export.py:190`
-- `src/rss/core/runtime.py:1058`
+- `src/rss/core/runtime.py:1080`
 - `src/rss/hubs/topology.py:36`
 - `src/rss/hubs/topology.py:365`
 
@@ -325,8 +325,8 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/hubs/tecton.py:34`
 
 ### §5.1.6 -> pact/pact_section5_tenant_containers.md
-- `src/rss/core/runtime.py:1160`
-- `src/rss/core/runtime.py:1166`
+- `src/rss/core/runtime.py:1182`
+- `src/rss/core/runtime.py:1188`
 
 ### §5.2 -> pact/pact_section5_tenant_containers.md
 - `src/rss/hubs/tecton.py:376`
@@ -338,7 +338,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/hubs/tecton.py:718`
 - `src/rss/hubs/tecton.py:730`
 - `src/rss/persistence/sqlite.py:167`
-- `src/rss/persistence/sqlite.py:427`
+- `src/rss/persistence/sqlite.py:436`
 
 ### §5.2.2 -> pact/pact_section5_tenant_containers.md
 - `src/rss/audit/export.py:197`
@@ -486,10 +486,10 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 ### §6.3.5 -> pact/pact_section6_persistence_&_audit.md
 - `src/rss/audit/export.py:205`
 - `src/rss/core/runtime.py:190`
-- `src/rss/core/runtime.py:452`
-- `src/rss/core/runtime.py:741`
-- `src/rss/core/runtime.py:1436`
-- `src/rss/core/runtime.py:1500`
+- `src/rss/core/runtime.py:457`
+- `src/rss/core/runtime.py:763`
+- `src/rss/core/runtime.py:1458`
+- `src/rss/core/runtime.py:1522`
 - `src/rss/hubs/tecton.py:349`
 - `src/rss/hubs/tecton.py:367`
 
@@ -515,7 +515,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/audit/verify.py:265`
 - `src/rss/audit/verify.py:340`
 - `src/rss/audit/verify.py:500`
-- `src/rss/core/runtime.py:456`
+- `src/rss/core/runtime.py:461`
 - `src/rss/persistence/sqlite.py:56`
 - `src/rss/persistence/sqlite.py:256`
 
@@ -530,10 +530,10 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 ### §6.4.4 -> pact/pact_section6_persistence_&_audit.md
 - `src/rss/core/config.py:79`
 - `src/rss/core/runtime.py:245`
-- `src/rss/core/runtime.py:540`
-- `src/rss/core/runtime.py:561`
-- `src/rss/core/runtime.py:566`
-- `src/rss/core/runtime.py:615`
+- `src/rss/core/runtime.py:553`
+- `src/rss/core/runtime.py:579`
+- `src/rss/core/runtime.py:584`
+- `src/rss/core/runtime.py:637`
 - `src/rss/hubs/tecton.py:369`
 
 ### §6.5.1 -> pact/pact_section6_persistence_&_audit.md
@@ -541,7 +541,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/persistence/sqlite.py:60`
 
 ### §6.5.3 -> pact/pact_section6_persistence_&_audit.md
-- `src/rss/persistence/sqlite.py:543`
+- `src/rss/persistence/sqlite.py:552`
 
 ### §6.6.3 -> pact/pact_section6_persistence_&_audit.md
 - `src/rss/audit/verify.py:427`
@@ -562,9 +562,9 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 
 ### §6.7.3 -> pact/pact_section6_persistence_&_audit.md
 - `src/rss/audit/export.py:204`
-- `src/rss/core/runtime.py:420`
-- `src/rss/core/runtime.py:423`
-- `src/rss/core/runtime.py:1479`
+- `src/rss/core/runtime.py:425`
+- `src/rss/core/runtime.py:428`
+- `src/rss/core/runtime.py:1501`
 - `src/rss/persistence/sqlite.py:36`
 - `src/rss/persistence/sqlite.py:51`
 - `src/rss/persistence/sqlite.py:280`
@@ -583,20 +583,20 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 
 ### §6.8.3 -> pact/pact_section6_persistence_&_audit.md
 - `src/rss/audit/export.py:203`
-- `src/rss/core/runtime.py:420`
-- `src/rss/core/runtime.py:436`
-- `src/rss/core/runtime.py:1475`
+- `src/rss/core/runtime.py:425`
+- `src/rss/core/runtime.py:441`
+- `src/rss/core/runtime.py:1497`
 - `src/rss/persistence/sqlite.py:38`
 - `src/rss/persistence/sqlite.py:229`
 
 ### §6.9.1 -> pact/pact_section6_persistence_&_audit.md
-- `src/rss/core/runtime.py:745`
+- `src/rss/core/runtime.py:767`
 
 ### §6.9.2 -> pact/pact_section6_persistence_&_audit.md
 - `src/rss/core/runtime.py:196`
 - `src/rss/core/runtime.py:240`
-- `src/rss/core/runtime.py:872`
-- `src/rss/core/runtime.py:1494`
+- `src/rss/core/runtime.py:894`
+- `src/rss/core/runtime.py:1516`
 - `src/rss/governance/seats/oath.py:58`
 - `src/rss/governance/seats/oath.py:105`
 - `src/rss/governance/seats/oath.py:130`
@@ -609,13 +609,13 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/hubs/tecton.py:388`
 
 ### §6.9.7 -> pact/pact_section6_persistence_&_audit.md
-- `src/rss/core/runtime.py:632`
-- `src/rss/core/runtime.py:649`
-- `src/rss/core/runtime.py:659`
+- `src/rss/core/runtime.py:654`
 - `src/rss/core/runtime.py:671`
-- `src/rss/core/runtime.py:714`
-- `src/rss/core/runtime.py:758`
-- `src/rss/core/runtime.py:922`
+- `src/rss/core/runtime.py:681`
+- `src/rss/core/runtime.py:693`
+- `src/rss/core/runtime.py:736`
+- `src/rss/core/runtime.py:780`
+- `src/rss/core/runtime.py:944`
 - `src/rss/governance/seats/seal.py:468`
 - `src/rss/hubs/tecton.py:260`
 
@@ -640,10 +640,10 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 ### §6.11.3 -> pact/pact_section6_persistence_&_audit.md
 - `src/rss/audit/export.py:206`
 - `src/rss/audit/log.py:537`
-- `src/rss/core/runtime.py:452`
-- `src/rss/core/runtime.py:741`
-- `src/rss/core/runtime.py:1436`
-- `src/rss/core/runtime.py:1500`
+- `src/rss/core/runtime.py:457`
+- `src/rss/core/runtime.py:763`
+- `src/rss/core/runtime.py:1458`
+- `src/rss/core/runtime.py:1522`
 
 ### §6.11.4 -> pact/pact_section6_persistence_&_audit.md
 - `src/rss/audit/verify.py:29`
@@ -656,7 +656,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 
 ### §7 -> pact/pact_section7_amendment_evolution.md
 - `src/rss/audit/pact_canon_export.py:30`
-- `src/rss/persistence/sqlite.py:548`
+- `src/rss/persistence/sqlite.py:557`
 
 ### §7.1 -> pact/pact_section7_amendment_evolution.md
 - `src/rss/governance/seats/seal.py:224`

@@ -5,9 +5,9 @@ _License: CC BY-ND 4.0 discipline material; see `LICENSE/CC BY-ND 4.0.md` and `p
 Release: **v0.1.0**
 
 ## Current verified state
-- **175 test functions / 1742 assertions / 0 failures** via `python tests/test_all.py`
+- **176 test functions / 1771 assertions / 0 failures** via `python tests/test_all.py`
 - **92.2% statement coverage** via `python run_coverage.py`
-- **175 claims / 175 tests / 118 Pact sections** in `docs/claim_matrix.md`
+- **176 claims / 176 tests / 118 Pact sections** in `docs/claim_matrix.md`
 - **26 source modules** in the `src/rss/` package tree (subpackages: `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`) + `src/main.py` CLI entry point
 - demo/reference-pack v2, pack validation, demo artifact export, governed offline fallback, live normal-advisor boundary, interactive SYSTEM-only normal-chat containment, and untrusted import hash-binding are implemented in the current code snapshot
 
@@ -62,7 +62,7 @@ RSS v0.1.0 does **not** yet implement:
 - `clear_safe_stop()` requires an explicit `t0_command=True` soft sovereign gate, not a cryptographic/mechanical identity check; the mechanical identity gate remains future perimeter hardening, not a current v0.1.0 claim
 - hard guarantees depend on meaningful side effects entering through the governed runtime boundary
 - future browser, email, document, RAG, and tool-return connectors still need connector-specific indirect-prompt-injection tests before public claims expand
-- public docs are synchronized to the 175/1742 baseline as of this update; ROADMAP remains the working truth source going forward
+- public docs are synchronized to the 176/1771 baseline as of this update; ROADMAP remains the working truth source going forward
 
 ---
 
@@ -70,6 +70,7 @@ RSS v0.1.0 does **not** yet implement:
 The current code snapshot includes proof for:
 - stage-tracked halts and Safe-Stop persistence/recovery
 - `clear_safe_stop()` idempotence — NO_OP path with no spurious audit events
+- `clear_safe_stop()` failure atomicity — its success receipt and halt deletion share one SQLite transaction, with rollback, post-commit reconciliation, unknown-outcome recovery fencing, hostile COMMIT/ROLLBACK acknowledgement failure, restart, and cold-validity proof
 - `load_constitution()` — file-not-found, hash-mismatch, missing-marker, happy-path, and multi-marker branches
 - word-boundary meaning enforcement and normalization hardening
 - anti-trojan term rejection

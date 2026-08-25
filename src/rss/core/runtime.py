@@ -346,12 +346,10 @@ class Runtime:
         if not t0.allowed:
             return {"error": "T0_COMMAND_REQUIRED",
                     "reason": "Only T-0 may clear Safe-Stop (§0.5.2)"}
-        # Linearize the uncertainty check, durable clear, and receipt with the
-        # same lock as _log. Otherwise a concurrent unknown TRACE outcome can
-        # latch between the check and deletion, leaving the system unhalted
-        # with no trustworthy receipt. This does not yet solve a direct receipt
-        # persistence failure after deletion; that is the next atomic-clear
-        # invariant.
+        # Linearize the uncertainty check, atomic durable clear/receipt, and
+        # in-memory append with the same lock as _log. Otherwise a concurrent
+        # unknown TRACE outcome could latch between the check and transition,
+        # leaving the system without one trustworthy ordering.
         with self.trace._lock:
             if not self.persistence.is_safe_stopped().get("active"):
                 return {"status": "NO_OP", "reason": "not_halted"}
@@ -361,8 +359,15 @@ class Runtime:
                     "repair the chain and restart so pre-emission verification can "
                     "establish a known durable head."
                 )
-            self.persistence.clear_safe_stop()
-            self._log("SAFE_STOP_CLEARED", "SYSTEM", "T-0 cleared Safe-Stop")
+            self._log(
+                "SAFE_STOP_CLEARED",
+                "SYSTEM",
+                "T-0 cleared Safe-Stop",
+                persist_event=self.persistence.clear_safe_stop_with_trace_event,
+                confirm_persisted=(
+                    self.persistence.has_completed_safe_stop_clear
+                ),
+            )
             return {"status": "CLEARED"}
 
     def is_safe_stopped(self) -> dict:
@@ -530,7 +535,15 @@ class Runtime:
                 "mode": "ERROR",
             }
 
-    def _log(self, code: str, artifact_id: str, content: str):
+    def _log(
+        self,
+        code: str,
+        artifact_id: str,
+        content: str,
+        *,
+        persist_event=None,
+        confirm_persisted=None,
+    ):
         """Record event to TRACE and persist.
         Write-Ahead Guarantee (Pact §0.8.3): if audit persistence fails, this
         logging path raises before exposing the event in memory. Callers that
@@ -548,6 +561,11 @@ class Runtime:
         # lock. AuditLog re-enters this RLock while staging/persisting/appending;
         # the outer hold prevents a later failure from being reset by an earlier
         # successful write whose bookkeeping had not yet completed.
+        if persist_event is None:
+            persist_event = self.persistence.save_trace_event
+        if confirm_persisted is None:
+            confirm_persisted = self.persistence.has_trace_event
+
         with self.trace._lock:
             try:
                 self.trace.record_event_durable(
@@ -555,8 +573,8 @@ class Runtime:
                     "RUNTIME",
                     artifact_id,
                     content,
-                    persist_event=self.persistence.save_trace_event,
-                    confirm_persisted=self.persistence.has_trace_event,
+                    persist_event=persist_event,
+                    confirm_persisted=confirm_persisted,
                 )
                 # §6.4.4 — Success (including a reconciled durable commit)
                 # resets the streak.
@@ -579,7 +597,11 @@ class Runtime:
                     )
                     halt_error = None
                     try:
-                        self.persistence.enter_safe_stop(reason)
+                        # Preserve an already-active halt and its original root
+                        # cause. If the atomic clear may have committed, restore
+                        # a durable recovery fence before surfacing uncertainty.
+                        if not self.persistence.is_safe_stopped().get("active"):
+                            self.persistence.enter_safe_stop(reason)
                     except Exception as exc:
                         halt_error = exc
                     halt_detail = (

@@ -484,7 +484,7 @@ def test_pre_seal_drift_check():
 
 
 def test_write_ahead_guarantee():
-    # CLAIM: §0.8.3, §6.4.4 — TRACE append parity and ordered audit-failure tracking; governed-state/receipt coupling is a separate open invariant
+    # CLAIM: §0.8.3, §6.4.4 — TRACE append parity and ordered audit-failure tracking; governed-state/receipt coupling beyond Safe-Stop clear is a separate open invariant
     section("TRACE Write-Ahead Parity (Pact §0.8.3)")
 
     import threading
@@ -1205,7 +1205,9 @@ def test_write_ahead_guarantee():
                 audit_failure_threshold=100,
             ))
             clear_race.enter_safe_stop("clear/uncertainty ordering proof")
-            race_original_clear = clear_race.persistence.clear_safe_stop
+            race_original_clear = (
+                clear_race.persistence.clear_safe_stop_with_trace_event
+            )
             race_original_save = clear_race.persistence.save_trace_event
             race_original_confirm = clear_race.persistence.has_trace_event
             clear_at_barrier = threading.Event()
@@ -1215,11 +1217,11 @@ def test_write_ahead_guarantee():
             clear_results = []
             writer_results = []
 
-            def paused_clear():
+            def paused_clear(event):
                 clear_at_barrier.set()
                 if not release_clear.wait(timeout=5):
                     raise RuntimeError("timed out waiting to release Safe-Stop clear")
-                race_original_clear()
+                race_original_clear(event)
 
             def clear_race_save(event):
                 if event.artifact_id == "CLEAR-RACE-UNKNOWN":
@@ -1249,7 +1251,7 @@ def test_write_ahead_guarantee():
                 except RuntimeError as exc:
                     writer_results.append("OUTCOME UNKNOWN" in str(exc))
 
-            clear_race.persistence.clear_safe_stop = paused_clear
+            clear_race.persistence.clear_safe_stop_with_trace_event = paused_clear
             clear_race.persistence.save_trace_event = clear_race_save
             clear_race.persistence.has_trace_event = clear_race_confirm
             clear_thread = threading.Thread(target=clearer)
@@ -1336,6 +1338,325 @@ def test_write_ahead_guarantee():
         for suffix in ["-wal", "-shm"]:
             if os.path.exists(path + suffix):
                 os.unlink(path + suffix)
+
+
+def test_safe_stop_clear_atomicity():
+    """Phase 2A — Safe-Stop clear state and receipt share one commit boundary."""
+    # CLAIM: §0.5.2, §0.8.3, §6.4.4 — Safe-Stop clear receipt and halt deletion commit atomically; failed or unknown outcomes remain fail-closed
+    section("Phase 2A: Failure-Atomic Safe-Stop Clear")
+
+    from rss.audit.verify import verify_trace_file
+
+    def hashes(runtime):
+        return [event.content_hash for event in runtime.trace.all_events()]
+
+    def durable_hashes(runtime):
+        return [
+            event.content_hash
+            for event in runtime.persistence.load_all_trace()
+        ]
+
+    # A receipt insert failure occurs after BEGIN but before DELETE. The explicit
+    # SQLite transaction must roll back the attempted receipt and preserve the
+    # original durable halt byte-for-byte across restart.
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(
+            db_path=path,
+            audit_failure_threshold=100,
+        ))
+        rss.enter_safe_stop("Phase 2A rollback proof")
+        halt_before = rss.is_safe_stopped()
+        heads_before = hashes(rss)
+        original_insert = rss.persistence._insert_trace_event_row
+
+        def fail_clear_receipt(event):
+            if event.event_code == "SAFE_STOP_CLEARED":
+                raise sqlite3.OperationalError("injected clear receipt failure")
+            original_insert(event)
+
+        rss.persistence._insert_trace_event_row = fail_clear_receipt
+        failure = ""
+        try:
+            rss.clear_safe_stop(t0_command=True)
+        except RuntimeError as exc:
+            failure = str(exc)
+        check(
+            "WRITE-AHEAD FAILURE" in failure
+            and "injected clear receipt failure" in failure,
+            "failed clear receipt surfaces the write-ahead failure",
+        )
+        check(
+            rss.is_safe_stopped() == halt_before,
+            "failed clear receipt preserves the original durable halt and evidence",
+        )
+        check(
+            hashes(rss) == heads_before
+            and durable_hashes(rss) == heads_before
+            and not rss.trace.events_by_code("SAFE_STOP_CLEARED"),
+            "failed clear transaction adds no hot or durable success receipt",
+        )
+        rss.persistence._insert_trace_event_row = original_insert
+        rss.persistence.close()
+
+        restarted = bootstrap(RSSConfig(
+            db_path=path,
+            audit_failure_threshold=100,
+        ))
+        check(
+            restarted.is_safe_stopped() == halt_before
+            and not restarted.trace.events_by_code("SAFE_STOP_CLEARED"),
+            "failed clear remains halted with no success receipt after restart",
+        )
+        result = restarted.clear_safe_stop(t0_command=True)
+        check(
+            result == {"status": "CLEARED"}
+            and not restarted.is_safe_stopped()["active"],
+            "recovered T-0 clear commits the halt transition",
+        )
+        check(
+            len(restarted.trace.events_by_code("SAFE_STOP_CLEARED")) == 1
+            and hashes(restarted) == durable_hashes(restarted)
+            and restarted.trace.verify_chain_deep(),
+            "successful recovery clear commits one receipt with hot/durable parity",
+        )
+        restarted.persistence.close()
+        check(
+            verify_trace_file(path)["verified"],
+            "recovered atomic clear remains cold-valid",
+        )
+
+        final_restart = bootstrap(RSSConfig(db_path=path))
+        check(
+            not final_restart.is_safe_stopped()["active"]
+            and len(final_restart.trace.events_by_code("SAFE_STOP_CLEARED")) == 1,
+            "committed atomic clear survives restart without duplicating its receipt",
+        )
+        final_restart.persistence.close()
+    finally:
+        _cleanup_db(path)
+
+    # An adapter can report failure after COMMIT. Exact confirmation must
+    # reconcile memory to durable truth and return success without a duplicate.
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(db_path=path))
+        rss.enter_safe_stop("Phase 2A post-commit proof")
+        original_atomic_clear = (
+            rss.persistence.clear_safe_stop_with_trace_event
+        )
+
+        def commit_then_report_error(event):
+            original_atomic_clear(event)
+            raise sqlite3.OperationalError("post-commit adapter error")
+
+        rss.persistence.clear_safe_stop_with_trace_event = (
+            commit_then_report_error
+        )
+        result = rss.clear_safe_stop(t0_command=True)
+        check(
+            result == {"status": "CLEARED"}
+            and not rss.is_safe_stopped()["active"],
+            "confirmed post-commit adapter error returns the committed clear",
+        )
+        check(
+            len(rss.trace.events_by_code("SAFE_STOP_CLEARED")) == 1
+            and hashes(rss) == durable_hashes(rss),
+            "post-commit reconciliation appends exactly one in-memory receipt",
+        )
+        rss.persistence.close()
+        check(
+            verify_trace_file(path)["verified"],
+            "post-commit reconciled clear remains cold-valid",
+        )
+    finally:
+        _cleanup_db(path)
+
+    # If both COMMIT and ROLLBACK report failure while SQLite still has the
+    # atomic clear transaction open, the real confirmation classifier must
+    # refuse to guess. The recovery-fence write then resolves that same
+    # transaction fail-closed: clear receipt + halt deletion + replacement halt
+    # commit together, while the unconfirmed receipt remains hidden in memory
+    # until restart verifies the durable head.
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        rss = bootstrap(RSSConfig(
+            db_path=path,
+            audit_failure_threshold=100,
+        ))
+        rss.enter_safe_stop("Phase 2A open-transaction proof")
+
+        class CommitRollbackFailureProxy:
+            def __init__(self, connection):
+                self._connection = connection
+                self.commit_failed = False
+                self.rollback_failed = False
+
+            @property
+            def in_transaction(self):
+                return self._connection.in_transaction
+
+            def execute(self, sql, parameters=()):
+                command = sql.strip().upper()
+                if command == "COMMIT" and not self.commit_failed:
+                    self.commit_failed = True
+                    raise sqlite3.OperationalError(
+                        "injected COMMIT acknowledgement failure"
+                    )
+                if command == "ROLLBACK" and not self.rollback_failed:
+                    self.rollback_failed = True
+                    raise sqlite3.OperationalError(
+                        "injected ROLLBACK acknowledgement failure"
+                    )
+                return self._connection.execute(sql, parameters)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return self._connection.__exit__(exc_type, exc, traceback)
+
+            def __getattr__(self, name):
+                return getattr(self._connection, name)
+
+        real_connection = rss.persistence.conn
+        hostile_connection = CommitRollbackFailureProxy(real_connection)
+        rss.persistence.conn = hostile_connection
+        unknown = ""
+        try:
+            rss.clear_safe_stop(t0_command=True)
+        except RuntimeError as exc:
+            unknown = str(exc)
+        check(
+            "TRACE COMMIT OUTCOME UNKNOWN" in unknown
+            and "rollback could not be confirmed" in unknown
+            and "open transaction" in unknown
+            and rss.trace.status()["durability_uncertain"],
+            "failed COMMIT and ROLLBACK acknowledgements trigger the real open-transaction classifier",
+        )
+        check(
+            hostile_connection.commit_failed
+            and hostile_connection.rollback_failed
+            and not real_connection.in_transaction,
+            "recovery-fence persistence resolves the dangling transaction",
+        )
+        durable_clears = [
+            event
+            for event in rss.persistence.load_all_trace()
+            if event.event_code == "SAFE_STOP_CLEARED"
+        ]
+        check(
+            rss.is_safe_stopped()["active"]
+            and len(durable_clears) == 1
+            and not rss.trace.events_by_code("SAFE_STOP_CLEARED"),
+            "resolved open transaction commits its receipt but keeps a durable halt and hides the unconfirmed hot event",
+        )
+        rss.persistence.close()
+
+        restarted = bootstrap(RSSConfig(
+            db_path=path,
+            audit_failure_threshold=100,
+        ))
+        check(
+            restarted.is_safe_stopped()["active"]
+            and len(restarted.trace.events_by_code("SAFE_STOP_CLEARED")) == 1
+            and hashes(restarted) == durable_hashes(restarted)
+            and restarted.trace.verify_chain_deep(),
+            "restart verifies the resolved transaction and restores exact TRACE parity behind the halt",
+        )
+        restarted.persistence.close()
+        check(
+            verify_trace_file(path)["verified"],
+            "resolved open-transaction recovery remains cold-valid",
+        )
+    finally:
+        _cleanup_db(path)
+
+    # If neither the callback nor confirmation can establish the outcome, both
+    # possible durable states must remain fail-closed in-process and on restart.
+    for committed in (False, True):
+        fd, path = tempfile.mkstemp(suffix=".db")
+        os.close(fd)
+        try:
+            rss = bootstrap(RSSConfig(
+                db_path=path,
+                audit_failure_threshold=100,
+            ))
+            original_reason = f"Phase 2A unknown outcome committed={committed}"
+            rss.enter_safe_stop(original_reason)
+            original_atomic_clear = (
+                rss.persistence.clear_safe_stop_with_trace_event
+            )
+
+            def unknown_clear(event, do_commit=committed):
+                if do_commit:
+                    original_atomic_clear(event)
+                raise sqlite3.OperationalError("atomic clear outcome unavailable")
+
+            def unavailable_confirmation(event):
+                raise sqlite3.OperationalError("clear confirmation unavailable")
+
+            rss.persistence.clear_safe_stop_with_trace_event = unknown_clear
+            rss.persistence.has_completed_safe_stop_clear = (
+                unavailable_confirmation
+            )
+            unknown = ""
+            try:
+                rss.clear_safe_stop(t0_command=True)
+            except RuntimeError as exc:
+                unknown = str(exc)
+            check(
+                "TRACE COMMIT OUTCOME UNKNOWN" in unknown
+                and rss.trace.status()["durability_uncertain"],
+                f"unknown atomic clear outcome latches TRACE (committed={committed})",
+            )
+            check(
+                rss.is_safe_stopped()["active"],
+                f"unknown atomic clear outcome keeps a durable recovery fence (committed={committed})",
+            )
+            durable_clears = [
+                event
+                for event in rss.persistence.load_all_trace()
+                if event.event_code == "SAFE_STOP_CLEARED"
+            ]
+            check(
+                len(durable_clears) == int(committed)
+                and not rss.trace.events_by_code("SAFE_STOP_CLEARED"),
+                f"unknown outcome preserves its actual durable receipt state without guessing (committed={committed})",
+            )
+            if not committed:
+                check(
+                    rss.is_safe_stopped()["reason"] == original_reason,
+                    "unknown pre-commit outcome preserves the original halt reason",
+                )
+            rss.persistence.close()
+
+            restarted = bootstrap(RSSConfig(
+                db_path=path,
+                audit_failure_threshold=100,
+            ))
+            check(
+                restarted.is_safe_stopped()["active"]
+                and not restarted.trace.status()["durability_uncertain"],
+                f"restart verifies the actual atomic-clear outcome and remains halted (committed={committed})",
+            )
+            check(
+                len(restarted.trace.events_by_code("SAFE_STOP_CLEARED"))
+                == int(committed)
+                and hashes(restarted) == durable_hashes(restarted)
+                and restarted.trace.verify_chain_deep(),
+                f"restart restores exact TRACE parity for unknown outcome (committed={committed})",
+            )
+            restarted.persistence.close()
+            check(
+                verify_trace_file(path)["verified"],
+                f"unknown atomic-clear outcome remains cold-valid (committed={committed})",
+            )
+        finally:
+            _cleanup_db(path)
 
 
 def test_config_driven_verbs():
