@@ -313,10 +313,14 @@ def test_adversarial_audit_tamper():
 
         # T4: Boot-time verification catches tampered chain
         rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
-        boot_result = rss2.verify_boot_chain()
-        check(boot_result["verified"] is False,
-              "ADV-T4: boot-time verification catches tampered chain")
-        rss2.persistence.close()
+        boot_result = rss2.recovery_status()["trace_verification"]
+        check(
+            isinstance(rss2, SafeStopRecovery)
+            and boot_result["verified"] is False
+            and not hasattr(rss2, "verify_boot_chain"),
+            "ADV-T4: boot catches tamper and exposes no broad verifier/runtime",
+        )
+        rss2.close()
 
     finally:
         _cleanup_db(path)
@@ -527,7 +531,7 @@ def test_domain_pack_equivalence():
 
 
 def test_exception_context_leak():
-    """Gemini Addition #1: Crash mid-pipeline for Tenant A, then immediately
+    """Adversarial probe: crash mid-pipeline for Tenant A, then immediately
     fire Tenant B. Verify B doesn't wake up inside A's ghost context."""
     # CLAIM: §5.1.1 — exception in tenant A does not leak context or data to tenant B
     section("ADVERSARIAL: Exception Context Leak (Panic Bleed)")
@@ -658,7 +662,7 @@ def test_idempotence_replay():
 
 
 def test_instructional_override():
-    """Gemini Addition #2: Feed the LLM a prompt demanding SCOPE bypass.
+    """Adversarial probe: feed the LLM a prompt demanding SCOPE bypass.
     Prove the semantic routing physically cannot access restricted hubs
     regardless of how aggressively the prompt demands it."""
     # CLAIM: §4.2.3, §4.7.6 — jailbreak attempts cannot surface PERSONAL or REDLINE
@@ -997,34 +1001,71 @@ def test_scenario_tamper_recovery():
         # Tamper the database
         import sqlite3
         conn = sqlite3.connect(path)
+        original_hash = conn.execute(
+            "SELECT content_hash FROM trace_events WHERE id=3"
+        ).fetchone()[0]
         conn.execute("UPDATE trace_events SET content_hash='TAMPERED' WHERE id=3")
         conn.commit()
         conn.close()
 
         # Session 2: Boot detects tamper
         rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
-        boot = rss2.verify_boot_chain()
-        check(boot["verified"] is False,
-              "SCEN-TR2: boot-time verification detects tamper")
-        check(rss2.is_safe_stopped()["active"] is True,
+        recovery_status = rss2.recovery_status()
+        boot = recovery_status["trace_verification"]
+        check(
+            isinstance(rss2, SafeStopRecovery) and boot["verified"] is False,
+            "SCEN-TR2: boot-time verification detects tamper behind recovery facade",
+        )
+        check(recovery_status["safe_stop"]["active"] is True,
               "SCEN-TR3: system enters Safe-Stop on tamper detection")
 
-        # Requests blocked
-        r = rss2.process_request("test", use_llm=False)
-        check(r.get("error") == "SAFE_STOP_ACTIVE",
-              "SCEN-TR4: all requests blocked during Safe-Stop")
+        # Requests and normal state are absent, not merely rejected downstream.
+        check(
+            not hasattr(rss2, "process_request")
+            and not hasattr(rss2, "hubs"),
+            "SCEN-TR4: halted boot exposes no request or governed-state surface",
+        )
 
-        # T-0 recovery
-        rss2.clear_safe_stop(t0_command=True)
-        check(rss2.is_safe_stopped()["active"] is False,
-              "SCEN-TR5: T-0 clears Safe-Stop")
+        # T-0 cannot clear an integrity halt while the audit head is unknown.
+        clear_refused = False
+        try:
+            rss2.clear_safe_stop(t0_command=True)
+        except AuditLogError:
+            clear_refused = True
+        check(clear_refused and rss2.is_safe_stopped()["active"] is True,
+              "SCEN-TR5: T-0 clear is refused until TRACE is repaired")
+        rss2.close()
 
-        # System resumes
-        r2 = rss2.process_request("quote", use_llm=False)
+        # Out-of-band evidence repair restores the exact archived hash. A fresh
+        # bootstrap must verify that repair before the explicit T-0 clear.
+        conn = sqlite3.connect(path)
+        conn.execute(
+            "UPDATE trace_events SET content_hash=? WHERE id=3",
+            (original_hash,),
+        )
+        conn.commit()
+        conn.close()
+
+        rss3 = bootstrap(RSSConfig(db_path=path), restore=True)
+        repaired_status = rss3.recovery_status()
+        check(
+            isinstance(rss3, SafeStopRecovery)
+            and repaired_status["trace_verification"]["verified"] is True
+            and rss3.is_safe_stopped()["active"] is True,
+            "SCEN-TR6: repaired TRACE verifies while Safe-Stop remains active",
+        )
+        cleared = rss3.clear_safe_stop(t0_command=True)
+        check(cleared.get("status") == "CLEARED"
+              and rss3.is_safe_stopped()["active"] is False,
+              "SCEN-TR7: T-0 clears Safe-Stop only after verified restart")
+
+        # System resumes only on a new normal runtime.
+        rss4 = bootstrap(RSSConfig(db_path=path), restore=True)
+        r2 = rss4.process_request("quote", use_llm=False)
         check("error" not in r2,
-              "SCEN-TR6: governed operation resumes after recovery")
+              "SCEN-TR8: governed operation resumes after recovery and rebootstrap")
 
-        rss2.persistence.close()
+        rss4.close()
     finally:
         _cleanup_db(path)
 
@@ -1259,9 +1300,13 @@ def test_c_phase_regression_battery():
               "C-6: threshold consecutive failures → Safe-Stop")
         rss.persistence.close()
         rss2 = bootstrap(RSSConfig(db_path=path))
-        check(rss2.is_safe_stopped()["active"],
-              "C-6: threshold Safe-Stop persists across restart")
-        rss2.persistence.close()
+        check(
+            isinstance(rss2, SafeStopRecovery)
+            and rss2.is_safe_stopped()["active"]
+            and not hasattr(rss2, "persistence"),
+            "C-6: threshold Safe-Stop persists behind restricted recovery",
+        )
+        rss2.close()
     finally:
         _cleanup_db(path)
 

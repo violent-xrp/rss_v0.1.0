@@ -128,7 +128,7 @@ def test_s5_lifecycle_transitions():
     check(c.state == "CREATED", "initial state is CREATED")
 
     # CREATED → CONFIGURED
-    tecton.configure_container(c.container_id, advisors=("APEX",))
+    tecton.configure_container(c.container_id, advisors=("external-review",))
     check(c.state == "CONFIGURED", "CREATED → CONFIGURED valid")
 
     # CONFIGURED → ACTIVE
@@ -252,15 +252,15 @@ def test_s5_profile_immutability():
     c = tecton.create_container("Morrison", "T-0")
 
     # Configuration allowed before ACTIVE
-    tecton.configure_container(c.container_id, advisors=("APEX", "VECTOR"))
-    check(c.profile.advisors_enabled == ("APEX", "VECTOR"),
+    tecton.configure_container(c.container_id, advisors=("external-review", "risk-review"))
+    check(c.profile.advisors_enabled == ("external-review", "risk-review"),
           "config in CREATED/CONFIGURED state works")
 
     tecton.activate_container(c.container_id)
 
     # Standard configure_container blocked on ACTIVE
     try:
-        tecton.configure_container(c.container_id, advisors=("HALCYON",))
+        tecton.configure_container(c.container_id, advisors=("post-activation-review",))
         check(False, "should block configure on ACTIVE container")
     except TectonError:
         check(True, "configure_container blocked on ACTIVE (§5.3.3)")
@@ -909,7 +909,7 @@ def test_phase_d_regression_battery():
     finally:
         _cleanup_db(path)
 
-    # D-5 — ChatGPT's five scenarios for can_access_system_hub enforcement
+    # D-5 — can_access_system_hub enforcement scenarios
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
     try:

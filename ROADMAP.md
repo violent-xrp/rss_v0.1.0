@@ -40,16 +40,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **174 test functions / 1673 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **92.4% statement coverage** via `python run_coverage.py`
-- **174 claims / 174 tests / 118 Pact sections** in `docs/claim_matrix.md`
+- **177 test functions / 1795 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **92.2% statement coverage** via `python run_coverage.py`
+- **177 claims / 177 tests / 118 Pact sections** in `docs/claim_matrix.md`
 - **26 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 174/1673 baseline
+- public docs are synced to the current 177/1795 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -80,6 +80,8 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **Action proposal / broker decision surface:** closed as a bounded code slice. RSS now has structured `ActionProposal` objects and a `SideEffectBroker` that reviews proposed side effects, emits TRACE receipts, issues short-lived in-process single-use authorization receipts, supports pre-execution claim/revocation, and imports claimed results as untrusted data-only evidence. It does not execute tools, persist leases, auto-wire into `Runtime.process_request`, or claim universal per-action enforcement.
 - **RUNE embedded disallowed scan:** closed as a code helper and used by the action broker to audit longer payload strings for bounded disallowed terms while preserving `classify()` exact-match semantics.
 - **TRACE v2 audit integrity:** closed as a persistence/audit hardening slice. New TRACE rows carry a versioned stored-field hash envelope (`payload_hash` + `hash_version`), the cold verifier recomputes v2 envelopes and detects downgrade attempts, boot verification uses the deep verifier, production mode forces SQLite `synchronous=FULL`, and ratified amendment persistence is atomic. This improves local stored-field integrity; it does not claim external signing, timestamp anchoring, or payload-inclusive third-party recomputation.
+- **Safe-Stop clear atomicity:** closed as a bounded single-process persistence slice. The clear receipt and halt deletion now share one explicit SQLite transaction; failed receipt persistence leaves the prior halt active, post-commit adapter errors reconcile from exact durable state, and unconfirmable outcomes remain recovery-fenced until restart verification. General governed-state/receipt coupling remains separate work.
+- **Restricted halted-bootstrap recovery:** closed as a bounded Section 0 surface. A boot that begins in Safe-Stop, or fails pre-emission TRACE verification and establishes a durable recovery fence, returns `SafeStopRecovery` rather than the broad `Runtime`; if that fence cannot persist, bootstrap closes and raises. The facade exposes status, atomic T-0 clear, and lifecycle close only. Successful clear closes the recovery session and requires a fresh bootstrap before execution or governed-state access. This is a public-surface restriction inside the trusted single process, not process isolation, cryptographic T-0 identity, constructor/migration purity, or revocation of references retained before an in-process halt.
 - **Governance boundary hardening:** closed as a code-backed pre-release slice. OATH now treats GLOBAL `DENIED` as a restrictive kernel prohibition, runtime HIGH_RISK/CONSTITUTIONAL requests require elevated consent classes, WARD blocks protected-field injection/removal, RUNE update paths run the anti-trojan scanner while force-sealed terms survive restore, SEAL refuses mismatched restored canon hashes, post-LLM REDLINE scan failure withholds output, and TECTON separates suspended-read access from suspended request processing.
 - **Pact cleanup checkpoint:** the section-by-section Pact cleanup (Sections 0-7) is landed and pushed. Future Pact text changes move through the v0.1.1 amendment ceremony unless a release-gate review proves v0.1.0 would otherwise be false.
 - **Code-first Pact posture:** let kernel hardening move where it makes RSS more true; keep Pact edits section-bounded, reviewed, and version-sensitive so cleanup does not bundle unrelated lanes.

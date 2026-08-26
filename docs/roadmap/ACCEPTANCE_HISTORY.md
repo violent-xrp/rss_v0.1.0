@@ -8,9 +8,9 @@ This file preserves the count history and verification receipts that used to liv
 
 ## Current Baseline
 
-- **174 test functions / 1673 assertions / 0 failures**
-- **92.4% statement coverage**
-- **174 claims / 174 tests / 118 Pact sections**
+- **177 test functions / 1795 assertions / 0 failures**
+- **92.2% statement coverage**
+- **177 claims / 177 tests / 118 Pact sections**
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
 - Claim matrix: `python docs/build_claim_matrix.py`
@@ -100,6 +100,55 @@ Verified after the untrusted import hash-binding proof:
 - claim matrix: **101 sections / 139 claims / 139 tests**
 - coverage: **92.3% total**
 
+Verified after the 2026-08-21 Phase 1 TRACE durability hardening and
+independent-review follow-up:
+- the registered proof set expanded the durable-append, post-commit
+  reconciliation, unknown-outcome, pre-emission boot, and Safe-Stop clear-race
+  branches, plus direct runtime/cold-verifier hash parity
+- statement coverage moved from **92.4%** to **92.2%** because the new guarded
+  failure and concurrency branches grew faster than exercised statements; the
+  decrease is recorded here explicitly and does not represent a removed test
+  or a weakened acceptance claim
+- final canonical, coverage, and claim-matrix counts are recorded in the
+  Current Baseline and Public Doc Sync blocks above and below
+
+Verified after the 2026-08-24 Phase 2A failure-atomic Safe-Stop clear and the
+2026-08-25 independent-review follow-up:
+- canonical runner: **176 / 1771 / 0**
+- claim matrix: **118 sections / 176 claims / 176 tests**
+- coverage: **92.2% total**
+- the registered proof covers transaction rollback with the prior halt retained,
+  restart recovery, confirmed post-commit reconciliation, and both durable
+  outcomes when confirmation is unavailable
+- the review follow-up additionally exercises the real open-transaction
+  classifier after COMMIT and ROLLBACK acknowledgement failures; the recovery
+  fence resolves the still-open transaction fail-closed and restart restores
+  exact hot/durable parity
+- this meaningful branch proof moved the interim Phase 2A measurement from
+  **92.1%** back to the Phase 1 **92.2%** baseline; no coverage decrease remains
+  in the accepted candidate
+- restricted halted-runtime recovery and state/receipt transaction coupling
+  beyond this Safe-Stop clear remain separate work
+
+Verified after the 2026-08-25 Phase 2B restricted halted-bootstrap recovery
+surface:
+- canonical runner: **177 / 1795 / 0**
+- claim matrix: **118 sections / 177 claims / 177 tests**
+- coverage: **92.2% total**
+- the registered proof requires halted and preflight-refused boots to return
+  `SafeStopRecovery`, exposes no execution/seat/state/persistence surface,
+  permits only atomic T-0 clear, closes after success, and requires fresh
+  bootstrap before governed operation resumes
+- adversarial arms cover non-T-0 denial, cold-invalid TRACE, failed recovery-
+  fence persistence with connection cleanup, logical-state non-mutation,
+  context-managed close, and exact clear-receipt/state effects
+- meaningful guard coverage moved the interim Phase 2B measurement from
+  **92.0%** back to **92.2%**; runtime coverage moved from **85.4%** to
+  **86.8%** during the same proof pass
+- constructor-time migrations, malicious in-process introspection, retained
+  pre-halt references, cryptographic T-0 identity, and general state/receipt
+  coupling remain explicit non-claims
+
 ## Public Doc Sync
 
 All public-facing docs listed below were synced during the 2026-04-29 public-doc pass:
@@ -111,8 +160,8 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 - `THREAT_MODEL.md`
 
 Current synced public numbers:
-- **174 / 1673 / 0**
-- **92.4%** coverage
-- **174 claims / 174 tests / 118 Pact sections**
+- **177 / 1795 / 0**
+- **92.2%** coverage
+- **177 claims / 177 tests / 118 Pact sections**
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.

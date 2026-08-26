@@ -21,7 +21,7 @@ trace_verify.py             94.9%
 trace_export.py             89.9%
 tecton.py                   95.1%
 cycle.py                    94.2%
-persistence.py              93.3%
+persistence.py              91.9%
 meaning_law.py              94.4%
 hub_topology.py             92.7%
 seal.py                     94.0%
@@ -29,12 +29,12 @@ ward.py                     88.6%
 governance/t0.py           100.0%
 scope.py                    92.6%
 llm_adapter.py              90.1%
-audit_log.py                87.1%
-runtime.py                  86.6%
+audit_log.py                88.8%
+runtime.py                  86.8%
 oath.py                     83.7%
 pav.py                      90.9%
 constitution.py             92.5%
-TOTAL                       92.4%
+TOTAL                       92.2%
 ```
 
 ## Current Targets
@@ -59,6 +59,10 @@ Modules below the Phase G 85% target:
 - The Phase G coverage-floor pass lifted `cycle.py` to 94.2% and `trace_verify.py` to 94.7%.
 - The untrusted import hash-binding pass lifted `hub_topology.py` to 92.7% and total package coverage to **92.3%**.
 - The public hygiene hardening pass added focused drift-detector CLI/edge proof, lifting `audit/pact_canon_drift.py` to 98.1% and total package coverage to **92.6%**.
+- The Phase 2B recovery-surface pass exercised facade construction/refusal,
+  lifecycle close, recovery-fence persistence failure, and fresh-bootstrap
+  resumption. Runtime coverage recovered from the interim **85.4%** to
+  **86.8%**, returning total package coverage from **92.0%** to **92.2%**.
 
 ## Next Coverage Work
 

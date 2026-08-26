@@ -365,7 +365,32 @@ def test_s0_8_4_governed_state_bootstrap_roundtrip():
         check(event_count_1 > 0, "setup trace events persisted before restart")
         rss1.persistence.close()
 
-        # Session 2: fresh runtime restores from SQLite during bootstrap.
+        # Session 2: persistent Safe-Stop returns only the recovery surface;
+        # normal governed-state restoration is deferred until T-0 clears and a
+        # fresh runtime boots.
+        recovery = bootstrap(config, restore=True)
+        system_state = recovery.is_safe_stopped()
+        check(
+            isinstance(recovery, SafeStopRecovery)
+            and system_state.get("active") is True
+            and system_state.get("reason")
+            == "S084 persistent system state proof",
+            "§0.8.4 persistent system state routes boot into recovery mode",
+        )
+        check(
+            not hasattr(recovery, "meaning")
+            and not hasattr(recovery, "hubs")
+            and not hasattr(recovery, "oath")
+            and not hasattr(recovery, "tecton"),
+            "halted boot does not expose partially restored governed state",
+        )
+        cleared = recovery.clear_safe_stop(t0_command=True)
+        check(
+            cleared.get("rebootstrap_required") is True,
+            "T-0 clear requires a fresh bootstrap before restoration",
+        )
+
+        # Session 3: fresh normal runtime restores every governed category.
         rss2 = bootstrap(config, restore=True)
 
         term_ids = {t["id"] for t in rss2.meaning.list_sealed()}
@@ -410,11 +435,9 @@ def test_s0_8_4_governed_state_bootstrap_roundtrip():
             "§0.8.4 container hub entries restore on bootstrap",
         )
 
-        system_state = rss2.is_safe_stopped()
         check(
-            system_state.get("active") is True
-            and system_state.get("reason") == "S084 persistent system state proof",
-            "§0.8.4 persistent system state restores on bootstrap",
+            rss2.is_safe_stopped().get("active") is False,
+            "§0.8.4 normal restoration begins only after explicit recovery",
         )
         check(
             rss2.persistence.get_schema_version() is not None,

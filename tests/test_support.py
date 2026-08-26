@@ -84,7 +84,7 @@ from rss.audit.migrate import migration_required, describe_migration_path
 from rss.reference_pack import load_reference_pack, load_demo_containers, seed_demo_world, REFERENCE_PACK, DEMO_CONTAINERS
 
 # Layer 6
-from rss.core.runtime import Runtime, bootstrap, DEFAULT_TERMS
+from rss.core.runtime import Runtime, SafeStopRecovery, bootstrap, DEFAULT_TERMS
 
 # Layer 7
 from rss.hubs.tecton import (Tecton, TectonError, ContainerRequest, ContainerPermissions,

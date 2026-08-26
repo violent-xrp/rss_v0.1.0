@@ -198,7 +198,7 @@ class ContainerProfile(_Lockable):
         label: str,
         owner: str,
         permissions: ContainerPermissions,
-        advisors_enabled: tuple = ("APEX", "VECTOR", "HALCYON"),
+        advisors_enabled: tuple = (),
         scope_policy: Optional[dict] = None,
     ):
         self.label = label
@@ -282,7 +282,7 @@ class ContainerProfile(_Lockable):
             label=d["label"],
             owner=d["owner"],
             permissions=perms,
-            advisors_enabled=tuple(d.get("advisors_enabled", ("APEX", "VECTOR", "HALCYON"))),
+            advisors_enabled=tuple(d.get("advisors_enabled", ())),
             scope_policy={
                 "allowed_sources": tuple(sp.get("allowed_sources", ("WORK",))),
                 "forbidden_sources": tuple(sp.get("forbidden_sources", ("PERSONAL",))),
@@ -414,9 +414,8 @@ class Tecton:
         self._assert_transition(c, "CONFIGURED")
 
         if advisors is not None:
-            valid = {"APEX", "VECTOR", "HALCYON"}
             for a in advisors:
-                if a not in valid:
+                if not isinstance(a, str) or not a.strip():
                     raise TectonError(f"Unknown advisor: {a}")
             c.profile.advisors_enabled = tuple(advisors)
         if scope_policy is not None:

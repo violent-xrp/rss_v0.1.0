@@ -7,9 +7,9 @@ _Licensed under AGPLv3; see `LICENSE/LICENSE_INDEX.md`._
 Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
 
 ### Current verified snapshot
-- **174 test functions / 1673 assertions / 0 failures** via `python tests/test_all.py`
-- **92.4% statement coverage** via `python run_coverage.py`
-- **174 claims / 174 tests / 118 Pact sections** in `docs/claim_matrix.md`
+- **177 test functions / 1795 assertions / 0 failures** via `python tests/test_all.py`
+- **92.2% statement coverage** via `python run_coverage.py`
+- **177 claims / 177 tests / 118 Pact sections** in `docs/claim_matrix.md`
 - **26 source modules** in the `src/rss/` package tree (R1 restructure complete)
 
 ### Added / hardened
@@ -42,7 +42,9 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 - Public hygiene now syncs the GitHub Pages proof block, source-module counts, and current coverage tracker rows so stale public proof numbers fail mechanically.
 - Baseline sync now covers `docs/AI_GOVERNANCE_PROJECT_BRIEF.md`, including plain coverage and mapped-proof-claim lines, so outreach-facing proof numbers stay current mechanically.
 - Runtime boot now loads persisted TRACE history before emitting new boot events even when `restore=False`, preserving audit-chain continuity across sessions, and TECTON restore now re-locks restored ACTIVE profiles so §5.3.3 immutability survives SQLite round-trip.
-- TRACE audit writes now serialize chain append plus persistence through the audit lock, preserving cold-verifiable hash-chain order under concurrent governed writes in the current single-process runtime.
+- TRACE audit writes now stage and validate under the chain lock, persist to SQLite, and only then append in memory; confirmed pre-commit failures leave both views at the same prior head, post-commit adapter errors reconcile from durable truth, and unconfirmable outcomes latch further audit writes pending verified restart. Concurrent governed writes preserve cold-verifiable order in the current single-process runtime; governed-state/receipt transaction coupling beyond Safe-Stop clear remains separate hardening work.
+- Safe-Stop clearing now couples the `SAFE_STOP_CLEARED` TRACE receipt and durable halt deletion in one explicit SQLite transaction. Receipt failure rolls both back, confirmed post-commit adapter errors reconcile memory to durable truth, and unconfirmable outcomes retain or restore a persistent recovery fence pending verified restart. A hostile-connection proof also covers failed COMMIT and ROLLBACK acknowledgements with the transaction left open: the fence write resolves that transaction fail-closed, and restart restores exact TRACE parity. This is the single-process atomic-clear proof; the halted-bootstrap surface is bounded separately below, while general state/receipt coupling remains open.
+- Halted bootstrap now returns a narrow `SafeStopRecovery` facade instead of the broad runtime. The facade exposes halt/verification status, the existing atomic T-0 clear, and close; it does not expose execution, seats, hubs, OATH, TECTON, TRACE append, or persistence handles. A successful clear closes recovery and requires fresh bootstrap. This closes the ordinary halted-return surface, not constructor-time migration ordering, malicious in-process introspection, cryptographic T-0 identity, or references retained before a live runtime enters Safe-Stop.
 - TRACE now uses a v2 persisted-field hash envelope for new events, with schema v3 `payload_hash` / `hash_version` migration, cold verifier recomputation and downgrade detection, boot-time deep verification, config-driven SQLite synchronous posture, and atomic ratified-amendment persistence.
 - Governance boundary hardening now covers GLOBAL `DENIED` consent precedence, elevated HIGH_RISK/CONSTITUTIONAL consent at runtime Stage 5, anti-trojan scanning on RUNE definition updates plus force-sealed restore survival, WARD protected-field injection/removal blocking, SEAL canon-restore hash checks, post-LLM REDLINE scan failure withholding, and TECTON suspended-read semantics.
 - Default CLI smoke tests now treat AMBIGUOUS as an expected classification rather than a failure, and post-LLM REDLINE validation now redacts matched REDLINE content before output while still TRACE-logging the leak.
