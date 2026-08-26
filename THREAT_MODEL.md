@@ -46,10 +46,11 @@ Mitigation: OATH write-ahead persistence semantics and persistence-failure surfa
 - wrapper/API concurrency and deployment identity remain later-phase work
 - `clear_safe_stop()` requires an explicit `t0_command=True` soft sovereign gate, not a cryptographic/mechanical identity gate
 - `SafeStopRecovery` narrows the ordinary halted-bootstrap public surface, but it is not a process sandbox: malicious in-process introspection and references retained before a live runtime halts remain outside this bounded proof
+- production Genesis now gates normal bootstrap before restore/default authority, but `Runtime` construction and constructor-time schema migration still occur first; pre-constructor Genesis and full-Pact integrity remain future hardening
 - side effects are only governable when they pass through the runtime boundary; per-action/tool-call enforcement remains future hardening
 - future importers, browsers, email connectors, RAG indexes, and tool adapters could reintroduce indirect prompt injection risk if retrieved text is passed as instruction, if hidden/metadata text is not labeled as untrusted, or if model output can trigger side effects without a fresh OATH/CYCLE gate
 - live model fluency is not evidence; governed data claims still need scoped PAV context and TRACE-backed runtime flow
-- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 177/1795 baseline
+- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 178/1820 baseline
 
 ## Current honesty line
 RSS v0.1.0 is strong at **governance-before-model** inside a single-process governed runtime. It is not yet the whole deployment security story.

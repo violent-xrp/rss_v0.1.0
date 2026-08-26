@@ -1,12 +1,12 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-08-25 17:49 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-08-26 04:04 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
 **Boundary:** the gate enforces claim presence, one-claim-per-test counts, and a non-vacuity floor (every claim cites a Pact section; every test contains a real assertion). It does not — and cannot — verify that a test body semantically proves the clause it cites. Claim fidelity is a review responsibility.
 
-**Coverage:** 118 distinct Pact sections referenced across 177 claim tags on 177 test functions.
+**Coverage:** 120 distinct Pact sections referenced across 178 claim tags on 178 test functions.
 
 ---
 
@@ -28,6 +28,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_constitution_load_constitution` — load_constitution: file-not-found, hash-mismatch, missing-marker, and happy-path branches
 - `test_genesis_blocking` — genesis tamper blocks boot; production_mode enforcement
+- `test_bootstrap_requires_genesis_before_authority` — production bootstrap verifies Genesis before restoring state or minting default authority.
 - `test_default_genesis_binding_live_verify_and_recovery` — default Genesis binding verifies live Section 0, tamper Safe-Stops, and T-0 recovery resumes.
 - `test_genesis_binding_and_offline_fallback` — Genesis artifact bound from config; offline fallback summarizes governed data; shared reference pack is idempotent; ingress posture exposed
 
@@ -63,14 +64,23 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_safe_stop_clear_atomicity` — Safe-Stop clear receipt and halt deletion commit atomically; failed or unknown outcomes remain fail-closed
 - `test_clear_safe_stop_idempotence` — clear_safe_stop is idempotent: returns NO_OP without emitting audit event when system is not halted; emits SAFE_STOP_CLEARED only on real clear
 
+## §0.5.3
+
+- `test_bootstrap_requires_genesis_before_authority` — production bootstrap verifies Genesis before restoring state or minting default authority.
+
 ## §0.5.4
 
 - `test_c_phase_regression_battery` — canonical JSON, profile freezing, strict mode, threshold Safe-Stop, REDLINE sanitization
 - `test_safe_stop_persistent` — Safe-Stop persists across restart
 - `test_safe_stop_recovery_surface` — halted bootstrap returns a narrow T-0 recovery surface; normal state and execution remain unavailable until clear plus fresh bootstrap
 
+## §0.5.5
+
+- `test_bootstrap_requires_genesis_before_authority` — production bootstrap verifies Genesis before restoring state or minting default authority.
+
 ## §0.5.6
 
+- `test_bootstrap_requires_genesis_before_authority` — production bootstrap verifies Genesis before restoring state or minting default authority.
 - `test_default_genesis_binding_live_verify_and_recovery` — default Genesis binding verifies live Section 0, tamper Safe-Stops, and T-0 recovery resumes.
 - `test_safe_stop_recovery_surface` — halted bootstrap returns a narrow T-0 recovery surface; normal state and execution remain unavailable until clear plus fresh bootstrap
 
@@ -560,6 +570,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §6.9.2
 
+- `test_bootstrap_requires_genesis_before_authority` — production bootstrap verifies Genesis before restoring state or minting default authority.
 - `test_oath_denied_consent_survives_restart` — DENIED consent survives restart; restore never upgrades a restrictive status to AUTHORIZED
 - `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
 - `test_phase_d_regression_battery` — UUID ingress, scope-on-permission, OATH persistence-failure visibility

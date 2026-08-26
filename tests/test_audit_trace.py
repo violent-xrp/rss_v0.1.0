@@ -1289,8 +1289,9 @@ def test_a1_historical_trace_chain_loaded_on_restart():
 
         # Verify the first event in Session 2's memory is actually from Session 1
         first_event_code = rss2.trace.all_events()[0].event_code
-        check(first_event_code in ("SCHEMA_VERSION_SET", "BOOT_CHAIN_VERIFIED",
-                                    "SCOPE_OK", "RUNE_OK", "EXEC_OK"),
+        check(first_event_code in ("GENESIS_VERIFIED", "SCHEMA_VERSION_SET",
+                                    "BOOT_CHAIN_VERIFIED", "SCOPE_OK",
+                                    "RUNE_OK", "EXEC_OK"),
               f"Session 2 first event is a real historical event: {first_event_code}")
 
         # BOOT_CHAIN_VERIFIED from Session 1 should be in Session 2's memory
