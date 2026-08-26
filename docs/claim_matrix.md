@@ -1,12 +1,12 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-08-26 04:04 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-08-26 23:26 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
 **Boundary:** the gate enforces claim presence, one-claim-per-test counts, and a non-vacuity floor (every claim cites a Pact section; every test contains a real assertion). It does not — and cannot — verify that a test body semantically proves the clause it cites. Claim fidelity is a review responsibility.
 
-**Coverage:** 120 distinct Pact sections referenced across 178 claim tags on 178 test functions.
+**Coverage:** 120 distinct Pact sections referenced across 179 claim tags on 179 test functions.
 
 ---
 
@@ -81,6 +81,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §0.5.6
 
 - `test_bootstrap_requires_genesis_before_authority` — production bootstrap verifies Genesis before restoring state or minting default authority.
+- `test_bootstrap_refuses_invalid_critical_consent` — bootstrap validates every durable GLOBAL:EXECUTE claimant before restore or default authority and routes invalid state only to recovery.
 - `test_default_genesis_binding_live_verify_and_recovery` — default Genesis binding verifies live Section 0, tamper Safe-Stops, and T-0 recovery resumes.
 - `test_safe_stop_recovery_surface` — halted bootstrap returns a narrow T-0 recovery surface; normal state and execution remain unavailable until clear plus fresh bootstrap
 
@@ -108,6 +109,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §0.9
 
 - `test_action_plane_broker_gates` — broker re-enters Safe-Stop, RUNE, OATH, CYCLE, and payload gates before action claims
+- `test_bootstrap_refuses_invalid_critical_consent` — bootstrap validates every durable GLOBAL:EXECUTE claimant before restore or default authority and routes invalid state only to recovery.
 - `test_oath_denied_consent_survives_restart` — DENIED consent survives restart; restore never upgrades a restrictive status to AUTHORIZED
 - `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
 
@@ -571,6 +573,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §6.9.2
 
 - `test_bootstrap_requires_genesis_before_authority` — production bootstrap verifies Genesis before restoring state or minting default authority.
+- `test_bootstrap_refuses_invalid_critical_consent` — bootstrap validates every durable GLOBAL:EXECUTE claimant before restore or default authority and routes invalid state only to recovery.
 - `test_oath_denied_consent_survives_restart` — DENIED consent survives restart; restore never upgrades a restrictive status to AUTHORIZED
 - `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
 - `test_phase_d_regression_battery` — UUID ingress, scope-on-permission, OATH persistence-failure visibility

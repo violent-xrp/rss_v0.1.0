@@ -406,6 +406,242 @@ def test_bootstrap_requires_genesis_before_authority():
               "unfenced checker failure closes before authority or receipts")
 
 
+def test_bootstrap_refuses_invalid_critical_consent():
+    # CLAIM: §0.9, §6.9.2, §0.5.6 — bootstrap validates every durable GLOBAL:EXECUTE claimant before restore or default authority and routes invalid state only to recovery.
+    section("Bootstrap Critical Consent Before Authority")
+    from rss.audit.verify import verify_trace_file
+
+    def config_for(db_path, tmp):
+        return RSSConfig(
+            db_path=db_path,
+            section0_path=os.path.join(tmp, "intentionally-missing-dev-genesis.md"),
+        )
+
+    def seed(db_path, tmp):
+        runtime = bootstrap(config_for(db_path, tmp))
+        check(isinstance(runtime, Runtime),
+              "critical-consent fixture begins from a valid operational boot")
+        runtime.close()
+
+    def snapshot(db_path):
+        conn = sqlite3.connect(db_path)
+        try:
+            rows = conn.execute(
+                "SELECT key, action_class, container_id, requester, status "
+                "FROM consents ORDER BY key"
+            ).fetchall()
+            halt = conn.execute(
+                "SELECT value FROM system_state WHERE key='SAFE_STOP'"
+            ).fetchone()
+            codes = [
+                row[0] for row in conn.execute(
+                    "SELECT event_code FROM trace_events ORDER BY id"
+                ).fetchall()
+            ]
+            return {"rows": rows, "halt": halt, "codes": codes}
+        finally:
+            conn.close()
+
+    def execute_sql(db_path, statement, parameters=()):
+        conn = sqlite3.connect(db_path)
+        try:
+            conn.execute(statement, parameters)
+            conn.commit()
+        finally:
+            conn.close()
+
+    def boot_with_authorize_spy(config, *, restore=False):
+        calls = []
+        original_authorize = Oath.authorize
+
+        def track_authorize(self, *args, **kwargs):
+            action_class = kwargs.get(
+                "action_class", args[0] if args else None
+            )
+            container_id = kwargs.get("container_id", "GLOBAL")
+            calls.append((action_class, container_id))
+            return original_authorize(self, *args, **kwargs)
+
+        Oath.authorize = track_authorize
+        try:
+            result = bootstrap(config, restore=restore)
+        finally:
+            Oath.authorize = original_authorize
+        return result, calls
+
+    def run_invalid_case(tmp, label, mutate, expected_issue, *, restore=False):
+        db_path = os.path.join(tmp, f"{label}.db")
+        seed(db_path, tmp)
+        before = snapshot(db_path)
+        mutate(db_path)
+        invalid_rows = snapshot(db_path)["rows"]
+
+        result, authorize_calls = boot_with_authorize_spy(
+            config_for(db_path, tmp), restore=restore
+        )
+        check(isinstance(result, SafeStopRecovery),
+              f"{label}: invalid critical consent returns recovery-only surface")
+        status = result.recovery_status()
+        check(status["safe_stop"]["active"] is True,
+              f"{label}: invalid critical consent establishes persistent Safe-Stop")
+        check(expected_issue in status["safe_stop"]["reason"],
+              f"{label}: refusal names the critical consent defect")
+        check(authorize_calls == [],
+              f"{label}: validation refuses before any consent is rehydrated or minted")
+        check(not hasattr(result, "oath"),
+              f"{label}: invalid consent exposes no broad authority surface")
+        result.close()
+
+        after = snapshot(db_path)
+        check(after["rows"] == invalid_rows,
+              f"{label}: invalid durable rows are preserved as evidence")
+        check(after["halt"] is not None and
+              after["codes"][len(before["codes"]):] == ["SAFE_STOP_ENTERED"],
+              f"{label}: refusal persists one halt receipt and no authority receipt")
+        check(verify_trace_file(db_path)["verified"] is True,
+              f"{label}: refusal leaves a cold-valid TRACE chain")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        run_invalid_case(
+            tmp,
+            "unknown-status-restore",
+            lambda path: execute_sql(
+                path,
+                "UPDATE consents SET status='CORRUPTED' "
+                "WHERE key='GLOBAL:EXECUTE'",
+            ),
+            "unknown_status",
+            restore=True,
+        )
+        run_invalid_case(
+            tmp,
+            "unknown-status-no-restore",
+            lambda path: execute_sql(
+                path,
+                "UPDATE consents SET status='CORRUPTED' "
+                "WHERE key='GLOBAL:EXECUTE'",
+            ),
+            "unknown_status",
+            restore=False,
+        )
+        run_invalid_case(
+            tmp,
+            "action-mismatch",
+            lambda path: execute_sql(
+                path,
+                "UPDATE consents SET action_class='DRAFT' "
+                "WHERE key='GLOBAL:EXECUTE'",
+            ),
+            "action_mismatch",
+        )
+        run_invalid_case(
+            tmp,
+            "container-mismatch",
+            lambda path: execute_sql(
+                path,
+                "UPDATE consents SET container_id='OTHER' "
+                "WHERE key='GLOBAL:EXECUTE'",
+            ),
+            "container_mismatch",
+        )
+        run_invalid_case(
+            tmp,
+            "missing-requester",
+            lambda path: execute_sql(
+                path,
+                "UPDATE consents SET requester='   ' "
+                "WHERE key='GLOBAL:EXECUTE'",
+            ),
+            "missing_requester",
+        )
+        run_invalid_case(
+            tmp,
+            "duplicate-shadow",
+            lambda path: execute_sql(
+                path,
+                "INSERT INTO consents "
+                "(key, action_class, container_id, requester, status, granted_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    "BAD-CONSENT", "EXECUTE", "GLOBAL", "T-0",
+                    "AUTHORIZED", datetime.now(UTC).isoformat(),
+                ),
+            ),
+            "duplicate_rows",
+        )
+
+        load_failure_db = os.path.join(tmp, "load-failure.db")
+        original_load_consents = Persistence.load_consents
+        try:
+            def fail_consent_load(self):
+                raise sqlite3.OperationalError("simulated critical consent read failure")
+
+            Persistence.load_consents = fail_consent_load
+            load_failure = bootstrap(config_for(load_failure_db, tmp))
+        finally:
+            Persistence.load_consents = original_load_consents
+        check(isinstance(load_failure, SafeStopRecovery),
+              "critical consent load failure returns recovery-only surface")
+        check("could not be loaded" in
+              load_failure.recovery_status()["safe_stop"]["reason"],
+              "critical consent load failure preserves the refusal reason")
+        load_failure.close()
+        load_snapshot = snapshot(load_failure_db)
+        check(load_snapshot["rows"] == [] and load_snapshot["halt"] is not None,
+              "critical consent load failure creates no authority and persists a halt")
+        check(load_snapshot["codes"] == ["SAFE_STOP_ENTERED"] and
+              verify_trace_file(load_failure_db)["verified"] is True,
+              "critical consent load failure emits one cold-valid halt receipt")
+
+        fence_failure_db = os.path.join(tmp, "fence-failure.db")
+        seed(fence_failure_db, tmp)
+        execute_sql(
+            fence_failure_db,
+            "UPDATE consents SET status='CORRUPTED' "
+            "WHERE key='GLOBAL:EXECUTE'",
+        )
+        fence_before = snapshot(fence_failure_db)
+        original_enter_safe_stop = Persistence.enter_safe_stop
+        try:
+            def fail_consent_fence(self, reason):
+                raise sqlite3.OperationalError("simulated critical consent fence failure")
+
+            Persistence.enter_safe_stop = fail_consent_fence
+            try:
+                bootstrap(config_for(fence_failure_db, tmp))
+                check(False, "critical consent fence failure must refuse bootstrap")
+            except RuntimeError as exc:
+                check("could not complete a durable, evidenced refusal" in str(exc),
+                      "critical consent fence failure closes and raises explicitly")
+        finally:
+            Persistence.enter_safe_stop = original_enter_safe_stop
+        fence_after = snapshot(fence_failure_db)
+        check(fence_after == fence_before,
+              "failed critical-consent fence creates no halt, receipt, or authority change")
+
+        unfenced_db = os.path.join(tmp, "unfenced.db")
+        seed(unfenced_db, tmp)
+        execute_sql(
+            unfenced_db,
+            "UPDATE consents SET status='CORRUPTED' "
+            "WHERE key='GLOBAL:EXECUTE'",
+        )
+        unfenced_before = snapshot(unfenced_db)
+        original_runtime_enter_safe_stop = Runtime.enter_safe_stop
+        try:
+            Runtime.enter_safe_stop = lambda self, reason: None
+            try:
+                bootstrap(config_for(unfenced_db, tmp))
+                check(False, "unfenced critical consent failure must refuse bootstrap")
+            except RuntimeError as exc:
+                check("failed without establishing persistent Safe-Stop" in str(exc),
+                      "bootstrap rejects critical consent failure without a halt")
+        finally:
+            Runtime.enter_safe_stop = original_runtime_enter_safe_stop
+        check(snapshot(unfenced_db) == unfenced_before,
+              "unfenced critical-consent failure creates no halt, receipt, or authority change")
+
+
 def test_default_genesis_binding_live_verify_and_recovery():
     # CLAIM: §0.2.1, §0.5.6 — default Genesis binding verifies live Section 0, tamper Safe-Stops, and T-0 recovery resumes.
     section("Default Genesis Binding Live Verify + Recovery")

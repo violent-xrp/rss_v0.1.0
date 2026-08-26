@@ -8,9 +8,9 @@ This file preserves the count history and verification receipts that used to liv
 
 ## Current Baseline
 
-- **178 test functions / 1820 assertions / 0 failures**
+- **179 test functions / 1884 assertions / 0 failures**
 - **92.4% statement coverage**
-- **178 claims / 178 tests / 120 Pact sections**
+- **179 claims / 179 tests / 120 Pact sections**
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
 - Claim matrix: `python docs/build_claim_matrix.py`
@@ -165,8 +165,28 @@ gate:
   checker failure without persistent Safe-Stop both close and raise before
   authority or false receipts can escape
 - this is a post-construction, pre-authority gate; constructor-time seat setup
-  and schema migration, full-Pact integrity, and corrupt persisted-consent
-  validation remain separate work
+  and schema migration, full-Pact integrity, and persisted-consent validation
+  were separate from that phase; the critical consent baseline closes below
+
+Verified after the 2026-08-26 critical persisted-consent-before-authority
+bootstrap gate:
+- canonical runner: **179 / 1884 / 0**
+- claim matrix: **120 sections / 179 claims / 179 tests**
+- coverage: **92.4% total** (`runtime.py`: **88.4%**)
+- the registered proof covers unknown `GLOBAL:EXECUTE` status under both
+  restore modes, action/container mismatch, blank requester, duplicate shadow
+  rows, consent-load failure, failed Safe-Stop fencing, and an unfenced refusal
+- every invalid case is rejected before OATH rehydration/default authority,
+  preserves the durable rows as evidence, and either returns only
+  `SafeStopRecovery` with a cold-valid halt receipt or closes and raises when a
+  persistent recovery fence cannot be established
+- the former restore-skip fixture now uses a noncritical `DRAFT` consent, so it
+  continues to prove warning visibility without shadowing the constitutional
+  `GLOBAL:EXECUTE` row or blessing fail-open behavior
+- validation of every tenant/action consent, schema-level tuple uniqueness,
+  lossless consent-field restoration, atomic Safe-Stop entry, and protection
+  against external database writers between validation and use remain explicit
+  non-claims
 
 ## Public Doc Sync
 
@@ -179,8 +199,8 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 - `THREAT_MODEL.md`
 
 Current synced public numbers:
-- **178 / 1820 / 0**
+- **179 / 1884 / 0**
 - **92.4%** coverage
-- **178 claims / 178 tests / 120 Pact sections**
+- **179 claims / 179 tests / 120 Pact sections**
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.

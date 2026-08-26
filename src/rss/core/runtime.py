@@ -267,16 +267,91 @@ class Runtime:
         active = ACTIVE_HUBS.get()
         return active if active is not None else self._global_hubs
 
-    def _lookup_persisted_consent(self, action_class: str, container_id: str):
-        """Check if a consent record for (action_class, container_id) exists in
-        persistence. Returns the dict row if found, None otherwise."""
-        for c in self.persistence.load_consents():
-            if (c.get("action_class") == action_class
-                    and c.get("container_id") == container_id):
-                return c
-        return None
+    _VALID_PERSISTED_CONSENT_STATUSES = frozenset({
+        "AUTHORIZED", "REVOKED", "DENIED",
+    })
+    _CRITICAL_PERSISTED_CONSENTS = {
+        ("EXECUTE", "GLOBAL"): "GLOBAL:EXECUTE",
+    }
 
-    def _ensure_default_execute_consent(self) -> None:
+    def _validate_critical_persisted_consent_state(self) -> dict:
+        """Validate durable authority that bootstrap must never guess through.
+
+        Phase 3B deliberately scopes the boot-refusal boundary to the
+        constitutional baseline ``GLOBAL:EXECUTE`` consent. Every row that
+        claims either its canonical key or its action/container tuple is
+        examined so a second, non-canonical row cannot shadow the governing
+        record through SQLite row order.
+
+        This check is read-only. Invalid rows remain durable evidence; the
+        caller owns the Safe-Stop fence and recovery-surface decision.
+        """
+        try:
+            rows = self.persistence.load_consents()
+        except Exception as exc:
+            return {
+                "verified": False,
+                "reason": (
+                    "Critical persisted consent state could not be loaded: "
+                    f"{type(exc).__name__}: {exc}"
+                ),
+                "issues": ["load_failure"],
+                "records": {},
+            }
+
+        issues = []
+        records = {}
+        critical_items = self._CRITICAL_PERSISTED_CONSENTS.items()
+        for (action_class, container_id), canonical_key in critical_items:
+            candidates = [
+                row for row in rows
+                if row.get("key") == canonical_key
+                or (
+                    row.get("action_class") == action_class
+                    and row.get("container_id") == container_id
+                )
+            ]
+            if len(candidates) > 1:
+                issues.append(f"{canonical_key}:duplicate_rows")
+            for row in candidates:
+                row_issues = []
+                if row.get("key") != canonical_key:
+                    row_issues.append("noncanonical_key")
+                if row.get("action_class") != action_class:
+                    row_issues.append("action_mismatch")
+                if row.get("container_id") != container_id:
+                    row_issues.append("container_mismatch")
+                if row.get("status") not in self._VALID_PERSISTED_CONSENT_STATUSES:
+                    row_issues.append("unknown_status")
+                requester = row.get("requester")
+                if requester is None or not str(requester).strip():
+                    row_issues.append("missing_requester")
+                if row_issues:
+                    issues.append(
+                        f"{canonical_key}:" + ",".join(row_issues)
+                    )
+                elif len(candidates) == 1:
+                    records[canonical_key] = row
+
+        if issues:
+            return {
+                "verified": False,
+                "reason": (
+                    "Critical persisted consent validation failed: "
+                    + "; ".join(issues)
+                ),
+                "issues": issues,
+                "records": {},
+            }
+        return {
+            "verified": True,
+            "reason": "",
+            "issues": [],
+            "records": records,
+        }
+
+    def _ensure_default_execute_consent(
+            self, validated_critical_state: Optional[dict] = None) -> None:
         """Phase A.2 + E-4 — Conditional default EXECUTE auto-authorize.
         Called from bootstrap() after restore_from_db() (if any). Creates the
         default GLOBAL:EXECUTE consent ONLY if no record exists in persistence.
@@ -287,7 +362,15 @@ class Runtime:
         persistent Safe-Stop rather than proceeding with a ghost authorization.
         A system that cannot durably remember its baseline consent is not
         constitutionally sound and must halt."""
-        existing = self._lookup_persisted_consent("EXECUTE", "GLOBAL")
+        validation = (
+            validated_critical_state
+            if validated_critical_state is not None
+            else self._validate_critical_persisted_consent_state()
+        )
+        if not validation["verified"]:
+            raise RuntimeError(validation["reason"])
+
+        existing = validation["records"].get("GLOBAL:EXECUTE")
         if existing is None:
             # Fresh database — create the default
             result = self.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0")
@@ -319,8 +402,10 @@ class Runtime:
                 _persist=False,
             )
             persisted_status = existing.get("status")
-            if persisted_status in ("REVOKED", "DENIED"):
-                self.oath._consents[key].status = persisted_status
+            # The pre-authority validator has already restricted this value to
+            # the exact durable status vocabulary. Assign it explicitly so
+            # rehydration never infers authority from an unknown value.
+            self.oath._consents[key].status = persisted_status
 
     # ── Safe-Stop (persistent, survives restart) ──
 
@@ -1598,6 +1683,32 @@ def bootstrap(config=None, restore: bool = False) -> Runtime | SafeStopRecovery:
             )
         return SafeStopRecovery(runtime)
 
+    # §0.9 / §6.9.2 — Validate the durable constitutional authorization
+    # baseline before restore can rehydrate it and before the default-consent
+    # path can create or infer authority. The validator inspects every row
+    # claiming GLOBAL:EXECUTE, not only the first SQLite result, so duplicate
+    # shadow rows and malformed canonical rows fail closed under both restore
+    # modes. Invalid rows are deliberately preserved as durable evidence.
+    critical_consents = runtime._validate_critical_persisted_consent_state()
+    if not critical_consents["verified"]:
+        reason = critical_consents["reason"]
+        try:
+            runtime.enter_safe_stop(reason)
+        except Exception as exc:
+            runtime.close()
+            raise RuntimeError(
+                "Critical persisted consent validation failed and bootstrap "
+                "could not complete a durable, evidenced refusal: "
+                f"{exc}"
+            ) from exc
+        if not runtime.is_safe_stopped().get("active"):
+            runtime.close()
+            raise RuntimeError(
+                "Critical persisted consent validation failed without "
+                "establishing persistent Safe-Stop."
+            )
+        return SafeStopRecovery(runtime)
+
     # Normal boot only: register config-driven default terms. Bootstrap must
     # not bake in a legacy domain persona. Use config.default_terms and its
     # definition prefix as the single source of truth, skipping blanks and
@@ -1645,7 +1756,7 @@ def bootstrap(config=None, restore: bool = False) -> Runtime | SafeStopRecovery:
     # If a prior session's REVOKED record was loaded, this is a no-op (the
     # record exists). If this is a fresh DB, this creates the default.
     # Either way, we never silently overwrite a persisted revocation.
-    runtime._ensure_default_execute_consent()
+    runtime._ensure_default_execute_consent(critical_consents)
 
     # §6.3.5, §6.11.3 — Boot-time chain verification. If broken, this enters
     # persistent Safe-Stop. Runs regardless of restore flag — every boot verifies.

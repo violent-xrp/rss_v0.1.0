@@ -16,7 +16,7 @@ I started building Rose Sigil Systems because I kept seeing the same failure pat
 
 **RSS v0.1.0** is a domain-agnostic, application-layer AI governance kernel with a zero-trust trajectory. What exists now is alpha: the architecture works, the discipline is real, and the known limits are stated openly.
 
-**Verified baseline:** 178 test functions, 1820 assertions, 0 failures, 92.4% coverage. Traceability: 178 claims mapped to 178 tests across 120 Pact sections.
+**Verified baseline:** 179 test functions, 1884 assertions, 0 failures, 92.4% coverage. Traceability: 179 claims mapped to 179 tests across 120 Pact sections.
 
 Reproduce with `python tests/test_all.py` and `python run_coverage.py`. Claim mapping at `docs/claim_matrix.md`.
 
@@ -59,6 +59,7 @@ Specific properties currently proven:
 - governed consent with write-ahead persistence
 - hash-chained audit with cold verification
 - production Genesis verification before default authority, with persistent Safe-Stop and a narrow T-0 recovery facade on refusal
+- fail-closed validation of the durable `GLOBAL:EXECUTE` baseline before consent restore or default authority
 - tenant isolation through TECTON containers
 
 RSS v0.1.0 should **not** be presented as:
@@ -150,7 +151,7 @@ pip install -r requirements.txt
 ```bash
 python tests/test_all.py
 ```
-The acceptance run prints `RSS v0.1.0 - 178 test functions, 1820 assertions passed, 0 failed` as its final line.
+The acceptance run prints `RSS v0.1.0 - 179 test functions, 1884 assertions passed, 0 failed` as its final line.
 
 ### Run the guided demo walkthrough
 ```bash
@@ -207,6 +208,7 @@ Current capabilities at the v0.1.0 alpha line:
 - Hash-chained audit log with cold verification
 - Tenant isolation through TECTON containers
 - Production Genesis boot gating plus persistent Safe-Stop, recovery-only halted bootstrap, and fresh-bootstrap resumption
+- Critical `GLOBAL:EXECUTE` persistence validation before restore/default authorization
 - REDLINE exclusion from PAV/model-facing context
 - Indirect-prompt-injection defense with structural data-only markers
 - Runner-truth acceptance harness as canonical verdict surface

@@ -273,7 +273,10 @@ def test_restore_skipped_records_are_visible():
             )
             conn.execute(
                 "INSERT OR REPLACE INTO consents VALUES(?,?,?,?,?,?)",
-                ("BAD-CONSENT", "EXECUTE", "GLOBAL", "T-0", "BROKEN", None),
+                (
+                    "NONCRITICAL:DRAFT", "DRAFT", "NONCRITICAL",
+                    "T-0", "BROKEN", None,
+                ),
             )
             conn.execute(
                 "INSERT OR REPLACE INTO hub_entries VALUES(?,?,?,?,?,?,?,?,?)",

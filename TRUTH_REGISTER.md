@@ -5,9 +5,9 @@ _License: CC BY-ND 4.0 discipline material; see `LICENSE/CC BY-ND 4.0.md` and `p
 Release: **v0.1.0**
 
 ## Current verified state
-- **178 test functions / 1820 assertions / 0 failures** via `python tests/test_all.py`
+- **179 test functions / 1884 assertions / 0 failures** via `python tests/test_all.py`
 - **92.4% statement coverage** via `python run_coverage.py`
-- **178 claims / 178 tests / 120 Pact sections** in `docs/claim_matrix.md`
+- **179 claims / 179 tests / 120 Pact sections** in `docs/claim_matrix.md`
 - **26 source modules** in the `src/rss/` package tree (subpackages: `core/`, `governance/seats/`, `audit/`, `hubs/`, `persistence/`, `llm/`) + `src/main.py` CLI entry point
 - demo/reference-pack v2, pack validation, demo artifact export, governed offline fallback, live normal-advisor boundary, interactive SYSTEM-only normal-chat containment, and untrusted import hash-binding are implemented in the current code snapshot
 
@@ -62,7 +62,7 @@ RSS v0.1.0 does **not** yet implement:
 - `clear_safe_stop()` requires an explicit `t0_command=True` soft sovereign gate, not a cryptographic/mechanical identity check; the mechanical identity gate remains future perimeter hardening, not a current v0.1.0 claim
 - hard guarantees depend on meaningful side effects entering through the governed runtime boundary
 - future browser, email, document, RAG, and tool-return connectors still need connector-specific indirect-prompt-injection tests before public claims expand
-- public docs are synchronized to the 178/1820 baseline as of this update; ROADMAP remains the working truth source going forward
+- public docs are synchronized to the 179/1884 baseline as of this update; ROADMAP remains the working truth source going forward
 
 ---
 
@@ -73,6 +73,7 @@ The current code snapshot includes proof for:
 - `clear_safe_stop()` failure atomicity — its success receipt and halt deletion share one SQLite transaction, with rollback, post-commit reconciliation, unknown-outcome recovery fencing, hostile COMMIT/ROLLBACK acknowledgement failure, restart, and cold-validity proof
 - halted-bootstrap recovery boundary — persistent or durably fenced preflight-triggered Safe-Stop returns `SafeStopRecovery`, exposing status, atomic clear, and close but no normal runtime/seat/state surface; fence-persistence failure refuses bootstrap, and fresh bootstrap is required after clear
 - production Genesis boot gate — after TRACE preflight, missing required or mismatched Section 0 establishes persistent Safe-Stop and exposes only recovery before normal restore or default authority; valid production and missing-artifact dev mode are registered proof arms
+- critical persisted-consent boot gate — every durable row claiming `GLOBAL:EXECUTE` is validated for canonical key/tuple agreement, allowed status, nonblank requester, and uniqueness before restore/default authority; invalid or unreadable state preserves evidence and exposes recovery only, while failed or unfenced refusal closes and raises
 - `load_constitution()` — file-not-found, hash-mismatch, missing-marker, happy-path, and multi-marker branches
 - word-boundary meaning enforcement and normalization hardening
 - anti-trojan term rejection
