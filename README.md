@@ -16,7 +16,7 @@ I started building Rose Sigil Systems because I kept seeing the same failure pat
 
 **RSS v0.1.0** is a domain-agnostic, application-layer AI governance kernel with a zero-trust trajectory. What exists now is alpha: the architecture works, the discipline is real, and the known limits are stated openly.
 
-**Verified baseline:** 176 test functions, 1771 assertions, 0 failures, 92.2% coverage. Traceability: 176 claims mapped to 176 tests across 118 Pact sections.
+**Verified baseline:** 177 test functions, 1795 assertions, 0 failures, 92.2% coverage. Traceability: 177 claims mapped to 177 tests across 118 Pact sections.
 
 Reproduce with `python tests/test_all.py` and `python run_coverage.py`. Claim mapping at `docs/claim_matrix.md`.
 
@@ -58,7 +58,7 @@ Specific properties currently proven:
 - scoped data access with sovereign gating for protected hubs
 - governed consent with write-ahead persistence
 - hash-chained audit with cold verification
-- persistent Safe-Stop with a T-0 recovery path
+- persistent Safe-Stop whose halted-bootstrap path exposes a narrow T-0 recovery facade
 - tenant isolation through TECTON containers
 
 RSS v0.1.0 should **not** be presented as:
@@ -150,7 +150,7 @@ pip install -r requirements.txt
 ```bash
 python tests/test_all.py
 ```
-The acceptance run prints `RSS v0.1.0 - 176 test functions, 1771 assertions passed, 0 failed` as its final line.
+The acceptance run prints `RSS v0.1.0 - 177 test functions, 1795 assertions passed, 0 failed` as its final line.
 
 ### Run the guided demo walkthrough
 ```bash
@@ -206,7 +206,7 @@ Current capabilities at the v0.1.0 alpha line:
 - Section 0 integrity verification at boot and on every request
 - Hash-chained audit log with cold verification
 - Tenant isolation through TECTON containers
-- Persistent Safe-Stop with a T-0 recovery path
+- Persistent Safe-Stop with recovery-only halted bootstrap and fresh-bootstrap resumption
 - REDLINE exclusion from PAV/model-facing context
 - Indirect-prompt-injection defense with structural data-only markers
 - Runner-truth acceptance harness as canonical verdict surface

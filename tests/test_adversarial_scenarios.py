@@ -313,10 +313,14 @@ def test_adversarial_audit_tamper():
 
         # T4: Boot-time verification catches tampered chain
         rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
-        boot_result = rss2.verify_boot_chain()
-        check(boot_result["verified"] is False,
-              "ADV-T4: boot-time verification catches tampered chain")
-        rss2.persistence.close()
+        boot_result = rss2.recovery_status()["trace_verification"]
+        check(
+            isinstance(rss2, SafeStopRecovery)
+            and boot_result["verified"] is False
+            and not hasattr(rss2, "verify_boot_chain"),
+            "ADV-T4: boot catches tamper and exposes no broad verifier/runtime",
+        )
+        rss2.close()
 
     finally:
         _cleanup_db(path)
@@ -1006,16 +1010,21 @@ def test_scenario_tamper_recovery():
 
         # Session 2: Boot detects tamper
         rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
-        boot = rss2.pre_emission_boot_chain_verification
-        check(boot["verified"] is False,
-              "SCEN-TR2: boot-time verification detects tamper")
-        check(rss2.is_safe_stopped()["active"] is True,
+        recovery_status = rss2.recovery_status()
+        boot = recovery_status["trace_verification"]
+        check(
+            isinstance(rss2, SafeStopRecovery) and boot["verified"] is False,
+            "SCEN-TR2: boot-time verification detects tamper behind recovery facade",
+        )
+        check(recovery_status["safe_stop"]["active"] is True,
               "SCEN-TR3: system enters Safe-Stop on tamper detection")
 
-        # Requests blocked
-        r = rss2.process_request("test", use_llm=False)
-        check(r.get("error") == "SAFE_STOP_ACTIVE",
-              "SCEN-TR4: all requests blocked during Safe-Stop")
+        # Requests and normal state are absent, not merely rejected downstream.
+        check(
+            not hasattr(rss2, "process_request")
+            and not hasattr(rss2, "hubs"),
+            "SCEN-TR4: halted boot exposes no request or governed-state surface",
+        )
 
         # T-0 cannot clear an integrity halt while the audit head is unknown.
         clear_refused = False
@@ -1025,7 +1034,7 @@ def test_scenario_tamper_recovery():
             clear_refused = True
         check(clear_refused and rss2.is_safe_stopped()["active"] is True,
               "SCEN-TR5: T-0 clear is refused until TRACE is repaired")
-        rss2.persistence.close()
+        rss2.close()
 
         # Out-of-band evidence repair restores the exact archived hash. A fresh
         # bootstrap must verify that repair before the explicit T-0 clear.
@@ -1038,8 +1047,10 @@ def test_scenario_tamper_recovery():
         conn.close()
 
         rss3 = bootstrap(RSSConfig(db_path=path), restore=True)
+        repaired_status = rss3.recovery_status()
         check(
-            rss3.pre_emission_boot_chain_verification["verified"] is True
+            isinstance(rss3, SafeStopRecovery)
+            and repaired_status["trace_verification"]["verified"] is True
             and rss3.is_safe_stopped()["active"] is True,
             "SCEN-TR6: repaired TRACE verifies while Safe-Stop remains active",
         )
@@ -1048,12 +1059,13 @@ def test_scenario_tamper_recovery():
               and rss3.is_safe_stopped()["active"] is False,
               "SCEN-TR7: T-0 clears Safe-Stop only after verified restart")
 
-        # System resumes
-        r2 = rss3.process_request("quote", use_llm=False)
+        # System resumes only on a new normal runtime.
+        rss4 = bootstrap(RSSConfig(db_path=path), restore=True)
+        r2 = rss4.process_request("quote", use_llm=False)
         check("error" not in r2,
-              "SCEN-TR8: governed operation resumes after verified recovery")
+              "SCEN-TR8: governed operation resumes after recovery and rebootstrap")
 
-        rss3.persistence.close()
+        rss4.close()
     finally:
         _cleanup_db(path)
 
@@ -1288,9 +1300,13 @@ def test_c_phase_regression_battery():
               "C-6: threshold consecutive failures → Safe-Stop")
         rss.persistence.close()
         rss2 = bootstrap(RSSConfig(db_path=path))
-        check(rss2.is_safe_stopped()["active"],
-              "C-6: threshold Safe-Stop persists across restart")
-        rss2.persistence.close()
+        check(
+            isinstance(rss2, SafeStopRecovery)
+            and rss2.is_safe_stopped()["active"]
+            and not hasattr(rss2, "persistence"),
+            "C-6: threshold Safe-Stop persists behind restricted recovery",
+        )
+        rss2.close()
     finally:
         _cleanup_db(path)
 

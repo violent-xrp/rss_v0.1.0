@@ -354,22 +354,31 @@ def test_safe_stop_persistent():
         # Session 2: Safe-Stop survives restart (Pact §0.5.4)
         rss2 = bootstrap(config)
         ss = rss2.is_safe_stopped()
-        check(ss["active"] == True, "safe-stop survives restart")
+        check(
+            isinstance(rss2, SafeStopRecovery) and ss["active"] is True,
+            "safe-stop survives restart behind the recovery facade",
+        )
 
-        # Requests still blocked after restart
-        r = rss2.process_request("RFI", use_llm=False)
-        check(r.get("error") == "SAFE_STOP_ACTIVE", "requests blocked after restart")
+        # The restarted surface has no request pipeline at all.
+        check(
+            not hasattr(rss2, "process_request"),
+            "halted restart exposes no request command",
+        )
 
         # T-0 clears Safe-Stop (Pact §0.5.2)
-        rss2.clear_safe_stop(t0_command=True)
+        clear = rss2.clear_safe_stop(t0_command=True)
         ss = rss2.is_safe_stopped()
-        check(ss["active"] == False, "T-0 cleared safe-stop")
+        check(
+            clear.get("rebootstrap_required") is True and ss["active"] is False,
+            "T-0 cleared safe-stop and closed recovery",
+        )
 
-        # Requests work again
-        r = rss2.process_request("quote", use_llm=False)
-        check("error" not in r, "requests work after T-0 clear")
+        # Requests work only after a fresh normal bootstrap.
+        rss3 = bootstrap(config)
+        r = rss3.process_request("quote", use_llm=False)
+        check("error" not in r, "requests work after clear plus fresh bootstrap")
 
-        rss2.persistence.close()
+        rss3.close()
     finally:
         if os.path.exists(path):
             os.unlink(path)
@@ -1369,22 +1378,35 @@ def test_a1_boot_verification_catches_persisted_tamper():
         # any migration, restore, authority, or verification receipt is emitted.
         rss2 = bootstrap(RSSConfig(db_path=path), restore=True)
 
-        check(rss2.is_safe_stopped()["active"] is True,
-              "Boot with tampered persisted chain → Safe-Stop active")
+        recovery = rss2.recovery_status()
+        check(
+            isinstance(rss2, SafeStopRecovery)
+            and recovery["safe_stop"]["active"] is True,
+            "Boot with tampered persisted chain returns active recovery mode",
+        )
 
-        ss = rss2.persistence.is_safe_stopped()
+        ss = recovery["safe_stop"]
         check("chain" in ss["reason"].lower() or "integrity" in ss["reason"].lower(),
               "Safe-Stop reason mentions chain/integrity failure")
 
-        preflight = rss2.pre_emission_boot_chain_verification
+        preflight = recovery["trace_verification"]
         check(preflight is not None and preflight["verified"] is False,
               "pre-emission verifier returns a negative verdict on persisted tamper")
-        check(rss2.trace.status()["durability_uncertain"] is True,
-              "persisted tamper latches governed TRACE append closed")
-        check(rss2.persistence.event_count() == persisted_count,
+        check(
+            not hasattr(rss2, "trace") and not hasattr(rss2, "persistence"),
+            "persisted tamper exposes no TRACE append or persistence surface",
+        )
+        raw = sqlite3.connect(path)
+        try:
+            event_count_after = raw.execute(
+                "SELECT COUNT(*) FROM trace_events"
+            ).fetchone()[0]
+        finally:
+            raw.close()
+        check(event_count_after == persisted_count,
               "persisted tamper boot emits no event onto the invalid chain")
 
-        rss2.persistence.close()
+        rss2.close()
     finally:
         for p in [path, path + "-wal", path + "-shm"]:
             if os.path.exists(p):
@@ -1923,26 +1945,32 @@ def test_probe_safe_stop_recovery_ceremony():
         check(ss_status_2.get("timestamp") == ss_status_1.get("timestamp"),
               "Probe-G11: timestamp identical across restart")
 
-        # Requests still blocked after restart
-        r_blocked_post = rss2.process_request("quote", use_llm=False)
-        check(r_blocked_post.get("error") == "SAFE_STOP_ACTIVE",
-              "Probe-G12: requests remain blocked after restart")
+        # The recovery facade omits the request pipeline entirely.
+        check(
+            isinstance(rss2, SafeStopRecovery)
+            and not hasattr(rss2, "process_request"),
+            "Probe-G12: halted restart exposes no request pipeline",
+        )
 
         # ── Act 4: T-0 clears Safe-Stop ──
-        rss2.clear_safe_stop(t0_command=True)
+        clear = rss2.clear_safe_stop(t0_command=True)
 
         ss_status_3 = rss2.is_safe_stopped()
-        check(ss_status_3["active"] is False,
-              "Probe-G13: T-0 clear_safe_stop() releases the halt")
+        check(
+            ss_status_3["active"] is False
+            and clear.get("rebootstrap_required") is True,
+            "Probe-G13: T-0 clear releases halt and requires fresh bootstrap",
+        )
 
-        # ── Act 5: Normal operation resumes ──
-        r_resumed = rss2.process_request("quote", use_llm=False)
+        # ── Act 5: Normal operation resumes on a fresh runtime ──
+        rss3 = bootstrap(RSSConfig(db_path=path), restore=True)
+        r_resumed = rss3.process_request("quote", use_llm=False)
         check("error" not in r_resumed,
-              "Probe-G14: governed operation resumes after T-0 clears "
-              "(full pipeline runs again)")
+              "Probe-G14: governed operation resumes after clear plus fresh "
+              "bootstrap")
 
         # ── Act 6: Audit trail tells the whole story ──
-        all_codes = [e.event_code for e in rss2.trace.all_events()]
+        all_codes = [e.event_code for e in rss3.trace.all_events()]
 
         check("SAFE_STOP_ENTERED" in all_codes,
               "Probe-G15: SAFE_STOP_ENTERED recorded in unified TRACE")
@@ -1964,12 +1992,12 @@ def test_probe_safe_stop_recovery_ceremony():
               "proving resumed governance is recorded")
 
         # Chain still valid across the entire ceremony
-        check(rss2.trace.verify_chain() is True,
+        check(rss3.trace.verify_chain() is True,
               "Probe-G19: hash chain intact through entry → restart → "
               "clear → resume (full ceremony durable)")
 
         # Cold verifier agrees with in-memory state
-        rss2.persistence.close()
+        rss3.close()
         from rss.audit.verify import verify_trace_file
         cold_result = verify_trace_file(path)
         check(cold_result["verified"] is True,

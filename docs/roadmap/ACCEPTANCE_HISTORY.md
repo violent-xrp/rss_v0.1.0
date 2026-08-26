@@ -8,9 +8,9 @@ This file preserves the count history and verification receipts that used to liv
 
 ## Current Baseline
 
-- **176 test functions / 1771 assertions / 0 failures**
+- **177 test functions / 1795 assertions / 0 failures**
 - **92.2% statement coverage**
-- **176 claims / 176 tests / 118 Pact sections**
+- **177 claims / 177 tests / 118 Pact sections**
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
 - Claim matrix: `python docs/build_claim_matrix.py`
@@ -130,6 +130,25 @@ Verified after the 2026-08-24 Phase 2A failure-atomic Safe-Stop clear and the
 - restricted halted-runtime recovery and state/receipt transaction coupling
   beyond this Safe-Stop clear remain separate work
 
+Verified after the 2026-08-25 Phase 2B restricted halted-bootstrap recovery
+surface:
+- canonical runner: **177 / 1795 / 0**
+- claim matrix: **118 sections / 177 claims / 177 tests**
+- coverage: **92.2% total**
+- the registered proof requires halted and preflight-refused boots to return
+  `SafeStopRecovery`, exposes no execution/seat/state/persistence surface,
+  permits only atomic T-0 clear, closes after success, and requires fresh
+  bootstrap before governed operation resumes
+- adversarial arms cover non-T-0 denial, cold-invalid TRACE, failed recovery-
+  fence persistence with connection cleanup, logical-state non-mutation,
+  context-managed close, and exact clear-receipt/state effects
+- meaningful guard coverage moved the interim Phase 2B measurement from
+  **92.0%** back to **92.2%**; runtime coverage moved from **85.4%** to
+  **86.8%** during the same proof pass
+- constructor-time migrations, malicious in-process introspection, retained
+  pre-halt references, cryptographic T-0 identity, and general state/receipt
+  coupling remain explicit non-claims
+
 ## Public Doc Sync
 
 All public-facing docs listed below were synced during the 2026-04-29 public-doc pass:
@@ -141,8 +160,8 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 - `THREAT_MODEL.md`
 
 Current synced public numbers:
-- **176 / 1771 / 0**
+- **177 / 1795 / 0**
 - **92.2%** coverage
-- **176 claims / 176 tests / 118 Pact sections**
+- **177 claims / 177 tests / 118 Pact sections**
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.

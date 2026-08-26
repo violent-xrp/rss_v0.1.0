@@ -767,35 +767,42 @@ def test_write_ahead_guarantee():
                 db_path=path_uncertain,
                 audit_failure_threshold=100,
             ))
-            halted_verification = (
-                uncertain_restarted.pre_emission_boot_chain_verification
-            )
+            recovery_status = uncertain_restarted.recovery_status()
+            halted_verification = recovery_status["trace_verification"]
             check(
-                halted_verification is not None
+                isinstance(uncertain_restarted, SafeStopRecovery)
+                and recovery_status["safe_stop"]["active"]
+                and halted_verification is not None
                 and halted_verification["verified"]
                 and halted_verification["mode"] == "COLD_FILE",
-                "halted restart cold-verifies TRACE before normal boot emissions",
+                "halted restart cold-verifies TRACE behind recovery facade",
             )
             check(
-                not uncertain_restarted.trace.status()["durability_uncertain"],
-                "successful halted-boot verification restores a known TRACE head",
+                not hasattr(uncertain_restarted, "trace")
+                and not hasattr(uncertain_restarted, "_log"),
+                "verified halted boot still exposes no audit append surface",
             )
+            clear = uncertain_restarted.clear_safe_stop(t0_command=True)
             check(
-                uncertain_restarted.is_safe_stopped()["active"],
-                "TRACE verification does not silently clear the durable halt",
+                clear.get("rebootstrap_required") is True,
+                "verified recovery clear requires a fresh runtime",
             )
-            uncertain_restarted._log(
+            recovered_runtime = bootstrap(RSSConfig(
+                db_path=path_uncertain,
+                audit_failure_threshold=100,
+            ))
+            recovered_runtime._log(
                 "TEST", "AFTER-VERIFIED-RESTART", "verified head"
             )
             check(
                 [event.content_hash
-                 for event in uncertain_restarted.trace.all_events()]
+                 for event in recovered_runtime.trace.all_events()]
                 == [event.content_hash
-                    for event in uncertain_restarted.persistence.load_all_trace()]
-                and uncertain_restarted.trace.verify_chain_deep(),
-                "post-verification append preserves hot/durable TRACE parity",
+                    for event in recovered_runtime.persistence.load_all_trace()]
+                and recovered_runtime.trace.verify_chain_deep(),
+                "post-clear fresh runtime append preserves hot/durable TRACE parity",
             )
-            uncertain_restarted.persistence.close()
+            recovered_runtime.close()
             check(
                 verify_trace_file(path_uncertain)["verified"],
                 "halted-restart recovery remains cold-verifiable",
@@ -853,27 +860,32 @@ def test_write_ahead_guarantee():
                 db_path=path_unknown_commit,
                 audit_failure_threshold=100,
             ))
-            commit_preflight = (
-                unknown_commit_restarted.pre_emission_boot_chain_verification
-            )
+            commit_recovery = unknown_commit_restarted.recovery_status()
+            commit_preflight = commit_recovery["trace_verification"]
             check(
-                commit_preflight is not None
+                isinstance(unknown_commit_restarted, SafeStopRecovery)
+                and commit_preflight is not None
                 and commit_preflight["verified"]
                 and unknown_commit_restarted.is_safe_stopped()["active"],
-                "halted restart verifies the actually committed unknown head",
+                "halted recovery verifies the actually committed unknown head",
             )
+            committed_row = sqlite3.connect(path_unknown_commit)
+            try:
+                committed_artifacts = {
+                    row[0]
+                    for row in committed_row.execute(
+                        "SELECT artifact_id FROM trace_events"
+                    ).fetchall()
+                }
+            finally:
+                committed_row.close()
             check(
-                [event.content_hash
-                 for event in unknown_commit_restarted.trace.all_events()]
-                == [event.content_hash for event in
-                    unknown_commit_restarted.persistence.load_all_trace()]
-                and any(
-                    event.artifact_id == "UNKNOWN-COMMITTED-HALTED"
-                    for event in unknown_commit_restarted.trace.all_events()
-                ),
-                "halted restart reconciles memory to the committed unknown event",
+                "UNKNOWN-COMMITTED-HALTED" in committed_artifacts
+                and not hasattr(unknown_commit_restarted, "trace")
+                and not hasattr(unknown_commit_restarted, "persistence"),
+                "halted recovery keeps the committed unknown event durable without exposing the broad head",
             )
-            unknown_commit_restarted.persistence.close()
+            unknown_commit_restarted.close()
             check(
                 verify_trace_file(path_unknown_commit)["verified"],
                 "reconciled committed-unknown chain remains cold-valid",
@@ -915,35 +927,35 @@ def test_write_ahead_guarantee():
             halted_bad_restarted = bootstrap(RSSConfig(
                 db_path=path_halted_bad,
             ))
-            refused_verification = (
-                halted_bad_restarted.pre_emission_boot_chain_verification
-            )
+            halted_bad_status = halted_bad_restarted.recovery_status()
+            refused_verification = halted_bad_status["trace_verification"]
             check(
-                refused_verification is not None
+                isinstance(halted_bad_restarted, SafeStopRecovery)
+                and refused_verification is not None
                 and not refused_verification["verified"]
                 and refused_verification["mode"] == "COLD_FILE",
-                "halted bootstrap refuses a cold-invalid TRACE chain",
+                "halted bootstrap returns recovery-only status for a cold-invalid TRACE chain",
             )
             check(
                 halted_bad_restarted.is_safe_stopped()["active"]
-                and halted_bad_restarted.trace.status()["durability_uncertain"],
-                "cold-invalid halted bootstrap preserves halt and audit latch",
+                and not hasattr(halted_bad_restarted, "trace"),
+                "cold-invalid halted bootstrap preserves halt and hides audit append",
             )
+            halted_bad_conn = sqlite3.connect(path_halted_bad)
+            try:
+                halted_bad_count = halted_bad_conn.execute(
+                    "SELECT COUNT(*) FROM trace_events"
+                ).fetchone()[0]
+            finally:
+                halted_bad_conn.close()
             check(
-                halted_bad_restarted.persistence.event_count()
-                == event_count_before_refusal,
+                halted_bad_count == event_count_before_refusal,
                 "cold-invalid halted bootstrap emits no additional TRACE event",
             )
-            tampered_append_refused = False
-            try:
-                halted_bad_restarted._log(
-                    "TEST", "AFTER-HALTED-TAMPER", "must not append"
-                )
-            except AuditLogError:
-                tampered_append_refused = True
             check(
-                tampered_append_refused,
-                "cold-invalid halted bootstrap keeps governed audit append closed",
+                not hasattr(halted_bad_restarted, "_log")
+                and not hasattr(halted_bad_restarted, "process_request"),
+                "cold-invalid recovery surface has no audit or execution command",
             )
             clear_refused = False
             try:
@@ -954,13 +966,19 @@ def test_write_ahead_guarantee():
                 clear_refused,
                 "T-0 clear cannot remove the halt while TRACE is uncertain",
             )
+            halted_bad_conn = sqlite3.connect(path_halted_bad)
+            try:
+                halted_bad_count_after = halted_bad_conn.execute(
+                    "SELECT COUNT(*) FROM trace_events"
+                ).fetchone()[0]
+            finally:
+                halted_bad_conn.close()
             check(
                 halted_bad_restarted.is_safe_stopped()["active"]
-                and halted_bad_restarted.persistence.event_count()
-                == event_count_before_refusal,
+                and halted_bad_count_after == event_count_before_refusal,
                 "refused clear preserves durable halt and TRACE row count",
             )
-            halted_bad_restarted.persistence.close()
+            halted_bad_restarted.close()
         finally:
             for pth in (
                 path_halted_bad,
@@ -1109,25 +1127,31 @@ def test_write_ahead_guarantee():
                 db_path=path_cross,
                 audit_failure_threshold=100,
             ))
-            cross_preflight = (
-                cross_restarted.pre_emission_boot_chain_verification
-            )
+            cross_status = cross_restarted.recovery_status()
+            cross_preflight = cross_status["trace_verification"]
             check(
-                cross_preflight is not None
+                isinstance(cross_restarted, SafeStopRecovery)
+                and cross_preflight is not None
                 and not cross_preflight["verified"]
-                and cross_restarted.trace.status()["durability_uncertain"],
-                "unmarked tampered restart is refused by universal preflight",
+                and not hasattr(cross_restarted, "trace"),
+                "unmarked tampered restart is refused behind recovery facade",
             )
             check(
                 cross_restarted.is_safe_stopped()["active"],
                 "unmarked tampered restart directly persists Safe-Stop",
             )
+            cross_check_conn = sqlite3.connect(path_cross)
+            try:
+                cross_count_after_restart = cross_check_conn.execute(
+                    "SELECT COUNT(*) FROM trace_events"
+                ).fetchone()[0]
+            finally:
+                cross_check_conn.close()
             check(
-                cross_restarted.persistence.event_count()
-                == cross_count_before_restart,
+                cross_count_after_restart == cross_count_before_restart,
                 "unmarked tampered restart adds no event to invalid TRACE",
             )
-            cross_restarted.persistence.close()
+            cross_restarted.close()
         finally:
             for pth in (
                 path_cross,
@@ -1356,6 +1380,16 @@ def test_safe_stop_clear_atomicity():
             for event in runtime.persistence.load_all_trace()
         ]
 
+    def durable_clear_count(db_path):
+        conn = sqlite3.connect(db_path)
+        try:
+            return conn.execute(
+                "SELECT COUNT(*) FROM trace_events "
+                "WHERE event_code='SAFE_STOP_CLEARED'"
+            ).fetchone()[0]
+        finally:
+            conn.close()
+
     # A receipt insert failure occurs after BEGIN but before DELETE. The explicit
     # SQLite transaction must roll back the attempted receipt and preserve the
     # original durable halt byte-for-byte across restart.
@@ -1405,23 +1439,25 @@ def test_safe_stop_clear_atomicity():
             audit_failure_threshold=100,
         ))
         check(
-            restarted.is_safe_stopped() == halt_before
-            and not restarted.trace.events_by_code("SAFE_STOP_CLEARED"),
+            isinstance(restarted, SafeStopRecovery)
+            and restarted.is_safe_stopped() == halt_before
+            and durable_clear_count(path) == 0,
             "failed clear remains halted with no success receipt after restart",
         )
         result = restarted.clear_safe_stop(t0_command=True)
         check(
-            result == {"status": "CLEARED"}
+            result == {
+                "status": "CLEARED",
+                "rebootstrap_required": True,
+            }
             and not restarted.is_safe_stopped()["active"],
             "recovered T-0 clear commits the halt transition",
         )
         check(
-            len(restarted.trace.events_by_code("SAFE_STOP_CLEARED")) == 1
-            and hashes(restarted) == durable_hashes(restarted)
-            and restarted.trace.verify_chain_deep(),
-            "successful recovery clear commits one receipt with hot/durable parity",
+            durable_clear_count(path) == 1
+            and verify_trace_file(path)["verified"],
+            "successful recovery clear commits one cold-valid receipt",
         )
-        restarted.persistence.close()
         check(
             verify_trace_file(path)["verified"],
             "recovered atomic clear remains cold-valid",
@@ -1560,14 +1596,16 @@ def test_safe_stop_clear_atomicity():
             db_path=path,
             audit_failure_threshold=100,
         ))
+        recovery_status = restarted.recovery_status()
         check(
-            restarted.is_safe_stopped()["active"]
-            and len(restarted.trace.events_by_code("SAFE_STOP_CLEARED")) == 1
-            and hashes(restarted) == durable_hashes(restarted)
-            and restarted.trace.verify_chain_deep(),
-            "restart verifies the resolved transaction and restores exact TRACE parity behind the halt",
+            isinstance(restarted, SafeStopRecovery)
+            and restarted.is_safe_stopped()["active"]
+            and recovery_status["trace_verification"]["verified"]
+            and durable_clear_count(path) == 1
+            and not hasattr(restarted, "trace"),
+            "restart verifies the resolved transaction behind the recovery facade",
         )
-        restarted.persistence.close()
+        restarted.close()
         check(
             verify_trace_file(path)["verified"],
             "resolved open-transaction recovery remains cold-valid",
@@ -1638,25 +1676,332 @@ def test_safe_stop_clear_atomicity():
                 db_path=path,
                 audit_failure_threshold=100,
             ))
+            recovery_status = restarted.recovery_status()
             check(
-                restarted.is_safe_stopped()["active"]
-                and not restarted.trace.status()["durability_uncertain"],
+                isinstance(restarted, SafeStopRecovery)
+                and restarted.is_safe_stopped()["active"]
+                and recovery_status["trace_verification"]["verified"],
                 f"restart verifies the actual atomic-clear outcome and remains halted (committed={committed})",
             )
             check(
-                len(restarted.trace.events_by_code("SAFE_STOP_CLEARED"))
-                == int(committed)
-                and hashes(restarted) == durable_hashes(restarted)
-                and restarted.trace.verify_chain_deep(),
-                f"restart restores exact TRACE parity for unknown outcome (committed={committed})",
+                durable_clear_count(path) == int(committed)
+                and not hasattr(restarted, "trace")
+                and not hasattr(restarted, "persistence"),
+                f"restart preserves actual receipt state behind the narrow surface (committed={committed})",
             )
-            restarted.persistence.close()
+            restarted.close()
             check(
                 verify_trace_file(path)["verified"],
                 f"unknown atomic-clear outcome remains cold-valid (committed={committed})",
             )
         finally:
             _cleanup_db(path)
+
+
+def test_safe_stop_recovery_surface():
+    """Phase 2B — halted bootstrap exposes only the Section 0 recovery API."""
+    # CLAIM: §0.5.4, §0.5.6, §0.8.3 — halted bootstrap returns a narrow T-0 recovery surface; normal state and execution remain unavailable until clear plus fresh bootstrap
+    section("Phase 2B: Restricted Safe-Stop Recovery Surface")
+
+    from rss.audit.verify import verify_trace_file
+    from rss.core.runtime import SafeStopRecovery
+
+    def logical_snapshot(db_path):
+        conn = sqlite3.connect(db_path)
+        try:
+            return {
+                "trace": conn.execute(
+                    "SELECT COUNT(*) FROM trace_events"
+                ).fetchone()[0],
+                "hubs": conn.execute(
+                    "SELECT COUNT(*) FROM hub_entries"
+                ).fetchone()[0],
+                "consents": conn.execute(
+                    "SELECT key,status FROM consents ORDER BY key"
+                ).fetchall(),
+                "containers": conn.execute(
+                    "SELECT COUNT(*) FROM containers"
+                ).fetchone()[0],
+                "terms": conn.execute(
+                    "SELECT COUNT(*) FROM sealed_terms"
+                ).fetchone()[0],
+                "safe_stop": conn.execute(
+                    "SELECT value,updated_at FROM system_state "
+                    "WHERE key='SAFE_STOP'"
+                ).fetchone(),
+            }
+        finally:
+            conn.close()
+
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        config = RSSConfig(db_path=path)
+        runtime = bootstrap(config)
+        normal_wrap_refused = False
+        try:
+            SafeStopRecovery(runtime)
+        except ValueError as exc:
+            normal_wrap_refused = "active persistent Safe-Stop" in str(exc)
+        check(
+            normal_wrap_refused,
+            "recovery facade cannot wrap an operational runtime",
+        )
+        runtime.save_hub_entry("WORK", "Phase 2B durable sentinel")
+        runtime.tecton.create_container("phase-2b-tenant", "T-0")
+        runtime.enter_safe_stop("Phase 2B restricted recovery proof")
+        runtime.close()
+        before_recovery_boot = logical_snapshot(path)
+
+        with bootstrap(config, restore=True) as inspection:
+            check(
+                isinstance(inspection, SafeStopRecovery)
+                and inspection.is_safe_stopped()["active"],
+                "recovery facade supports scoped inspection with guaranteed close",
+            )
+        check(
+            logical_snapshot(path) == before_recovery_boot,
+            "closing an inspection-only recovery session changes no logical state",
+        )
+
+        recovery = bootstrap(config, restore=True)
+        check(
+            isinstance(recovery, SafeStopRecovery)
+            and not isinstance(recovery, Runtime)
+            and recovery.mode == "SAFE_STOP_RECOVERY",
+            "halted bootstrap returns the narrow recovery facade, not Runtime",
+        )
+        public_surface = {
+            name for name in dir(recovery) if not name.startswith("_")
+        }
+        check(
+            public_surface == {
+                "allowed_commands",
+                "clear_safe_stop",
+                "close",
+                "is_safe_stopped",
+                "mode",
+                "recovery_status",
+            }
+            and recovery.allowed_commands == ("clear_safe_stop",),
+            "recovery facade exposes only status, atomic clear, and lifecycle close",
+        )
+        check(
+            all(
+                not hasattr(recovery, name)
+                for name in (
+                    "process_request",
+                    "persistence",
+                    "trace",
+                    "hubs",
+                    "oath",
+                    "tecton",
+                    "meaning",
+                    "seal",
+                    "scribe",
+                )
+            ),
+            "halted bootstrap exposes no execution, seat, tenant, or governed-state mutator",
+        )
+        status = recovery.recovery_status()
+        check(
+            status["safe_stop"]["active"]
+            and status["trace_verification"]["verified"]
+            and status["allowed_commands"] == ["clear_safe_stop"]
+            and not status["session_closed"],
+            "recovery status reports the durable halt and verified TRACE head",
+        )
+        check(
+            logical_snapshot(path) == before_recovery_boot,
+            "halted bootstrap performs no normal restore, default-authority, or TRACE mutation",
+        )
+
+        denied = recovery.clear_safe_stop(t0_command=False)
+        check(
+            denied.get("error") == "T0_COMMAND_REQUIRED"
+            and recovery.is_safe_stopped()["active"]
+            and logical_snapshot(path) == before_recovery_boot,
+            "non-T-0 recovery command changes no durable state",
+        )
+
+        cleared = recovery.clear_safe_stop(t0_command=True)
+        closed_status = recovery.recovery_status()
+        check(
+            cleared == {
+                "status": "CLEARED",
+                "rebootstrap_required": True,
+            }
+            and not closed_status["safe_stop"]["active"]
+            and closed_status["session_closed"]
+            and closed_status["rebootstrap_required"],
+            "successful T-0 clear closes recovery and requires fresh bootstrap",
+        )
+        repeated_refused = False
+        try:
+            recovery.clear_safe_stop(t0_command=True)
+        except RuntimeError as exc:
+            repeated_refused = "bootstrap a fresh runtime" in str(exc)
+        check(
+            repeated_refused,
+            "closed recovery session accepts no second command",
+        )
+
+        after_clear = logical_snapshot(path)
+        check(
+            after_clear["trace"] == before_recovery_boot["trace"] + 1
+            and after_clear["safe_stop"] is None
+            and after_clear["hubs"] == before_recovery_boot["hubs"]
+            and after_clear["consents"] == before_recovery_boot["consents"]
+            and after_clear["containers"] == before_recovery_boot["containers"]
+            and after_clear["terms"] == before_recovery_boot["terms"],
+            "recovery modifies only the atomic clear receipt and Safe-Stop row",
+        )
+        check(
+            verify_trace_file(path)["verified"],
+            "restricted recovery clear remains cold-valid",
+        )
+
+        resumed = bootstrap(config, restore=True)
+        check(
+            isinstance(resumed, Runtime)
+            and not resumed.is_safe_stopped()["active"],
+            "fresh post-clear bootstrap returns the normal runtime",
+        )
+        result = resumed.process_request("quote", use_llm=False)
+        check(
+            "error" not in result,
+            "governed execution resumes only on the fresh runtime",
+        )
+        resumed.close()
+    finally:
+        _cleanup_db(path)
+
+    # A cold-invalid TRACE head still gets the same narrow surface, but its
+    # atomic clear remains blocked until evidence is repaired out-of-band and
+    # a new bootstrap verifies the durable chain.
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        runtime = bootstrap(RSSConfig(db_path=path))
+        runtime._log("TEST", "PHASE-2B-TAMPER", "seed")
+        runtime.enter_safe_stop("Phase 2B tamper fence")
+        runtime.close()
+
+        conn = sqlite3.connect(path)
+        try:
+            trace_count = conn.execute(
+                "SELECT COUNT(*) FROM trace_events"
+            ).fetchone()[0]
+            conn.execute(
+                "UPDATE trace_events SET artifact_id=? WHERE id=("
+                "SELECT MIN(id) FROM trace_events)",
+                ("PHASE-2B-TAMPERED",),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        recovery = bootstrap(RSSConfig(db_path=path), restore=True)
+        status = recovery.recovery_status()
+        check(
+            isinstance(recovery, SafeStopRecovery)
+            and status["safe_stop"]["active"]
+            and not status["trace_verification"]["verified"],
+            "cold-invalid halted bootstrap still returns only recovery status and clear",
+        )
+        clear_refused = False
+        try:
+            recovery.clear_safe_stop(t0_command=True)
+        except AuditLogError as exc:
+            clear_refused = "TRACE durability is unresolved" in str(exc)
+        check(
+            clear_refused and recovery.is_safe_stopped()["active"],
+            "recovery facade refuses clear while TRACE evidence is unresolved",
+        )
+        conn = sqlite3.connect(path)
+        try:
+            unchanged_count = conn.execute(
+                "SELECT COUNT(*) FROM trace_events"
+            ).fetchone()[0]
+        finally:
+            conn.close()
+        check(
+            unchanged_count == trace_count,
+            "refused recovery appends no event to the invalid chain",
+        )
+        recovery.close()
+    finally:
+        _cleanup_db(path)
+
+    # If a newly detected invalid head cannot persist its recovery fence,
+    # bootstrap must close the connection and raise rather than expose Runtime
+    # or a facade that falsely implies a durable halt exists.
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        runtime = bootstrap(RSSConfig(db_path=path))
+        runtime._log("TEST", "PHASE-2B-NO-FENCE", "seed")
+        runtime.close()
+
+        conn = sqlite3.connect(path)
+        try:
+            event_count = conn.execute(
+                "SELECT COUNT(*) FROM trace_events"
+            ).fetchone()[0]
+            conn.execute(
+                "UPDATE trace_events SET artifact_id=? WHERE id=("
+                "SELECT MIN(id) FROM trace_events)",
+                ("PHASE-2B-NO-FENCE-TAMPER",),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        from rss.persistence.sqlite import Persistence
+
+        original_enter_safe_stop = Persistence.enter_safe_stop
+
+        def refuse_recovery_fence(self, reason):
+            raise sqlite3.OperationalError("injected recovery fence failure")
+
+        Persistence.enter_safe_stop = refuse_recovery_fence
+        refusal = ""
+        try:
+            bootstrap(RSSConfig(db_path=path), restore=True)
+        except RuntimeError as exc:
+            refusal = str(exc)
+        finally:
+            Persistence.enter_safe_stop = original_enter_safe_stop
+        check(
+            "no durable Safe-Stop recovery fence" in refusal
+            and "injected recovery fence failure" in refusal,
+            "failed recovery-fence persistence refuses bootstrap explicitly",
+        )
+        conn = sqlite3.connect(path)
+        try:
+            state_after_refusal = conn.execute(
+                "SELECT value FROM system_state WHERE key='SAFE_STOP'"
+            ).fetchone()
+            count_after_refusal = conn.execute(
+                "SELECT COUNT(*) FROM trace_events"
+            ).fetchone()[0]
+        finally:
+            conn.close()
+        check(
+            state_after_refusal is None and count_after_refusal == event_count,
+            "refused bootstrap creates neither a false halt nor invalid-chain receipt",
+        )
+
+        recovery = bootstrap(RSSConfig(db_path=path), restore=True)
+        check(
+            isinstance(recovery, SafeStopRecovery)
+            and recovery.is_safe_stopped()["active"]
+            and not recovery.recovery_status()["trace_verification"]["verified"],
+            "restored fence persistence routes the invalid head into recovery-only mode",
+        )
+        recovery.close()
+    finally:
+        _cleanup_db(path)
 
 
 def test_config_driven_verbs():

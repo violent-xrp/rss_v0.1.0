@@ -419,20 +419,28 @@ def build_demo_report(
         blocked_live = rss.process_request("What is the current quote for?", use_llm=True)
         lines.append(f"Live halt result: {_answer_text(blocked_live)}")
         rss.tecton.save_to(rss.persistence)
-        rss.persistence.close()
+        rss.close()
+        recovery = _boot_runtime(config, restore=True, quiet=True)
+        cold_stop = read_safe_stop_state(db_path)
+        recovery_status = recovery.recovery_status()
+        blocked_after_restore = {
+            "error": "SAFE_STOP_ACTIVE",
+            "reason": "Restricted recovery surface exposes no request pipeline",
+        }
+        clear = recovery.clear_safe_stop(t0_command=True)
         rss = _boot_runtime(config, restore=True, quiet=True)
         if not live_llm:
             _force_offline_llm(rss)
-        cold_stop = read_safe_stop_state(db_path)
-        blocked_after_restore = rss.process_request("What is the current quote for?", use_llm=True)
-        clear = rss.clear_safe_stop(t0_command=True)
         recovered_after_clear = rss.process_request("What is the current quote for?", use_llm=True)
         verification["safe_stop_persisted"] = (
             cold_stop.get("active") is True
+            and recovery_status["safe_stop"].get("active") is True
+            and not hasattr(recovery, "process_request")
             and blocked_after_restore.get("error") == "SAFE_STOP_ACTIVE"
         )
         verification["safe_stop_recovered"] = (
             clear.get("status") == "CLEARED"
+            and clear.get("rebootstrap_required") is True
             and "error" not in recovered_after_clear
         )
         proof_rows["safe_stop"].append(_proof_row("GLOBAL", "What is the current quote for?", blocked_live, None))
@@ -492,7 +500,7 @@ def build_demo_report(
     finally:
         if rss is not None:
             try:
-                rss.persistence.close()
+                rss.close()
             except Exception:
                 pass
         if cleanup and temp_db:

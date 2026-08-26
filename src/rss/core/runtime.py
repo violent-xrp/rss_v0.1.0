@@ -374,6 +374,10 @@ class Runtime:
         """Check persistent Safe-Stop state."""
         return self.persistence.is_safe_stopped()
 
+    def close(self) -> None:
+        """Close the runtime persistence connection."""
+        self.persistence.close()
+
     def ingress_posture_note(self) -> str:
         """Human-readable statement of the current ingress trust model."""
         return (
@@ -1416,11 +1420,100 @@ class Runtime:
             }
 
 
-def bootstrap(config=None, restore: bool = False) -> Runtime:
+class SafeStopRecovery:
+    """Narrow Section 0 recovery surface returned by a halted bootstrap.
+
+    The standard runtime, its seats, and every governed-state mutator remain
+    intentionally hidden. The only command accepted during the recovery
+    session is the existing atomic T-0 Safe-Stop clear. Status inspection and
+    connection close are lifecycle operations, not governed-state commands.
+
+    A successful clear closes this recovery session. Callers must bootstrap a
+    fresh runtime before normal operation can resume.
     """
-    Create Runtime with default sealed terms.
-    If restore=True, also load saved state from SQLite.
-    Checks persistent Safe-Stop and Genesis on boot.
+
+    __slots__ = (
+        "__runtime",
+        "__closed",
+        "__last_safe_stop",
+        "__trace_verification",
+    )
+
+    def __init__(self, runtime: Runtime):
+        safe_stop = runtime.is_safe_stopped()
+        if not safe_stop.get("active"):
+            raise ValueError(
+                "SafeStopRecovery requires an active persistent Safe-Stop."
+            )
+        self.__runtime = runtime
+        self.__closed = False
+        self.__last_safe_stop = dict(safe_stop)
+        self.__trace_verification = dict(
+            runtime.pre_emission_boot_chain_verification or {}
+        )
+
+    @property
+    def mode(self) -> str:
+        return "SAFE_STOP_RECOVERY"
+
+    @property
+    def allowed_commands(self) -> tuple:
+        return ("clear_safe_stop",)
+
+    def _require_open(self) -> None:
+        if self.__closed:
+            raise RuntimeError(
+                "Safe-Stop recovery session is closed; bootstrap a fresh "
+                "runtime before continuing."
+            )
+
+    def is_safe_stopped(self) -> dict:
+        if not self.__closed:
+            self.__last_safe_stop = dict(
+                self.__runtime.is_safe_stopped()
+            )
+        return dict(self.__last_safe_stop)
+
+    def recovery_status(self) -> dict:
+        return {
+            "mode": self.mode,
+            "safe_stop": self.is_safe_stopped(),
+            "trace_verification": dict(self.__trace_verification),
+            "allowed_commands": list(self.allowed_commands),
+            "session_closed": self.__closed,
+            "rebootstrap_required": self.__closed,
+        }
+
+    def clear_safe_stop(self, t0_command: bool = False) -> dict:
+        self._require_open()
+        result = self.__runtime.clear_safe_stop(t0_command=t0_command)
+        self.__last_safe_stop = dict(self.__runtime.is_safe_stopped())
+        if result.get("status") == "CLEARED":
+            result = dict(result)
+            result["rebootstrap_required"] = True
+            self.close()
+        return result
+
+    def close(self) -> None:
+        if not self.__closed:
+            self.__runtime.close()
+            self.__closed = True
+
+    def __enter__(self):
+        self._require_open()
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        self.close()
+        return False
+
+
+def bootstrap(config=None, restore: bool = False) -> Runtime | SafeStopRecovery:
+    """
+    Create a Runtime with default sealed terms, or a narrow recovery surface
+    when persistent Safe-Stop is active. If restore=True, load saved state only
+    on the normal runtime path. TRACE is restored and verified before either
+    surface escapes.
     """
     runtime = Runtime(config)
 
@@ -1430,30 +1523,6 @@ def bootstrap(config=None, restore: bool = False) -> Runtime:
         print(f"  *** SAFE-STOP ACTIVE: {ss['reason']} ***")
         print(f"  *** System halted since {ss.get('timestamp', 'unknown')} ***")
         print(f"  *** Only T-0 can clear: runtime.clear_safe_stop(t0_command=True) ***")
-
-    # Always register config-driven default terms.
-    # Hardening: bootstrap must not bake in a legacy domain persona.
-    # Use config.default_terms + config.default_term_definition_prefix as the
-    # single source of truth, skip blank labels, and ignore duplicates.
-    seen_default_labels = set()
-    for raw_label in runtime.config.default_terms:
-        label = (raw_label or "").strip()
-        if not label or label in seen_default_labels:
-            continue
-        seen_default_labels.add(label)
-        term = Term(
-            id=label,
-            label=label,
-            definition=f"{runtime.config.default_term_definition_prefix}: {label}",
-            constraints=[],
-            version="1.0",
-        )
-        try:
-            runtime.meaning.create_term(term)
-        except Exception:
-            # Defensive duplicate tolerance: bootstrap should remain stable even
-            # if a caller passes overlapping defaults.
-            pass
 
     # §6.3.5 / §6.11.3 — Load persisted TRACE history before this boot emits
     # any new TRACE event. This preserves parent_hash continuity even when the
@@ -1492,7 +1561,44 @@ def bootstrap(config=None, restore: bool = False) -> Runtime:
             "  *** Repair TRACE and restart before attempting T-0 "
             "Safe-Stop clear. ***"
         )
-        return runtime
+        if halt_error is not None:
+            runtime.close()
+            raise RuntimeError(
+                "Pre-emission TRACE verification failed and no durable "
+                f"Safe-Stop recovery fence could be established: {halt_error}"
+            ) from halt_error
+        return SafeStopRecovery(runtime)
+
+    # §0.5.6 — A boot that begins in persistent Safe-Stop does not perform
+    # normal term registration, governed-state restoration, schema stamping,
+    # default authorization, or boot TRACE emission. It exposes only the narrow
+    # T-0 recovery surface after the restored chain is verified.
+    if ss["active"]:
+        return SafeStopRecovery(runtime)
+
+    # Normal boot only: register config-driven default terms. Bootstrap must
+    # not bake in a legacy domain persona. Use config.default_terms and its
+    # definition prefix as the single source of truth, skipping blanks and
+    # duplicates.
+    seen_default_labels = set()
+    for raw_label in runtime.config.default_terms:
+        label = (raw_label or "").strip()
+        if not label or label in seen_default_labels:
+            continue
+        seen_default_labels.add(label)
+        term = Term(
+            id=label,
+            label=label,
+            definition=f"{runtime.config.default_term_definition_prefix}: {label}",
+            constraints=[],
+            version="1.0",
+        )
+        try:
+            runtime.meaning.create_term(term)
+        except Exception:
+            # Defensive duplicate tolerance: bootstrap should remain stable even
+            # if a caller passes overlapping defaults.
+            pass
 
     # §6.8.3 — If Persistence applied migrations during construction, emit the
     # SCHEMA_MIGRATED event now that TRACE is wired up.
@@ -1522,7 +1628,11 @@ def bootstrap(config=None, restore: bool = False) -> Runtime:
     # §6.3.5, §6.11.3 — Boot-time chain verification. If broken, this enters
     # persistent Safe-Stop. Runs regardless of restore flag — every boot verifies.
     # Skip if already in Safe-Stop (avoid double-entering).
-    if not ss["active"]:
-        runtime.verify_boot_chain()
+    runtime.verify_boot_chain()
+
+    # Any later boot step that enters Safe-Stop must still return the same
+    # restricted surface rather than exposing the broad Runtime object.
+    if runtime.is_safe_stopped().get("active"):
+        return SafeStopRecovery(runtime)
 
     return runtime

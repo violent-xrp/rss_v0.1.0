@@ -43,7 +43,7 @@ Usage:
 import sys
 from pathlib import Path
 from rss.core.config import RSSConfig, RSS_VERSION
-from rss.core.runtime import bootstrap
+from rss.core.runtime import SafeStopRecovery, bootstrap
 from rss.governance.seats.rune import Term
 from rss.audit.export import export_trace_json, export_trace_text, export_from_db
 from rss.reference_pack import load_reference_pack, seed_demo_world, DEMO_CONTAINERS, DEMO_QUESTIONS
@@ -424,11 +424,35 @@ if __name__ == "__main__":
     restore = cmd in ("demo", "demo-suite", "status", "list-terms", "list-hub", "add-term", "add-entry", "add-synonym", "remove-synonym", "disallow", "export-trace", "clear-safe-stop")
     rss = bootstrap(config, restore=restore)
 
+    if isinstance(rss, SafeStopRecovery):
+        recovery = rss.recovery_status()
+        safe_stop = recovery["safe_stop"]
+        print("\n  RSS booted in restricted Safe-Stop recovery mode.\n")
+        if cmd == "status":
+            print(f"  Safe-Stop: ACTIVE — {safe_stop.get('reason', 'unknown')}")
+            print(
+                "  TRACE preflight: "
+                f"{recovery['trace_verification'].get('verified', False)}"
+            )
+            print("  Allowed command: clear-safe-stop")
+            exit_code = 0
+        elif cmd == "clear-safe-stop":
+            result = rss.clear_safe_stop(t0_command=True)
+            print(f"  Safe-Stop cleared. Reason was: {safe_stop.get('reason', 'unknown')}")
+            print("  Recovery session closed. Bootstrap again to resume operation.")
+            exit_code = 0 if result.get("status") == "CLEARED" else 1
+        else:
+            print("  SAFE_STOP_ACTIVE: normal commands are unavailable.")
+            print("  Allowed commands: status | clear-safe-stop")
+            exit_code = 2
+        rss.close()
+        sys.exit(exit_code)
+
     print(f"\n  RSS v{RSS_VERSION} booted - AI that waits.\n")
 
     if cmd == "test":
         success = run_tests(rss)
-        rss.persistence.close()
+        rss.close()
         sys.exit(0 if success else 1)
     elif cmd == "demo":
         run_demo(rss)
@@ -464,4 +488,4 @@ if __name__ == "__main__":
         print(f"  Unknown command: {cmd}")
         print("  Commands: test | demo | demo-suite | status | add-term | add-synonym | remove-synonym | disallow | add-entry | list-terms | list-hub | export-trace | clear-safe-stop")
 
-    rss.persistence.close()
+    rss.close()
