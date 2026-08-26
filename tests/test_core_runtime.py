@@ -250,6 +250,162 @@ def test_genesis_blocking():
                 os.unlink(path + suffix)
 
 
+def test_bootstrap_requires_genesis_before_authority():
+    # CLAIM: §0.2.1, §0.5.3, §0.5.5, §0.5.6, §6.9.2 — production bootstrap verifies Genesis before restoring state or minting default authority.
+    section("Bootstrap Genesis Before Authority")
+    from rss.audit.verify import verify_trace_file
+
+    def durable_counts(db_path):
+        conn = sqlite3.connect(db_path)
+        try:
+            consent_count = conn.execute(
+                "SELECT COUNT(*) FROM consents WHERE key='GLOBAL:EXECUTE'"
+            ).fetchone()[0]
+            halt = conn.execute(
+                "SELECT value FROM system_state WHERE key='SAFE_STOP'"
+            ).fetchone()
+            codes = [
+                row[0] for row in conn.execute(
+                    "SELECT event_code FROM trace_events ORDER BY id"
+                ).fetchall()
+            ]
+            return consent_count, halt, codes
+        finally:
+            conn.close()
+
+    with tempfile.TemporaryDirectory() as tmp:
+        missing_db = os.path.join(tmp, "missing.db")
+        missing_genesis = os.path.join(tmp, "missing-section0.md")
+        missing = bootstrap(RSSConfig(
+            db_path=missing_db,
+            production_mode=True,
+            section0_path=missing_genesis,
+        ))
+        check(isinstance(missing, SafeStopRecovery),
+              "missing production Genesis returns recovery-only surface")
+        missing_status = missing.recovery_status()
+        check(missing_status["safe_stop"]["active"] is True,
+              "missing production Genesis establishes persistent Safe-Stop")
+        check("Genesis file required" in missing_status["safe_stop"]["reason"],
+              "missing-production halt preserves the Genesis refusal reason")
+        missing.close()
+        consents, halt, codes = durable_counts(missing_db)
+        check(consents == 0 and not hasattr(missing, "meaning"),
+              "missing Genesis creates no default authority or broad state surface")
+        check(halt is not None and codes == ["SAFE_STOP_ENTERED"],
+              "missing Genesis persists one halt receipt and no success receipt")
+        check(verify_trace_file(missing_db)["verified"] is True,
+              "missing-Genesis refusal leaves a cold-valid TRACE chain")
+
+        mismatch_db = os.path.join(tmp, "mismatch.db")
+        mismatch_genesis = os.path.join(tmp, "mismatch-section0.md")
+        with open(mismatch_genesis, "w", encoding="utf-8") as handle:
+            handle.write("TAMPERED GENESIS")
+        mismatch = bootstrap(RSSConfig(
+            db_path=mismatch_db,
+            production_mode=True,
+            section0_path=mismatch_genesis,
+        ))
+        check(isinstance(mismatch, SafeStopRecovery),
+              "mismatched production Genesis returns recovery-only surface")
+        check("Genesis verification failed" in
+              mismatch.recovery_status()["safe_stop"]["reason"],
+              "mismatch halt preserves the integrity-failure reason")
+        mismatch.close()
+        consents, halt, codes = durable_counts(mismatch_db)
+        check(consents == 0 and not hasattr(mismatch, "meaning"),
+              "mismatched Genesis creates no default authority or broad state surface")
+        check(halt is not None and codes == ["SAFE_STOP_ENTERED"],
+              "mismatched Genesis persists one halt receipt and no success receipt")
+        check(verify_trace_file(mismatch_db)["verified"] is True,
+              "mismatched-Genesis refusal leaves a cold-valid TRACE chain")
+
+        valid_db = os.path.join(tmp, "valid.db")
+        live_config = RSSConfig()
+        valid = bootstrap(RSSConfig(
+            db_path=valid_db,
+            production_mode=True,
+            section0_path=os.path.abspath(live_config.section0_path),
+            section0_hash=live_config.section0_hash,
+        ))
+        check(isinstance(valid, Runtime),
+              "valid production Genesis returns the operational runtime")
+        check(valid.is_safe_stopped()["active"] is False,
+              "valid production Genesis does not halt")
+        check(valid.meaning.status()["sealed_terms"] > 0,
+              "valid production boot initializes default terms after Genesis")
+        valid.close()
+        consents, halt, codes = durable_counts(valid_db)
+        check(consents == 1 and halt is None,
+              "valid production boot creates authority only after Genesis")
+        check(codes.count("GENESIS_VERIFIED") == 1,
+              "valid production bootstrap emits one Genesis success receipt")
+        check(verify_trace_file(valid_db)["verified"] is True,
+              "valid production boot leaves a cold-valid TRACE chain")
+
+        dev_db = os.path.join(tmp, "dev.db")
+        dev = bootstrap(RSSConfig(
+            db_path=dev_db,
+            section0_path=os.path.join(tmp, "dev-missing-section0.md"),
+        ))
+        check(isinstance(dev, Runtime) and
+              dev.is_safe_stopped()["active"] is False,
+              "dev mode retains the documented missing-Genesis allowance")
+        check(dev.meaning.status()["sealed_terms"] > 0,
+              "dev-mode allowance continues into normal term initialization")
+        dev.close()
+        consents, halt, codes = durable_counts(dev_db)
+        check(consents == 1 and halt is None,
+              "dev-mode allowance continues through normal bootstrap")
+        check("GENESIS_VERIFIED" not in codes,
+              "dev-mode missing artifact does not mint a false success receipt")
+
+        fence_fail_db = os.path.join(tmp, "fence-fail.db")
+        original_enter_safe_stop = Persistence.enter_safe_stop
+        try:
+            def fail_genesis_fence(self, reason):
+                raise sqlite3.OperationalError("simulated Genesis fence failure")
+
+            Persistence.enter_safe_stop = fail_genesis_fence
+            try:
+                bootstrap(RSSConfig(
+                    db_path=fence_fail_db,
+                    production_mode=True,
+                    section0_path=os.path.join(tmp, "fence-fail-missing.md"),
+                ))
+                check(False, "Genesis fence-persistence failure must refuse bootstrap")
+            except RuntimeError as exc:
+                check("could not complete a durable, evidenced refusal" in str(exc),
+                      "Genesis fence-persistence failure closes and raises explicitly")
+        finally:
+            Persistence.enter_safe_stop = original_enter_safe_stop
+        consents, halt, codes = durable_counts(fence_fail_db)
+        check(consents == 0 and halt is None and codes == [],
+              "failed Genesis fence returns no runtime, authority, halt, or false receipt")
+
+        contract_fail_db = os.path.join(tmp, "contract-fail.db")
+        original_verify_genesis = Runtime.verify_genesis
+        try:
+            Runtime.verify_genesis = lambda self: {
+                "verified": False,
+                "reason": "synthetic unfenced Genesis refusal",
+            }
+            try:
+                bootstrap(RSSConfig(
+                    db_path=contract_fail_db,
+                    section0_path=os.path.join(tmp, "contract-fail-missing.md"),
+                ))
+                check(False, "unfenced Genesis failure must refuse bootstrap")
+            except RuntimeError as exc:
+                check("failed without establishing persistent Safe-Stop" in str(exc),
+                      "bootstrap rejects a Genesis checker failure without a halt")
+        finally:
+            Runtime.verify_genesis = original_verify_genesis
+        consents, halt, codes = durable_counts(contract_fail_db)
+        check(consents == 0 and halt is None and codes == [],
+              "unfenced checker failure closes before authority or receipts")
+
+
 def test_default_genesis_binding_live_verify_and_recovery():
     # CLAIM: §0.2.1, §0.5.6 — default Genesis binding verifies live Section 0, tamper Safe-Stops, and T-0 recovery resumes.
     section("Default Genesis Binding Live Verify + Recovery")

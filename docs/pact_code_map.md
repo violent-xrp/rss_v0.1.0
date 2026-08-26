@@ -25,8 +25,6 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/core/runtime.py:135`
 - `src/rss/core/runtime.py:135`
 - `src/rss/core/runtime.py:392`
-- `src/rss/core/runtime.py:394`
-- `src/rss/core/runtime.py:395`
 - `src/rss/core/runtime.py:398`
 - `src/rss/core/runtime.py:405`
 - `src/rss/core/runtime.py:410`
@@ -52,6 +50,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 ### §0.2.1 -> pact/pact_section0_root_physics.md
 - `src/rss/core/runtime.py:392`
 - `src/rss/core/runtime.py:1212`
+- `src/rss/core/runtime.py:1579`
 
 ### §0.3.1 -> pact/pact_section0_root_physics.md
 - `src/rss/audit/log.py:193`
@@ -493,7 +492,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/core/runtime.py:461`
 - `src/rss/core/runtime.py:767`
 - `src/rss/core/runtime.py:1527`
-- `src/rss/core/runtime.py:1628`
+- `src/rss/core/runtime.py:1650`
 - `src/rss/hubs/tecton.py:349`
 - `src/rss/hubs/tecton.py:367`
 
@@ -568,7 +567,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/audit/export.py:204`
 - `src/rss/core/runtime.py:429`
 - `src/rss/core/runtime.py:432`
-- `src/rss/core/runtime.py:1607`
+- `src/rss/core/runtime.py:1629`
 - `src/rss/persistence/sqlite.py:36`
 - `src/rss/persistence/sqlite.py:51`
 - `src/rss/persistence/sqlite.py:280`
@@ -589,7 +588,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/audit/export.py:203`
 - `src/rss/core/runtime.py:429`
 - `src/rss/core/runtime.py:445`
-- `src/rss/core/runtime.py:1603`
+- `src/rss/core/runtime.py:1625`
 - `src/rss/persistence/sqlite.py:38`
 - `src/rss/persistence/sqlite.py:229`
 
@@ -600,7 +599,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/core/runtime.py:196`
 - `src/rss/core/runtime.py:240`
 - `src/rss/core/runtime.py:898`
-- `src/rss/core/runtime.py:1622`
+- `src/rss/core/runtime.py:1644`
 - `src/rss/governance/seats/oath.py:58`
 - `src/rss/governance/seats/oath.py:105`
 - `src/rss/governance/seats/oath.py:130`
@@ -647,7 +646,7 @@ Check freshness with `python docs/build_pact_code_map.py --check`.
 - `src/rss/core/runtime.py:461`
 - `src/rss/core/runtime.py:767`
 - `src/rss/core/runtime.py:1527`
-- `src/rss/core/runtime.py:1628`
+- `src/rss/core/runtime.py:1650`
 
 ### §6.11.4 -> pact/pact_section6_persistence_&_audit.md
 - `src/rss/audit/verify.py:29`

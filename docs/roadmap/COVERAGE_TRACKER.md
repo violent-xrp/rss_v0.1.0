@@ -30,11 +30,11 @@ governance/t0.py           100.0%
 scope.py                    92.6%
 llm_adapter.py              90.1%
 audit_log.py                88.8%
-runtime.py                  86.8%
+runtime.py                  87.8%
 oath.py                     83.7%
 pav.py                      90.9%
 constitution.py             92.5%
-TOTAL                       92.2%
+TOTAL                       92.4%
 ```
 
 ## Current Targets
@@ -63,6 +63,9 @@ Modules below the Phase G 85% target:
   lifecycle close, recovery-fence persistence failure, and fresh-bootstrap
   resumption. Runtime coverage recovered from the interim **85.4%** to
   **86.8%**, returning total package coverage from **92.0%** to **92.2%**.
+- The production Genesis bootstrap pass exercises missing, mismatched, valid,
+  dev-mode, failed-fence, and unfenced-checker paths before normal authority.
+  Runtime coverage moved to **87.8%** and total package coverage to **92.4%**.
 
 ## Next Coverage Work
 

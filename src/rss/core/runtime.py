@@ -391,8 +391,8 @@ class Runtime:
         """
         Verify Section 0 integrity. Pact §0.2.1
         Returns {verified: True/False, reason: str}
-        If section0.txt exists and hash mismatches: enters Safe-Stop.
-        If section0.txt doesn't exist: passes (dev mode, no file to check).
+        If the configured artifact exists and its hash mismatches: enters
+        Safe-Stop. If it does not exist: passes only in dev mode.
         """
         import os
         if not os.path.exists(self.section0_path):
@@ -1574,6 +1574,28 @@ def bootstrap(config=None, restore: bool = False) -> Runtime | SafeStopRecovery:
     # default authorization, or boot TRACE emission. It exposes only the narrow
     # T-0 recovery surface after the restored chain is verified.
     if ss["active"]:
+        return SafeStopRecovery(runtime)
+
+    # §0.2.1 — Production Genesis is verified after the restored TRACE head is
+    # known trustworthy, but before normal boot creates terms, emits migration
+    # receipts, restores governed state, or mints default authority. Runtime
+    # construction still initializes seats and may migrate the persistence
+    # schema; constructor ordering remains a separately disclosed invariant.
+    try:
+        genesis = runtime.verify_genesis()
+    except Exception as exc:
+        runtime.close()
+        raise RuntimeError(
+            "Genesis bootstrap verification could not complete a durable, "
+            f"evidenced refusal: {exc}"
+        ) from exc
+    if not genesis["verified"]:
+        if not runtime.is_safe_stopped().get("active"):
+            runtime.close()
+            raise RuntimeError(
+                "Genesis bootstrap verification failed without establishing "
+                "persistent Safe-Stop."
+            )
         return SafeStopRecovery(runtime)
 
     # Normal boot only: register config-driven default terms. Bootstrap must

@@ -8,9 +8,9 @@ This file preserves the count history and verification receipts that used to liv
 
 ## Current Baseline
 
-- **177 test functions / 1795 assertions / 0 failures**
-- **92.2% statement coverage**
-- **177 claims / 177 tests / 118 Pact sections**
+- **178 test functions / 1820 assertions / 0 failures**
+- **92.4% statement coverage**
+- **178 claims / 178 tests / 120 Pact sections**
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
 - Claim matrix: `python docs/build_claim_matrix.py`
@@ -149,6 +149,25 @@ surface:
   pre-halt references, cryptographic T-0 identity, and general state/receipt
   coupling remain explicit non-claims
 
+Verified after the 2026-08-25 production Genesis-before-authority bootstrap
+gate:
+- canonical runner: **178 / 1820 / 0**
+- claim matrix: **120 sections / 178 claims / 178 tests**
+- coverage: **92.4% total** (`runtime.py`: **87.8%**)
+- the registered proof covers missing required Genesis, mismatched Genesis,
+  valid production boot, and the documented missing-artifact dev-mode allowance
+- both production refusal arms establish persistent Safe-Stop, return only
+  `SafeStopRecovery`, mint no default EXECUTE authority, persist no false
+  success receipt, and leave a cold-valid TRACE chain
+- the valid production arm emits one bootstrap `GENESIS_VERIFIED` receipt and
+  only then continues into normal terms and default authority
+- adversarial infrastructure arms prove that a failed halt-fence write and a
+  checker failure without persistent Safe-Stop both close and raise before
+  authority or false receipts can escape
+- this is a post-construction, pre-authority gate; constructor-time seat setup
+  and schema migration, full-Pact integrity, and corrupt persisted-consent
+  validation remain separate work
+
 ## Public Doc Sync
 
 All public-facing docs listed below were synced during the 2026-04-29 public-doc pass:
@@ -160,8 +179,8 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 - `THREAT_MODEL.md`
 
 Current synced public numbers:
-- **177 / 1795 / 0**
-- **92.2%** coverage
-- **177 claims / 177 tests / 118 Pact sections**
+- **178 / 1820 / 0**
+- **92.4%** coverage
+- **178 claims / 178 tests / 120 Pact sections**
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.
