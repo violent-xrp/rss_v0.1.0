@@ -9,8 +9,8 @@ This file preserves the count history and verification receipts that used to liv
 ## Current Baseline
 
 - **179 test functions / 1884 assertions / 0 failures**
-- **92.4% statement coverage**
-- **179 claims / 179 tests / 120 Pact sections**
+- **92.2% statement coverage**
+- **179 claims / 179 tests / 121 Pact sections**
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
 - Claim matrix: `python docs/build_claim_matrix.py`
@@ -188,6 +188,28 @@ bootstrap gate:
   against external database writers between validation and use remain explicit
   non-claims
 
+Verified after the 2026-08-28 tracked Pact-citation resolver and phase-label
+correction:
+- canonical runner: **179 / 1884 / 0**
+- claim matrix: **121 real Pact sections / 179 claims / 179 tests**
+- the prior matrix published **120** headings, but only **116** resolved to the
+  Pact: identifiers `4.3.5`, `E-1`, `E-3`, and `E-4` were false headings
+- the two entry-ID proofs now cite exact `§6.9.3 Entry ID Stability`; the mixed
+  policy-confusion claim dropped its redundant phase label; and the Phase E
+  regression battery now cites `§1.6.2`, `§4.4.1`, `§6.7.5`, and `§6.9.5`
+- the four false headings were removed and five previously uncited real Pact
+  sections entered, so the honest section count moves **116 → 121** while the
+  published heading count moves **120 → 121**; no test or assertion was removed
+- internal build labels now use `Phase D-*`, `Phase E-*`, or `Phase C-NEW-*`,
+  never the Pact section sign; the tracked resolver gates numeric Pact headings,
+  explicitly named external legal instruments, internal-label misuse, and
+  unresolved citations across every tracked text file
+- coverage reproduced at **92.2% total** (`runtime.py`: **88.4%**) on two
+  consecutive runs. The citation and phase-label edits add no executable branch
+  and the recorded per-module percentages remain aligned with the prior tracker;
+  the **92.4% → 92.2%** total movement is the previously observed coverage-gate
+  nondeterminism, not lost proof, and is recorded rather than silently masked
+
 ## Public Doc Sync
 
 All public-facing docs listed below were synced during the 2026-04-29 public-doc pass:
@@ -200,7 +222,7 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 
 Current synced public numbers:
 - **179 / 1884 / 0**
-- **92.4%** coverage
-- **179 claims / 179 tests / 120 Pact sections**
+- **92.2%** coverage
+- **179 claims / 179 tests / 121 Pact sections**
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.

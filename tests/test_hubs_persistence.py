@@ -970,7 +970,7 @@ def test_s4_pipeline_integration():
 
 def test_f2_entry_id_stability():
     """F-2: Entry IDs survive persistence round-trip"""
-    # CLAIM: §4.3.5, §6.5 — entry IDs stable across restart (no re-generation)
+    # CLAIM: §6.9.3, §6.5 — entry IDs stable across restart (no re-generation)
     section("F-2: Entry ID Stability Across Restart")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -1018,7 +1018,7 @@ def test_f2_entry_id_stability():
 
 def test_f2_container_entry_id_stability():
     """F-2: Container hub entry IDs survive persistence round-trip"""
-    # CLAIM: §4.3.5, §5.2.1 — container entry IDs stable across restart
+    # CLAIM: §6.9.3, §5.2.1 — container entry IDs stable across restart
     section("F-2: Container Entry ID Stability")
 
     fd, path = tempfile.mkstemp(suffix=".db")

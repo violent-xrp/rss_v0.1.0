@@ -379,7 +379,7 @@ class Runtime:
                 # We cannot proceed with a system whose baseline consent is
                 # not durable — that's exactly the split-brain Phase E-4 closes.
                 reason = (
-                    f"§E-4: Default EXECUTE consent creation failed on fresh "
+                    f"Phase E-4: Default EXECUTE consent creation failed on fresh "
                     f"database: {result.get('reason', 'persistence failure')}. "
                     f"Cannot proceed without durable baseline consent."
                 )
@@ -486,7 +486,7 @@ class Runtime:
             # foundation must Safe-Stop rather than silently bypass.
             if getattr(self.config, "require_genesis_file", False):
                 reason = (
-                    f"§E-1: Genesis file required in production mode but "
+                    f"Phase E-1: Genesis file required in production mode but "
                     f"'{self.section0_path}' is missing. Cannot proceed without "
                     f"verifiable constitutional foundation."
                 )
@@ -1407,7 +1407,7 @@ class Runtime:
             last_stage = 5
 
             # -- Stage 6: CYCLE — rate limit --
-            # §C-NEW-3: container-scoped max_requests_per_minute. TECTON
+            # Phase C-NEW-3: container-scoped max_requests_per_minute. TECTON
             # injects the container's ContainerPermissions.max_requests_per_minute
             # into scope_policy before calling runtime. We read it here and
             # pass it to CYCLE so the limit reflects the container profile,

@@ -66,7 +66,7 @@ class Cycle:
                           strict: bool = False) -> dict:
         """Check rate limit for a domain; enforce max_per_minute.
 
-        §C-NEW-3 — Optional `max_per_minute` argument lets callers pass a
+        Phase C-NEW-3 — Optional `max_per_minute` argument lets callers pass a
         container-specific limit from ContainerPermissions. If provided, the
         domain's max is updated to this value before the check. This lets
         per-container limits from TECTON override the default 10/min without

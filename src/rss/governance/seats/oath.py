@@ -164,7 +164,7 @@ class Oath:
                 # rather than installing it in memory.
                 import sys as _sys
                 print(
-                    f"[OATH WARN §E-4] Consent grant REFUSED — persistence failed for "
+                    f"[OATH WARN Phase E-4] Consent grant REFUSED — persistence failed for "
                     f"{normalized_action}/{normalized_container}: {exc}",
                     file=_sys.stderr,
                 )
@@ -219,7 +219,7 @@ class Oath:
             except Exception as exc:
                 import sys as _sys
                 print(
-                    f"[OATH WARN §E-4] Consent denial REFUSED — persistence failed for "
+                    f"[OATH WARN Phase E-4] Consent denial REFUSED — persistence failed for "
                     f"{normalized_action}/{normalized_container}: {exc}",
                     file=_sys.stderr,
                 )
@@ -279,7 +279,7 @@ class Oath:
                 # Refuse the revocation. In-memory state remains AUTHORIZED.
                 import sys as _sys
                 print(
-                    f"[OATH WARN §E-4] Revocation REFUSED — persistence failed for "
+                    f"[OATH WARN Phase E-4] Revocation REFUSED — persistence failed for "
                     f"{normalized_action}/{normalized_container}: {exc}",
                     file=_sys.stderr,
                 )

@@ -7,8 +7,10 @@ This wrapper keeps the routine public-surface check in one command:
 2. Public contact/license-header consistency.
 3. Reverse Pact-code map freshness.
 4. Generated Project Status freshness.
-5. External provenance/name hygiene scan with explicit intentional-hit allowlist.
-6. Workflow-callsign leak scan (scoped markdown) with its own allowlist.
+5. Tracked section-sign references resolve to the Pact or an explicitly named
+   external legal instrument.
+6. External provenance/name hygiene scan with explicit intentional-hit allowlist.
+7. Workflow-callsign leak scan (scoped markdown) with its own allowlist.
 
 Usage:
     python docs/check_public_hygiene.py
@@ -262,6 +264,10 @@ def main() -> int:
                 "--check",
                 "--assume-gates-passed",
             ],
+        ),
+        (
+            "Tracked Pact-section resolver gate",
+            [sys.executable, "docs/resolve_pact_sections.py", "--check"],
         ),
     ]
 

@@ -1,12 +1,12 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-08-26 23:26 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-08-28 15:56 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
 **Boundary:** the gate enforces claim presence, one-claim-per-test counts, and a non-vacuity floor (every claim cites a Pact section; every test contains a real assertion). It does not — and cannot — verify that a test body semantically proves the clause it cites. Claim fidelity is a review responsibility.
 
-**Coverage:** 120 distinct Pact sections referenced across 179 claim tags on 179 test functions.
+**Coverage:** 121 distinct Pact sections referenced across 179 claim tags on 179 test functions.
 
 ---
 
@@ -147,6 +147,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_scribe` — SCRIBE drafting and versioning
 - `test_scribe_extended_edges` — SCRIBE extended edges: draft uniqueness, error states, UAP assembly, status, and handle dispatch
+
+## §1.6.2
+
+- `test_phase_e_regression_battery` — production posture, governed demo creation path, container state restore, and fail-closed OATH revocation
 
 ## §1.7
 
@@ -314,10 +318,9 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_s4_provenance_persistence` — provenance chain survives restart
 - `test_archive_entry_returns_hub_entry` — archive_entry returns the archived HubEntry with provenance logged; return value matches other lifecycle method convention
 
-## §4.3.5
+## §4.4.1
 
-- `test_f2_entry_id_stability` — entry IDs stable across restart (no re-generation)
-- `test_f2_container_entry_id_stability` — container entry IDs stable across restart
+- `test_phase_e_regression_battery` — production posture, governed demo creation path, container state restore, and fail-closed OATH revocation
 
 ## §4.4.3
 
@@ -552,6 +555,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_s6_schema_version_tracking` — schema version stamped and idempotent
 - `test_s6_bootstrap_event_sequence` — bootstrap event ordering: SCHEMA_VERSION_SET then BOOT_CHAIN_VERIFIED
 
+## §6.7.5
+
+- `test_phase_e_regression_battery` — production posture, governed demo creation path, container state restore, and fail-closed OATH revocation
+
 ## §6.8.1
 
 - `test_v2_mixed_chain_migration_and_roundtrip` — additive trace_events migration; mixed v1/v2 chain valid; v2 fields round-trip through SQLite
@@ -577,6 +584,15 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_oath_denied_consent_survives_restart` — DENIED consent survives restart; restore never upgrades a restrictive status to AUTHORIZED
 - `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
 - `test_phase_d_regression_battery` — UUID ingress, scope-on-permission, OATH persistence-failure visibility
+
+## §6.9.3
+
+- `test_f2_entry_id_stability` — entry IDs stable across restart (no re-generation)
+- `test_f2_container_entry_id_stability` — container entry IDs stable across restart
+
+## §6.9.5
+
+- `test_phase_e_regression_battery` — production posture, governed demo creation path, container state restore, and fail-closed OATH revocation
 
 ## §6.9.7
 
@@ -650,19 +666,6 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_pact_canon_drift_detector_helpers_and_db_edges` — drift detector helper and DB edge paths remain read-only and explicit
 - `test_pact_canon_drift_detector_cli_outputs` — drift detector CLI emits human and JSON reports without mutation
 - `test_s7_amendment_persistence_roundtrip` — amendment proposal/review state and ratified history survive restart
-
-## §E-1
-
-- `test_adversarial_policy_confusion` — policy confusion: global vs container consent; forbidden wins at PAV; production-mode
-- `test_phase_e_regression_battery` — production-mode, demo parity, auto-restore, OATH atomicity
-
-## §E-3
-
-- `test_phase_e_regression_battery` — production-mode, demo parity, auto-restore, OATH atomicity
-
-## §E-4
-
-- `test_phase_e_regression_battery` — production-mode, demo parity, auto-restore, OATH atomicity
 
 ---
 

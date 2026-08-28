@@ -626,7 +626,7 @@ class Tecton:
 
         # §5.6.5 — Use container scope policy, convert tuples to lists for pipeline
         # §5.6.5 — Use container scope policy, convert tuples to lists for pipeline
-        # §C-NEW-3 — Inject max_requests_per_minute into the policy dict so
+        # Phase C-NEW-3 — Inject max_requests_per_minute into the policy dict so
         # runtime Stage 6 can apply the container-specific rate limit.
         # Phase D-5 — Inject can_access_system_hub so SCOPE Stage 2 can enforce
         # the SYSTEM hub permission gate.

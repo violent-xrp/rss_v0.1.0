@@ -389,7 +389,7 @@ def test_adversarial_malformed_inputs():
 
 def test_adversarial_policy_confusion():
     """Adversarial: contradictory or confusing policy states."""
-    # CLAIM: §5.7.1, §4.5, §E-1 — policy confusion: global vs container consent; forbidden wins at PAV; production-mode
+    # CLAIM: §5.7.1, §4.5 — policy confusion: global vs container consent; forbidden wins at PAV; production-mode
     section("ADVERSARIAL: Policy Confusion")
 
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -1079,7 +1079,7 @@ def test_phase_e_regression_battery():
       E-3: Container restore in default boot path
       E-4: OATH true write-ahead (Option B) — already covered by D-6 test update
     """
-    # CLAIM: §E-1, §E-3, §E-4 — production-mode, demo parity, auto-restore, OATH atomicity
+    # CLAIM: §1.6.2, §4.4.1, §6.7.5, §6.9.5 — production posture, governed demo creation path, container state restore, and fail-closed OATH revocation
     section("Phase E: Regression Battery")
 
     from rss.hubs.tecton import ContainerRequest
@@ -1107,8 +1107,8 @@ def test_phase_e_regression_battery():
         if not os.path.exists(rss.section0_path):
             check(result.get("verified") is False,
                   "E-1: production mode rejects missing Genesis (no dev pass)")
-            check("§E-1" in result.get("reason", ""),
-                  "E-1: refusal reason cites §E-1")
+            check("Phase E-1" in result.get("reason", ""),
+                  "E-1: refusal reason cites Phase E-1")
         rss.persistence.close()
     finally:
         _cleanup_db(path)
