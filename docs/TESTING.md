@@ -28,7 +28,12 @@ Public hygiene wrapper:
 python docs/check_public_hygiene.py
 ```
 
-This runs baseline sync in check mode, including public docs and the GitHub Pages proof block, then the contact/license-header check, reverse Pact-code map freshness check, generated Project Status freshness check, and external provenance/name hygiene scan with intentional fixture allowlists.
+This runs baseline sync in check mode, including public docs and the GitHub Pages proof block, then the contact/license-header check, claim fidelity floor, reverse Pact-code map freshness check, generated Project Status freshness check, tracked Pact-reference resolver, external provenance/name hygiene scan, and workflow-callsign leak scan with intentional fixture allowlists.
+
+The provenance and callsign scans include the declared root agent entrypoint files
+even before their first commit. Protocol-required loader filenames are checked
+through an explicit path allowlist; their contents receive the same scans as
+other public files.
 
 `docs/build_project_status.py --check` is a strict standalone clean-tree check. The hygiene wrapper calls `--assume-gates-passed` only after the baseline and reverse-map gates have already passed, avoiding a duplicate acceptance/coverage run.
 

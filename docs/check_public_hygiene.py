@@ -5,12 +5,14 @@ This wrapper keeps the routine public-surface check in one command:
 
 1. Baseline sync in check mode, including acceptance runner and coverage proof.
 2. Public contact/license-header consistency.
-3. Reverse Pact-code map freshness.
-4. Generated Project Status freshness.
-5. Tracked section-sign references resolve to the Pact or an explicitly named
+3. Claim-tag fidelity floor.
+4. Reverse Pact-code map freshness.
+5. Generated Project Status freshness.
+6. Tracked section-sign references resolve to the Pact or an explicitly named
    external legal instrument.
-6. External provenance/name hygiene scan with explicit intentional-hit allowlist.
-7. Workflow-callsign leak scan (scoped markdown) with its own allowlist.
+7. External provenance/name hygiene scan over content and filenames, with
+   explicit intentional-hit allowlists.
+8. Workflow-callsign leak scan (scoped markdown) with its own allowlist.
 
 Usage:
     python docs/check_public_hygiene.py
@@ -25,6 +27,12 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+PUBLIC_AGENT_ENTRYPOINT_FILES = (
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+)
 
 EXTERNAL_PROVENANCE_NAME_TERMS = (
     "Clau" + "de",
@@ -91,6 +99,14 @@ ALLOWED_PROVENANCE_NAME_HITS = (
     ),
 )
 
+# These loader names are fixed by their consuming tools. Their filenames are an
+# explicit narrow exception to tool-neutral public naming; their contents remain
+# subject to the normal provenance/name and callsign scans.
+ALLOWED_PROVENANCE_NAME_PATHS = {
+    "CLAUDE.md": "Protocol-required loader filename.",
+    "GEMINI.md": "Protocol-required loader filename.",
+}
+
 
 # ---- Workflow-callsign leak guard (scoped) --------------------------------------------
 # Bare workflow callsigns are lab/local provenance only; they must not leak into
@@ -106,6 +122,7 @@ CALLSIGN_TERMS = ("A" + "GIDE", "A" + "G", "G" + "M", "C" + "L", "C" + "X", "C" 
 # provenance scan above.
 CALLSIGN_SCAN_DIRS = ("docs/", "pact/")
 CALLSIGN_SCAN_TOPLEVEL_FILES = (
+    *PUBLIC_AGENT_ENTRYPOINT_FILES,
     "README.md",
     "CHANGELOG.md",
     "ROADMAP.md",
@@ -129,7 +146,7 @@ def run_step(label: str, command: list[str]) -> int:
     return result.returncode
 
 
-def tracked_public_files() -> list[Path]:
+def public_candidate_files() -> list[Path]:
     result = subprocess.run(
         ["git", "ls-files"],
         cwd=REPO_ROOT,
@@ -137,15 +154,23 @@ def tracked_public_files() -> list[Path]:
         capture_output=True,
         check=True,
     )
-    files: list[Path] = []
+    relative_paths: set[str] = set()
     for line in result.stdout.splitlines():
         rel = line.strip()
         if not rel:
             continue
         if rel.startswith(("local/", ".git/", "demo_artifacts/")):
             continue
-        files.append(REPO_ROOT / rel)
-    return files
+        relative_paths.add(rel)
+
+    # A new entrypoint must be scanned before its first commit, not only after it
+    # becomes visible to git ls-files. This closes the pre-commit silence that the
+    # entrypoint candidate exposed.
+    for rel in PUBLIC_AGENT_ENTRYPOINT_FILES:
+        if (REPO_ROOT / rel).is_file():
+            relative_paths.add(rel)
+
+    return [REPO_ROOT / rel for rel in sorted(relative_paths)]
 
 
 def is_allowed_provenance_name_hit(path: str, line_number: int, line: str) -> bool:
@@ -155,11 +180,21 @@ def is_allowed_provenance_name_hit(path: str, line_number: int, line: str) -> bo
 def provenance_name_hygiene_scan() -> int:
     print("\n== External provenance/name hygiene scan ==", flush=True)
     pattern = re.compile("|".join(re.escape(term) for term in EXTERNAL_PROVENANCE_NAME_TERMS))
+    path_pattern = re.compile(
+        "|".join(re.escape(term) for term in EXTERNAL_PROVENANCE_NAME_TERMS),
+        re.IGNORECASE,
+    )
     unexpected: list[str] = []
     allowed_count = 0
+    allowed_path_count = 0
 
-    for path in tracked_public_files():
+    for path in public_candidate_files():
         rel = path.relative_to(REPO_ROOT).as_posix()
+        if path_pattern.search(rel):
+            if rel in ALLOWED_PROVENANCE_NAME_PATHS:
+                allowed_path_count += 1
+            else:
+                unexpected.append(f"{rel}: external provenance/name in public filename")
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError as exc:
@@ -179,27 +214,22 @@ def provenance_name_hygiene_scan() -> int:
             print(f"  - {hit}")
         return 1
 
-    print(f"External provenance/name hygiene scan passed ({allowed_count} intentional hits allowed).")
+    print(
+        "External provenance/name hygiene scan passed "
+        f"({allowed_count} intentional content hits, "
+        f"{allowed_path_count} protocol-required filename hits allowed)."
+    )
     return 0
 
 
 def callsign_scan_files() -> list[Path]:
-    result = subprocess.run(
-        ["git", "ls-files"],
-        cwd=REPO_ROOT,
-        text=True,
-        capture_output=True,
-        check=True,
-    )
     files: list[Path] = []
-    for line in result.stdout.splitlines():
-        rel = line.strip()
+    for path in public_candidate_files():
+        rel = path.relative_to(REPO_ROOT).as_posix()
         if not rel or not rel.endswith(".md"):
             continue
-        if rel.startswith(("local/", ".git/", "demo_artifacts/")):
-            continue
         if rel.startswith(CALLSIGN_SCAN_DIRS) or rel in CALLSIGN_SCAN_TOPLEVEL_FILES:
-            files.append(REPO_ROOT / rel)
+            files.append(path)
     return files
 
 

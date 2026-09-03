@@ -27,7 +27,6 @@ rss_trace_export*
 .claude/
 local/
 docs/agents/
-GEMINI.md
 GEMINI_REVIEW_LOG.md
 docs/PACT_COUNCIL_STRIP_MAP.md
 docs/PACT_COUNCIL_STRIP*.md

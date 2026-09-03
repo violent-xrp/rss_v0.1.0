@@ -34,6 +34,12 @@ Each document should own one job. Do not copy the same live claim across multipl
 | `docs/demo/DEMO_HANDOFF.md` | demo artifact interpretation | current project status | regenerate or review with demo artifacts |
 | `docs/proposals/` | future design proposals | current capability claims | archive when implemented, rejected, or superseded |
 | `docs/index.html` | public website copy and presentation | private build notes or working assets | keep proof text synced; keep source notes in ignored local surfaces |
+| `AGENTS.md` | automatic public-safe agent boot, boundaries, and task routing | private callsign values, personal paths, private URLs, or task-specific handoffs | keep tool-neutral and route private context through the ignored local pointer |
+| `CLAUDE.md`, `GEMINI.md` | protocol-required loader adapters into `AGENTS.md` | independent project policy | keep thin; any loader-salience text must not duplicate project rules |
+
+The loader-adapter filenames are an explicit, narrow exception to tool-neutral
+public naming because their consuming tools require those names. Their contents
+remain tool-neutral and are scanned for external names and workflow callsigns.
 
 ## Generated Surfaces
 
@@ -51,7 +57,10 @@ Use the wrapper before treating public docs as current:
 python docs/check_public_hygiene.py
 ```
 
-That wrapper checks baseline sync, contact surface, reverse Pact-code map freshness, and external provenance/name hygiene.
+That wrapper checks baseline sync, contact surface, claim fidelity, reverse
+Pact-code map freshness, generated Project Status freshness, tracked Pact
+citations, external provenance/name hygiene across content and filenames, and
+workflow-callsign leakage.
 
 ## Proposal Lifecycle
 
