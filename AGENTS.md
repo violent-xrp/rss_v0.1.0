@@ -32,14 +32,15 @@ Before acting:
    - `main` is release-safe truth;
    - `root-down-to-hell` is the reviewed staging bench;
    - `test-roots-lab` is the experimental Lab;
-   - the private Taproot repository carries its own `AGENTS.md`.
+   - the public Taproot methodology repository carries its own `AGENTS.md`.
 3. If `local/*_START_HERE.md` exists for the current tree, read it as the private
    routing adapter. Do not treat it as project truth.
 4. If `local/ACTIVE_HANDOFF.md` exists, read it and verify its claims against
    live Git state.
-5. If `local/TAPROOT_POINTER.md` exists, follow it. When the private context is
-   reachable, load its callsign roster, operating postures, workflow rules, and
-   the rules specific to the current tree.
+5. If `local/TAPROOT_POINTER.md` exists, follow it. When Taproot is reachable,
+   load its tracked callsign registry, operating postures, workflow rules, and
+   the rules specific to the current tree. Personal material remains outside
+   Taproot and outside the default boot route.
 6. Confirm that the required response header was emitted before continuing.
 7. Route the task, then read only the tracked control surfaces needed for that
    task. Do not load the complete public documentation set by default.
@@ -81,9 +82,9 @@ ask rather than infer.
   main.
 - Treat `pact/` as constitutional source text. Do not edit it without explicit
   authorization for a Pact change in the current request.
-- Treat `local/` and any private Taproot material as private operator context.
-  Do not quote, summarize broadly, copy into tracked files, or publish it unless
-  the user explicitly approves that exact movement.
+- Treat `local/` and the separate non-Git RSS Personal lane as private operator
+  context. Do not quote, summarize broadly, copy into tracked files, or publish
+  that material unless the user explicitly approves that exact movement.
 - Do not commit, push, tag, change versions, promote between trees, or use a
   writing generator unless the current request authorizes that action.
 

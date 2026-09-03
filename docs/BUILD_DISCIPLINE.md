@@ -70,6 +70,29 @@ re-reviewed slice accompanied by a written promotion packet: what was built,
 the exact slice to recut, tests to bring, docs owed, known exclusions, and a
 rollback path. No packet, no promotion.
 
+### Promotion and reconciliation loop
+
+Main and Roots are long-lived branches of the same repository, checked out in
+separate worktrees. Roots may carry reviewed work that has not reached main,
+but it must not silently lose release history that landed on main.
+
+Use this cycle for every promotion:
+
+1. Start a Roots batch from a clean tree that contains the current main
+   history. Merge main into Roots when main has commits Roots does not contain.
+2. Build, gate, and cross-family review the bounded candidate in Roots.
+3. After human approval, merge the accepted Roots checkpoint into main and run
+   the release gates against the resulting main revision.
+4. Push main only under explicit authority.
+5. Merge the resulting main promotion commit back into Roots, re-run the
+   staging gates, and push Roots under explicit authority.
+6. Before the next batch, verify that main has zero commits absent from Roots.
+
+Do not rebase or reset a published Roots branch to manufacture agreement.
+Ahead/behind counts describe commit topology, not content truth; inspect the
+diff and run the gates. Any emergency or release-only main change must return
+through the same main-to-Roots reconciliation before ordinary staging resumes.
+
 ## Finish discipline
 
 A change is not finished when the code works. It is finished when the living
