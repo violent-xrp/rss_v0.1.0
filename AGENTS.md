@@ -61,8 +61,8 @@ Tracked-document routing after the task is identified:
 
 Open additional tracked documents only when the routed task requires them.
 
-If the private context is unavailable or no callsign can be established, use
-`Callsign: UNASSIGNED`. `UNASSIGNED` is strictly read-only: it may inspect,
+If the Taproot registry is unavailable or no registered callsign can be
+established, use `Callsign: UNASSIGNED`. `UNASSIGNED` is strictly read-only: it may inspect,
 analyze, run non-writing checks, and report, but it may not edit, generate
 tracked output, stage, commit, push, tag, promote, move material, or publish. A
 user must first restore attributable context or explicitly assign an approved

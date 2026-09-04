@@ -131,12 +131,14 @@ like these will keep happening — and must keep getting caught.
 
 ## The public/private boundary
 
-The working notes behind this process (task routing, tool assignments, working
-logs, costs) are private and gitignored. What crosses into this repository is
-gated: tracked documents are mechanically scanned so internal shorthand and
-tool/vendor names do not leak, and public claims stay inside
-`../CLAIM_DISCIPLINE.md`. This document intentionally describes roles, not
-brands.
+The working notes behind this process (task-specific routing, raw session
+details, working logs, costs) are private and gitignored. Callsign,
+model-family, and application-surface provenance is public method owned by
+Taproot; it does not belong in RSS product or Pact claims. What crosses into
+this repository is gated: tracked documents are mechanically scanned so
+internal shorthand and tool/vendor names do not leak, and public claims stay
+inside `../CLAIM_DISCIPLINE.md`. This document intentionally describes roles,
+not brands.
 
 ## The rule that governs all of it
 

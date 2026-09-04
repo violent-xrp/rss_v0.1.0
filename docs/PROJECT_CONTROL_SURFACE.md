@@ -34,7 +34,7 @@ Each document should own one job. Do not copy the same live claim across multipl
 | `docs/demo/DEMO_HANDOFF.md` | demo artifact interpretation | current project status | regenerate or review with demo artifacts |
 | `docs/proposals/` | future design proposals | current capability claims | archive when implemented, rejected, or superseded |
 | `docs/index.html` | public website copy and presentation | private build notes or working assets | keep proof text synced; keep source notes in ignored local surfaces |
-| `AGENTS.md` | automatic public-safe agent boot, boundaries, and task routing | private callsign values, personal paths, private URLs, or task-specific handoffs | keep tool-neutral and route private context through the ignored local pointer |
+| `AGENTS.md` | automatic public-safe agent boot, boundaries, and task routing | an embedded callsign roster, personal paths, private URLs, or task-specific handoffs | keep tool-neutral; resolve public callsign provenance through Taproot and private context through the ignored local pointer |
 | `CLAUDE.md`, `GEMINI.md` | protocol-required loader adapters into `AGENTS.md` | independent project policy | keep thin; any loader-salience text must not duplicate project rules |
 
 The loader-adapter filenames are an explicit, narrow exception to tool-neutral
