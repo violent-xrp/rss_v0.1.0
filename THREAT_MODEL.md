@@ -37,7 +37,7 @@ Mitigation: TRACE chain linkage, boot verification, and stand-alone cold verific
 Mitigation: per-container HubTopology, lifecycle/state checks, context-bound hub isolation, and container-aware TRACE filtering.
 
 ### Consent split-brain
-Mitigation: OATH write-ahead persistence semantics and persistence-failure surfacing. Bootstrap also validates every durable row claiming the critical `GLOBAL:EXECUTE` key or tuple before restore/default authority; malformed, duplicate, or unreadable critical state is recovery-fenced without repairing away the evidence.
+Mitigation: OATH write-ahead persistence semantics and persistence-failure surfacing. Bootstrap also validates every durable row claiming the critical `GLOBAL:EXECUTE` key or OATH-normalized namespace before restore/default authority. Normalization discovers aliases; it does not legitimize noncanonical stored names. Malformed, duplicate, or unreadable critical state is recovery-fenced without repairing away the evidence.
 
 ## Residual risks that remain visible
 - a malicious caller with process-level import access can still spoof architectural ingress assumptions
@@ -51,7 +51,7 @@ Mitigation: OATH write-ahead persistence semantics and persistence-failure surfa
 - side effects are only governable when they pass through the runtime boundary; per-action/tool-call enforcement remains future hardening
 - future importers, browsers, email connectors, RAG indexes, and tool adapters could reintroduce indirect prompt injection risk if retrieved text is passed as instruction, if hidden/metadata text is not labeled as untrusted, or if model output can trigger side effects without a fresh OATH/CYCLE gate
 - live model fluency is not evidence; governed data claims still need scoped PAV context and TRACE-backed runtime flow
-- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 179/1884 baseline
+- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 179/2652 baseline
 
 ## Current honesty line
 RSS v0.1.0 is strong at **governance-before-model** inside a single-process governed runtime. It is not yet the whole deployment security story.

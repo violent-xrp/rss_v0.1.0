@@ -427,7 +427,7 @@ def test_bootstrap_refuses_invalid_critical_consent():
         conn = sqlite3.connect(db_path)
         try:
             rows = conn.execute(
-                "SELECT key, action_class, container_id, requester, status "
+                "SELECT key, action_class, container_id, requester, status, granted_at "
                 "FROM consents ORDER BY key"
             ).fetchall()
             halt = conn.execute(
@@ -479,18 +479,21 @@ def test_bootstrap_refuses_invalid_critical_consent():
         result, authorize_calls = boot_with_authorize_spy(
             config_for(db_path, tmp), restore=restore
         )
-        check(isinstance(result, SafeStopRecovery),
-              f"{label}: invalid critical consent returns recovery-only surface")
-        status = result.recovery_status()
-        check(status["safe_stop"]["active"] is True,
-              f"{label}: invalid critical consent establishes persistent Safe-Stop")
-        check(expected_issue in status["safe_stop"]["reason"],
-              f"{label}: refusal names the critical consent defect")
-        check(authorize_calls == [],
-              f"{label}: validation refuses before any consent is rehydrated or minted")
-        check(not hasattr(result, "oath"),
-              f"{label}: invalid consent exposes no broad authority surface")
-        result.close()
+        try:
+            is_recovery = isinstance(result, SafeStopRecovery)
+            check(is_recovery,
+                  f"{label}: invalid critical consent returns recovery-only surface")
+            status = result.recovery_status()["safe_stop"] if is_recovery else {}
+            check(status.get("active") is True,
+                  f"{label}: invalid critical consent establishes persistent Safe-Stop")
+            check(expected_issue in status.get("reason", ""),
+                  f"{label}: refusal names the critical consent defect")
+            check(authorize_calls == [],
+                  f"{label}: validation refuses before any consent is rehydrated or minted")
+            check(not hasattr(result, "oath"),
+                  f"{label}: invalid consent exposes no broad authority surface")
+        finally:
+            result.close()
 
         after = snapshot(db_path)
         check(after["rows"] == invalid_rows,
@@ -569,6 +572,110 @@ def test_bootstrap_refuses_invalid_critical_consent():
             ),
             "duplicate_rows",
         )
+
+        # Stored names must be canonical even when OATH would normalize them
+        # into GLOBAL:EXECUTE. Exercise both SQLite insertion orders: the
+        # former restore loop could let an AUTHORIZED alias replace a durable
+        # REVOKED/DENIED record solely because it was encountered last.
+        aliases = (
+            ("action-case", "execute", "GLOBAL"),
+            ("action-space", " EXECUTE ", "GLOBAL"),
+            ("container-space", "EXECUTE", " GLOBAL "),
+            ("empty-container", "EXECUTE", ""),
+            ("blank-container", "EXECUTE", "   "),
+            ("null-container", "EXECUTE", None),
+            ("combined", "\texecute\n", "\tGLOBAL\n"),
+        )
+
+        def replace_consents(path, rows):
+            conn = sqlite3.connect(path)
+            try:
+                conn.execute("DELETE FROM consents")
+                conn.executemany(
+                    "INSERT INTO consents "
+                    "(key, action_class, container_id, requester, status, granted_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    [(*row, "T-0", status, "2026-01-01T00:00:00+00:00")
+                     for row, status in rows],
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
+            # Check the real adapter's retrieval order, not just insertion
+            # intent: the duplicate-row proof must exercise both orderings.
+            persistence = Persistence(path)
+            try:
+                check([row["key"] for row in persistence.load_consents()] ==
+                      [row[0] for row, status in rows],
+                      "consent fixture retrieval order matches the intended row order")
+            finally:
+                persistence.close()
+
+        for restore in (False, True):
+            for alias_name, action, container in aliases:
+                alias = (("ALIAS", action, container), "AUTHORIZED")
+                for restriction in ("REVOKED", "DENIED"):
+                    canonical = (("GLOBAL:EXECUTE", "EXECUTE", "GLOBAL"), restriction)
+                    for alias_first in (False, True):
+                        rows = [alias, canonical] if alias_first else [canonical, alias]
+                        run_invalid_case(
+                            tmp, f"{alias_name}-{restriction}-{restore}-{alias_first}",
+                            lambda path, rows=rows: replace_consents(path, rows),
+                            "duplicate_rows", restore=restore,
+                        )
+                # A lone alias must not be mistaken for a fresh database and
+                # silently replaced with default authority, in either mode.
+                run_invalid_case(
+                    tmp, f"{alias_name}-lone-{restore}",
+                    lambda path, alias=alias: replace_consents(path, [alias]),
+                    "noncanonical_key", restore=restore,
+                )
+
+            run_invalid_case(
+                tmp, f"two-aliases-no-canonical-{restore}",
+                lambda path: replace_consents(path, [
+                    (("ALIAS-1", "execute", "GLOBAL"), "REVOKED"),
+                    (("ALIAS-2", "EXECUTE", ""), "AUTHORIZED"),
+                ]),
+                "duplicate_rows", restore=restore,
+            )
+
+            # Controls pin the bounded scope: valid critical statuses survive,
+            # tenant IDs remain case-sensitive, and malformed noncritical
+            # names still belong to the existing restore-skip path.
+            for persisted_status in ("AUTHORIZED", "REVOKED", "DENIED"):
+                control_db = os.path.join(tmp, f"control-{persisted_status}-{restore}.db")
+                seed(control_db, tmp)
+                replace_consents(control_db, [
+                    (("GLOBAL:EXECUTE", "EXECUTE", "GLOBAL"), persisted_status),
+                    (("TENANT-ALIAS", " execute ", " tenant "), "AUTHORIZED"),
+                    (("LOWER-GLOBAL", "EXECUTE", "global"), "AUTHORIZED"),
+                    (("DRAFT-ALIAS", " draft ", "GLOBAL"), "AUTHORIZED"),
+                    (("BAD-ACTION", "EXE:CUTE", "GLOBAL"), "AUTHORIZED"),
+                    (("BAD-CONTAINER", "EXECUTE", "GLO:BAL"), "AUTHORIZED"),
+                    (("EMPTY-ACTION", "", "GLOBAL"), "AUTHORIZED"),
+                ])
+                before_control = snapshot(control_db)
+                control = bootstrap(config_for(control_db, tmp), restore=restore)
+                try:
+                    check(isinstance(control, Runtime),
+                          "valid critical consent with noncritical rows boots operationally")
+                    check(control.oath.check("EXECUTE") == persisted_status,
+                          "valid canonical status survives without an authority upgrade")
+                    check(not control.is_safe_stopped()["active"],
+                          "noncritical normalization and malformed names do not cause a critical halt")
+                    expected_keys = {"GLOBAL:EXECUTE"}
+                    if restore:
+                        expected_keys.update({"tenant:EXECUTE", "global:EXECUTE", "GLOBAL:DRAFT"})
+                    check(set(control.oath._consents) == expected_keys,
+                          "restore retains its existing noncritical normalization and skip scope")
+                finally:
+                    control.close()
+                check(snapshot(control_db)["rows"] == before_control["rows"],
+                      "valid and noncritical durable rows remain unchanged")
+                check(verify_trace_file(control_db)["verified"] is True,
+                      "valid critical and noncritical control remains cold-valid")
 
         load_failure_db = os.path.join(tmp, "load-failure.db")
         original_load_consents = Persistence.load_consents

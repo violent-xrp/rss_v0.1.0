@@ -44,7 +44,7 @@ from rss.hubs.topology import HubTopology
 from rss.hubs.pav import PAVBuilder, CONTENT_ONLY
 from rss.governance.seats.rune import MeaningLaw, Term
 from rss.core.state_machine import ExecutionStateMachine
-from rss.governance.seats.oath import Oath
+from rss.governance.seats.oath import Oath, OathError
 from rss.governance.seats.cycle import Cycle
 from rss.governance.seats.scribe import Scribe
 from rss.governance.seats.seal import Seal
@@ -279,9 +279,10 @@ class Runtime:
 
         Phase 3B deliberately scopes the boot-refusal boundary to the
         constitutional baseline ``GLOBAL:EXECUTE`` consent. Every row that
-        claims either its canonical key or its action/container tuple is
-        examined so a second, non-canonical row cannot shadow the governing
-        record through SQLite row order.
+        claims either its canonical key or the same OATH-normalized namespace
+        is examined so a non-canonical alias cannot shadow the governing
+        record through SQLite row order. Normalization discovers claimants;
+        it does not relax the exact stored-shape requirements below.
 
         This check is read-only. Invalid rows remain durable evidence; the
         caller owns the Safe-Stop fence and recovery-surface decision.
@@ -303,14 +304,22 @@ class Runtime:
         records = {}
         critical_items = self._CRITICAL_PERSISTED_CONSENTS.items()
         for (action_class, container_id), canonical_key in critical_items:
-            candidates = [
-                row for row in rows
-                if row.get("key") == canonical_key
-                or (
-                    row.get("action_class") == action_class
-                    and row.get("container_id") == container_id
-                )
-            ]
+            candidates = []
+            for row in rows:
+                if row.get("key") == canonical_key:
+                    candidates.append(row)
+                    continue
+                try:
+                    restored_key = self.oath._key(
+                        row.get("action_class"), row.get("container_id", "GLOBAL")
+                    )
+                except OathError:
+                    # OATH cannot restore this namespace into critical
+                    # authority. Noncritical malformed rows retain their
+                    # existing restore-skip behavior, outside this gate.
+                    continue
+                if restored_key == canonical_key:
+                    candidates.append(row)
             if len(candidates) > 1:
                 issues.append(f"{canonical_key}:duplicate_rows")
             for row in candidates:

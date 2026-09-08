@@ -8,8 +8,8 @@ This file preserves the count history and verification receipts that used to liv
 
 ## Current Baseline
 
-- **179 test functions / 1884 assertions / 0 failures**
-- **92.2% statement coverage**
+- **179 test functions / 2652 assertions / 0 failures**
+- **92.6% statement coverage**
 - **179 claims / 179 tests / 121 Pact sections**
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
@@ -210,6 +210,39 @@ correction:
   the **92.4% → 92.2%** total movement is the previously observed coverage-gate
   nondeterminism, not lost proof, and is recorded rather than silently masked
 
+### 2026-09-08 consent-restore alias correction candidate
+
+Build evidence; independent review and checkpoint are pending.
+
+- The earlier Phase 3B gate matched raw keys/tuples, while restore normalized
+  names through OATH. An alias encountered after a restrictive canonical row
+  could therefore replace its in-memory status. Candidate discovery now uses
+  that same OATH key function; exact stored-shape validation still refuses
+  aliases rather than rewriting or authorizing them.
+- The expanded registered proof failed against the old implementation with
+  **448 failed assertions** (before the fixture-order assertions were added).
+  The final focused proof passes **832 / 832 / 0**, versus the former **64**
+  assertions. Canonical acceptance grows **179 / 1884 / 0 → 179 / 2652 / 0**;
+  no test or assertion was removed, and no new claim or Pact section is added.
+- Focused-only, in-memory coverage executes all **41 executable body lines**
+  of the critical validator, with no missing body lines. This is separate
+  from the full-suite coverage measurement below.
+- The additional matrix comprises seven alias forms, REVOKED/DENIED canonical
+  restrictions, both restore modes and actual adapter retrieval orders, lone
+  aliases and alias-only duplicates. Controls retain all three valid canonical
+  statuses, case-sensitive tenant IDs, and noncritical normalize/skip behavior.
+  Invalid rows, including grant timestamps, remain unchanged; refusal occurs
+  before any OATH authorization call and leaves a cold-valid halt receipt.
+- Coverage measured **92.6% total** (`runtime.py`: **89.0%**, 691 statements,
+  76 missed; package: 3874 statements, 287 missed). The adapter measured
+  **90.1%**, versus the previous tracker's **77.5%**. Its live-service path is
+  still environment-dependent: this receipt does not attribute the entire
+  **92.2% → 92.6%** movement to the consent repair or claim gate determinism.
+  Deterministic adapter proof remains a separate correction.
+- Scope remains bootstrap's critical `GLOBAL:EXECUTE` baseline, not all tenant
+  consent, schema uniqueness, external-writer races, direct live restore calls,
+  atomic Safe-Stop entry, or broker enforcement. No Pact edit or version change.
+
 ## Public Doc Sync
 
 All public-facing docs listed below were synced during the 2026-04-29 public-doc pass:
@@ -221,8 +254,8 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 - `THREAT_MODEL.md`
 
 Current synced public numbers:
-- **179 / 1884 / 0**
-- **92.2%** coverage
+- **179 / 2652 / 0**
+- **92.6%** coverage
 - **179 claims / 179 tests / 121 Pact sections**
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.

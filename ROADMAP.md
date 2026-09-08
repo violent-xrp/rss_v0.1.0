@@ -40,8 +40,8 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **179 test functions / 1884 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
-- **92.2% statement coverage** via `python run_coverage.py`
+- **179 test functions / 2652 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **92.6% statement coverage** via `python run_coverage.py`
 - **179 claims / 179 tests / 121 Pact sections** in `docs/claim_matrix.md`
 - **26 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - current phase: **Phase G — demo/operator experience and coverage polish**
@@ -49,7 +49,7 @@ Current code state:
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 179/1884 baseline
+- public docs are synced to the current 179/2652 baseline
 - the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
 
 Canonical local truth-run:
@@ -72,6 +72,28 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 
 ## Active Focus
 
+### Current Build Thread
+
+- **Last landed product hardening:** Phase 3B's critical persisted-consent gate
+  is in Roots; main remains at Phase 3A. Subsequent review found a restore-alias
+  gap in that gate, so the original proof was not complete.
+- **Current candidate (review pending):** reject every persisted row that OATH
+  would normalize to `GLOBAL:EXECUTE` unless its stored shape is canonical.
+  Registered proof covers alias forms, both restore modes and row orders,
+  restrictive statuses, evidence preservation, and noncritical controls.
+- **Next gate correction (not included):** make adapter proof deterministic;
+  live service availability still changes coverage without changing verdicts.
+- **Following kernel invariant (not yet opened):** broker claim-time revalidation.
+  Before `CLAIM_GRANTED`, the authorization must remain bound to the exact
+  proposal payload and current OATH consent, tool registration/class policy,
+  and RUNE restrictions must still permit execution. Registered adversarial
+  proof must cover payload mutation and consent revocation after authorization.
+- **Following queue:** mechanical T-0 command context; lossless consent and Hub
+  persistence plus schema tuple uniqueness; atomic Safe-Stop entry and broader
+  governed-state/TRACE coupling; then runtime-wide broker enforcement and
+  durable actor-bound leases. Release-truth and versioning cleanup remains a
+  separate maintenance decision rather than part of the next kernel invariant.
+
 ### Now
 - **Release-boundary polish:** keep the v0.1.0 claim surface aligned with the closed Phase G coverage floor and remaining known limits.
 - **Connector-proof planning:** keep future browser/email/document/RAG/tool-return import tests mapped before adding real external adapters.
@@ -83,7 +105,7 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **Safe-Stop clear atomicity:** closed as a bounded single-process persistence slice. The clear receipt and halt deletion now share one explicit SQLite transaction; failed receipt persistence leaves the prior halt active, post-commit adapter errors reconcile from exact durable state, and unconfirmable outcomes remain recovery-fenced until restart verification. General governed-state/receipt coupling remains separate work.
 - **Restricted halted-bootstrap recovery:** closed as a bounded Section 0 surface. A boot that begins in Safe-Stop, or fails pre-emission TRACE verification and establishes a durable recovery fence, returns `SafeStopRecovery` rather than the broad `Runtime`; if that fence cannot persist, bootstrap closes and raises. The facade exposes status, atomic T-0 clear, and lifecycle close only. Successful clear closes the recovery session and requires a fresh bootstrap before execution or governed-state access. This is a public-surface restriction inside the trusted single process, not process isolation, cryptographic T-0 identity, constructor/migration purity, or revocation of references retained before an in-process halt.
 - **Production Genesis before authority:** closed as a bounded bootstrap slice. After TRACE continuity is restored and any pre-existing halt is routed to recovery, bootstrap verifies the configured Section 0 artifact before normal term initialization, migration receipts/schema stamping, governed-state restore, or default EXECUTE consent. Missing required or mismatched Genesis establishes persistent Safe-Stop and returns `SafeStopRecovery`; valid production and documented missing-artifact dev mode continue normally. This does not move verification ahead of `Runtime` construction or constructor-time schema migration or extend integrity beyond Section 0; those remain separate invariants.
-- **Critical persisted consent before authority:** closed for the `GLOBAL:EXECUTE` constitutional baseline. Before normal terms, migration receipts/schema stamping, restore, or default authority, bootstrap examines every durable row claiming that canonical key or tuple. Unknown status, key/tuple mismatch, blank requester, duplicate shadow row, or consent-load failure establishes persistent Safe-Stop and exposes only `SafeStopRecovery`; failed fencing closes and raises. Invalid rows remain durable evidence, and the registered proof covers both restore modes without calling OATH authorization. This does not validate every tenant/action consent, add tuple uniqueness to the SQLite schema, preserve consent scope/duration/grant-time fidelity, couple Safe-Stop entry atomically, or claim protection from external database writers between validation and use.
+- **Critical persisted consent before authority:** the baseline gate is landed; its alias correction is the current review candidate above. Before normal terms, migration receipts/schema stamping, restore, or default authority, bootstrap examines every durable row claiming the canonical `GLOBAL:EXECUTE` key or OATH-normalized namespace. Noncanonical aliases, unknown status, key/tuple mismatch, blank requester, duplicate shadow row, or consent-load failure establishes persistent Safe-Stop and exposes only `SafeStopRecovery`; failed fencing closes and raises. Invalid rows remain durable evidence, and the registered proof covers both restore modes without calling OATH authorization. This does not validate every tenant/action consent, add tuple uniqueness to the SQLite schema, preserve consent scope/duration/grant-time fidelity, couple Safe-Stop entry atomically, or claim protection from external database writers between validation and use.
 - **Governance boundary hardening:** closed as a code-backed pre-release slice. OATH now treats GLOBAL `DENIED` as a restrictive kernel prohibition, runtime HIGH_RISK/CONSTITUTIONAL requests require elevated consent classes, WARD blocks protected-field injection/removal, RUNE update paths run the anti-trojan scanner while force-sealed terms survive restore, SEAL refuses mismatched restored canon hashes, post-LLM REDLINE scan failure withholds output, and TECTON separates suspended-read access from suspended request processing.
 - **Pact cleanup checkpoint:** the section-by-section Pact cleanup (Sections 0-7) is landed and pushed. Future Pact text changes move through the v0.1.1 amendment ceremony unless a release-gate review proves v0.1.0 would otherwise be false.
 - **Code-first Pact posture:** let kernel hardening move where it makes RSS more true; keep Pact edits section-bounded, reviewed, and version-sensitive so cleanup does not bundle unrelated lanes.

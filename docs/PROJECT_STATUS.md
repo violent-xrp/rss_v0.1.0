@@ -10,8 +10,8 @@ canonical proof and alignment surfaces rather than replacing them.
 | Field | Value |
 | --- | --- |
 | Release posture | v0.1.0 alpha, single-process governance kernel |
-| Acceptance runner | 179 / 1884 / 0 |
-| Statement coverage | 92.2% |
+| Acceptance runner | 179 / 2652 / 0 |
+| Statement coverage | 92.6% |
 | Claim traceability | 179 claims / 179 tests / 121 Pact sections |
 | Tracked source modules | 26 |
 
