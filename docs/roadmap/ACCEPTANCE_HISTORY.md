@@ -8,8 +8,8 @@ This file preserves the count history and verification receipts that used to liv
 
 ## Current Baseline
 
-- **179 test functions / 2652 assertions / 0 failures**
-- **92.6% statement coverage**
+- **179 test functions / 2686 assertions / 0 failures**
+- **92.7% statement coverage**
 - **179 claims / 179 tests / 121 Pact sections**
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
@@ -243,6 +243,41 @@ Build evidence; independent review and checkpoint are pending.
   consent, schema uniqueness, external-writer races, direct live restore calls,
   atomic Safe-Stop entry, or broker enforcement. No Pact edit or version change.
 
+### 2026-09-08 deterministic adapter proof candidate
+
+Build evidence; independent review and checkpoint are pending. The preceding
+consent-alias candidate was independently reviewed and checkpointed in Roots
+before this separate test-harness correction began.
+
+- `test_llm` previously called a real model service and accepted either outcome.
+  Its obsolete fallback marker could label a fallback as a live connection.
+  Controlled transport fixtures now run successful generation and unavailable,
+  timeout, and malformed-response paths every time. The five prompt-discipline
+  assertions inspect serialized requests rather than function source text.
+- Focused proof grows from **6 to 40 assertions**. Canonical acceptance grows
+  **179 / 2652 / 0 → 179 / 2686 / 0**; no test function or claim anchor is removed.
+  The permissive live-or-fallback check is replaced by explicit response,
+  request, caching, cleanup, fallback, and runner-failure checks. Claim
+  traceability remains **179 claims / 179 tests / 121 Pact sections**.
+- The canonical runner blocks unexpected urllib transport below the fixtures
+  and records attempts even when production fallback catches the error. The
+  registered proof verifies an intentional leaked call causes a nonzero runner
+  exit, independently of ordinary assertion failures. The passing full runs
+  record zero unexpected transport attempts. This is not an arbitrary-network
+  sandbox, and optional live integration remains outside the canonical runner.
+- Two consecutive full coverage runs have identical executed/missing line sets
+  in every package module and identical totals: **92.7%**, 3874 statements,
+  282 missed. Adapter coverage is **97.2%** (71 statements, 2 missed), up from
+  **90.1%** in the preceding receipt. Only the adapter's covered-line set grows
+  relative to that baseline; runtime remains **89.0%**. The two residual adapter
+  misses are unrelated fallback selection/truncation paths, not live transport.
+- Environment: Python 3.13.13, SQLite 3.50.4, coverage 7.16.0, Windows,
+  repository-root CWD. Both controlled service outcomes run in each invocation;
+  no real service was started, stopped, or contacted for this proof. Repeatability
+  here closes the model-service dependency, not every possible cross-environment
+  coverage variation. The measured total moves **92.6% → 92.7%** from added proof,
+  without changing production code, Pact text, broker behavior, or versions.
+
 ## Public Doc Sync
 
 All public-facing docs listed below were synced during the 2026-04-29 public-doc pass:
@@ -254,8 +289,8 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 - `THREAT_MODEL.md`
 
 Current synced public numbers:
-- **179 / 2652 / 0**
-- **92.6%** coverage
+- **179 / 2686 / 0**
+- **92.7%** coverage
 - **179 claims / 179 tests / 121 Pact sections**
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.

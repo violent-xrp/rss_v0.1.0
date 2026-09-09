@@ -28,13 +28,13 @@ seal.py                     94.0%
 ward.py                     88.6%
 governance/t0.py           100.0%
 scope.py                    92.6%
-llm_adapter.py              90.1%
+llm_adapter.py              97.2%
 audit_log.py                88.8%
 runtime.py                  89.0%
 oath.py                     84.8%
 pav.py                      90.9%
 constitution.py             92.5%
-TOTAL                       92.6%
+TOTAL                       92.7%
 ```
 
 ## Current Targets

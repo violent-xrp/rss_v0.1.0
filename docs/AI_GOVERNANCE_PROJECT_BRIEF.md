@@ -37,8 +37,8 @@ The model receives a Prepared Advisory View (PAV), not the whole data environmen
 
 Current v0.1.0 proof surface:
 - independent Python project with a modular `src/rss/` package
-- 179 test functions, 2652 assertions, 0 failures
-- 92.6% statement coverage
+- 179 test functions, 2686 assertions, 0 failures
+- 92.7% statement coverage
 - 179 mapped proof claims across 121 Pact sections
 - scoped data access and PAV construction
 - production Genesis plus critical `GLOBAL:EXECUTE` persistence validation before default authority, consent gates, and a recovery-only halted-bootstrap surface

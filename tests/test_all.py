@@ -428,7 +428,7 @@ TESTS = [
 
 
 def run_all():
-    _support.run_tests("RSS v0.1.0", TESTS)
+    _support.run_tests("RSS v0.1.0", TESTS, forbid_http=True)
 
 
 if __name__ == "__main__":

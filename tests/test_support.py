@@ -33,6 +33,7 @@ import sqlite3
 import tempfile
 import traceback
 from datetime import datetime, timedelta, UTC
+from contextlib import contextmanager, nullcontext
 
 # Windows console UTF-8 shim: the default Windows console uses cp1252 which
 # cannot encode §, →, ☐, ✓ and other Unicode the suite prints. Reconfigure
@@ -145,11 +146,34 @@ def reset_counters():
     _funcs = 0
 
 
-def run_tests(label, tests):
-    """Run a list of test functions and print the standard summary line."""
+@contextmanager
+def deny_live_http():
+    """Block urllib transport below response fixtures; retain swallowed attempts."""
+    from unittest.mock import patch
+    from urllib.error import URLError
+
+    attempts = []
+
+    def refuse(request, *args, **kwargs):
+        attempts.append(getattr(request, "full_url", str(request)))
+        raise URLError("live HTTP is forbidden in canonical acceptance")
+
+    with patch("urllib.request.OpenerDirector.open", side_effect=refuse):
+        yield attempts
+
+
+def run_tests(label, tests, *, forbid_http=False):
+    """Run proofs; optionally fail on HTTP attempts even if code catches errors."""
+    global _errors
     reset_counters()
-    for test_func in tests:
-        safe_run(test_func)
+    with deny_live_http() if forbid_http else nullcontext([]) as attempts:
+        for test_func in tests:
+            safe_run(test_func)
+    if attempts:
+        _errors += 1
+        print(f"  [ERROR] live HTTP guard blocked {len(attempts)} unexpected request(s)")
+    elif forbid_http:
+        print("  [HTTP guard] zero unexpected urllib transport attempts")
 
     print(f"\n{'='*60}")
     print(

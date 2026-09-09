@@ -15,10 +15,42 @@ python tests/test_all.py
 Current expected final line:
 
 ```text
-RSS v0.1.0 - 179 test functions, 2652 assertions passed, 0 failed
+RSS v0.1.0 - 179 test functions, 2686 assertions passed, 0 failed
 ```
 
 This custom runner is the local source of truth for the current Windows environment.
+
+### Deterministic adapter proof
+
+The registered `test_llm` proof supplies controlled HTTP responses at
+`urllib.request.urlopen`. It exercises successful generation, cached availability,
+unavailable service, timeouts, malformed JSON, and governed fallback on every run.
+Prompt and request assertions inspect the serialized request, not source text.
+No running model service is needed for canonical acceptance or coverage.
+
+The canonical runner also blocks unexpected `urllib.request.OpenerDirector.open`
+calls below those response fixtures. It records attempts and exits nonzero even
+when adapter fallback catches the transport error. This is a bounded test guard
+for the adapter's HTTP stack, not a network sandbox for arbitrary libraries or
+subprocesses. A registered probe verifies both the swallowed error and the
+runner's nonzero verdict. Split-module and optional `pytest` runs retain the
+response fixtures but do not enable this suite-wide guard.
+
+Focused proof with the same guard:
+
+```bash
+python -c "import sys; sys.path.insert(0, 'tests'); from test_support import run_tests; from test_core_runtime import test_llm; run_tests('Deterministic adapter proof', [test_llm], forbid_http=True)"
+```
+
+Optional live integration remains separate from repeatable proof:
+
+```bash
+python examples/demo_suite.py --live-llm
+```
+
+That command can contact the configured model service and vary with its state;
+it is not the acceptance or coverage baseline. Use `--offline` for a controlled
+demo, and inspect the report before interpreting fallback as live-model success.
 
 ## Optional Checks
 

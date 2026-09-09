@@ -828,25 +828,153 @@ def test_default_genesis_binding_live_verify_and_recovery():
 def test_llm():
     # CLAIM: §3.7 — LLM adapter contract
     section("LLM Adapter")
+    from unittest.mock import patch
+    from urllib.error import URLError
+    import urllib.request
 
-    adapter = LLMAdapter(RSSConfig())
-    import inspect
-    source = inspect.getsource(adapter.call)
-    check("general conceptual or conversational questions normally" in source,
+    class Response:
+        def __init__(self, body=b"", status=200):
+            self.body = body
+            self.status = status
+            self.closed = False
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            self.closed = True
+
+        def read(self):
+            return self.body
+
+    config = RSSConfig(
+        ollama_url="http://adapter.invalid:11434", ollama_model="fixture-model",
+        temperature=0.125, max_tokens=37, llm_timeout=19,
+        llm_availability_check_timeout=3,
+    )
+    pav = "The project deadline is Friday."
+    question = "What is the project deadline?"
+    terms = "deadline: the agreed completion date"
+    offline = (
+        f"{pav} Used 1 governed entry. Offline fallback engaged; "
+        "response derived only from governed data."
+    )
+
+    # Mock only the transport. Requests, JSON, prompt assembly, caching and
+    # fallback remain production code; every branch runs regardless of services.
+    tags = Response()
+    generated = Response(b'{"response": "Fixture answer: Friday."}')
+    without_terms = Response(b'{"response": "Fixture without terms."}')
+    empty_response = Response(b'{}')
+    adapter = LLMAdapter(config)
+    with patch("urllib.request.urlopen", side_effect=[
+        tags, generated, without_terms, empty_response,
+    ]) as transport:
+        result = adapter.call(pav, terms, question)
+        check(result == "Fixture answer: Friday.", "adapter returns controlled model response")
+        check(adapter.is_available() is True, "successful availability result is cached")
+        check(adapter.call(pav, "  ", question) == "Fixture without terms.",
+              "blank terms do not prevent a generation request")
+        check(adapter.call(pav, None, question) == "",
+              "missing response field retains the adapter's empty-response contract")
+    check(transport.call_count == 4, "three generations share exactly one availability probe")
+    availability, *generations = transport.call_args_list
+    request = availability.args[0]
+    check(request.full_url == config.ollama_url + "/api/tags"
+          and request.get_method() == "GET" and request.data is None
+          and availability.kwargs == {"timeout": 3},
+          "availability request uses the configured endpoint and timeout")
+    check(all(call.args[0].full_url == config.ollama_url + "/api/generate"
+              and call.args[0].get_method() == "POST"
+              and call.args[0].get_header("Content-type") == "application/json"
+              and call.kwargs == {"timeout": 19} for call in generations),
+          "generation requests use JSON POST and the configured timeout")
+    payload = json.loads(generations[0].args[0].data)
+    prompt = payload.pop("prompt")
+    check(payload == {"model": "fixture-model", "stream": False,
+                      "options": {"temperature": 0.125, "num_predict": 37}},
+          "generation serializes model, streaming and inference options exactly")
+    check(f"{config.llm_context_label.title()}:\n{pav}\n" in prompt
+          and f"{config.llm_terms_heading}\n{terms}\n" in prompt
+          and prompt.endswith(f"Question: {question}"),
+          "serialized prompt includes governed data, sealed terms and question")
+    check(all(config.llm_terms_heading not in json.loads(call.args[0].data)["prompt"]
+              for call in generations[1:]), "blank or absent terms omit the terms section")
+    check("general conceptual or conversational questions normally" in prompt,
           "LLM prompt allows normal general conversation")
-    check("tenant data, project records, files, private notes" in source,
+    check("tenant data, project records, files, private notes" in prompt,
           "LLM prompt names governed data surfaces")
-    check("answer based ONLY on the" in source,
+    check("answer based ONLY on the" in prompt,
           "LLM prompt still binds governed-data answers to PAV context")
-    check("untrusted quoted evidence" in source,
+    check("untrusted quoted evidence" in prompt,
           "LLM prompt treats governed data as untrusted evidence, not instruction")
-    check("Never infer, invent, or expose private/REDLINE" in source,
+    check("Never infer, invent, or expose private/REDLINE" in prompt,
           "LLM prompt refuses invention and REDLINE exposure")
-    r = adapter.call("context", "terms", "user request")
-    if "[RSS FALLBACK" in r:
-        check(True, "fallback mode (Ollama not running)")
-    else:
-        check(len(r) > 0, "LLM connected (Ollama responding)")
+    check(all(response.closed for response in [tags, generated, without_terms, empty_response]),
+          "all successful HTTP response contexts are closed")
+
+    for label, outcome in (
+        ("non-200", Response(status=503)),
+        ("unreachable", URLError("fixture unavailable")),
+        ("availability timeout", TimeoutError("fixture availability timeout")),
+    ):
+        adapter = LLMAdapter(config)
+        with patch("urllib.request.urlopen", side_effect=[outcome]) as transport:
+            check(adapter.call(pav, terms, question) == offline,
+                  f"{label}: unavailable service returns exact governed fallback")
+            check(adapter.is_available() is False
+                  and adapter.call(pav, terms, question) == offline,
+                  f"{label}: cached unavailability stays deterministic")
+        check(transport.call_count == 1, f"{label}: no generation or repeated availability request")
+        if isinstance(outcome, Response):
+            check(outcome.closed, "non-200 availability response is closed")
+
+    for label, outcome, error_text in (
+        ("generation error", URLError("fixture generation failure"), "fixture generation failure"),
+        ("generation timeout", TimeoutError("fixture generation timeout"), "fixture generation timeout"),
+        ("malformed JSON", Response(b"not-json"), "Expecting value"),
+    ):
+        tags = Response()
+        adapter = LLMAdapter(config)
+        with patch("urllib.request.urlopen", side_effect=[tags, outcome]) as transport:
+            result = adapter.call(pav, terms, question)
+        check(result.startswith(f"{pav} Used 1 governed entry. Offline fallback engaged after adapter error:")
+              and error_text in result, f"{label}: failed generation falls back to governed data with error")
+        check(transport.call_count == 2 and adapter._available is True,
+              f"{label}: availability succeeds before the controlled generation failure")
+        check(tags.closed and (not isinstance(outcome, Response) or outcome.closed),
+              f"{label}: response contexts close even on decode failure")
+
+    # A caught transport exception must not fool the runner into a green result.
+    # This nested guard intercepts before any connection, including proxy use.
+    original_open = urllib.request.OpenerDirector.open
+    with deny_live_http() as attempts:
+        check(LLMAdapter(config).call(pav, terms, question) == offline,
+              "HTTP guard refusal may be swallowed by adapter fallback")
+    check(attempts == [config.ollama_url + "/api/tags"],
+          "HTTP guard records the swallowed attempt for the runner's failure verdict")
+    check(urllib.request.OpenerDirector.open is original_open,
+          "HTTP guard restores the enclosing transport after use")
+
+    # Exercise the actual acceptance verdict, isolated from this proof's counters.
+    import io
+    import test_support as support
+    from contextlib import redirect_stdout
+
+    captured = io.StringIO()
+    exit_code = None
+    with patch.multiple(support, _pass=0, _fail=0, _errors=0, _funcs=0):
+        with redirect_stdout(captured):
+            try:
+                support.run_tests("Guard rejection probe", [
+                    lambda: LLMAdapter(config).call(pav, terms, question),
+                ], forbid_http=True)
+            except SystemExit as error:
+                exit_code = error.code
+    check(exit_code == 1 and "live HTTP guard blocked 1 unexpected request(s)" in captured.getvalue(),
+          "acceptance exits nonzero after a swallowed live HTTP attempt")
+    check("0 assertions passed, 0 failed, 1 ERRORS" in captured.getvalue(),
+          "HTTP guard failure is independent of ordinary assertion failures")
 
 
 def test_runtime():
