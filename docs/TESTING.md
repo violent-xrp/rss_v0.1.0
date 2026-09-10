@@ -4,6 +4,12 @@ _Licensed under AGPLv3; see `../LICENSE/LICENSE_INDEX.md`._
 
 This file preserves test-layout and runner details that used to live in `ROADMAP.md`.
 
+**Known tooling hazard:** `run_coverage.py` currently deletes repository-root
+`rss.db` and its sidecars, even though that is the default runtime data path.
+Coverage-based wrappers inherit this behavior. Do not assume these commands are
+non-mutating or run them around unpreserved runtime data. See BUILD-01 below;
+recording this warning does not fix the tool or authorize deletion.
+
 ## Canonical Runner
 
 Use:
@@ -178,12 +184,40 @@ The modular split was mechanical and conservative:
 - Run `python docs/sync_baseline.py` after changes that affect counts, coverage, claim traceability, source-module count, or the public proof block.
 - Do not bury count-history logic inside the test runner itself.
 
-## Future Cleanup
+## Build-System Findings
 
-Future cleanup can happen locally inside split files:
-- helper factories for temp DB/runtime setup
-- fewer repeated setup/teardown blocks where `_cleanup_db` is not enough
-- tighter grouping inside individual domain files as Phase G proof grows
-- removal of stale rapid-iteration wording
+Recorded from the 2026-09-09 read-only hygiene review; these are unresolved
+findings, not accepted fixes. [ROADMAP's Current Build Thread](../ROADMAP.md#current-build-thread)
+owns scheduling and disposition; this section owns technical detail and closure proof.
 
-Success condition remains: after future test maintenance, the canonical command must preserve the current counts unless new proof is intentionally added in the same pass and recorded in the acceptance history.
+- **BUILD-01 — data ownership and exit status:** `run_coverage.py` unconditionally
+  unlinks `.coverage`, `rss.db`, and SQLite sidecars before testing, while
+  `src/rss/core/config.py` names `rss.db` as the runtime default. A filename is
+  not fixture-ownership proof. It also ignores return codes from coverage report
+  and HTML generation. A non-writing mock intercepted the unlink targets and
+  injected report exit code 23; the launcher returned zero. Closure must prove
+  an existing runtime database is unchanged, only run-owned output is touched,
+  and every failed child command propagates without false success wording.
+- **BUILD-02 — cleanup lifecycle:** `_cleanup_db` in `tests/test_support.py`
+  and the duplicate demo helper silently give up after retries; the OS-cleanup
+  assumption is not arranged by either helper. Some JSON export deletion in
+  `tests/test_adversarial_scenarios.py` runs only on success, and several directory
+  fixtures use `ignore_errors=True`. Use owned, unique fixture locations, close
+  handles on failure paths, and report unresolved cleanup without masking the
+  original test failure. Prove success, raised-error, and cleanup-failure paths.
+  Retention applies to regenerable output, not indiscriminately to recovery or
+  review evidence. Atomic-replacement temporary files may need to remain beside
+  their destination; shared policy does not require one universal directory.
+- **BUILD-03 — shell and scan boundaries:** checked-in RSS gates are Python;
+  do not rewrite them merely to select PowerShell 7 for Windows launchers.
+  Bash-style `PYTHONPATH=src ...` examples need a labelled PowerShell equivalent,
+  and Unicode output must be tested at the Python process boundary. Public
+  hygiene/resolver scans mostly use Git-tracked content, but claim generation
+  scans live `tests/test_*.py` and the reverse map scans live source Python.
+  Keep scratch programs outside those roots; ignored files are not automatically
+  excluded from every generator, nor automatically cleaned from disk.
+
+Helper-factory consolidation, repeated teardown, grouping, and stale test wording
+from the former Future Cleanup list remain candidates under BUILD-02. Any future
+test-count change needs an explicit acceptance-history explanation; this review
+changes no tests, runtime behavior, or measured proof numbers.

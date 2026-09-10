@@ -139,7 +139,15 @@ On this Windows workstation, prefer `uv run python ...`. If `uv` is unavailable,
 use the documented `python ...` commands with the active project interpreter.
 Use `npm.cmd` rather than the PowerShell shim when a Node command is required.
 
-Routine non-writing proof commands:
+Routine proof commands (not read-only):
+
+**Known tooling hazard:** `run_coverage.py` and coverage-backed wrappers,
+including the combined public-hygiene gate below, currently delete
+repository-root `rss.db`, `rss.db-shm`, and `rss.db-wal` without verifying
+ownership. Do not run them around unpreserved runtime data. See
+[Testing findings](docs/TESTING.md#build-system-findings) for the open defect;
+this warning does not fix it or authorize deletion. Test runs can also create
+temporary files and caches.
 
 ```powershell
 uv run python tests/test_all.py

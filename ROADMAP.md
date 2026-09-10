@@ -19,6 +19,9 @@ This is the current command document for RSS. It should answer four questions qu
 - what must happen before the next release checkpoint
 - what must stay visible without blocking the current work
 
+For the next action, start at [Current Build Thread](#current-build-thread).
+It is the single work-order queue for both kernel and build-system work.
+
 Historical receipts live in supporting docs:
 - acceptance history: `docs/roadmap/ACCEPTANCE_HISTORY.md`
 - phase ledger and landed work: `docs/roadmap/PHASE_LEDGER.md`
@@ -44,13 +47,13 @@ Current code state:
 - **92.7% statement coverage** via `python run_coverage.py`
 - **179 claims / 179 tests / 121 Pact sections** in `docs/claim_matrix.md`
 - **26 kernel modules** in the `src/rss/` package tree plus `src/main.py`
-- current phase: **Phase G — demo/operator experience and coverage polish**
+- active work: **Current Build Thread below**; Phase G is retained as phase history, not the current task selector
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
 - public docs are synced to the current 179/2686 baseline
-- the Phase G coverage floor is closed; the project is now polishing the demo handoff and release boundary, not inflating claims
+- historical Phase G work and release inventories do not override the current build queue
 
 Canonical local truth-run:
 ```bash
@@ -74,26 +77,84 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 
 ### Current Build Thread
 
-- **Last landed product hardening:** Phase 3B's critical persisted-consent gate
-  and its reviewed restore-alias correction are checkpointed in Roots; main
-  remains at Phase 3A. The original gate's proof was incomplete: OATH-normalized
-  aliases now face exact stored-shape validation before authority is restored.
-- **Current candidate (review pending):** deterministic adapter proof. Controlled
-  response fixtures exercise online and fallback paths on every run, and the
-  canonical runner rejects unexpected HTTP transport attempts. The separate live
-  demo remains available; no runtime adapter behavior changes in this candidate.
-- **Following kernel invariant (not yet opened):** broker claim-time revalidation.
-  Before `CLAIM_GRANTED`, the authorization must remain bound to the exact
-  proposal payload and current OATH consent, tool registration/class policy,
-  and RUNE restrictions must still permit execution. Registered adversarial
-  proof must cover payload mutation and consent revocation after authorization.
-- **Following queue:** mechanical T-0 command context; lossless consent and Hub
-  persistence plus schema tuple uniqueness; atomic Safe-Stop entry and broader
-  governed-state/TRACE coupling; then runtime-wide broker enforcement and
-  durable actor-bound leases. Release-truth and versioning cleanup remains a
-  separate maintenance decision rather than part of the next kernel invariant.
+**Checkpoint context:** critical-consent alias hardening and deterministic
+adapter proof are reviewed and checkpointed in Roots; main remains at Phase 3A.
+**Current activity:** DOCS-01 passed independent review and received human
+authorization for a documentation-only checkpoint. The broker claim-time
+candidate remains preserved, paused, and unreviewed; this checkpoint does not
+accept it or authorize a push.
+
+Recommended order below is not authorization to implement, run destructive
+cleanup, checkpoint, or push. Kernel and build-system work share this queue;
+technical detail stays in its named owner rather than another priority list.
+
+| Workstream | Task ID | Work | State | Evidence | Next action | Detail owner |
+| --- | --- | --- | --- | --- | --- | --- |
+| Build system | DOCS-01 | Queue and document ownership | closed | checkpointed | Documentation-only checkpoint authorized after independent review; no push or broker acceptance. | [Document ownership](docs/PROJECT_CONTROL_SURFACE.md), [static receipt](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-09-docs-01-documentation-candidate) |
+| Kernel | KERNEL-01 | Broker claim-time revalidation | paused | unreviewed | Resume independent candidate review after DOCS-01; no additional broker build. | [Broker boundary](docs/ACTION_PLANE.md) |
+| Build system | BUILD-01 | Coverage data ownership and truthful exit status | paused | unreviewed | Scope the fix under the precedence condition below; preserve runtime data. | [Testing findings](docs/TESTING.md#build-system-findings) |
+| Build system | BUILD-02 | Owned temporary-file lifecycle | paused | unreviewed | Scope cleanup/failure-path proof; legacy removal needs separate preservation approval. | [Testing findings](docs/TESTING.md#build-system-findings) |
+| Kernel | KERNEL-02 | Broker claim/result lifecycle | paused | unreviewed | Scope expired-lease/result-import and state-before-receipt fixes separately. | [Broker boundary](docs/ACTION_PLANE.md) |
+| Build system | BUILD-03 | Windows entrypoint and scan boundaries | paused | unreviewed | Preserve Python automation; scope shell, encoding, external-launcher and scratch-scan work. | [Testing findings](docs/TESTING.md#build-system-findings) |
+
+State and Evidence are independent. State is `active` (work underway), `paused`
+(deferred by decision, resumable when chosen), `blocked` (cannot proceed until
+an external condition or approval is met), or `closed` (scoped work completed
+with disposition recorded). Evidence describes the current implementation
+slice: `unreviewed`, `reviewed` (independent review accepted that slice),
+`checkpointed` (recorded in a commit), or `landed` (integrated into the approved
+destination). `checkpointed` does not mean pushed, promoted, or released;
+`landed` does not by itself mean a tagged release. `paused` plus `reviewed` is
+valid, but does not describe the current broker candidate. Review of a finding,
+design, or earlier closure does not mark a new implementation `reviewed`.
+
+Row order is the selected work order, subject to the safety condition below.
+KERNEL-01 remains the resume point after DOCS-01 review and authorized landing;
+that transition does not open another documentation pass automatically.
+
+BUILD-01 takes precedence as soon as an `rss.db` exists at repository root with
+unpreserved data, or any workflow requires coverage-backed gates around real
+data. Deferred only while neither holds. Check the filesystem, not only Git
+status: database files are ignored. A priority change does not authorize
+execution of an unsafe command or the implementation itself.
+
+Queue upkeep: record a verified finding once with its Task ID, Workstream,
+State, Evidence, next action, and detail link. Keep one implementation slice
+active; retain paused work visibly. At closure, link its acceptance/checkpoint
+evidence before removing it from the short queue. Handoffs retain exact
+tree/candidate state, not a competing backlog.
+
+- Workstream is the task's primary goal, not the files it touches. A task keeps
+  one workstream even when it changes documents owned elsewhere. Queue
+  workstreams are `Kernel` or `Build system`; never shorten the latter to bare
+  `Build`. The `Build` operating posture is unchanged.
+- Task IDs are references, not filenames or extra workstreams. Reserve
+  `PACT-nn` for Pact work within `Kernel`; a third workstream is deferred until
+  Pact work is active. Pact file splitting remains outside this pass and
+  deferred to the Section 7 amendment ceremony.
+- New rows insert above the current resume point unless the human controller
+  directs otherwise. Insertion records priority, not implementation authority.
+- The Current Build Thread is a read-whole table. If it stops fitting one
+  screen or you begin filtering rather than reading it (~20 rows), first
+  verify closed rows were archived and deferred rows moved to legacy inventory.
+  If it is genuinely long after that, generate a filterable view *from* the
+  queue rather than maintaining a second source. Do not adopt a spreadsheet
+  as the authoritative queue.
+- Merge documents that answer the same question. Keep separate documents that
+  answer different questions about the same subject.
+
+Later kernel inventory remains: mechanical T-0 command context; lossless consent
+and Hub persistence plus tuple uniqueness; atomic Safe-Stop entry and broader
+state/TRACE coupling; runtime-wide broker enforcement and actor-bound leases.
+The legacy lists below are supporting inventory, not another work order. This
+DOCS-01 slice defers rather than deletes their content; full consolidation and
+release/version reconciliation require separate approval and are not closed
+by this documentation candidate.
 
 ### Now
+
+Supporting inventory, not execution order; use [Current Build Thread](#current-build-thread) for priority and disposition.
+
 - **Release-boundary polish:** keep the v0.1.0 claim surface aligned with the closed Phase G coverage floor and remaining known limits.
 - **Connector-proof planning:** keep future browser/email/document/RAG/tool-return import tests mapped before adding real external adapters.
 - **Framework-facing reviewer map:** keep `docs/NIST_AI_RMF_MAPPING.md` aligned with the current proof surface so RSS can be explained in recognized AI risk-management language without claiming certification or production compliance.
@@ -110,6 +171,9 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **Code-first Pact posture:** let kernel hardening move where it makes RSS more true; keep Pact edits section-bounded, reviewed, and version-sensitive so cleanup does not bundle unrelated lanes.
 
 ### Next
+
+Supporting inventory, not execution order; use [Current Build Thread](#current-build-thread) for priority and disposition.
+
 - CLOSED: Sections 1-7 cleanup landed after Section 0; implementation-reference drift, CYCLE load wording, S5/S6 concurrency and persistence boundaries, and S7 amendment-persistence wording now match the current kernel truth.
 - CLOSED FOR `v0.1.0-rc.1`: final acceptance, sync, claim-matrix, and offline demo gates passed before the tag. The ignored local demo bundle reports `PASS`, 22/22 successful task IDs bound to TRACE, 14/14 expected evidence markers found, and cold verification over 192 events. Rerun the gates before final `v0.1.0`.
 - Demo proof artifacts now need to stay evidence-bound: PASS requires expected seeded evidence markers and successful task IDs bound to TRACE, not just fluent non-error answers.
@@ -120,6 +184,9 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - Pact cleanup is complete for the current pass; keep public proof docs synced as code hardening and release-boundary polish continue.
 
 ### Post-rc.1 / Toward v0.1.1
+
+Supporting inventory, not execution order; use [Current Build Thread](#current-build-thread) for priority and disposition.
+
 - **Amendment mechanics:** Section 7 ceremony persists sealed canon in SQLite. A guarded Sections 1-7 canon-to-file exporter now lives in `rss.audit.pact_canon_export`; Section 0 export remains a separate Genesis-aware future path captured in `docs/proposals/PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md`.
 - **Pact/canon drift detection:** a read-only diagnostic compares each Pact file hash to any sealed DB canon hash and reports no-canon-yet, in-sync, file-ahead, or canon-ahead states. The Sections 1-7 exporter can now close canon-ahead states when the file base is verified; Section 0 remains outside the common exporter.
 - **Section 0 lock-out path:** Section 1-7 file export is the safe common path. Section 0 export is special because it is Genesis-anchored; any Section 0 file write must pair with Genesis re-anchor plus boot, tamper, and recovery verification or the runtime will Safe-Stop.
@@ -133,6 +200,9 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - **Sigil universality:** `docs/proposals/SIGIL_SET_PROPOSAL.md` remains the public design surface for encoding-stable sigils and authority-marker caveats. No glyph change is built or claimed in v0.1.0.
 
 ### Keep Warm
+
+Supporting inventory, not execution order; use [Current Build Thread](#current-build-thread) for priority and disposition.
+
 - API/wrapper ingress boundary and caller identity propagation.
 - Per-action/tool-call enforcement before real side effects execute; the local broker decision surface exists, but universal runtime/tool wrapper enforcement does not.
 - Observable stream enforcement before release of generated output: buffer streamed chunks, meter token/byte/cost estimates, halt on governed violations, and emit completion/halt receipts without claiming hidden-reasoning visibility.
@@ -164,6 +234,9 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 - CLOSED: generated public Project Status now lives at `docs/PROJECT_STATUS.md`, generated by `docs/build_project_status.py`, checked by public hygiene, and guarded against dead reviewer links. It is a status view, not a new truth source.
 
 ### Future Watch
+
+Supporting inventory, not execution order; use [Current Build Thread](#current-build-thread) for priority and disposition.
+
 - indirect prompt-injection probes against imported web, email, document, RAG, and tool-return content
 - structured PAV trust metadata beyond content-string markers
 - structured authority spoof tests for imported JSON/YAML/tool-return text
@@ -326,6 +399,10 @@ RSS v0.1.0 should not yet be described as:
 ---
 
 ## Current Phase Plan
+
+Legacy phase/release inventory, not the active task selector. Use Current Build
+Thread for priority and disposition; preserve this material until DOCS-01
+reconciles it with the historical ledger and current release evidence.
 
 ### Phase G — Demo / Operator Experience
 

@@ -294,3 +294,43 @@ Current synced public numbers:
 - **179 claims / 179 tests / 121 Pact sections**
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.
+
+## 2026-09-09 DOCS-01 documentation candidate
+
+- Independent review passed the earlier documentation closures: `AGENTS.md`
+  stopped describing coverage-backed commands as non-writing and named the
+  default-database deletion hazard; ROADMAP's Now, Next, and Future Watch
+  headings explicitly deferred execution order to Current Build Thread.
+  That PASS did not accept the broker candidate or this subsequent DOCS-01
+  implementation. The DOCS-01 design was accepted with human-approved
+  conditions; implementation review and disposition remain pending.
+- This slice separates Workstream, Task ID, State, and Evidence in the existing
+  queue. It retains `Kernel` and `Build system`, reserves `PACT-nn` within
+  `Kernel`, records the BUILD-01 safety flip condition, and makes KERNEL-01 the
+  resume point after DOCS-01. It adds the same deferral pointer to Post-rc.1 /
+  Toward v0.1.1 and Keep Warm, plus queue insertion, scale, and consolidation
+  rules. The document ownership surface now carries the per-pass update ceiling.
+- Verification is static only: diff whitespace, Pact-section resolution,
+  reverse Pact-code map freshness, local links/anchors, and individual
+  provenance/name and callsign scans. No acceptance run, coverage, combined
+  wrapper, baseline synchronization, Project-Status command, or writing
+  generator is part of this slice. No proof number was re-measured.
+- The broker candidate is present and unreviewed. Its existing baseline
+  numbers, source, tests, generated surfaces, and prior receipt are preserved;
+  this documentation receipt does not accept or checkpoint any broker work.
+  Finding/design reviews do not stand in for review of corrective code.
+- All pre-existing receipts, historical counts, and legacy list content are
+  preserved. Release facts, version policy, Current Phase Plan, Pact files,
+  and the broader legacy reconciliation remain outside this bounded pass.
+  No commit, push, promotion, tag, cleanup, or work in another lane is included.
+
+- Disposition (2026-09-10): independent review passed DOCS-01 and the human
+  controller authorized its documentation-only checkpoint. The pending-review
+  language above records the implementation-stage receipt, not the subsequent
+  disposition. The checkpoint contains the reviewed documentation and safety
+  closures; it excludes broker source, tests, proof-number updates, generated
+  surfaces, and the broker build receipt. Broker-only detail links remain with
+  that uncommitted candidate; the committed queue routes to existing owners.
+  Landing verification is static only, including the selected Git-index content;
+  no proof number is re-measured and no full-gate result is claimed. No push,
+  promotion, or broker acceptance is authorized by this disposition.
