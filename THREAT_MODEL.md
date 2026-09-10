@@ -39,6 +39,16 @@ Mitigation: per-container HubTopology, lifecycle/state checks, context-bound hub
 ### Consent split-brain
 Mitigation: OATH write-ahead persistence semantics and persistence-failure surfacing. Bootstrap also validates every durable row claiming the critical `GLOBAL:EXECUTE` key or OATH-normalized namespace before restore/default authority. Normalization discovers aliases; it does not legitimize noncanonical stored names. Malformed, duplicate, or unreadable critical state is recovery-fenced without repairing away the evidence.
 
+### Stale authorization between broker review and claim
+
+Mitigation: the in-process broker reuses its review checks at claim time for the
+current payload hash/shape, proposal TTL, Safe-Stop, tool policy, RUNE restrictions,
+and detailed OATH consent/source. Newly refused governance checks leave the lease
+unclaimed without a second rate charge. This is sequential revalidation, not an
+atomic policy/payload snapshot or enforcement through later external execution.
+`docs/ACTION_PLANE.md` names the remaining expiry/result-import flag defect and
+successful-claim/receipt ordering defect; neither is closed by this mitigation.
+
 ## Residual risks that remain visible
 - a malicious caller with process-level import access can still spoof architectural ingress assumptions
 - a custom helper written outside governed paths could still violate REDLINE discipline
@@ -51,7 +61,7 @@ Mitigation: OATH write-ahead persistence semantics and persistence-failure surfa
 - side effects are only governable when they pass through the runtime boundary; per-action/tool-call enforcement remains future hardening
 - future importers, browsers, email connectors, RAG indexes, and tool adapters could reintroduce indirect prompt injection risk if retrieved text is passed as instruction, if hidden/metadata text is not labeled as untrusted, or if model output can trigger side effects without a fresh OATH/CYCLE gate
 - live model fluency is not evidence; governed data claims still need scoped PAV context and TRACE-backed runtime flow
-- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 179/2686 baseline
+- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 180/2908 baseline
 
 ## Current honesty line
 RSS v0.1.0 is strong at **governance-before-model** inside a single-process governed runtime. It is not yet the whole deployment security story.

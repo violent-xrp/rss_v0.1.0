@@ -43,16 +43,16 @@ Historical receipts live in supporting docs:
 ## Current Snapshot
 
 Current code state:
-- **179 test functions / 2686 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
+- **180 test functions / 2908 assertions / 0 failures** via the custom acceptance runner (`python tests/test_all.py`)
 - **92.7% statement coverage** via `python run_coverage.py`
-- **179 claims / 179 tests / 121 Pact sections** in `docs/claim_matrix.md`
+- **180 claims / 180 tests / 124 Pact sections** in `docs/claim_matrix.md`
 - **26 kernel modules** in the `src/rss/` package tree plus `src/main.py`
 - active work: **Current Build Thread below**; Phase G is retained as phase history, not the current task selector
 
 Current posture:
 - public-alpha hardening is materially beyond the earlier 111/850 baseline
 - the acceptance harness is the single local truth command
-- public docs are synced to the current 179/2686 baseline
+- public docs are synced to the current 180/2908 baseline
 - historical Phase G work and release inventories do not override the current build queue
 
 Canonical local truth-run:
@@ -79,10 +79,12 @@ Note: on the current Windows environment, `pytest` is not installed / not on PAT
 
 **Checkpoint context:** critical-consent alias hardening and deterministic
 adapter proof are reviewed and checkpointed in Roots; main remains at Phase 3A.
-**Current activity:** DOCS-01 and BUILD-04 are reviewed and checkpointed.
-The broker claim-time candidate remains preserved, paused, and unreviewed;
-its independent review is the next resume point, not additional implementation.
-This checkpoint does not accept the broker or authorize a push.
+**Current activity:** DOCS-01, BUILD-04, and KERNEL-01 are reviewed and locally
+checkpointed. KERNEL-01 passed independent bounded code/focused-proof review,
+including the ordered hot/cold TRACE parity closure; it is **not full-gate
+accepted**. BUILD-01 is the next proposed slice, not newly authorized work.
+Fresh full-gate acceptance remains required before promotion or release; this
+checkpoint does not authorize a push.
 
 Recommended order below is not authorization to implement, run destructive
 cleanup, checkpoint, or push. Kernel and build-system work share this queue;
@@ -92,10 +94,10 @@ technical detail stays in its named owner rather than another priority list.
 | --- | --- | --- | --- | --- | --- | --- |
 | Build system | DOCS-01 | Queue and document ownership | closed | checkpointed | Documentation-only checkpoint authorized after independent review; no push or broker acceptance. | [Document ownership](docs/PROJECT_CONTROL_SURFACE.md), [static receipt](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-09-docs-01-documentation-candidate) |
 | Build system | BUILD-04 | Authored-history protection during baseline sync | closed | checkpointed | Human-authorized checkpoint after independent review; no push or broker acceptance. | [Testing findings](docs/TESTING.md#build-system-findings), [review and disposition receipt](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-10-build-04-archive-history-protection-candidate) |
-| Kernel | KERNEL-01 | Broker claim-time revalidation | paused | unreviewed | Resume independent candidate review after BUILD-04 disposition; no additional broker build. | [Broker boundary](docs/ACTION_PLANE.md) |
+| Kernel | KERNEL-01 | Broker claim-time revalidation | closed | checkpointed | Scoped implementation independently reviewed and locally checkpointed, not full-gate accepted. Complete safe full-gate validation before promotion or release; no push. | [Broker boundary](docs/ACTION_PLANE.md), [checkpoint receipt](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-10-kernel-01-reviewed-local-checkpoint) |
 | Build system | BUILD-01 | Coverage data ownership and truthful exit status | paused | unreviewed | Scope the fix under the precedence condition below; preserve runtime data. | [Testing findings](docs/TESTING.md#build-system-findings) |
 | Build system | BUILD-02 | Owned temporary-file lifecycle | paused | unreviewed | Scope cleanup/failure-path proof; legacy removal needs separate preservation approval. | [Testing findings](docs/TESTING.md#build-system-findings) |
-| Kernel | KERNEL-02 | Broker claim/result lifecycle | paused | unreviewed | Scope expired-lease/result-import and state-before-receipt fixes separately. | [Broker boundary](docs/ACTION_PLANE.md) |
+| Kernel | KERNEL-02 | Broker claim/result lifecycle | paused | unreviewed | Scope expired-lease/result-import and state-before-receipt fixes separately. | [Known lifecycle gaps](docs/ACTION_PLANE.md#known-claim-lifecycle-gaps) |
 | Build system | BUILD-03 | Windows entrypoint and scan boundaries | paused | unreviewed | Preserve Python automation; scope shell, encoding, external-launcher and scratch-scan work. | [Testing findings](docs/TESTING.md#build-system-findings) |
 
 State and Evidence are independent. State is `active` (work underway), `paused`
@@ -106,12 +108,14 @@ slice: `unreviewed`, `reviewed` (independent review accepted that slice),
 `checkpointed` (recorded in a commit), or `landed` (integrated into the approved
 destination). `checkpointed` does not mean pushed, promoted, or released;
 `landed` does not by itself mean a tagged release. `paused` plus `reviewed` is
-valid, but does not describe the current broker candidate. Review of a finding,
-design, or earlier closure does not mark a new implementation `reviewed`.
+valid. Review of a finding, design, or earlier closure does not mark a new
+implementation `reviewed`. A scoped implementation may be closed/checkpointed
+while full-gate acceptance remains explicitly pending, as for KERNEL-01.
 
 Row order is the selected work order, subject to the safety condition below.
-BUILD-04 precedes the KERNEL-01 resume point under the approved sequence;
-completing either slice does not open another implementation automatically.
+BUILD-04 and the bounded KERNEL-01 review/checkpoint are complete. BUILD-01 is
+the next proposed slice; completing a checkpoint does not open another
+implementation or authorize unsafe gates automatically.
 
 BUILD-01 takes precedence as soon as an `rss.db` exists at repository root with
 unpreserved data, or any workflow requires coverage-backed gates around real

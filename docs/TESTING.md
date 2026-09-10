@@ -21,7 +21,7 @@ python tests/test_all.py
 Current expected final line:
 
 ```text
-RSS v0.1.0 - 179 test functions, 2686 assertions passed, 0 failed
+RSS v0.1.0 - 180 test functions, 2908 assertions passed, 0 failed
 ```
 
 This custom runner is the local source of truth for the current Windows environment.
@@ -57,6 +57,22 @@ python examples/demo_suite.py --live-llm
 That command can contact the configured model service and vary with its state;
 it is not the acceptance or coverage baseline. Use `--offline` for a controlled
 demo, and inspect the report before interpreting fallback as live-model success.
+
+### Broker claim-time revalidation proof
+
+The registered `test_action_plane_claim_revalidation` changes payload, current
+consent, tool policy, RUNE restrictions, and time after authorization. Controls
+preserve valid tenant/global consent precedence. Retries and a failed refusal
+receipt must leave the new governance-refusal paths unspent and cold-valid;
+claiming must not issue another lease or charge CYCLE again. Time is controlled
+without sleeps, and no external action or model service is executed.
+
+```bash
+python -c "import sys; sys.path.insert(0, 'tests'); from test_support import run_tests; from test_action_plane import test_action_plane_claim_revalidation; run_tests('Broker claim revalidation', [test_action_plane_claim_revalidation], forbid_http=True)"
+```
+
+The proof does not cover atomic concurrent mutation or claim-success persistence
+coupling. The separate lifecycle defects remain named in `ACTION_PLANE.md`.
 
 ## Optional Checks
 

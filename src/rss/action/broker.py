@@ -148,6 +148,83 @@ class SideEffectBroker:
             payload_hash=proposal.payload_hash,
         )
 
+    def _validate_governance(self, proposal: ActionProposal,
+                             now: datetime) -> Optional[tuple[str, str]]:
+        """Return the first current refusal without minting a lease or charging CYCLE.
+
+        Review and claim share these checks. The frozen proposal retains a
+        caller-owned payload, so hashing must happen again at claim time.
+        This sequential check is not atomic with concurrent policy/payload
+        mutation or with a wrapper's later external execution.
+        """
+        ss = self._runtime.is_safe_stopped()
+        if ss.get("active"):
+            return REJECTED_SAFE_STOP, f"Safe-Stop active: {ss.get('reason')}"
+
+        try:
+            actual_hash = hash_payload(proposal.payload)
+        except (TypeError, ValueError, RecursionError):
+            return REJECTED_PAYLOAD_SHAPE, "payload cannot be canonically hashed"
+        if actual_hash != proposal.payload_hash:
+            return (
+                REJECTED_PAYLOAD_HASH,
+                "payload hash mismatch: payload changed after construction",
+            )
+
+        if now > proposal.ttl_expiry:
+            return REJECTED_TTL, "proposal TTL expired"
+        if proposal.ttl_expiry > now + MAX_PROPOSAL_TTL + TTL_CLOCK_SKEW:
+            return REJECTED_TTL, "proposal TTL too far in the future"
+
+        policy = self._tools.get(proposal.tool_name)
+        if policy is None:
+            return (
+                REJECTED_UNKNOWN_TOOL,
+                f"tool '{proposal.tool_name}' is not registered",
+            )
+        if policy.action_class.upper() != proposal.action_class:
+            return (
+                REJECTED_TOOL_CLASS_MISMATCH,
+                f"tool '{proposal.tool_name}' requires class "
+                f"'{policy.action_class}', proposal claims "
+                f"'{proposal.action_class}'",
+            )
+
+        try:
+            strings = extract_strings(proposal.payload)
+        except ActionPlaneError:
+            return REJECTED_PAYLOAD_SHAPE, "payload exceeds safe inspection limits"
+        if proposal.target_resource:
+            strings.append(("target_resource", proposal.target_resource))
+        for _path, value in strings:
+            hits = self._runtime.meaning.scan_disallowed(value)
+            if hits:
+                # Extracted paths can themselves contain user-supplied keys.
+                # Do not echo them into a refusal that promises to withhold content.
+                return (
+                    REJECTED_RUNE,
+                    "DISALLOWED term in proposal payload or target "
+                    "(content withheld from audit record)",
+                )
+
+        detailed = self._runtime.oath.check(
+            proposal.action_class, proposal.container_id, detailed=True)
+        if detailed.get("status") != "AUTHORIZED":
+            return (
+                REJECTED_CONSENT,
+                f"consent status={detailed.get('status')}, "
+                f"source={detailed.get('source')}",
+            )
+        if (policy.risk_tier == "HIGH"
+                and proposal.container_id != "GLOBAL"
+                and detailed.get("source") != "CONTAINER"):
+            return (
+                REJECTED_HIGH_TIER_CONSENT,
+                "HIGH-tier tool requires container-specific consent; "
+                f"got source={detailed.get('source')}",
+            )
+        return None
+
     def review(self, proposal: ActionProposal) -> BrokerDecision:
         """Run a proposed side effect through the governance gates."""
         self._log(
@@ -160,79 +237,10 @@ class SideEffectBroker:
             f"payload_hash={proposal.payload_hash}",
         )
 
-        ss = self._runtime.is_safe_stopped()
-        if ss.get("active"):
-            return self._reject(
-                proposal, REJECTED_SAFE_STOP,
-                f"Safe-Stop active: {ss.get('reason')}",
-            )
-
-        actual_hash = hash_payload(proposal.payload)
-        if actual_hash != proposal.payload_hash:
-            return self._reject(
-                proposal,
-                REJECTED_PAYLOAD_HASH,
-                "payload hash mismatch: payload changed after construction",
-            )
-
         now = datetime.now(UTC)
-        if now > proposal.ttl_expiry:
-            return self._reject(proposal, REJECTED_TTL, "proposal TTL expired")
-        if proposal.ttl_expiry > now + MAX_PROPOSAL_TTL + TTL_CLOCK_SKEW:
-            return self._reject(
-                proposal, REJECTED_TTL,
-                "proposal TTL too far in the future",
-            )
-
-        policy = self._tools.get(proposal.tool_name)
-        if policy is None:
-            return self._reject(
-                proposal, REJECTED_UNKNOWN_TOOL,
-                f"tool '{proposal.tool_name}' is not registered",
-            )
-        if policy.action_class.upper() != proposal.action_class:
-            return self._reject(
-                proposal,
-                REJECTED_TOOL_CLASS_MISMATCH,
-                f"tool '{proposal.tool_name}' requires class "
-                f"'{policy.action_class}', proposal claims "
-                f"'{proposal.action_class}'",
-            )
-
-        try:
-            strings = extract_strings(proposal.payload)
-        except ActionPlaneError as exc:
-            return self._reject(proposal, REJECTED_PAYLOAD_SHAPE, str(exc))
-        if proposal.target_resource:
-            strings.append(("target_resource", proposal.target_resource))
-        for path, value in strings:
-            hits = self._runtime.meaning.scan_disallowed(value)
-            if hits:
-                return self._reject(
-                    proposal,
-                    REJECTED_RUNE,
-                    f"DISALLOWED term at payload path '{path}' "
-                    f"(content withheld from audit record)",
-                )
-
-        detailed = self._runtime.oath.check(
-            proposal.action_class, proposal.container_id, detailed=True)
-        if detailed.get("status") != "AUTHORIZED":
-            return self._reject(
-                proposal,
-                REJECTED_CONSENT,
-                f"consent status={detailed.get('status')}, "
-                f"source={detailed.get('source')}",
-            )
-        if (policy.risk_tier == "HIGH"
-                and proposal.container_id != "GLOBAL"
-                and detailed.get("source") != "CONTAINER"):
-            return self._reject(
-                proposal,
-                REJECTED_HIGH_TIER_CONSENT,
-                "HIGH-tier tool requires container-specific consent; "
-                f"got source={detailed.get('source')}",
-            )
+        refusal = self._validate_governance(proposal, now)
+        if refusal is not None:
+            return self._reject(proposal, *refusal)
 
         rate = self._runtime.cycle.check_rate_limit(
             f"BROKER:{proposal.container_id}")
@@ -271,7 +279,12 @@ class SideEffectBroker:
         )
 
     def claim_for_execution(self, authorization_id: str) -> dict:
-        """Pre-execution checkpoint for an external execution wrapper."""
+        """Revalidate a live lease before a wrapper receives its execution claim.
+
+        Current-governance refusals leave the lease unclaimed, like Safe-Stop:
+        a later retry must pass all checks again within the existing TTLs.
+        CYCLE is charged only by review, not by a retry or successful claim.
+        """
         authorization = self._authorizations.get(authorization_id)
         if authorization is None or authorization.claimed:
             return {
@@ -301,18 +314,19 @@ class SideEffectBroker:
                 "reason": "authorization expired before execution claim",
             }
 
-        ss = self._runtime.is_safe_stopped()
-        if ss.get("active"):
+        refusal = self._validate_governance(authorization.proposal, now)
+        if refusal is not None:
+            status, reason = refusal
             self._log(
                 "ACTION_CLAIM_REFUSED",
                 authorization.proposal.proposal_id,
                 f"authorization_id={authorization_id}, "
-                f"status={REJECTED_SAFE_STOP}, reason={ss.get('reason')}",
+                f"status={status}, reason={reason}",
             )
             return {
                 "claimed": False,
-                "status": REJECTED_SAFE_STOP,
-                "reason": f"Safe-Stop active: {ss.get('reason')}",
+                "status": status,
+                "reason": reason,
             }
 
         authorization.claimed = True
@@ -411,7 +425,11 @@ class SideEffectBroker:
         }
 
     def pending_authorizations(self) -> int:
-        """Return the count of live authorizations still claimable."""
+        """Count unspent, unrevoked, unexpired authorization leases.
+
+        This count does not revalidate proposal TTL, payload, or current policy;
+        an actual claim must still pass the current-governance checks.
+        """
         now = datetime.now(UTC)
         return sum(
             1 for authorization in self._authorizations.values()

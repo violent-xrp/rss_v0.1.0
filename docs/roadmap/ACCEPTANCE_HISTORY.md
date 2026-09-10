@@ -9,9 +9,9 @@ This file preserves the count history and verification receipts that used to liv
 ## Current Baseline
 
 <!-- BEGIN GENERATED: baseline · owner sync_baseline.py · do not edit by hand -->
-- **179 test functions / 2686 assertions / 0 failures**
+- **180 test functions / 2908 assertions / 0 failures**
 - **92.7% statement coverage**
-- **179 claims / 179 tests / 121 Pact sections**
+- **180 claims / 180 tests / 124 Pact sections**
 <!-- END GENERATED -->
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
@@ -260,7 +260,7 @@ before this separate test-harness correction began.
   **179 / 2652 / 0 → 179 / 2686 / 0**; no test function or claim anchor is removed.
   The permissive live-or-fallback check is replaced by explicit response,
   request, caching, cleanup, fallback, and runner-failure checks. Claim
-  traceability remains **179 claims / 179 tests / 121 Pact sections**.
+  traceability remains **121 sections / 179 claims / 179 tests**.
 - The canonical runner blocks unexpected urllib transport below the fixtures
   and records attempts even when production fallback catches the error. The
   registered proof verifies an intentional leaked call causes a nonzero runner
@@ -280,6 +280,49 @@ before this separate test-harness correction began.
   coverage variation. The measured total moves **92.6% → 92.7%** from added proof,
   without changing production code, Pact text, broker behavior, or versions.
 
+### 2026-09-08 broker claim-time revalidation candidate
+
+Build evidence; independent review and checkpoint are pending. The preceding
+adapter candidate was independently reviewed and checkpointed before this
+separate production correction began.
+
+- Review and claim now share the current Safe-Stop, payload hash/shape, proposal
+  TTL, tool registration/class/risk, RUNE, and detailed OATH checks. Claim uses
+  the original lease and current state; it does not call review again or charge
+  CYCLE a second time. Hashing failures are governed shape refusals. RUNE and
+  shape refusal reasons do not echo mutable payload keys or exception content.
+- The initial registered regression matrix produced **90 failed assertions**
+  against the old broker, with valid controls still passing. The final focused
+  proof has **222 assertions**, including the subsequent refusal-persistence
+  and retry proofs. Canonical acceptance grows **179 / 2686 / 0 → 180 / 2908 / 0**;
+  no prior test or assertion was removed or weakened.
+- The matrix covers 18 refusal scenarios and six permitted controls. It changes
+  top-level/nested payloads, hashability, global/tenant consent, current tool
+  policy, RUNE keys/values/target, and proposal time after authorization. It
+  preserves global-denial precedence, independent tenant grants after global
+  revocation, HIGH-tier consent-source rules, and bounded RUNE token matching.
+- New governance-check refusals leave the lease unclaimed, reject result import,
+  and bind a refusal receipt to the original proposal and authorization. A failed
+  refusal receipt propagates without creating successful-claim state; hot/cold
+  TRACE parity survives. Repeated refusal and repaired-state retry are proven
+  for payload, consent, and tool-registration changes, without a new lease or
+  CYCLE charge. All cases use temporary databases and controlled time, not sleeps
+  or external execution.
+- Claim traceability grows **121 → 124 Pact sections**, **179 → 180 claims**,
+  and **179 → 180 tests**. The three newly represented real
+  headings are `§0.9.1`, `§1.6.6`, and `§3.2.3`; the new tag also cites the
+  already represented `§1.6.2`, `§2.8.1`, and `§3.3`. The Pact is unchanged.
+- Coverage remains **92.7% total**: package statements grow **3874 → 3883**, with
+  **282 missed** in both measurements. Broker coverage remains **100.0%** and
+  its statements grow **150 → 159**; runtime remains **89.0%** and adapter
+  **97.2%**. This is statement execution evidence, not proof of race freedom.
+  Environment: Python 3.13.13, SQLite 3.50.4, coverage 7.16.0, Windows, Roots CWD.
+- This closes sequential claim-time governance, not concurrent or post-claim
+  payload/policy mutation, durable/actor-bound leases, external execution, or
+  runtime-wide enforcement. The pre-existing expired-authorization claimed-flag
+  defect and successful-claim state-before-receipt defect remain named in
+  `../ACTION_PLANE.md`; this receipt does not claim those lifecycle guarantees.
+
 ## Public Doc Sync
 
 All public-facing docs listed below were synced during the 2026-04-29 public-doc pass:
@@ -292,9 +335,9 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 
 <!-- BEGIN GENERATED: baseline · owner sync_baseline.py · do not edit by hand -->
 Current synced public numbers:
-- **179 / 2686 / 0**
+- **180 / 2908 / 0**
 - **92.7%** coverage
-- **179 claims / 179 tests / 121 Pact sections**
+- **180 claims / 180 tests / 124 Pact sections**
 <!-- END GENERATED -->
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.
@@ -387,3 +430,32 @@ Current synced public numbers:
     wrapper, or Project-Status generator is run; no kernel proof is re-measured.
     BUILD-01 remains open. The next resume point is independent broker review,
     not automatic implementation or acceptance of that paused candidate.
+
+## 2026-09-10 KERNEL-01 reviewed local checkpoint
+
+- Disposition: two independent cross-family reviews passed the bounded broker
+  code/focused-proof review and the subsequent ordered hot/cold TRACE parity
+  closure. The human controller authorized a local KERNEL-01 checkpoint as
+  independently reviewed, **not full-gate accepted**. Earlier pending-review
+  wording records its historical candidate state, not this disposition.
+- The parity closure compares the complete ordered hot and durable content-hash
+  lists inside the existing refusal-persistence assertion. Count-unchanged,
+  hot-chain validity, and cold-file validity remain; no additional assertion,
+  claim tag, registration, or production change was introduced by that closure.
+- Bounded review reproduction: one focused function, 222 assertions passed,
+  zero failures, and zero unexpected urllib transport attempts. Static review
+  checks passed whitespace, Pact-section resolution, and reverse-map freshness.
+  These results do not substitute for the combined acceptance gates.
+- Full-suite and coverage values are inherited from the dated build receipt,
+  not re-measured during review or checkpoint: 180 functions, 2908 assertions,
+  zero failures; 92.7% statement coverage; 124 sections / 180 claims / 180 tests.
+  Existing generated surfaces are preserved, not regenerated or certified fresh
+  by this checkpoint. No full acceptance, coverage launcher, combined hygiene
+  wrapper, live baseline CLI, or Project-Status generator was run for landing.
+- The guarantee remains sequential claim-time governance. Expiry marking a
+  lease claimed, successful-claim state preceding its receipt, concurrent or
+  post-claim mutation, restart durability, and external execution remain outside
+  this closure; `../ACTION_PLANE.md` owns the lifecycle limitations.
+- BUILD-01 remains open. Fresh full-gate acceptance is required before promotion
+  or release. No push, tag, version change, main promotion, Pact edit, or next
+  implementation slice is authorized by this local checkpoint.

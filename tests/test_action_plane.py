@@ -397,6 +397,169 @@ def test_action_plane_capability_lease():
         _cleanup_db(path)
 
 
+def test_action_plane_claim_revalidation():
+    # CLAIM: §0.9.1, §1.6.2, §1.6.6, §2.8.1, §3.2.3, §3.3 — claims revalidate payload, time, current policy and consent before granting
+    section("Action Plane: Claim-Time Revalidation")
+    from unittest.mock import patch
+    from rss.audit.verify import verify_trace_file
+
+    def tenant_grant(rss, broker):
+        rss.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0", container_id="TENANT")
+
+    def high_tier_grant(rss, broker):
+        tenant_grant(rss, broker)
+        broker._tools["file_write"] = ToolPolicy("file_write", "EXECUTE", risk_tier="HIGH")
+
+    # Registry changes use the broker's private test seam: it copies its input
+    # mapping and currently has no public tool-policy mutation API.
+    cases = [
+        ("top-level payload", "GLOBAL", None,
+         lambda r, b, p, c: p.payload.update(extra="not authorized"), REJECTED_PAYLOAD_HASH),
+        ("nested caller payload", "GLOBAL", None,
+         lambda r, b, p, c: p.payload["document"]["lines"][0].update(text="changed"), REJECTED_PAYLOAD_HASH),
+        ("payload key", "GLOBAL", None,
+         lambda r, b, p, c: p.payload.pop("guarded key"), REJECTED_PAYLOAD_HASH),
+        ("cyclic payload", "GLOBAL", None,
+         lambda r, b, p, c: p.payload.update(loop=p.payload), REJECTED_PAYLOAD_SHAPE),
+        ("mixed key types", "GLOBAL", None,
+         lambda r, b, p, c: p.payload.update({1: "non-string key"}), REJECTED_PAYLOAD_SHAPE),
+        ("global revocation", "GLOBAL", None,
+         lambda r, b, p, c: r.oath.revoke("EXECUTE"), REJECTED_CONSENT),
+        ("fallback revocation", "TENANT", None,
+         lambda r, b, p, c: r.oath.revoke("EXECUTE"), REJECTED_CONSENT),
+        ("global denial", "GLOBAL", None,
+         lambda r, b, p, c: r.oath.deny("EXECUTE", "WORK", "SESSION", "T-0"), REJECTED_CONSENT),
+        ("tenant revocation", "TENANT", tenant_grant,
+         lambda r, b, p, c: r.oath.revoke("EXECUTE", "TENANT"), REJECTED_CONSENT),
+        ("tenant denial", "TENANT", tenant_grant,
+         lambda r, b, p, c: r.oath.deny("EXECUTE", "WORK", "SESSION", "T-0", container_id="TENANT"), REJECTED_CONSENT),
+        ("global denial dominates tenant", "TENANT", tenant_grant,
+         lambda r, b, p, c: r.oath.deny("EXECUTE", "WORK", "SESSION", "T-0"), REJECTED_CONSENT),
+        ("removed tool", "GLOBAL", None,
+         lambda r, b, p, c: b._tools.pop("file_write"), REJECTED_UNKNOWN_TOOL),
+        ("tool class changed", "GLOBAL", None,
+         lambda r, b, p, c: b._tools.update(file_write=ToolPolicy("file_write", "OTHER")), REJECTED_TOOL_CLASS_MISMATCH),
+        ("tool risk increased", "TENANT", None,
+         lambda r, b, p, c: b._tools.update(file_write=ToolPolicy("file_write", "EXECUTE", risk_tier="HIGH")), REJECTED_HIGH_TIER_CONSENT),
+        ("new RUNE value prohibition", "GLOBAL", None,
+         lambda r, b, p, c: r.meaning.disallow("release packet", "late restriction"), REJECTED_RUNE),
+        ("new RUNE key prohibition", "GLOBAL", None,
+         lambda r, b, p, c: r.meaning.disallow("guarded key", "late restriction"), REJECTED_RUNE),
+        ("new RUNE target prohibition", "GLOBAL", None,
+         lambda r, b, p, c: r.meaning.disallow("archive-silo", "late restriction"), REJECTED_RUNE),
+        ("proposal TTL expired, lease live", "GLOBAL", None,
+         lambda r, b, p, c: setattr(c.now, "return_value", p.ttl_expiry + timedelta(microseconds=1)), REJECTED_TTL),
+        ("unchanged global", "GLOBAL", None,
+         lambda r, b, p, c: None, CLAIM_GRANTED),
+        ("unchanged fallback", "TENANT", None,
+         lambda r, b, p, c: None, CLAIM_GRANTED),
+        ("global revoke preserves tenant grant", "TENANT", tenant_grant,
+         lambda r, b, p, c: r.oath.revoke("EXECUTE"), CLAIM_GRANTED),
+        ("HIGH keeps explicit tenant grant", "TENANT", high_tier_grant,
+         lambda r, b, p, c: None, CLAIM_GRANTED),
+        ("unrelated tenant revocation", "GLOBAL", tenant_grant,
+         lambda r, b, p, c: r.oath.revoke("EXECUTE", "TENANT"), CLAIM_GRANTED),
+        ("RUNE bounded-token control", "GLOBAL", None,
+         lambda r, b, p, c: r.meaning.disallow("lease", "not embedded in release"), CLAIM_GRANTED),
+    ]
+
+    for label, container, setup, change, expected in cases:
+        fd, path = tempfile.mkstemp(suffix=".db")
+        os.close(fd)
+        rss = None
+        try:
+            rss = bootstrap(RSSConfig(db_path=path))
+            broker = SideEffectBroker(rss, _tools())
+            if setup:
+                setup(rss, broker)
+            payload = {"document": {"lines": [{"text": "release packet"}]}, "guarded key": "permitted"}
+            proposal = build_proposal("TASK-CLAIM", "EXECUTE", "file_write", "archive-silo",
+                                      payload, container_id=container, ttl=timedelta(seconds=30))
+            with patch("rss.action.broker.datetime") as clock:
+                clock.now.return_value = proposal.proposed_at
+                decision = broker.review(proposal)
+                check(decision.authorized, f"{label}: fixture first obtains authorization")
+                issued_ids = set(broker._authorizations)
+                rate_before = list(rss.cycle._domains[f"BROKER:{container}"].timestamps)
+                change(rss, broker, proposal, clock)
+                if label == "global revocation":
+                    before = len(rss.trace.all_events())
+                    failure = None
+                    with patch.object(rss.persistence, "save_trace_event",
+                                      side_effect=RuntimeError("claim refusal persistence fixture")):
+                        try:
+                            broker.claim_for_execution(decision.authorization_id)
+                        except RuntimeError as exc:
+                            failure = exc
+                    check(failure is not None, "refusal audit failure propagates rather than returning a grant")
+                    check(not broker._authorizations[decision.authorization_id].claimed
+                          and broker._authorizations[decision.authorization_id].claimed_at is None,
+                          "refusal audit failure leaves no successful-claim state")
+                    check(len(rss.trace.all_events()) == before and rss.trace.verify_chain_deep()
+                          and [event.content_hash for event in rss.trace.all_events()]
+                          == [event.content_hash for event in rss.persistence.load_all_trace()]
+                          and verify_trace_file(path)["verified"],
+                          "refusal audit failure preserves hot/cold TRACE parity")
+                with patch.object(broker, "_log", wraps=broker._log) as audit:
+                    result = broker.claim_for_execution(decision.authorization_id)
+                granted = expected == CLAIM_GRANTED
+                check(result.get("claimed") is granted and result.get("status") == expected,
+                      f"{label}: claim observes the current governing condition")
+                check(set(broker._authorizations) == issued_ids
+                      and len(rss.trace.events_by_code("ACTION_AUTHORIZED")) == 1
+                      and len(rss.trace.events_by_code("ACTION_PROPOSED")) == 1,
+                      f"{label}: claim reuses the existing lease without another authorization")
+                check(rss.cycle._domains[f"BROKER:{container}"].timestamps == rate_before,
+                      f"{label}: claim does not charge CYCLE again")
+                check(len(rss.trace.events_by_code("ACTION_CLAIMED")) == int(granted)
+                      and len(rss.trace.events_by_code("ACTION_CLAIM_REFUSED")) == int(not granted),
+                      f"{label}: TRACE records refusal or success, never both")
+                if granted:
+                    check(result.get("authorization_id") == decision.authorization_id
+                          and broker.claim_for_execution(decision.authorization_id)["status"] == REJECTED_REPLAY,
+                          f"{label}: successful claim remains same-ID and single-use")
+                else:
+                    check(not broker._authorizations[decision.authorization_id].claimed
+                          and broker._authorizations[decision.authorization_id].claimed_at is None,
+                          f"{label}: policy refusal does not become a successful claim")
+                    check(broker.record_execution_result(decision.authorization_id, "synthetic result", "tool_return")["status"]
+                          == REJECTED_NOT_CLAIMED, f"{label}: refusal cannot authorize result import")
+                    refusal = [call.args for call in audit.call_args_list if call.args[0] == "ACTION_CLAIM_REFUSED"]
+                    check(len(refusal) == 1 and refusal[0][1] == proposal.proposal_id
+                          and decision.authorization_id in refusal[0][2] and expected in refusal[0][2],
+                          f"{label}: refusal receipt binds status, proposal and authorization")
+                    if expected == REJECTED_RUNE:
+                        check(all(text not in str(refusal) + result.get("reason", "")
+                                  for text in ("release packet", "guarded key", "archive-silo")),
+                              f"{label}: refusal withholds offending values, keys and target")
+                check(rss.trace.verify_chain_deep()
+                      and verify_trace_file(path)["verified"], f"{label}: hot and cold TRACE remain valid")
+                if label in {"top-level payload", "global revocation", "removed tool"}:
+                    check(broker.claim_for_execution(decision.authorization_id)["status"] == expected,
+                          f"{label}: retry while still invalid remains refused")
+                    if label == "top-level payload":
+                        payload.pop("extra")
+                    elif label == "global revocation":
+                        rss.oath.authorize("EXECUTE", "WORK", "SESSION", "T-0")
+                    else:
+                        broker._tools["file_write"] = _tools()["file_write"]
+                    retried = broker.claim_for_execution(decision.authorization_id)
+                    check(retried.get("status") == CLAIM_GRANTED
+                          and retried.get("authorization_id") == decision.authorization_id,
+                          f"{label}: restored conditions permit the same still-live lease")
+                    check(len(rss.trace.events_by_code("ACTION_AUTHORIZED")) == 1
+                          and len(rss.trace.events_by_code("ACTION_CLAIM_REFUSED")) == 2
+                          and len(rss.trace.events_by_code("ACTION_CLAIMED")) == 1
+                          and rss.cycle._domains[f"BROKER:{container}"].timestamps == rate_before,
+                          f"{label}: retries neither mint nor recharge and have truthful receipts")
+                    check(rss.trace.verify_chain_deep() and verify_trace_file(path)["verified"],
+                          f"{label}: successful retry remains hot/cold valid")
+        finally:
+            if rss is not None:
+                rss.persistence.close()
+            _cleanup_db(path)
+
+
 def test_action_plane_event_codes_registered():
     # CLAIM: §6.6.4 — action-plane TRACE codes are registered before emission
     section("Action Plane: TRACE Registry Completeness")

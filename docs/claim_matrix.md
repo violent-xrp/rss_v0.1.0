@@ -1,12 +1,12 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-09-08 17:03 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-09-09 05:25 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
 **Boundary:** the gate enforces claim presence, one-claim-per-test counts, and a non-vacuity floor (every claim cites a Pact section; every test contains a real assertion). It does not — and cannot — verify that a test body semantically proves the clause it cites. Claim fidelity is a review responsibility.
 
-**Coverage:** 121 distinct Pact sections referenced across 179 claim tags on 179 test functions.
+**Coverage:** 124 distinct Pact sections referenced across 180 claim tags on 180 test functions.
 
 ---
 
@@ -113,6 +113,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_oath_denied_consent_survives_restart` — DENIED consent survives restart; restore never upgrades a restrictive status to AUTHORIZED
 - `test_oath_additional_proof` — OATH consent namespace normalization, persistence-failure density, malformed namespace fail-closed behavior
 
+## §0.9.1
+
+- `test_action_plane_claim_revalidation` — claims revalidate payload, time, current policy and consent before granting
+
 ## §1.1.2
 
 - `test_ward` — WARD seat registration, routing, hooks
@@ -150,7 +154,12 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §1.6.2
 
+- `test_action_plane_claim_revalidation` — claims revalidate payload, time, current policy and consent before granting
 - `test_phase_e_regression_battery` — production posture, governed demo creation path, container state restore, and fail-closed OATH revocation
+
+## §1.6.6
+
+- `test_action_plane_claim_revalidation` — claims revalidate payload, time, current policy and consent before granting
 
 ## §1.7
 
@@ -220,6 +229,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §2.8.1
 
+- `test_action_plane_claim_revalidation` — claims revalidate payload, time, current policy and consent before granting
 - `test_adversarial_scope_escalation` — scope mutation blocked at multiple layers
 - `test_classification_order` — DISALLOWED takes precedence over SEALED
 
@@ -244,12 +254,17 @@ This document maps Pact sections to the test functions that prove them. Each ent
 - `test_state_machine` — execution state transitions
 - `test_execution_word_boundary_hardening` — verb classification should respect word boundaries
 
+## §3.2.3
+
+- `test_action_plane_claim_revalidation` — claims revalidate payload, time, current policy and consent before granting
+
 ## §3.3
 
 - `test_action_plane_proposal_binding` — action proposals are typed, hash-bound, TTL-bound, and fully inspectable
 - `test_action_plane_broker_gates` — broker re-enters Safe-Stop, RUNE, OATH, CYCLE, and payload gates before action claims
 - `test_action_plane_result_import_and_replay` — action results re-enter only after a claim and as untrusted data-only evidence
 - `test_action_plane_capability_lease` — action authorizations are in-process, single-use, revocable pre-execution receipts
+- `test_action_plane_claim_revalidation` — claims revalidate payload, time, current policy and consent before granting
 - `test_adversarial_malformed_inputs` — pipeline survives 10K/empty/unicode/0/negative/50K malformed inputs
 - `test_runtime` — runtime full pipeline happy path and halt semantics
 

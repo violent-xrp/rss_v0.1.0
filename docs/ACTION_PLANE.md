@@ -11,8 +11,9 @@ enforcement.
 RSS now includes a structured action proposal and in-process side-effect broker
 decision surface in `rss.action`. It can review a proposed side effect, emit
 TRACE receipts, issue a short-lived single-use authorization receipt, re-check
-Safe-Stop at claim time, support revocation, and import a claimed result as
-untrusted data-only evidence.
+current governance at claim time, support revocation, and import result text as
+untrusted data-only evidence. Result-import eligibility still has the lifecycle
+gaps named below; an internal claimed flag is not yet proof of a durable grant.
 
 RSS does not yet include a universal action plane, connector sandbox,
 per-tool-call enforcement loop, external execution wrapper, durable
@@ -22,7 +23,8 @@ consent/authority checks, model exposure, TRACE evidence, and the local
 pre-execution broker decision surface. It does not execute arbitrary external
 actions through a contained worker.
 
-This document does not amend the Pact and does not change the v0.1.0 proof surface.
+This document does not amend the Pact. Proof deltas belong to the acceptance
+history; candidate/review state belongs to `../ROADMAP.md`.
 
 ## Relationship To Three-Window Governance
 
@@ -62,8 +64,8 @@ Built today:
 2. The proposal schema, payload hash, target resource, container, TTL, and action class are validated.
 3. The broker re-enters local governance gates: Safe-Stop, payload hash, TTL, tool policy, RUNE, OATH, and CYCLE.
 4. A short-lived in-process receipt is issued only after the gates pass.
-5. A caller must claim the receipt before acting; Safe-Stop and revocation are checked again at claim time.
-6. A claimed result may be imported as untrusted data-only evidence.
+5. A caller must claim the receipt before acting. After lease replay/revocation/expiry checks, the broker rechecks Safe-Stop, current payload hash/shape, proposal TTL, tool registration/class/risk, RUNE payload/target restrictions, and detailed OATH consent/source. CYCLE is charged at review only.
+6. New governance-check refusals leave the lease unclaimed and reject result import. A retry reuses that lease and must pass all checks within both TTLs. Result import otherwise uses an internal claimed flag, subject to the known lifecycle gaps below, and treats content as untrusted data-only evidence.
 7. TRACE records proposal, rejection, authorization, claim refusal, claim, revocation, and result import.
 
 Future work:
@@ -103,6 +105,27 @@ RSS does not claim:
 - runtime auto-wiring from model output into broker execution
 - cryptographic T-0 identity
 - external audit anchoring for action receipts
+- atomic validation against concurrent policy/payload mutation or changes after claim
+- failure-atomic claim-state/receipt coupling or complete result-import eligibility
+
+### Known claim-lifecycle gaps
+
+Claim-time revalidation is a sequential check inside the cooperative single
+process, not a locked snapshot through external execution. The proposal retains
+caller-owned payload data; a wrapper must not infer protection against mutation
+after a successful claim. Tool-policy mutation is exercised through a private
+test seam; no public registry-management API is added.
+
+Two pre-existing lifecycle defects remain separate from this correction:
+
+- Authorization-expiry refusal sets `claimed=True`. Result import currently
+  tests that flag, so expiry can be mistaken for successful claim eligibility.
+- Successful claim sets its in-memory state before persisting `ACTION_CLAIMED`.
+  A receipt-write failure can leave claimed state without a durable grant receipt.
+
+The new governance-check refusals do neither: they remain unclaimed even when
+their refusal receipt cannot persist. Tests prove those paths and hot/cold TRACE
+validity; they do not close the two lifecycle defects or prove external execution.
 
 ## Relationship To ROADMAP
 
