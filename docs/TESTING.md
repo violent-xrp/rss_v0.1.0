@@ -189,6 +189,9 @@ The modular split was mechanical and conservative:
 Recorded from the 2026-09-09 read-only hygiene review; these are unresolved
 findings, not accepted fixes. [ROADMAP's Current Build Thread](../ROADMAP.md#current-build-thread)
 owns scheduling and disposition; this section owns technical detail and closure proof.
+The BUILD-04 implementation below follows the subsequent archive-history finding;
+its focused proof is separate from kernel acceptance. Independent review passed
+and the human controller authorized its bounded checkpoint.
 
 - **BUILD-01 — data ownership and exit status:** `run_coverage.py` unconditionally
   unlinks `.coverage`, `rss.db`, and SQLite sidecars before testing, while
@@ -219,5 +222,50 @@ owns scheduling and disposition; this section owns technical detail and closure 
 
 Helper-factory consolidation, repeated teardown, grouping, and stale test wording
 from the former Future Cleanup list remain candidates under BUILD-02. Any future
-test-count change needs an explicit acceptance-history explanation; this review
-changes no tests, runtime behavior, or measured proof numbers.
+test-count change needs an explicit acceptance-history explanation. The original
+finding-only review changed no tests, runtime behavior, or measured proof numbers.
+
+### BUILD-04 — Archive History and Generated Ownership
+
+The former synchronizer excluded `CHANGELOG.md` and
+`docs/roadmap/ACCEPTANCE_HISTORY.md` from orphan checking but still rewrote their
+entire contents. A dated receipt using a recognized current-baseline phrase
+could therefore acquire today's numbers. This establishes the failure mechanism,
+not that a particular historical receipt was already corrupted.
+
+The reviewed implementation requires one generated baseline region in the
+changelog and two in acceptance history. Only those bodies are rewritten and
+orphan-checked; authored text and marker lines are preserved byte-for-byte.
+Regions begin with `<!-- BEGIN GENERATED: baseline · owner sync_baseline.py · do not edit by hand -->`
+and end with `<!-- END GENERATED -->`. Both archives are mandatory and their
+complete marker layout is validated before acceptance, coverage, or generated
+document orchestration. Missing, undecodable, malformed, nested, unmatched,
+wrong-count, unknown-owner, and empty regions refuse with exit 2.
+
+Archive reads use strict UTF-8 with untranslated line endings. Rewrites retain
+each line's existing terminator, including mixed LF/CRLF, and use a fully written
+owned sibling temporary before replacing one archive. Pre-replacement write
+failures preserve the original; cleanup failures are visible. Orphan diagnostics
+retain full-document line numbers while ignoring authored historical numbers.
+
+Focused infrastructure proof (temporary fixture files; child commands mocked):
+
+```bash
+python -B docs/test_sync_baseline.py
+```
+
+This standalone regression suite exercises two archives, newline/BOM/final-newline
+variants, idempotence, check/write behavior, historical isolation, malformed
+preflight in both modes, ordinary-handler compatibility, and injected flush and
+replacement failures. It does not add a kernel test function, Pact claim, or
+new proof baseline. The synchronizer's existing call path reaches the preflight;
+the combined public-hygiene wrapper remains unsafe to run under BUILD-01's
+current limitation and was not run for this candidate.
+
+Scope: only these two mixed-ownership archives receive marker enforcement;
+other current-facing documents retain whole-file handlers. Markers declare
+editor-reviewed ownership, not authenticated authorship or protection from
+deliberate marker relocation. This is not a multi-file transaction, concurrent
+writer lock, arbitrary cleanup framework, or proof against every process crash.
+The existing historical traceability word order remains unchanged; do not
+normalize it as part of this pass.

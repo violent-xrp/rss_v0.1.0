@@ -3,7 +3,8 @@
 
 This script turns the repo's "one verdict" rule into a mechanical doc gate.
 It runs the canonical acceptance runner, optionally runs coverage and rebuilds
-the claim matrix, then updates only current-facing baseline lines in the docs.
+the claim matrix. Mixed-ownership archives require explicit baseline regions;
+other current-facing targets retain their existing whole-file rewrite handlers.
 
 Usage:
     python docs/sync_baseline.py
@@ -16,7 +17,7 @@ Exit codes:
     0  docs are synced and the acceptance runner is clean
     1  --check found stale docs
     2  acceptance runner reported failures, required coverage proof is unavailable,
-       or --require-clean blocked sync
+       --require-clean blocked sync, or archive ownership preflight failed
 
 Use the repo venv on Windows:
     .\\.venv\\Scripts\\python.exe docs\\sync_baseline.py
@@ -25,9 +26,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
+import tempfile
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -158,15 +161,92 @@ COVERAGE_LABELS = {
 # match a live baseline value. Orphans cannot be auto-fixed (unknown phrasing):
 # fix the doc, extend the rewrite patterns, or add an explicit allowlist entry.
 
-# Historical archives legitimately carry old numbers and are excluded.
-ORPHAN_SCAN_EXCLUDE = {
-    "CHANGELOG.md",
-    "docs/roadmap/ACCEPTANCE_HISTORY.md",
+# Mixed-ownership archives are rewritten and checked ONLY inside these explicit
+# regions. Counts are intentional: one current snapshot, two acceptance blocks.
+# Other current-facing documents retain their existing whole-file handlers.
+REGION_OWNED_DOCS = {
+    "CHANGELOG.md": 1,
+    "docs/roadmap/ACCEPTANCE_HISTORY.md": 2,
 }
+GENERATED_BASELINE_BEGIN = (
+    "<!-- BEGIN GENERATED: baseline · owner sync_baseline.py · do not edit by hand -->"
+)
+GENERATED_BASELINE_END = "<!-- END GENERATED -->"
+
+
+class BaselineRegionError(ValueError):
+    """A mixed-ownership archive does not declare a valid write boundary."""
+
+
+def baseline_regions(relative: str, text: str) -> list[tuple[int, int]]:
+    """Validate all delimiters, then return body spans without marker lines."""
+    regions: list[tuple[int, int]] = []
+    start = None
+    offset = 0
+    for line_number, line in enumerate(text.splitlines(keepends=True), 1):
+        marker = line.strip()
+        if offset == 0:
+            marker = marker.removeprefix("\ufeff")
+        if marker == GENERATED_BASELINE_BEGIN:
+            if start is not None:
+                raise BaselineRegionError(f"{relative}:{line_number}: nested baseline region")
+            start = offset + len(line)
+        elif marker == GENERATED_BASELINE_END:
+            if start is None:
+                raise BaselineRegionError(f"{relative}:{line_number}: unmatched region end")
+            if not text[start:offset].strip():
+                raise BaselineRegionError(f"{relative}:{line_number}: empty baseline region")
+            regions.append((start, offset))
+            start = None
+        elif re.search(r"<!--\s*(?:BEGIN|END)\s+GENERATED\b", line, re.IGNORECASE):
+            raise BaselineRegionError(f"{relative}:{line_number}: malformed generated marker")
+        offset += len(line)
+    if start is not None:
+        raise BaselineRegionError(f"{relative}: unclosed baseline region")
+    expected = REGION_OWNED_DOCS[relative]
+    if len(regions) != expected:
+        raise BaselineRegionError(
+            f"{relative}: expected {expected} baseline region(s), found {len(regions)}"
+        )
+    return regions
+
+
+def read_owned_archive(path: Path) -> str:
+    # Strict decoding and untranslated newlines prevent corruption of history
+    # that the rewriter does not own (including mixed endings and a UTF-8 BOM).
+    with path.open("r", encoding="utf-8", newline="") as stream:
+        return stream.read()
+
+
+def validate_owned_regions() -> None:
+    """Refuse bad archive boundaries before acceptance or writing generators."""
+    for relative in REGION_OWNED_DOCS:
+        try:
+            text = read_owned_archive(REPO_ROOT / relative)
+        except (OSError, UnicodeError) as exc:
+            raise BaselineRegionError(f"{relative}: cannot read owned archive: {exc}") from exc
+        baseline_regions(relative, text)
+
+
+def write_owned_archive(path: Path, text: str) -> None:
+    """Replace one archive only after its complete new bytes have been written."""
+    fd, name = tempfile.mkstemp(prefix=f".{path.name}.baseline-", dir=path.parent)
+    temporary = Path(name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as stream:
+            stream.write(text)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(temporary, path.stat().st_mode)
+        os.replace(temporary, path)
+    finally:
+        # This is our unique file, not a sweep of a shared temporary directory.
+        # Cleanup errors remain visible; no ignore_errors fallback is used.
+        temporary.unlink(missing_ok=True)
 
 # Explicit allowlist: (relative path, substring that must appear in the full
 # flagged line). Reserve for INTENTIONAL historical numbers in living docs;
-# archives (CHANGELOG, ACCEPTANCE_HISTORY) are already excluded wholesale.
+# authored archive text is excluded, while generated archive bodies are checked.
 ORPHAN_ALLOWED: tuple = (
     # ROADMAP CLOSED item recording the rc.1 acceptance snapshot — historical
     # record, not a current claim (first live catch of this guard, 2026-07-06).
@@ -519,6 +599,29 @@ DOC_HANDLERS = {
 
 def rewrite_text(path: Path, text: str, baseline: Baseline) -> str:
     relative = path.relative_to(REPO_ROOT).as_posix()
+    if relative in REGION_OWNED_DOCS:
+        # Validate the entire structure before assembling any replacement.
+        regions = baseline_regions(relative, text)
+        parts: list[str] = []
+        cursor = 0
+        for start, end in regions:
+            parts.append(text[cursor:start])
+            body = text[start:end]
+            lines = body.splitlines(keepends=True)
+            endings = [re.search(r"(\r\n|\r|\n)?$", line).group(0) for line in lines]
+            normalized = "".join(
+                line[:-len(eol)] + "\n" if eol else line
+                for line, eol in zip(lines, endings)
+            )
+            updated = rewrite_common(normalized, baseline).splitlines(keepends=True)
+            if len(updated) != len(lines):
+                raise BaselineRegionError(f"{relative}: baseline rewrite changed line structure")
+            parts.append("".join(
+                line.removesuffix("\n") + eol for line, eol in zip(updated, endings)
+            ))
+            cursor = end
+        parts.append(text[cursor:])
+        return "".join(parts)
     out = text
     for handler in DOC_HANDLERS.get(relative, DEFAULT_DOC_HANDLERS):
         out = handler(out, baseline)
@@ -527,25 +630,40 @@ def rewrite_text(path: Path, text: str, baseline: Baseline) -> str:
 
 def sync_one(relative: str, baseline: Baseline, check: bool) -> dict[str, object]:
     path = REPO_ROOT / relative
-    if not path.exists():
+    owned = relative in REGION_OWNED_DOCS
+    if not owned and not path.exists():
         return {"file": relative, "changed": False, "status": "missing"}
 
-    original = path.read_text(encoding="utf-8", errors="replace")
+    original = read_owned_archive(path) if owned else path.read_text(encoding="utf-8", errors="replace")
     rewritten = rewrite_text(path, original, baseline)
     changed = rewritten != original
 
     if changed and not check:
-        path.write_text(rewritten, encoding="utf-8")
+        if owned:
+            write_owned_archive(path, rewritten)
+        else:
+            path.write_text(rewritten, encoding="utf-8")
 
     # KL-18 orphan-number guard — scan the rewritten text so anything the
     # sync maintains is already current; leftovers are true orphans.
     orphans: list[str] = []
-    if relative not in ORPHAN_SCAN_EXCLUDE:
-        for line_no, snippet in find_orphan_numbers(rewritten, baseline):
-            if any(relative == allowed_file and allowed_sub in snippet
-                   for allowed_file, allowed_sub in ORPHAN_ALLOWED):
-                continue
-            orphans.append(f"{relative}:{line_no}: {snippet}")
+    scan_text = rewritten
+    if owned:
+        # Preserve every separator recognized by str.splitlines(), which the
+        # orphan checker also uses, including authored Unicode line separators.
+        not_line_break = r"[^\r\n\v\f\x1c-\x1e\x85\u2028\u2029]"
+        parts: list[str] = []
+        cursor = 0
+        for start, end in baseline_regions(relative, rewritten):
+            parts.extend((re.sub(not_line_break, "", rewritten[cursor:start]), rewritten[start:end]))
+            cursor = end
+        parts.append(re.sub(not_line_break, "", rewritten[cursor:]))
+        scan_text = "".join(parts)
+    for line_no, snippet in find_orphan_numbers(scan_text, baseline):
+        if any(relative == allowed_file and allowed_sub in snippet
+               for allowed_file, allowed_sub in ORPHAN_ALLOWED):
+            continue
+        orphans.append(f"{relative}:{line_no}: {snippet}")
 
     return {
         "file": relative,
@@ -567,6 +685,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         help="Abort before doc sync if the acceptance runner reports failures.",
     )
     args = parser.parse_args(argv)
+
+    try:
+        validate_owned_regions()
+    except (BaselineRegionError, OSError, UnicodeError) as exc:
+        print(f"sync_baseline: archive ownership preflight failed: {exc}", file=sys.stderr)
+        return 2
 
     print("=" * 60)
     print("RSS sync_baseline")

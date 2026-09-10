@@ -7,10 +7,12 @@ _Licensed under AGPLv3; see `LICENSE/LICENSE_INDEX.md`._
 Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N`) are candidate-build iterations only, and Pact section versions remain inside the Pact / Section 7 amendment ceremony. See `docs/VERSIONING.md`.
 
 ### Current verified snapshot
+<!-- BEGIN GENERATED: baseline · owner sync_baseline.py · do not edit by hand -->
 - **179 test functions / 2686 assertions / 0 failures** via `python tests/test_all.py`
 - **92.7% statement coverage** via `python run_coverage.py`
 - **179 claims / 179 tests / 121 Pact sections** in `docs/claim_matrix.md`
 - **26 source modules** in the `src/rss/` package tree (R1 restructure complete)
+<!-- END GENERATED -->
 
 ### Added / hardened
 - Added `docs/proposals/THREE_WINDOW_GOVERNANCE_MODEL.md` and `docs/PROJECT_CONTROL_SURFACE.md` to define the future before/during/after governance model, cross-OS proof posture, "An AI that waits" positioning boundary, and which public docs own which claims; planning/docs only, no current capability claim.

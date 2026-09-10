@@ -8,9 +8,11 @@ This file preserves the count history and verification receipts that used to liv
 
 ## Current Baseline
 
+<!-- BEGIN GENERATED: baseline · owner sync_baseline.py · do not edit by hand -->
 - **179 test functions / 2686 assertions / 0 failures**
 - **92.7% statement coverage**
 - **179 claims / 179 tests / 121 Pact sections**
+<!-- END GENERATED -->
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
 - Claim matrix: `python docs/build_claim_matrix.py`
@@ -288,10 +290,12 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 - `CHANGELOG.md`
 - `THREAT_MODEL.md`
 
+<!-- BEGIN GENERATED: baseline · owner sync_baseline.py · do not edit by hand -->
 Current synced public numbers:
 - **179 / 2686 / 0**
 - **92.7%** coverage
 - **179 claims / 179 tests / 121 Pact sections**
+<!-- END GENERATED -->
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.
 
@@ -334,3 +338,52 @@ Current synced public numbers:
   Landing verification is static only, including the selected Git-index content;
   no proof number is re-measured and no full-gate result is claimed. No push,
   promotion, or broker acceptance is authorized by this disposition.
+
+## 2026-09-10 BUILD-04 archive-history protection candidate
+
+- Scope: the synchronizer now validates explicit baseline ownership for the
+  changelog's current snapshot and acceptance history's two current blocks.
+  Rewriting and orphan checking are restricted to those bodies; all authored
+  archive text remains outside that ownership. Other current-facing handlers
+  are unchanged. This is an uncommitted, review-pending build-system candidate.
+- Failure proof: missing/invalid archive layouts refuse before mocked proof or
+  generation orchestration. Strict reads reject invalid UTF-8. Fixture writes
+  preserve Unicode/BOM and newline bytes; injected flush and replacement
+  failures leave original files intact and remove their owned temporary files.
+- Focused verification: `python -B docs/test_sync_baseline.py` passes two
+  standalone infrastructure tests with parameterized fixture matrices. These
+  are not new kernel/Pact claims or additions to canonical acceptance totals.
+  Static checks cover whitespace, citation resolution, reverse-map freshness,
+  links, and individual public name/callsign scans; no combined gate is claimed.
+- Preservation: removing only the six inserted marker lines recovers the exact
+  pre-pass archive bytes, before this new receipt. Existing historical receipts,
+  count values, and the adapter traceability word-order protection are retained.
+  The prior whole-file behavior was reproduced using a pure helper on synthetic
+  text, not by rewriting a live historical receipt.
+- No acceptance, coverage launcher, live baseline CLI, combined wrapper,
+  Project-Status generator, or writing baseline generator was run. No existing
+  kernel proof number was re-measured. The paused broker candidate's source,
+  tests, generated surfaces, and proof values are preserved and unreviewed.
+- Limits: marker placement remains an editorial responsibility. Per-file
+  replacement is not a multi-document transaction or a concurrent-writer lock;
+  unrelated current-facing documents retain whole-file rewriting. BUILD-01's
+  data-ownership/exit-status defect remains open. Independent review and human
+  disposition are required before any checkpoint; no push or promotion occurred.
+
+- Disposition (2026-09-10): two independent cross-family reviews passed BUILD-04
+  at the same candidate state; the human controller authorized a BUILD-04-only
+  checkpoint with no push. The pending-review language above is the original
+  implementation receipt, not the subsequent disposition. The optional
+  unknown-owner diagnostic refinement is deferred; reviewed behavior is unchanged.
+  The executed failure injections cover fsync and replacement, not every possible
+  write/flush failure or real crash point.
+  - The selected commit retains the prior kernel baseline and excludes broker
+    source, tests, generated output, new proof numbers, build receipt, and
+    broker-only links. The earlier adapter-receipt word-order adjustment remains
+    in the working candidate, not this checkpoint; the committed historical
+    wording stays intact and is now outside generated ownership.
+  - Checkpoint proof is the isolated infrastructure suite and static selected-tree
+    checks. No kernel acceptance, live baseline CLI, coverage launcher, combined
+    wrapper, or Project-Status generator is run; no kernel proof is re-measured.
+    BUILD-01 remains open. The next resume point is independent broker review,
+    not automatic implementation or acceptance of that paused candidate.
