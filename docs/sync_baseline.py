@@ -39,6 +39,10 @@ from typing import Optional
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
 
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+from run_coverage import RuntimeDataPresent, validate_runtime_paths
+
 CURRENT_DOCS = [
     "README.md",
     "ROADMAP.md",
@@ -362,11 +366,13 @@ def count_source_modules() -> int:
 
 
 def parse_coverage() -> tuple[Optional[float], dict[str, float]]:
-    coverage_file = REPO_ROOT / ".coverage"
-    had_coverage_file = coverage_file.exists()
     result = run_command([sys.executable, "run_coverage.py"])
-    if not had_coverage_file and coverage_file.exists():
-        coverage_file.unlink()
+    if result.returncode != 0:
+        print(
+            f"sync_baseline: coverage launcher failed with exit code {result.returncode}; "
+            "coverage proof unavailable", file=sys.stderr,
+        )
+        return None, {}
     output = f"{result.stdout}\n{result.stderr}"
     total_match = COVERAGE_TOTAL_RE.search(output)
     if not total_match:
@@ -690,6 +696,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         validate_owned_regions()
     except (BaselineRegionError, OSError, UnicodeError) as exc:
         print(f"sync_baseline: archive ownership preflight failed: {exc}", file=sys.stderr)
+        return 2
+
+    try:
+        validate_runtime_paths(REPO_ROOT)
+    except RuntimeDataPresent as exc:
+        print(f"sync_baseline: {exc}", file=sys.stderr)
         return 2
 
     print("=" * 60)

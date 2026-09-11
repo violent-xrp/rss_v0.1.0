@@ -4,11 +4,11 @@ _Licensed under AGPLv3; see `../LICENSE/LICENSE_INDEX.md`._
 
 This file preserves test-layout and runner details that used to live in `ROADMAP.md`.
 
-**Known tooling hazard:** `run_coverage.py` currently deletes repository-root
-`rss.db` and its sidecars, even though that is the default runtime data path.
-Coverage-based wrappers inherit this behavior. Do not assume these commands are
-non-mutating or run them around unpreserved runtime data. See BUILD-01 below;
-recording this warning does not fix the tool or authorize deletion.
+**Data ownership:** the reviewed BUILD-01 implementation refuses existing
+repository-root `rss.db` and sidecar entries before coverage or baseline child
+commands. It never removes them to run a proof. Preserve runtime data and use a
+data-free checkout. This is a bounded preflight, not a filesystem sandbox;
+direct acceptance and test-created temporary files still require care.
 
 ## Canonical Runner
 
@@ -97,6 +97,16 @@ Coverage:
 python run_coverage.py
 ```
 
+The launcher uses one unique owned system-temp directory for coverage data and
+configuration. The default report is printed, then that directory is removed;
+an existing repository `.coverage` is **not refreshed** and must not be read as
+the latest measurement. Existing `htmlcov/` files are also untouched.
+`python run_coverage.py --html` retains the successful run's owned data and HTML
+directory and prints both exact paths. Retained reports are explicit output,
+not automatically expired; keep or remove that exact directory deliberately.
+System Temp is not a durable archive. Inherited `COVERAGE_*` destinations/config
+are overridden so they cannot redirect these writes.
+
 Claim matrix:
 
 ```bash
@@ -126,7 +136,7 @@ python docs/sync_baseline.py --check
 python docs/sync_baseline.py --check --require-clean
 ```
 
-By default, `sync_baseline.py` requires `run_coverage.py` to emit a parseable `TOTAL` line. Use `--no-cov` only for an explicit local skip, not as a release-gate substitute.
+By default, `sync_baseline.py` requires `run_coverage.py` to succeed and emit a parseable `TOTAL` line. Use `--no-cov` only for an explicit local skip, not as a release-gate substitute; it does not bypass the runtime-data preflight or acceptance execution.
 
 Public contact/license-header hygiene:
 
@@ -202,17 +212,17 @@ The modular split was mechanical and conservative:
 
 ## Build-System Findings
 
-Recorded from the 2026-09-09 read-only hygiene review; these are unresolved
-findings, not accepted fixes. [ROADMAP's Current Build Thread](../ROADMAP.md#current-build-thread)
+Recorded from the 2026-09-09 read-only hygiene review; original findings remain
+below, with subsequent dispositions in their named sections. [ROADMAP's Current Build Thread](../ROADMAP.md#current-build-thread)
 owns scheduling and disposition; this section owns technical detail and closure proof.
 The BUILD-04 implementation below follows the subsequent archive-history finding;
 its focused proof is separate from kernel acceptance. Independent review passed
 and the human controller authorized its bounded checkpoint.
 
-- **BUILD-01 — data ownership and exit status:** `run_coverage.py` unconditionally
-  unlinks `.coverage`, `rss.db`, and SQLite sidecars before testing, while
+- **BUILD-01 — data ownership and exit status (original finding):** `run_coverage.py` previously unconditionally
+  unlinked `.coverage`, `rss.db`, and SQLite sidecars before testing, while
   `src/rss/core/config.py` names `rss.db` as the runtime default. A filename is
-  not fixture-ownership proof. It also ignores return codes from coverage report
+  not fixture-ownership proof. It also ignored return codes from coverage report
   and HTML generation. A non-writing mock intercepted the unlink targets and
   injected report exit code 23; the launcher returned zero. Closure must prove
   an existing runtime database is unchanged, only run-owned output is touched,
@@ -240,6 +250,37 @@ Helper-factory consolidation, repeated teardown, grouping, and stale test wordin
 from the former Future Cleanup list remain candidates under BUILD-02. Any future
 test-count change needs an explicit acceptance-history explanation. The original
 finding-only review changed no tests, runtime behavior, or measured proof numbers.
+
+### BUILD-01 — Coverage Ownership and Failure Propagation
+
+The reviewed implementation refuses any existing default database or sidecar path, including
+directories and dangling links, before dispatch. The baseline wrapper uses the
+same guard before acceptance, including check and no-coverage modes. No runtime
+data is opened, deleted, moved, or repaired to obtain a clean start.
+
+The coverage launcher retains repository CWD for current Genesis-path semantics,
+but writes coverage data/config/HTML only inside a unique owned directory. Each
+child return code is checked, later stages stop on failure, and a failed HTML
+stage cannot print a successful report path. Cleanup removes only that run's
+directory; a cleanup failure is visible and nonzero, retaining an earlier child
+failure code if there was one. Caught `OSError` launch/setup failures return 2;
+unexpected exception classes may exit nonzero with a traceback. Successful HTML
+output is deliberately retained; default text-only runs clean up their data.
+
+`parse_coverage()` refuses nonzero launcher status even with a plausible TOTAL
+line. It no longer removes a repository `.coverage` based on an existence guess.
+These are infrastructure changes, not kernel assertions or new Pact claims.
+Run their isolated fixture proof with `python -B docs/test_run_coverage.py`;
+it mocks child dispatch rather than running acceptance or touching live data.
+
+Limits: no lock against a writer arriving after preflight, no protection from
+arbitrary test code writing other paths, no global Temp cleanup, and no general
+BUILD-02 closure. Direct `tests/test_all.py` does not use this launcher preflight.
+Other baseline-child handling, including acceptance-result exit-status checks
+and claim-generator fallback, is not fixed by the coverage-specific correction.
+Independent bounded review passed and the human controller authorized a local
+BUILD-01 checkpoint. This does not accept KERNEL-01's full gates or authorize
+a push or promotion. HTML execution remains fixture-verified, not live-verified.
 
 ### BUILD-04 — Archive History and Generated Ownership
 
@@ -275,8 +316,9 @@ variants, idempotence, check/write behavior, historical isolation, malformed
 preflight in both modes, ordinary-handler compatibility, and injected flush and
 replacement failures. It does not add a kernel test function, Pact claim, or
 new proof baseline. The synchronizer's existing call path reaches the preflight;
-the combined public-hygiene wrapper remains unsafe to run under BUILD-01's
-current limitation and was not run for this candidate.
+the combined public-hygiene wrapper was not run for the BUILD-04 candidate
+because BUILD-01 was unresolved at that time. The later BUILD-01 candidate and
+its distinct review boundary are described above.
 
 Scope: only these two mixed-ownership archives receive marker enforcement;
 other current-facing documents retain whole-file handlers. Markers declare

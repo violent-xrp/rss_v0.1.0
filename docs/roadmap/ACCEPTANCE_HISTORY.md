@@ -459,3 +459,79 @@ Current synced public numbers:
 - BUILD-01 remains open. Fresh full-gate acceptance is required before promotion
   or release. No push, tag, version change, main promotion, Pact edit, or next
   implementation slice is authorized by this local checkpoint.
+
+## 2026-09-10 BUILD-01 coverage-ownership candidate
+
+- Scope: the coverage launcher refuses existing default runtime database and
+  sidecar entries before child dispatch, without opening or removing them.
+  The baseline wrapper shares that preflight before acceptance, including
+  check/no-coverage modes. Coverage data and configuration use one unique owned
+  temporary directory; every child status is checked. A failed coverage child
+  cannot supply an accepted TOTAL to the baseline parser.
+- Output contract changes deliberately: default text-only coverage runs remove
+  their owned data. Existing repository-root `.coverage` and `htmlcov` are left
+  unchanged and must not be read as fresh evidence from the new launcher.
+  Successful `--html` retains its owned report/data and prints the exact paths;
+  that temporary location is not a durable archive. Setup, dispatch, missing
+  output, and cleanup failures are visible and nonzero; cleanup preserves a
+  preceding child failure status. No broad temporary-file sweep is performed.
+- Isolated verification: `python -B docs/test_run_coverage.py` passes 11 standalone
+  infrastructure tests; `python -B docs/test_sync_baseline.py` passes the existing
+  two archive tests. Child commands are intercepted in these fixtures. Coverage
+  includes preservation of an open SQLite sentinel, files/directories/dangling
+  links, inherited coverage destinations, HTML retention, child and setup errors,
+  cleanup failure, and rejection of plausible output from a failed child.
+- Live text-only coverage reproduction: 180 canonical functions, 2908 assertions
+  passed, zero failures; zero unexpected urllib attempts. Total statement coverage
+  is 92.7% (3883 statements, 282 missed), broker 100.0%, runtime 89.0%, and adapter
+  97.2%. These match the existing published baseline; no kernel assertion, claim,
+  or generated proof count was changed. Environment: Python 3.13.13, SQLite
+  3.50.4, coverage 7.16.0, using the cached offline dependency runner.
+- The live run preserved the existing root `.coverage` SHA-256 exactly:
+  `b07b94e751665d9398604174b54a195b540cb513511232be6c81d59d365b9226`.
+  Default runtime paths were absent before and after. All live fixtures were
+  routed under one uniquely owned system-temp parent; zero entries remained
+  after the launcher, and that empty parent was removed. This is a bounded
+  run observation, not proof of general cleanup reliability. Actual HTML child
+  execution was not run; that path is covered by intercepted-child fixtures.
+- Static verification covers whitespace, Pact-section resolution, reverse-map
+  freshness, local links, and individual public name/callsign scans. No live
+  baseline CLI, combined hygiene wrapper, Project-Status generator, writing
+  generator, or full-gate acceptance was run. Earlier archive bytes and receipt
+  values are preserved; this is an appended build receipt, not a baseline sync.
+- Limits: preflight is not a concurrent-writer lock or test-code sandbox; direct
+  acceptance bypasses it. General fixture cleanup and other baseline-child
+  failure handling remain separate work. KERNEL-01 remains locally checkpointed,
+  not full-gate accepted. Independent review and human disposition are pending;
+  no checkpoint, push, promotion, tag, version change, or Pact edit occurred.
+  The requested whole-roadmap reconciliation is recorded as deferred DOCS-02;
+  no historical phase lists or release facts were reorganized in this slice.
+
+## 2026-09-10 BUILD-01 reviewed local checkpoint
+
+- Disposition: two independent cross-family reviews passed the bounded
+  launcher/caller implementation and infrastructure proofs. The human
+  controller authorized its local checkpoint, not a push or full-gate
+  acceptance. Earlier pending-review language is the original build receipt.
+- Both reviews reproduced the 11 launcher tests and two archive tests, static
+  citation/map checks, and preserved historical-prefix evidence. Live coverage
+  review reproduced 92.7% (3883 statements, 282 missed). One reviewer captured
+  the complete 180-function/2908-assertion result; the other captured only the
+  report tail and explicitly did not attest the missing counts. Review evidence
+  is bounded by what each reviewer actually captured.
+- Existing root coverage data remained unchanged. One reviewer reported a
+  leftover test fixture; this does not reopen launcher-owned cleanup or close
+  BUILD-02. Actual HTML execution remains unverified beyond intercepted-child
+  fixtures. No concurrency or arbitrary-write protection is newly claimed.
+- The nonblocking exception note is retained: handled `OSError` setup/launch
+  failures return 2; other exception classes can terminate nonzero with a
+  traceback. Landing clarifies that wording but adds no exception handler or
+  executable change. Reviewed launcher, parser, and proof bytes are preserved.
+- Checkpoint validation is static, not a new acceptance/coverage run. No live
+  baseline CLI, combined wrapper, Project-Status generator, or writing generator
+  ran during landing. No baseline values, historical receipt bodies, source,
+  kernel tests, Pact text, version, or release state changed. No push occurred.
+- DOCS-02 is the authorized next inventory/design task, before another kernel
+  or build-system implementation. It will propose whole-roadmap reconciliation;
+  the broad rewrite remains subject to separate approval. KERNEL-01 remains
+  locally checkpointed, not full-gate accepted.

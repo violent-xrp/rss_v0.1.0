@@ -82,7 +82,9 @@ adapter proof are reviewed and checkpointed in Roots; main remains at Phase 3A.
 **Current activity:** DOCS-01, BUILD-04, and KERNEL-01 are reviewed and locally
 checkpointed. KERNEL-01 passed independent bounded code/focused-proof review,
 including the ordered hot/cold TRACE parity closure; it is **not full-gate
-accepted**. BUILD-01 is the next proposed slice, not newly authorized work.
+accepted**. BUILD-01 has passed independent bounded review and is locally
+checkpointed. DOCS-02 is next: inventory and design only, before another build
+or kernel implementation; the roadmap rewrite is not yet authorized.
 Fresh full-gate acceptance remains required before promotion or release; this
 checkpoint does not authorize a push.
 
@@ -95,7 +97,8 @@ technical detail stays in its named owner rather than another priority list.
 | Build system | DOCS-01 | Queue and document ownership | closed | checkpointed | Documentation-only checkpoint authorized after independent review; no push or broker acceptance. | [Document ownership](docs/PROJECT_CONTROL_SURFACE.md), [static receipt](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-09-docs-01-documentation-candidate) |
 | Build system | BUILD-04 | Authored-history protection during baseline sync | closed | checkpointed | Human-authorized checkpoint after independent review; no push or broker acceptance. | [Testing findings](docs/TESTING.md#build-system-findings), [review and disposition receipt](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-10-build-04-archive-history-protection-candidate) |
 | Kernel | KERNEL-01 | Broker claim-time revalidation | closed | checkpointed | Scoped implementation independently reviewed and locally checkpointed, not full-gate accepted. Complete safe full-gate validation before promotion or release; no push. | [Broker boundary](docs/ACTION_PLANE.md), [checkpoint receipt](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-10-kernel-01-reviewed-local-checkpoint) |
-| Build system | BUILD-01 | Coverage data ownership and truthful exit status | paused | unreviewed | Scope the fix under the precedence condition below; preserve runtime data. | [Testing findings](docs/TESTING.md#build-system-findings) |
+| Build system | BUILD-01 | Coverage data ownership and truthful exit status | closed | checkpointed | Human-authorized local checkpoint after independent bounded review; not full-gate acceptance or permission to push. | [Testing findings](docs/TESTING.md#build-01--coverage-ownership-and-failure-propagation), [review and disposition receipt](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-10-build-01-reviewed-local-checkpoint) |
+| Build system | DOCS-02 | Whole-roadmap reconciliation | active | unreviewed | Inventory all phase systems and propose one concise ordered presentation before another implementation slice; preserve history and release facts. Design only, no broad rewrite yet. | [Document ownership](docs/PROJECT_CONTROL_SURFACE.md) |
 | Build system | BUILD-02 | Owned temporary-file lifecycle | paused | unreviewed | Scope cleanup/failure-path proof; legacy removal needs separate preservation approval. | [Testing findings](docs/TESTING.md#build-system-findings) |
 | Kernel | KERNEL-02 | Broker claim/result lifecycle | paused | unreviewed | Scope expired-lease/result-import and state-before-receipt fixes separately. | [Known lifecycle gaps](docs/ACTION_PLANE.md#known-claim-lifecycle-gaps) |
 | Build system | BUILD-03 | Windows entrypoint and scan boundaries | paused | unreviewed | Preserve Python automation; scope shell, encoding, external-launcher and scratch-scan work. | [Testing findings](docs/TESTING.md#build-system-findings) |
@@ -112,16 +115,14 @@ valid. Review of a finding, design, or earlier closure does not mark a new
 implementation `reviewed`. A scoped implementation may be closed/checkpointed
 while full-gate acceptance remains explicitly pending, as for KERNEL-01.
 
-Row order is the selected work order, subject to the safety condition below.
-BUILD-04 and the bounded KERNEL-01 review/checkpoint are complete. BUILD-01 is
-the next proposed slice; completing a checkpoint does not open another
-implementation or authorize unsafe gates automatically.
+Row order is the selected work order. The bounded BUILD-01 checkpoint follows
+BUILD-04 and KERNEL-01; DOCS-02 inventory/design now takes priority over another
+implementation slice. New safety blockers must be reported before proceeding.
 
-BUILD-01 takes precedence as soon as an `rss.db` exists at repository root with
-unpreserved data, or any workflow requires coverage-backed gates around real
-data. Deferred only while neither holds. Check the filesystem, not only Git
-status: database files are ignored. A priority change does not authorize
-execution of an unsafe command or the implementation itself.
+Runtime-data safety remains binding: the launcher and baseline preflight refuse
+existing default database/sidecar entries. Check the filesystem, not only Git;
+database files are ignored. No priority change authorizes deletion or unsafe
+commands, and no checkpoint substitutes for full-gate acceptance.
 
 Queue upkeep: record a verified finding once with its Task ID, Workstream,
 State, Evidence, next action, and detail link. Keep one implementation slice
