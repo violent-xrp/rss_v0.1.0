@@ -61,7 +61,7 @@ successful-claim/receipt ordering defect; neither is closed by this mitigation.
 - side effects are only governable when they pass through the runtime boundary; per-action/tool-call enforcement remains future hardening
 - future importers, browsers, email connectors, RAG indexes, and tool adapters could reintroduce indirect prompt injection risk if retrieved text is passed as instruction, if hidden/metadata text is not labeled as untrusted, or if model output can trigger side effects without a fresh OATH/CYCLE gate
 - live model fluency is not evidence; governed data claims still need scoped PAV context and TRACE-backed runtime flow
-- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 180/2908 baseline
+- public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 181/3013 baseline
 
 ## Retained Boundaries from ROADMAP
 

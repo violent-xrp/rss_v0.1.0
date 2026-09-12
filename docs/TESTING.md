@@ -21,7 +21,7 @@ python tests/test_all.py
 Current expected final line:
 
 ```text
-RSS v0.1.0 - 180 test functions, 2908 assertions passed, 0 failed
+RSS v0.1.0 - 181 test functions, 3013 assertions passed, 0 failed
 ```
 
 This custom runner is the local source of truth for the current Windows environment.
@@ -72,7 +72,29 @@ python -c "import sys; sys.path.insert(0, 'tests'); from test_support import run
 ```
 
 The proof does not cover atomic concurrent mutation or claim-success persistence
-coupling. The separate lifecycle defects remain named in `ACTION_PLANE.md`.
+coupling. The separate lifecycle proof below covers the subsequent bounded fix;
+`ACTION_PLANE.md` owns the remaining limits.
+
+### Broker claim/result lifecycle proof
+
+The registered `test_action_plane_claim_lifecycle` distinguishes observed expiry
+from a successful claim and exercises claim-receipt failure ordering. It uses
+controlled time, real disposable SQLite stores, and targeted persistence faults:
+before-write failure, confirmed commit-then-error, and unconfirmable outcomes.
+Claims remain unpublished during receipt persistence. Known outcomes compare
+ordered hot/durable TRACE hashes; unknown outcomes instead assert refusal and
+the existing audit latch/recovery fence without pretending both views agree.
+Fixtures own one temporary directory each and close runtimes in `finally`.
+
+```bash
+python -B -c "import sys; sys.path.insert(0, 'tests'); from test_support import run_tests; from test_action_plane import test_action_plane_claim_lifecycle; sys.exit(run_tests('Broker claim lifecycle', [test_action_plane_claim_lifecycle], forbid_http=True))"
+```
+
+The proof also checks expiry-boundary/retry behavior, refused result imports,
+single-use successful imports after lease expiry, no extra lease/CYCLE charge,
+and the absence of restart-restored broker authority. No model service or real
+side effect is used. This is not concurrent/reentrant serialization, crash
+atomicity, durable leases, or a result-storage transaction.
 
 ## Optional Checks
 

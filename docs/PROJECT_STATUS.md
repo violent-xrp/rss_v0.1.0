@@ -10,9 +10,9 @@ canonical proof and alignment surfaces rather than replacing them.
 | Field | Value |
 | --- | --- |
 | Release posture | v0.1.0 alpha, single-process governance kernel |
-| Acceptance runner | 180 / 2908 / 0 |
+| Acceptance runner | 181 / 3013 / 0 |
 | Statement coverage | 92.7% |
-| Claim traceability | 180 claims / 180 tests / 124 Pact sections |
+| Claim traceability | 181 claims / 181 tests / 125 Pact sections |
 | Tracked source modules | 26 |
 
 ## Deterministic Drift Light

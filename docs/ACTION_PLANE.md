@@ -12,8 +12,9 @@ RSS now includes a structured action proposal and in-process side-effect broker
 decision surface in `rss.action`. It can review a proposed side effect, emit
 TRACE receipts, issue a short-lived single-use authorization receipt, re-check
 current governance at claim time, support revocation, and import result text as
-untrusted data-only evidence. Result-import eligibility still has the lifecycle
-gaps named below; an internal claimed flag is not yet proof of a durable grant.
+untrusted data-only evidence. Observed expiry is distinct from successful claim;
+claimed state is published only after the durable claim log returns. These are
+sequential in-process guarantees, not a transaction across the whole lifecycle.
 
 RSS does not yet include a universal action plane, connector sandbox,
 per-tool-call enforcement loop, external execution wrapper, durable
@@ -65,7 +66,7 @@ Built today:
 3. The broker re-enters local governance gates: Safe-Stop, payload hash, TTL, tool policy, RUNE, OATH, and CYCLE.
 4. A short-lived in-process receipt is issued only after the gates pass.
 5. A caller must claim the receipt before acting. After lease replay/revocation/expiry checks, the broker rechecks Safe-Stop, current payload hash/shape, proposal TTL, tool registration/class/risk, RUNE payload/target restrictions, and detailed OATH consent/source. CYCLE is charged at review only.
-6. New governance-check refusals leave the lease unclaimed and reject result import. A retry reuses that lease and must pass all checks within both TTLs. Result import otherwise uses an internal claimed flag, subject to the known lifecycle gaps below, and treats content as untrusted data-only evidence.
+6. Governance-check refusals leave the lease unclaimed and reject result import. A retry reuses that lease and must pass all checks within both TTLs. Observed authorization expiry is terminal, never a successful claim. A successful claim requires the durable claim log to return before setting the claimed flag; result import uses that flag and treats content as untrusted data-only evidence.
 7. TRACE records proposal, rejection, authorization, claim refusal, claim, revocation, and result import.
 
 Future work:
@@ -106,7 +107,7 @@ RSS does not claim:
 - cryptographic T-0 identity
 - external audit anchoring for action receipts
 - atomic validation against concurrent policy/payload mutation or changes after claim
-- failure-atomic claim-state/receipt coupling or complete result-import eligibility
+- transactional coupling of lease state, audit receipts, result storage and external execution
 
 ### Known claim-lifecycle gaps
 
@@ -116,16 +117,36 @@ caller-owned payload data; a wrapper must not infer protection against mutation
 after a successful claim. Tool-policy mutation is exercised through a private
 test seam; no public registry-management API is added.
 
-Two pre-existing lifecycle defects remain separate from this correction:
+The KERNEL-02 candidate corrects two defects left open by claim-time revalidation:
 
-- Authorization-expiry refusal sets `claimed=True`. Result import currently
-  tests that flag, so expiry can be mistaken for successful claim eligibility.
-- Successful claim sets its in-memory state before persisting `ACTION_CLAIMED`.
-  A receipt-write failure can leave claimed state without a durable grant receipt.
+- Expiry used to set `claimed=True`, incorrectly allowing result import. It now
+  latches a separate `expired` flag before recording `ACTION_CLAIM_REFUSED`.
+  Failed refusal persistence still raises and leaves expiry latched, never
+  claimed. Repeated expired attempts return `REJECTED_AUTHORIZATION_EXPIRED`,
+  not the old subsequent `REJECTED_REPLAY`; moving the clock backward cannot
+  revive an observed-expired lease within this broker instance. The existing
+  strict `now > expires_at` comparison still permits equality.
+- Successful claim used to set its state before `ACTION_CLAIMED` persisted. The
+  durable log now returns first, then the broker installs `claimed/claimed_at`.
+  A confirmed no-write failure leaves no successful claim or result eligibility;
+  a repaired, still-live retry must revalidate governance and neither remint nor
+  charge CYCLE again. Runtime TRACE reconciliation treats a confirmed
+  commit-then-error as success. An unconfirmable outcome raises, leaves the
+  broker unclaimed and invokes the existing audit latch/recovery fence; a cold
+  claim receipt may exist, so immediate hot/cold parity is not claimed there.
 
-The new governance-check refusals do neither: they remain unclaimed even when
-their refusal receipt cannot persist. Tests prove those paths and hot/cold TRACE
-validity; they do not close the two lifecycle defects or prove external execution.
+A successfully claimed lease may still import one result after its TTL passes:
+completion evidence is not another execution grant. Unknown, never-claimed,
+revoked-before-claim and observed-expired leases cannot import results.
+
+Remaining boundaries are unchanged: no lock against concurrent/reentrant broker
+calls or policy mutation, no crash-atomic receipt/state installation, and no
+restart-persistent leases. A crash after the receipt but before state publication
+can leave a receipt without a live lease. Issuance and revocation retain separate
+state/receipt ordering. Result import still marks `result_recorded` before Hub
+storage and its receipts; a failure can consume the import attempt or leave
+partial imported evidence. This slice does not repair that transaction or prove
+external execution. Do not infer whole-lifecycle atomicity from these two fixes.
 
 ## Relationship To ROADMAP
 

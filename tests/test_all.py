@@ -214,6 +214,7 @@ from test_action_plane import (
     test_action_plane_result_import_and_replay,
     test_action_plane_capability_lease,
     test_action_plane_claim_revalidation,
+    test_action_plane_claim_lifecycle,
     test_action_plane_event_codes_registered,
 )
 
@@ -408,6 +409,7 @@ TESTS = [
     test_action_plane_result_import_and_replay,
     test_action_plane_capability_lease,
     test_action_plane_claim_revalidation,
+    test_action_plane_claim_lifecycle,
     test_action_plane_event_codes_registered,
     test_seal_ceremony_additional_proof,
     test_s7_amendment_persistence_roundtrip,

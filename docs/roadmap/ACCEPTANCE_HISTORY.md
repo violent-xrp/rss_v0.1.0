@@ -9,9 +9,9 @@ This file preserves the count history and verification receipts that used to liv
 ## Current Baseline
 
 <!-- BEGIN GENERATED: baseline · owner sync_baseline.py · do not edit by hand -->
-- **180 test functions / 2908 assertions / 0 failures**
+- **181 test functions / 3013 assertions / 0 failures**
 - **92.7% statement coverage**
-- **180 claims / 180 tests / 124 Pact sections**
+- **181 claims / 181 tests / 125 Pact sections**
 <!-- END GENERATED -->
 - Canonical runner: `python tests/test_all.py`
 - Coverage runner: `python run_coverage.py`
@@ -335,9 +335,9 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 
 <!-- BEGIN GENERATED: baseline · owner sync_baseline.py · do not edit by hand -->
 Current synced public numbers:
-- **180 / 2908 / 0**
+- **181 / 3013 / 0**
 - **92.7%** coverage
-- **180 claims / 180 tests / 124 Pact sections**
+- **181 claims / 181 tests / 125 Pact sections**
 <!-- END GENERATED -->
 
 `ROADMAP.md` stays current first; propagate to downstream docs after each meaningful pass.
@@ -609,3 +609,102 @@ integration into main, a push, or a tagged release.
   full-gate/release distinction retained in Release Boundary. KERNEL-02 is the
   resume point, still paused until separately opened. BUILD-02/03 and DOCS-03
   remain paused; this disposition does not start another documentation slice.
+
+## 2026-09-12 KERNEL-02 Claim-Lifecycle Candidate
+
+This uncommitted candidate at base `c8d9cb7` addresses the two broker defects
+left open by KERNEL-01. Independent implementation review and human disposition
+remain pending. Builder proof is not a checkpoint, the accumulated Main-bound
+acceptance pass, integration into main, a push, or a tagged release.
+
+- Both original defects were reproduced before editing against disposable
+  SQLite fixtures: an expired-never-claimed lease still imported a result, and
+  a failed claim-receipt write left `claimed=True` with no durable claim event.
+- Observed lease expiry now latches separately from successful claim. Failed
+  expiry-refusal persistence cannot create result eligibility or allow clock
+  rewind to revive the lease. Equality at the expiry boundary remains valid;
+  repeated expired attempts now report expired rather than replay.
+- `ACTION_CLAIMED` must return through Runtime's durable log before the broker
+  publishes `claimed/claimed_at`. Confirmed no-write failure leaves the lease
+  unclaimed; a valid retry rechecks governance without reminting or recharging.
+  Confirmed commit-then-error remains success under TRACE reconciliation.
+  Unknown commit outcome remains unclaimed and invokes the existing audit
+  latch/recovery fence. A cold receipt may exist in that case; immediate
+  hot/cold parity is not claimed for an unknown outcome.
+- The registered lifecycle proof covers expiry minus/at/plus one microsecond,
+  repeated and clock-rewound expiry, expiry-refusal failure, blocked imports,
+  pre-write failure, confirmed post-commit error, unknown outcomes both with
+  and without a durable claim row, retry, late successful result import, and
+  nonpersistent leases after restart. Ordered hot/cold parity is asserted only
+  for known outcomes. The existing revalidation proof is unchanged.
+
+Builder reproduction, using Python 3.13.13 / SQLite 3.50.4 / coverage 7.13.5:
+
+| Proof surface | Before | Candidate |
+| --- | --- | --- |
+| Registered lifecycle proof | absent | 1 function / 105 assertions / 0 failures |
+| Existing revalidation proof | 222 assertions / 0 failures | unchanged, reproduced |
+| Canonical suite | 180 functions / 2908 assertions / 0 failures | 181 functions / 3013 assertions / 0 failures |
+| Statement coverage | 92.7%; 3883 statements / 282 missed | 92.7%; 3885 statements / 282 missed |
+| Broker / runtime / adapter coverage | 100.0% / 89.0% / 97.2% | unchanged |
+| Claim traceability | 124 sections / 180 claims / 180 tests | 125 sections / 181 claims / 181 tests |
+
+The new claim cites Pact sections 0.8.3, 3.2.3 and 6.4.5; the last adds one
+previously uncited real heading. Existing CLAIM tags, assertions and Pact text
+are unchanged. No count fell. The interpreter's installed coverage version
+differs from the prior review's 7.16.0; percentages and missed-statement total
+match that prior baseline, not a claimed cross-environment stability proof.
+
+Direct acceptance and the coverage launcher both returned zero and reported
+zero unexpected urllib transport attempts. Matrix generation and baseline sync
+returned zero. Generated current-baseline regions were refreshed; authored
+archive text outside them remained byte-identical before this append. The
+pre-existing root `.coverage` was not refreshed or removed. Owned external
+temporary roots were empty after those proof runs; no global Temp cleanup ran.
+
+Remaining limits are explicit in [Action Plane](../ACTION_PLANE.md#known-claim-lifecycle-gaps):
+no concurrent/reentrant-claim lock, policy snapshot through execution,
+crash-atomic receipt/state installation, restart-persistent leases, issuance or
+revocation transaction, result-storage transaction, or external-execution proof.
+Result import still marks its attempt before storage and can fail partially;
+this candidate does not claim to repair that separate transaction.
+
+The pre-existing queue-priority edit is retained. KERNEL-02 awaits review;
+DOCS-03 remains next after disposition, followed by the already scheduled
+promotion and lane-coordination work. No other task or tree was opened.
+
+## 2026-09-12 KERNEL-02 Reviewed Local Checkpoint
+
+The human controller authorized a local checkpoint after two cross-family
+implementation reviews returned PASS for the eighteen-file candidate at base
+`c8d9cb7`. All eighteen live file hashes matched the reviewed set before landing.
+The reviewed broker, proof, supporting scope and generated baselines are retained;
+landing changes only ROADMAP disposition and appends this receipt.
+
+- Independent reproduction confirmed the lifecycle proof at 105 assertions,
+  existing revalidation at 222, canonical proof at 181 functions / 3013 assertions
+  / zero failures, and traceability at 125 sections / 181 claims / 181 tests.
+  Coverage was 92.7% across 3885 statements / 282 missed; broker 100.0%, runtime
+  89.0%, adapter 97.2%. The combined hygiene gate and static checks passed.
+- One review matched the builder's Python 3.13.13 / SQLite 3.50.4 / coverage
+  7.13.5 environment exactly. The other reported Python 3.14.0rc1 without an
+  exact executable record; that report is not treated as confirmed
+  cross-interpreter evidence. The builder's historical pre-edit reproduction
+  remains separately reported, not independently established by these reviews.
+- A raised claim-receipt outcome leaves successful state unpublished; no rollback
+  of a previously granted flag is claimed. Known and unknown durable outcomes
+  retain the distinctions and limits in the candidate receipt.
+- Non-blocking observations are deferred, not silently implemented: write-ahead
+  logging widens the concurrent-claim window; single-process does not imply
+  single-threaded. Broker serialization belongs with the existing action-plane
+  lifecycle limits, not KERNEL-03's atomic Safe-Stop-entry task. No new task ID
+  or priority is assigned. The intent-TTL citation is analogical to lease expiry;
+  a two-lease isolation control and clearer observed-expiry wording remain optional.
+- The complete reviewed acceptance-history prefix is preserved before this
+  append. No reviewed source, test, CLAIM tag, generated number or old receipt
+  changes during landing. Checkpoint verification is static; the reproduced
+  implementation proof above is from the builder and independent reviews.
+- KERNEL-02 leaves the queue as closed/checkpointed. DOCS-03 becomes the resume
+  point under separate implementation authority already given by the human.
+  This checkpoint is not accumulated Main-bound acceptance, main integration,
+  a push, a tag or a release, and does not discharge BUILD-05's obligations.

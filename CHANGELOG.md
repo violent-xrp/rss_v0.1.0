@@ -8,13 +8,14 @@ Changelog headers use project/release semver. Release-candidate suffixes (`-rc.N
 
 ### Current verified snapshot
 <!-- BEGIN GENERATED: baseline · owner sync_baseline.py · do not edit by hand -->
-- **180 test functions / 2908 assertions / 0 failures** via `python tests/test_all.py`
+- **181 test functions / 3013 assertions / 0 failures** via `python tests/test_all.py`
 - **92.7% statement coverage** via `python run_coverage.py`
-- **180 claims / 180 tests / 124 Pact sections** in `docs/claim_matrix.md`
+- **181 claims / 181 tests / 125 Pact sections** in `docs/claim_matrix.md`
 - **26 source modules** in the `src/rss/` package tree (R1 restructure complete)
 <!-- END GENERATED -->
 
 ### Added / hardened
+- Subsequent KERNEL-02 candidate: observed authorization expiry is terminal but never a successful claim; claimed state is installed only after the durable claim log returns. This addresses the two broker defects left open by the earlier revalidation entry below. Confirmed commit-then-error and unknown-outcome refusal retain Runtime's TRACE semantics. Whole-lifecycle transactions, concurrency, restart leases and result-storage failure handling remain unclaimed; see `docs/ACTION_PLANE.md`.
 - Broker claim-time revalidation now shares review's payload hash/shape, proposal TTL, Safe-Stop, current tool policy, RUNE, and OATH checks before granting an existing lease. New governance refusals remain unclaimed, including refusal-receipt persistence failures; retries do not mint another lease or charge CYCLE again. This does not close concurrent/post-claim mutation, the pre-existing expired-lease/result-import flag defect, or successful-claim state/receipt coupling; `docs/ACTION_PLANE.md` records those limits.
 - Added `docs/proposals/THREE_WINDOW_GOVERNANCE_MODEL.md` and `docs/PROJECT_CONTROL_SURFACE.md` to define the future before/during/after governance model, cross-OS proof posture, "An AI that waits" positioning boundary, and which public docs own which claims; planning/docs only, no current capability claim.
 - Section 0 integrity verification and persistent Safe-Stop flow

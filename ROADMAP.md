@@ -11,23 +11,27 @@ not inferred from an old phase label or a local tag.
 
 ### Current Build Thread
 
-DOCS-02 is locally checkpointed after independent static review and human
-disposition. KERNEL-02 is the resume point; no new implementation slice is
-active or authorized by this checkpoint. No row grants cleanup or release authority.
-The proposed kernel order is KERNEL-02 through KERNEL-06 below; the human
-controller sets priority. BUILD-02, BUILD-03, and DOCS-03 remain paused and do
-not block kernel work. Report a newly discovered safety blocker before acting.
+KERNEL-02 is locally checkpointed after independent review and human disposition.
+Table order records the human-approved sequence, starting with DOCS-03 and then
+the coordination tasks below. Queue rows schedule work only; no implementation
+or Git operation is authorized by a queue row.
+Each slice needs bounded proof, cross-family review relayed through the human
+controller, and disposition before advancing. Remaining kernel work is retained
+after that sequence; BUILD-02/03 stay deferred. Report new safety blockers first.
 
 | Workstream | Task ID | Work | State | Evidence | Next action | Detail owner |
 | --- | --- | --- | --- | --- | --- | --- |
-| Kernel | KERNEL-02 | Broker claim/result lifecycle | paused | unreviewed | Resume with an approved slice for expired-lease/result-import eligibility and claim-state/receipt ordering. | [Known lifecycle gaps](docs/ACTION_PLANE.md#known-claim-lifecycle-gaps) |
+| Build system | DOCS-03 | Remaining documentation-index routing | paused | unreviewed | Reconcile the missing index entries after the KERNEL-02 checkpoint; no further roadmap redesign. | [Index follow-up](docs/PROJECT_CONTROL_SURFACE.md#deferred-index-reconciliation) |
+| Build system | BUILD-05 | Roots promotion readiness | paused | unreviewed | After DOCS-03, check Main ancestry and reconcile Main-only commits into Roots with approval if needed; reproduce complete applicable gates at the resulting checkpoint and obtain cross-family review of the Main-bound diff. | [Promotion loop](docs/BUILD_DISCIPLINE.md#promotion-and-reconciliation-loop), [owed proof](#release-boundary) |
+| Build system | BUILD-06 | Main promotion and Roots reconciliation | paused | unreviewed | After BUILD-05 acceptance and exact Git approval, merge into Main, gate the result and push; reconcile Main back into Roots, gate and push Roots. No tag. | [Promotion loop](docs/BUILD_DISCIPLINE.md#promotion-and-reconciliation-loop) |
+| Build system | BUILD-07 | Preservation-first Lab baseline refresh | paused | unreviewed | After BUILD-06, verify recoverable preservation of unique Lab history, dirty/untracked work and needed ignored context before any replacement; review dispositions, then refresh shared baseline/instructions with approval. Keep experiments and Lab rules distinct; no blind reset or wholesale Lab promotion. | [Lane boundaries](docs/BUILD_DISCIPLINE.md#three-trees-one-direction-of-trust) |
+| Build system | BUILD-08 | Separate Taproot review handoff | paused | unreviewed | After BUILD-07, route pending method changes into a separate Taproot review/disposition. This row tracks handoff only; candidate detail and acceptance stay in Taproot, without inheriting the kernel roadmap. | [Method ownership](docs/PROJECT_CONTROL_SURFACE.md#supporting-evidence-and-session-state) |
 | Kernel | KERNEL-03 | Atomic Safe-Stop entry | paused | unreviewed | Specify halt/receipt failure outcomes and restart proof before implementation. | [Entry finding](docs/KERNEL_FINDINGS.md#atomic-safe-stop-entry) |
 | Kernel | KERNEL-04 | OATH duration enforcement and coercion semantics | paused | unreviewed | Decide expiry semantics and restoration obligations; keep coercion-warning semantics distinct. | [Consent finding](docs/KERNEL_FINDINGS.md#oath-consent-duration-and-coercion-semantics) |
 | Kernel | KERNEL-05 | Seat load-bearing audit | paused | unreviewed | Map each seat's unique invariant to active callers and behavioral proof; decide unused-route disposition. | [Seat audit](docs/KERNEL_FINDINGS.md#seat-load-bearing-audit) |
 | Kernel | KERNEL-06 | Identity and propagation cluster | paused | unreviewed | Scope caller authentication, actor/request binding, and wrapper/worker propagation separately; recovery design precedes keys. | [Ingress](docs/KERNEL_FINDINGS.md#caller-identity-and-ingress-boundary), [worker context](docs/KERNEL_FINDINGS.md#thread-and-worker-context-propagation), [recovery](docs/KERNEL_FINDINGS.md#t-0-recovery-and-lock-out-before-keys) |
 | Build system | BUILD-02 | Owned temporary-file lifecycle | paused | unreviewed | Scope cleanup/failure-path proof; legacy removal requires separate preservation approval. | [Testing findings](docs/TESTING.md#build-system-findings) |
 | Build system | BUILD-03 | Windows entrypoints and scan boundaries | paused | unreviewed | Preserve Python automation; scope shell, encoding, external-launcher and scratch-scan work. | [Testing findings](docs/TESTING.md#build-system-findings) |
-| Build system | DOCS-03 | Remaining documentation-index routing | paused | unreviewed | Reconcile the verified missing entries after kernel resumes; do not expand this pass. | [Index follow-up](docs/PROJECT_CONTROL_SURFACE.md#deferred-index-reconciliation) |
 
 State and Evidence are independent. State is `active` (work underway), `paused`
 (deferred by decision, resumable when chosen), `blocked` (awaiting an external
@@ -47,6 +51,9 @@ Queue upkeep:
   not filenames; `PACT-nn` is reserved within Kernel. No phase or existing ID is renumbered.
 - Insert new rows above the resume point unless the human controller directs
   otherwise. Insertion records priority, not implementation authority.
+- Reprioritize by moving existing rows, not renumbering IDs or making a new list.
+  Add a row only for distinct work; update affected dependencies in Next action.
+  A new finding does not automatically reorder unrelated work or reopen closed work.
 - Link closure evidence before removing a completed row. Exact session/tree
   state belongs in the ignored handoff, not another backlog.
 - The table is read-whole. If it exceeds one screen or needs filtering (~20 rows),
@@ -61,11 +68,12 @@ existing entries. Priority never authorizes data deletion or unsafe commands.
 
 ## Current Snapshot
 
-Recorded proof baseline, not re-measured by DOCS-02:
+KERNEL-02 baseline reproduced during build and independent review, not re-measured
+by the checkpoint. This does not discharge accumulated promotion-readiness obligations:
 
-- Canonical acceptance: **180 test functions / 2908 assertions / 0 failures**
+- Canonical acceptance: **181 test functions / 3013 assertions / 0 failures**
 - Coverage: **92.7% statement coverage**
-- Claim matrix: **180 claims / 180 tests / 124 Pact sections**
+- Claim matrix: **181 claims / 181 tests / 125 Pact sections**
 - Source package: **26 kernel modules**, plus the CLI entry point
 
 The [Truth Register](TRUTH_REGISTER.md) owns capabilities and non-claims.
@@ -92,6 +100,11 @@ not released as this staging line:
 - KERNEL-01 — [bounded broker checkpoint](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-10-kernel-01-reviewed-local-checkpoint).
 - BUILD-01 — [coverage-launcher checkpoint](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-10-build-01-reviewed-local-checkpoint).
 - DOCS-02 — closed/checkpointed; [reviewed roadmap checkpoint](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-12-docs-02-reviewed-local-checkpoint).
+
+Additional reviewed local checkpoint: KERNEL-02 is closed/checkpointed after
+its bounded candidate gates and independent review; see the
+[review disposition](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-12-kernel-02-reviewed-local-checkpoint).
+It is not integrated into main or released and does not discharge BUILD-05.
 
 Keep these stages distinct: local checkpoint records the candidate; reproduced
 proof records particular executed checks; full-gate acceptance requires the

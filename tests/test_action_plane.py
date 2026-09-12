@@ -560,6 +560,222 @@ def test_action_plane_claim_revalidation():
             _cleanup_db(path)
 
 
+def test_action_plane_claim_lifecycle():
+    # CLAIM: §0.8.3, §3.2.3, §6.4.5 — expired leases never become successful claims, and claim state follows a confirmed durable receipt
+    section("Action Plane: Claim Receipt and Result Eligibility")
+    from unittest.mock import patch
+    from rss.audit.verify import verify_trace_file
+
+    @contextmanager
+    def fixture():
+        # Own every database and sidecar; cleanup errors remain visible.
+        with tempfile.TemporaryDirectory(prefix="rss-claim-lifecycle-") as owned:
+            path = os.path.join(owned, "runtime.db")
+            rss = bootstrap(RSSConfig(db_path=path))
+            try:
+                broker = SideEffectBroker(rss, _tools(), authorization_ttl=timedelta(seconds=10))
+                proposal = build_proposal("TASK-LIFECYCLE", "EXECUTE", "file_write", "",
+                                          {"content": "bounded result"}, ttl=timedelta(minutes=5))
+                with patch("rss.action.broker.datetime") as clock:
+                    clock.now.return_value = proposal.proposed_at
+                    decision = broker.review(proposal)
+                    check(decision.authorized, "lifecycle fixture obtains a live authorization")
+                    yield rss, broker, proposal, clock, decision.authorization_id, path
+            finally:
+                rss.close()
+
+    def hashes(rss):
+        return [event.content_hash for event in rss.trace.all_events()]
+
+    def durable_hashes(rss):
+        return [event.content_hash for event in rss.persistence.load_all_trace()]
+
+    def known_parity(rss, path, label):
+        check(hashes(rss) == durable_hashes(rss) and rss.trace.verify_chain_deep()
+              and verify_trace_file(path)["verified"], label + ": known outcome has ordered hot/cold parity")
+
+    def import_refused(rss, broker, authorization_id, label):
+        before = hashes(rss), durable_hashes(rss)
+        result = {}
+        with patch.object(rss, "save_untrusted_content", side_effect=AssertionError("unexpected import")) as save:
+            try:
+                result = broker.record_execution_result(authorization_id, "not executed", "tool_return")
+            except AssertionError:
+                pass  # Count the forbidden call below without performing a real import.
+        check(save.call_count == 0 and result.get("status") == REJECTED_NOT_CLAIMED
+              and result.get("imported") is False, label + ": import refuses before any save call")
+        check((hashes(rss), durable_hashes(rss)) == before, label + ": refused import changes neither TRACE view")
+
+    def raises_runtime(call, label):
+        failure = None
+        try:
+            call()
+        except RuntimeError as exc:
+            failure = exc
+        check(failure is not None, label + ": failed receipt propagates instead of returning a grant")
+        return failure
+
+    # Exact comparison is deliberate: lease expiry is distinct from proposal TTL.
+    for offset in (-1, 0, 1):
+        with fixture() as (rss, broker, proposal, clock, aid, path):
+            auth = broker._authorizations[aid]
+            clock.now.return_value = auth.expires_at + timedelta(microseconds=offset)
+            result = broker.claim_for_execution(aid)
+            granted = offset <= 0
+            check(result.get("status") == (CLAIM_GRANTED if granted else REJECTED_AUTHORIZATION_EXPIRED)
+                  and result.get("claimed") is granted, f"expiry offset {offset}: exact lease boundary enforced")
+            check(auth.claimed is granted and (auth.claimed_at == clock.now.return_value if granted
+                                               else auth.claimed_at is None), "claim state reflects only actual grant")
+            check(getattr(auth, "expired", False) is (not granted), "expiry latches separately from successful claim")
+            check(broker.pending_authorizations() == 0, "spent or expired authorization is not pending")
+            if not granted:
+                import_refused(rss, broker, aid, "expired")
+                for instant in (clock.now.return_value, proposal.proposed_at):
+                    clock.now.return_value = instant
+                    check(broker.claim_for_execution(aid)["status"] == REJECTED_AUTHORIZATION_EXPIRED,
+                          "expired lease stays expired on repeat and clock rewind")
+                    check(broker.revoke(aid, "expired")["status"] == REVOKE_NOOP
+                          and broker.pending_authorizations() == 0, "clock rewind cannot revive an expired lease")
+                check(not auth.claimed and auth.claimed_at is None and not auth.result_recorded,
+                      "expiry retries never grant execution or result eligibility")
+                check(len(rss.trace.events_by_code("ACTION_CLAIM_REFUSED")) == 3
+                      and not rss.trace.events_by_code("ACTION_CLAIMED"), "expiry attempts emit refusals, never grants")
+            known_parity(rss, path, "expiry boundary")
+
+    with fixture() as (rss, broker, proposal, clock, aid, path):
+        auth = broker._authorizations[aid]
+        import_refused(rss, broker, "AUTH-unknown", "unknown")
+        import_refused(rss, broker, aid, "live but unclaimed")
+        check(broker.revoke(aid, "operator refusal")["status"] == REVOKED, "live lease remains revocable")
+        check(broker.claim_for_execution(aid)["status"] == REJECTED_REVOKED, "revoked claim remains refused")
+        import_refused(rss, broker, aid, "revoked")
+        check(not auth.claimed and auth.claimed_at is None and not auth.result_recorded,
+              "all no-claim controls retain no result eligibility")
+        known_parity(rss, path, "no-claim controls")
+
+    with fixture() as (rss, broker, proposal, clock, aid, path):
+        auth = broker._authorizations[aid]
+        clock.now.return_value = auth.expires_at + timedelta(microseconds=1)
+        before = hashes(rss)
+        save = rss.persistence.save_trace_event
+        def fail_expiry(event):
+            if event.event_code == "ACTION_CLAIM_REFUSED":
+                raise RuntimeError("expiry receipt fixture")
+            return save(event)
+        with patch.object(rss.persistence, "save_trace_event", side_effect=fail_expiry):
+            raises_runtime(lambda: broker.claim_for_execution(aid), "expiry refusal")
+        check(getattr(auth, "expired", False) and not auth.claimed and auth.claimed_at is None,
+              "failed expiry receipt keeps the restrictive latch, never successful-claim state")
+        check(hashes(rss) == before, "failed expiry receipt creates no hot event")
+        known_parity(rss, path, "failed expiry receipt")
+        clock.now.return_value = proposal.proposed_at
+        check(broker.claim_for_execution(aid)["status"] == REJECTED_AUTHORIZATION_EXPIRED
+              and broker.pending_authorizations() == 0, "failed refusal cannot revive on clock rewind")
+        import_refused(rss, broker, aid, "expiry receipt failure")
+
+    for outcome in ("before-write", "committed-then-raised", "unknown-no-row", "unknown-with-row"):
+        with fixture() as (rss, broker, proposal, clock, aid, path):
+            auth = broker._authorizations[aid]
+            issued = set(broker._authorizations)
+            rate = list(rss.cycle._domains["BROKER:GLOBAL"].timestamps)
+            before = hashes(rss)
+            save = rss.persistence.save_trace_event
+            observed = []
+            def failing_claim(event):
+                if event.event_code != "ACTION_CLAIMED":
+                    return save(event)
+                observed.append((auth.claimed, auth.claimed_at, auth.result_recorded))
+                if outcome in ("committed-then-raised", "unknown-with-row"):
+                    save(event)
+                raise RuntimeError("claim receipt fixture")
+            unknown = outcome.startswith("unknown-")
+            confirmation = patch.object(rss.persistence, "has_trace_event",
+                                        side_effect=RuntimeError("confirmation unavailable")) if unknown else nullcontext()
+            with patch.object(rss.persistence, "save_trace_event", side_effect=failing_claim), confirmation:
+                if outcome == "committed-then-raised":
+                    result = broker.claim_for_execution(aid)
+                    check(result.get("claimed") is True and result.get("status") == CLAIM_GRANTED,
+                          "confirmed commit wins over the callback's post-commit exception")
+                else:
+                    raises_runtime(lambda: broker.claim_for_execution(aid), outcome)
+            check(observed == [(False, None, False)], outcome + ": persistence sees no premature claim state")
+            check(set(broker._authorizations) == issued and rss.cycle._domains["BROKER:GLOBAL"].timestamps == rate,
+                  outcome + ": audit outcome neither mints another lease nor recharges CYCLE")
+            if unknown:
+                check(not auth.claimed and auth.claimed_at is None and not auth.result_recorded,
+                      outcome + ": uncertain receipt cannot authorize execution or result import")
+                check(rss.trace._durability_uncertain and rss.persistence.is_safe_stopped()["active"],
+                      outcome + ": uncertainty latches audit and durably fences runtime")
+                cold = durable_hashes(rss)
+                check(hashes(rss) == before and (cold[:-1] == before if outcome == "unknown-with-row" else cold == before),
+                      outcome + ": hot state stays put; cold presence matches the injected outcome")
+                check(len(rss.persistence.load_all_trace()) == len(before) + int(outcome == "unknown-with-row")
+                      and verify_trace_file(path)["verified"], outcome + ": cold truth remains independently valid")
+                import_refused(rss, broker, aid, outcome)
+                blocked = False
+                try:
+                    broker.claim_for_execution(aid)
+                except (RuntimeError, AuditLogError):
+                    blocked = True
+                check(blocked and not auth.claimed and auth.claimed_at is None,
+                      outcome + ": ordinary retry cannot bypass the audit latch")
+                continue  # No hot/cold parity claim when the durable outcome is unresolved.
+            known_parity(rss, path, outcome)
+            if outcome == "before-write":
+                check(hashes(rss) == before and not auth.claimed and auth.claimed_at is None,
+                      "confirmed no-write preserves exact prior state")
+                import_refused(rss, broker, aid, "claim receipt failure")
+                proposal.payload["extra"] = "not authorized"
+                check(broker.claim_for_execution(aid)["status"] == REJECTED_PAYLOAD_HASH
+                      and not auth.claimed, "retry performs full current-governance validation")
+                proposal.payload.pop("extra")
+                observed.clear()
+                def successful_claim(event):
+                    if event.event_code == "ACTION_CLAIMED":
+                        observed.append((auth.claimed, auth.claimed_at, auth.result_recorded))
+                    return save(event)
+                with patch.object(rss.persistence, "save_trace_event", side_effect=successful_claim):
+                    result = broker.claim_for_execution(aid)
+                check(result.get("status") == CLAIM_GRANTED and result.get("authorization_id") == aid
+                      and observed == [(False, None, False)], "valid retry writes ahead then grants the same lease")
+            check(auth.claimed and auth.claimed_at == clock.now.return_value and not auth.result_recorded,
+                  outcome + ": confirmed receipt exposes successful-claim state afterward")
+            check(len(rss.trace.events_by_code("ACTION_CLAIMED")) == 1
+                  and set(broker._authorizations) == issued
+                  and rss.cycle._domains["BROKER:GLOBAL"].timestamps == rate, "success has one claim, no mint or recharge")
+            known_parity(rss, path, "confirmed successful claim")
+            clock.now.return_value = auth.expires_at + timedelta(seconds=1)
+            check(broker.claim_for_execution(aid)["status"] == REJECTED_REPLAY
+                  and broker.revoke(aid, "too late")["status"] == REVOKE_NOOP,
+                  "successful claim stays spent even after expiry")
+            result = broker.record_execution_result(aid, "recorded output", "tool_return")
+            check(result.get("imported") is True, "a successful claim's result may arrive after lease expiry")
+            entry = rss.hubs.get_entry(result["entry_id"])
+            check("[UNTRUSTED_EXTERNAL_CONTENT]" in entry.content
+                  and any(item.get("action") == "UNTRUSTED_IMPORT" for item in entry.provenance),
+                  "successful result remains untrusted data-only evidence")
+            check(broker.record_execution_result(aid, "duplicate", "tool_return")["status"] == REJECTED_REPLAY,
+                  "successful result remains single-import")
+            known_parity(rss, path, "result control")
+
+    with fixture() as (rss, broker, proposal, clock, aid, path):
+        check(broker.claim_for_execution(aid)["status"] == CLAIM_GRANTED, "restart control first claims successfully")
+        rss.close()
+        restarted = bootstrap(RSSConfig(db_path=path), restore=True)
+        try:
+            fresh = SideEffectBroker(restarted, _tools())
+            check(fresh.pending_authorizations() == 0 and not fresh._authorizations,
+                  "restart does not restore in-process authorization leases")
+            check(fresh.claim_for_execution(aid)["status"] == REJECTED_REPLAY,
+                  "durable claim receipt is not a restart-restored capability")
+            import_refused(restarted, fresh, aid, "restart")
+            known_parity(restarted, path, "restart control")
+        finally:
+            restarted.close()
+    # Result-import transactions, issuance/revocation durability, and concurrent
+    # mutation remain separate work; these fixtures exercise sequential claims.
+
+
 def test_action_plane_event_codes_registered():
     # CLAIM: §6.6.4 — action-plane TRACE codes are registered before emission
     section("Action Plane: TRACE Registry Completeness")

@@ -1,12 +1,12 @@
 # RSS Claim Traceability Matrix
 
-_Auto-generated from split `tests/test_*.py` modules on 2026-09-09 05:25 UTC_
+_Auto-generated from split `tests/test_*.py` modules on 2026-09-12 18:15 UTC_
 
 This document maps Pact sections to the test functions that prove them. Each entry cites a `# CLAIM:` tag in the test source. Regenerate with `python build_claim_matrix.py`.
 
 **Boundary:** the gate enforces claim presence, one-claim-per-test counts, and a non-vacuity floor (every claim cites a Pact section; every test contains a real assertion). It does not — and cannot — verify that a test body semantically proves the clause it cites. Claim fidelity is a review responsibility.
 
-**Coverage:** 124 distinct Pact sections referenced across 180 claim tags on 180 test functions.
+**Coverage:** 125 distinct Pact sections referenced across 181 claim tags on 181 test functions.
 
 ---
 
@@ -96,6 +96,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 ## §0.8.3
 
+- `test_action_plane_claim_lifecycle` — expired leases never become successful claims, and claim state follows a confirmed durable receipt
 - `test_pre_seal_drift_check` — pre-seal drift guard
 - `test_write_ahead_guarantee` — TRACE append parity and ordered audit-failure tracking; governed-state/receipt coupling beyond Safe-Stop clear is a separate open invariant
 - `test_safe_stop_clear_atomicity` — Safe-Stop clear receipt and halt deletion commit atomically; failed or unknown outcomes remain fail-closed
@@ -257,6 +258,7 @@ This document maps Pact sections to the test functions that prove them. Each ent
 ## §3.2.3
 
 - `test_action_plane_claim_revalidation` — claims revalidate payload, time, current policy and consent before granting
+- `test_action_plane_claim_lifecycle` — expired leases never become successful claims, and claim state follows a confirmed durable receipt
 
 ## §3.3
 
@@ -536,6 +538,10 @@ This document maps Pact sections to the test functions that prove them. Each ent
 
 - `test_write_ahead_guarantee` — TRACE append parity and ordered audit-failure tracking; governed-state/receipt coupling beyond Safe-Stop clear is a separate open invariant
 - `test_safe_stop_clear_atomicity` — Safe-Stop clear receipt and halt deletion commit atomically; failed or unknown outcomes remain fail-closed
+
+## §6.4.5
+
+- `test_action_plane_claim_lifecycle` — expired leases never become successful claims, and claim state follows a confirmed durable receipt
 
 ## §6.5
 

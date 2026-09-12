@@ -110,6 +110,7 @@ class _Authorization:
     proposal: ActionProposal
     issued_at: datetime
     expires_at: datetime
+    expired: bool = False
     claimed: bool = False
     claimed_at: Optional[datetime] = None
     revoked: bool = False
@@ -284,6 +285,9 @@ class SideEffectBroker:
         Current-governance refusals leave the lease unclaimed, like Safe-Stop:
         a later retry must pass all checks again within the existing TTLs.
         CYCLE is charged only by review, not by a retry or successful claim.
+        Observed lease expiry is terminal, but is not a successful claim.
+        Claimed state is installed only after the durable claim receipt returns.
+        This ordering is not a concurrent-claim lock or a restart transaction.
         """
         authorization = self._authorizations.get(authorization_id)
         if authorization is None or authorization.claimed:
@@ -306,8 +310,17 @@ class SideEffectBroker:
                 "reason": "authorization revoked by keyholder",
             }
         now = datetime.now(UTC)
-        if now > authorization.expires_at:
-            authorization.claimed = True
+        if authorization.expired or now > authorization.expires_at:
+            # Denial is terminal even if its receipt fails or the clock moves
+            # backward. Never conflate a spent expiry with a successful claim.
+            authorization.expired = True
+            self._log(
+                "ACTION_CLAIM_REFUSED",
+                authorization.proposal.proposal_id,
+                f"authorization_id={authorization_id}, "
+                f"status={REJECTED_AUTHORIZATION_EXPIRED}, "
+                "reason=authorization expired before execution claim",
+            )
             return {
                 "claimed": False,
                 "status": REJECTED_AUTHORIZATION_EXPIRED,
@@ -329,8 +342,8 @@ class SideEffectBroker:
                 "reason": reason,
             }
 
-        authorization.claimed = True
-        authorization.claimed_at = now
+        # Runtime's durable log reconciles confirmed post-commit adapter errors.
+        # A raised/unknown outcome must not publish successful-claim state here.
         self._log(
             "ACTION_CLAIMED",
             authorization.proposal.proposal_id,
@@ -340,6 +353,8 @@ class SideEffectBroker:
             f"container={authorization.proposal.container_id}, "
             f"single_use_spent=True",
         )
+        authorization.claimed = True
+        authorization.claimed_at = now
         return {
             "claimed": True,
             "status": CLAIM_GRANTED,
@@ -355,6 +370,7 @@ class SideEffectBroker:
         revocable = (
             authorization is not None
             and not authorization.claimed
+            and not authorization.expired
             and not authorization.revoked
             and now <= authorization.expires_at
         )
@@ -434,6 +450,7 @@ class SideEffectBroker:
         return sum(
             1 for authorization in self._authorizations.values()
             if (not authorization.claimed
+                and not authorization.expired
                 and not authorization.revoked
                 and now <= authorization.expires_at)
         )
