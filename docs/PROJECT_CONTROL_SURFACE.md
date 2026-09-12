@@ -31,6 +31,7 @@ generators. Historical lists and receipts are not touched.
 | `THREAT_MODEL.md` | threat boundaries and non-goals | implementation queue | update when a threat boundary changes |
 | `docs/PACT_ALIGNMENT.md` | human claim-vs-Pact/code alignment inventory | execution order or release plan | update when code, Pact text, or wording risk changes |
 | `docs/TESTING.md` | canonical gate commands, test discipline, and build-system finding/closure detail | product positioning or an independent priority queue | update on verified tool hazards or behavior changes; scheduling stays in ROADMAP |
+| `docs/KERNEL_FINDINGS.md` | kernel findings, evidence, consequences, and closure criteria | scheduling, priority, or release claims | preserve distinct requirements; update evidence and closure detail while ROADMAP owns selection and state |
 | `docs/ACTION_PLANE.md` | built broker decision boundary, known lifecycle limits, and future execution vocabulary | release sequencing or volatile proof counts | distinguish registered local proof from future containment and unresolved lifecycle guarantees |
 | `docs/NIST_AI_RMF_MAPPING.md` | reviewer mapping to NIST AI RMF language | certification or compliance claims | keep conservative and evidence-linked |
 | `docs/AI_GOVERNANCE_PROJECT_BRIEF.md` | concise outside-facing project brief | detailed release tracking | sync proof numbers mechanically |
@@ -79,6 +80,18 @@ That wrapper checks baseline sync, contact surface, claim fidelity, reverse
 Pact-code map freshness, generated Project Status freshness, tracked Pact
 citations, external provenance/name hygiene across content and filenames, and
 workflow-callsign leakage.
+
+## Deferred Index Reconciliation
+
+DOCS-03 is deferred work, not authority to expand the DOCS-02 slice. That slice
+adds only the agent entrypoint, Phase Ledger, and Kernel Findings to DOCS_INDEX.
+The relay's remaining-list count was inconsistent: it named eleven files, of
+which three proposal files were already indexed. The eight missing named entries
+are CHANGELOG.md, CONTRIBUTING.md, CLAUDE.md, GEMINI.md, docs/PACT_VOICE.md,
+docs/proposals/SIGIL_SET_PROPOSAL.md, docs/roadmap/ACCEPTANCE_HISTORY.md, and
+docs/roadmap/COVERAGE_TRACKER.md. The amendment plan, canon-export workflow, and
+three-window proposal already have entries. Verify this inventory again when
+DOCS-03 is selected; do not silently add unrelated index work or another tracker.
 
 ## Proposal Lifecycle
 

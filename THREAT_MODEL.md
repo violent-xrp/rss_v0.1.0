@@ -63,5 +63,38 @@ successful-claim/receipt ordering defect; neither is closed by this mitigation.
 - live model fluency is not evidence; governed data claims still need scoped PAV context and TRACE-backed runtime flow
 - public-doc drift is itself a trust risk if metrics are not kept synchronized; all docs are now synced to the 180/2908 baseline
 
+## Retained Boundaries from ROADMAP
+
+DOCS-02 relocates these live limitations; it does not mitigate them. Scheduling
+stays in [ROADMAP](ROADMAP.md#current-build-thread), finding/closure evidence in
+[Kernel Findings](docs/KERNEL_FINDINGS.md), and alignment detail in
+[Pact Alignment](docs/PACT_ALIGNMENT.md#known-alignment-gaps).
+
+- Caller authentication, actor/request authority binding, and propagation
+  through wrappers, ASGI, worker threads, background jobs, and external tools
+  are distinct deployment boundaries. Current context isolation does not prove
+  them all. Future keys require auditable recovery/bypass, rotation, and
+  revocation before they become operationally load-bearing.
+- Consent duration is recorded, not enforced as expiry. An urgency-keyword
+  signal is not general coercion defense. Consent-persistence refusal can also
+  lose its failure receipt if the notification/audit path fails; failed
+  revocation must not be represented as successfully removing a prior grant.
+- RUNE scans remain linear in active global collections; pack/domain synonym
+  collisions require namespace policy. Indexing and active/archive lifecycle
+  need proof before large-pack performance claims. Existing normalization does
+  not settle punctuation, apostrophe-like labels, or full confusable resistance.
+- Safe-Stop entry writes halt state and its receipt separately. Atomic clear
+  does not imply atomic entry or general governed-state/TRACE coupling.
+  Stored-field cold verification, cold export, and payload-inclusive external
+  recomputation remain distinct; signing/timestamps and off-box anchoring are
+  not supplied by local chain validity. Full-Pact integrity remains future work.
+- Hidden text, metadata, comments, retrieved neighbors, structured JSON/YAML,
+  and tool returns can carry authority-spoofing content. Future connectors need
+  their own proof matrix; data readability is never consent or execution power.
+- Tenant policy may tighten terms, scope, consent, permissions, hubs, and packs,
+  but cannot loosen or fork the global Pact. Operational ownership is not
+  constitutional amendment authority. Product vocabulary and demo quality must
+  not conceal these limits or turn architectural discipline into deployment claims.
+
 ## Current honesty line
 RSS v0.1.0 is strong at **governance-before-model** inside a single-process governed runtime. It is not yet the whole deployment security story.

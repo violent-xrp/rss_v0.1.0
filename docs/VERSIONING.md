@@ -4,6 +4,8 @@ _Licensed under AGPLv3; see `../LICENSE/LICENSE_INDEX.md`._
 
 RSS uses three version clocks. They are related, but they do not mean the same thing.
 
+Current Genesis posture (2026-09-11): the human controller is treating the current development line as Genesis and deferring the next version decision. A local annotated `v0.1.0` tag already exists at `3bde3c1`; examples below describing iteration toward final `v0.1.0` explain the version clocks, not the current release schedule. Neither that tag nor a later local checkpoint certifies the current staging line as fully accepted, integrated into main, or released. The local `v0.1.0` and `v0.1.0-rc.1` tags remain unchanged; no hosted-release or remote-state claim is made. This development posture does not change Pact section versions, the Section 0 Genesis hash, or the amendment ceremony.
+
 ## Canonical Statement
 
 Code and releases use semver (0.1.x); -rc.N is release-candidate iteration toward that version; the Pact versions itself by section through the §7 amendment ceremony (§0.10.4), and a sealed Pact amendment surfaces as a project MINOR bump — never in the -rc suffix.

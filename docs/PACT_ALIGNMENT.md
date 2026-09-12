@@ -344,7 +344,129 @@ Pact text candidates:
 - CLOSED for Section 0: internal advisors are now fenced from seats and external models. If a Tier 2.5 advisory layer is introduced, later sections can elaborate how advisors translate and structure evidence without holding authority.
 - Council vocabulary strip: Option B is selected for the first v0.1.1 amendment ceremony test case. Ceremony 1 should cover Sections 1, 3, and 6 only, replacing or narrowing "Council" language where current code already supports the clearer wording. Section 0 remains deferred to a dedicated Genesis-aware ceremony with re-anchor proof. This keeps the first ceremony bounded while still exercising amendment persistence and ceremony machinery end-to-end.
 
+## Retained Persistence and Authority Detail
+
+These requirements retain detail moved out of ROADMAP, not another queue.
+[Current Build Thread](../ROADMAP.md#current-build-thread) alone owns scheduling.
+
+- Lossless consent and Hub persistence remains distinct from critical-consent
+  namespace validation. Preserve consent scope, duration, and grant-time fidelity
+  and governed Hub state across restart; decide and prove tuple uniqueness for
+  action/container consent rather than relying only on the stored key.
+- [Atomic Safe-Stop entry](KERNEL_FINDINGS.md#atomic-safe-stop-entry) owns that
+  bounded finding. Broader governed-state/TRACE coupling remains a separate
+  requirement; the completed clear transaction does not establish it generally.
+- Preserve the [Known Alignment Gaps](#known-alignment-gaps) requirements for
+  full-Pact boot/request integrity and pre-seal refusal while any section is
+  uncertain, the soft T-0 seam's remaining seat/container powers, and auditable
+  recovery before identity keys become load-bearing.
+- Resolve two carried observations explicitly rather than implying closure:
+  the hot verifier returns a boolean while the cold verifier returns a detail
+  dictionary; Hub persistence uses `INSERT OR REPLACE`, with theoretical UUID
+  collision risk, where `INSERT OR ABORT` would be more fail-loud. Either retain
+  the current behavior with rationale or prove an approved change.
+- Clarify the two Genesis verification surfaces (`verify_genesis` and
+  `load_constitution`) so the canonical production route stays obvious. Decide
+  whether `ExecutionStateMachine.execute()` is obsolete and removable or an
+  explicitly non-wired future placeholder; a documentation move decides neither.
+
+## Retained Import and PAV Detail
+
+- The connector proof matrix must retain PDF metadata/hidden text, HTML hidden
+  spans/alt text, email MIME parts, RAG neighbor chunks, tool returns, and Unicode
+  invisible/confusable content. Imported JSON/YAML/tool-return authority spoofing
+  must not create consent, expand scope, or authorize side effects.
+- Before live connector claims expand, shadow browser/email/API/RAG/tool-return
+  adapters must exercise poisoned, malformed, oversized, metadata-hidden, and
+  authority-spoofing payloads. Existing data-only import proof is not that matrix.
+- Preserve structured PAV trust metadata so `instruction_status` survives as
+  data, plus entry-level filters by provenance, `source_type`, and
+  `instruction_status`, not only hub name. Define entry-count, character/token
+  estimate, source, and total-context ceilings; audit/history material remains
+  outside model-facing context unless explicitly scoped in.
+- CYCLE budget/anomaly proof must distinguish retry loops, repeated denied
+  actions, abnormal bursts, execution-budget exhaustion, and token/cost budget
+  exhaustion from simple request cadence. The existing
+  [three-window proposal](proposals/THREE_WINDOW_GOVERNANCE_MODEL.md#build-sequence)
+  owns the context/budget architecture, not an assertion of implemented control.
+- Keep the existing [Known Alignment Gaps](#known-alignment-gaps) decision on a
+  dedicated global/container `UNTRUSTED_IMPORT` restore proof separate from the
+  already-proven persistence-row round trip.
+
+## Retained Tenant and Seat Detail
+
+- Governed pack selection/versioning needs an explicit contract when multiple
+  demo worlds or tenant-specific packs exist. Tighten-only tenant/domain overlays
+  may constrain terms, scope, permissions, consent, hubs, and packs; they may not
+  loosen or fork the global constitutional floor.
+- The field-by-field enforced/declared permission map remains in
+  [Current Kernel Alignment](#current-kernel-alignment). Keep `risk_tier` visibly
+  separate from load-bearing permissions until a decision point is proven.
+- OATH nested consent inheritance is conditional on TECTON gaining parent/child
+  container hierarchy, not an unconditional new consent requirement.
+- The [seat load-bearing audit](KERNEL_FINDINGS.md#seat-load-bearing-audit) owns
+  unique-invariant review. The current WARD protected-key proof must be revisited
+  when new governance-relevant task/result fields are introduced; interface
+  conformance alone is not proof that every seat is load-bearing.
+
+## Retained External Proof Detail
+
+- [Known Alignment Gaps](#known-alignment-gaps) retains the canonical export
+  inputs, REDLINE/privacy policy, payload-sidecar alternatives, and verifier
+  requirements. Local cold validity and stored-field recomputation must not be
+  promoted into payload-inclusive third-party recomputation claims.
+- Preserve signing, timestamp anchoring, and stronger off-box audit posture,
+  alongside cross-machine audit portability and larger-event-count verification
+  characterization. Require an explicit chain-version migration ceremony when
+  `CHAIN_HASH_VERSION` changes; local migration scaffolding is not that proof.
+- Single-process audit locking does not establish multi-process/distributed
+  throughput. Generated status freshness likewise does not replace semantic
+  review of claims, even when every mechanical check is current.
+
+## Retained Operator and Advisor Detail
+
+- The internal-advisor contract in [Known Alignment Gaps](#known-alignment-gaps)
+  must retain typed evidence, concern kind, severity, proposed response class
+  (`SERVE` / `NARROW` / `ESCALATE` / `HALT`), source-advisor attribution, packet
+  hash, explicit authority set to none, and TRACE-recorded invocation/output.
+  Define this packet before advisor execution; neither advice nor agentic loops
+  permit mutation, tool use, or side effects without the action-plane boundary.
+- Proposed operator surfaces retain amendment queues, ratification previews,
+  drift indicators, cold-verifier reports, consent-source views, and
+  recovery/bypass receipts. Existing amendment detail and the
+  [canon-export proposal](proposals/PACT_CANON_EXPORT_AND_AMENDMENT_WORKFLOW.md)
+  own the richer reports and separate Genesis-aware Section 0 path; no UI is
+  claimed built by this inventory.
+- Keep the [30/60/90-minute reviewer path](demo/DEMO_HANDOFF.md#306090-minute-reviewer-path)
+  focused on governed retrieval, refusal, isolation, recovery, cold verification,
+  and artifact inspection. Maintain the [external vocabulary map](EXTERNAL_MAP.md)
+  and [NIST AI RMF map](NIST_AI_RMF_MAPPING.md) as reviewer aids, not certification
+  or production-compliance claims; product language must not outrun kernel proof.
+- Existing [sigil migration detail](proposals/SIGIL_SET_PROPOSAL.md#migration-map)
+  and [Runtime Obligation Ledger fields](proposals/THREE_WINDOW_GOVERNANCE_MODEL.md#runtime-obligation-ledger)
+  remain their proposal owners' responsibility rather than repeated designs here.
+
+## Retained Deployment and Proof Detail
+
+- Linux is the first cross-OS CI target: canonical acceptance, public hygiene,
+  reverse Pact-code-map freshness, cold verification, file-write paths, and
+  guarded canon export must each be exercised before portability claims expand.
+  [Testing guidance](TESTING.md#future-cross-os-proof) owns command selection and
+  OS-sensitive paths, newline/hash behavior, WAL/locks, replacement, subprocesses,
+  and encoding. Android remains an adapter/action-surface testbed, not a kernel
+  port; macOS proof follows Windows/Linux rather than being assumed.
+- Retain runner JSON verdict export for independent tooling/CI cross-checks and
+  pre-commit/CI hooks for baseline sync, claim-matrix drift, and Pact-reference
+  extraction once those commands are stable. These are future proof surfaces,
+  not permission to execute generators during a documentation pass.
+- Live-adapter usefulness evaluation is separate from deterministic governance
+  proof: score answers against expected PAV evidence markers while preserving
+  refusal and isolation boundaries. A constrained model can still under-answer;
+  neither fluent fallback nor one safe demo proves production answer quality.
+
 ## Version Watch
+
+The version labels below are retained legacy inventory, not scheduling; use [ROADMAP's Current Build Thread](../ROADMAP.md#current-build-thread) and its current Genesis/version-deferred posture for disposition.
 
 Before v0.1.1:
 - The S0-S2 pre-tag mechanical OATH/RUNE gaps listed in `ROADMAP.md` are closed; keep future work version-sensitive rather than silently amending the Pact.

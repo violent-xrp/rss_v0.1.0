@@ -66,6 +66,32 @@ RSS v0.1.0 does **not** yet implement:
 
 ---
 
+## Retained Non-Claims from ROADMAP
+
+These limitations were relocated by DOCS-02, not newly measured or closed.
+[Threat boundaries](THREAT_MODEL.md#retained-boundaries-from-roadmap) explain
+their consequences; [Kernel Findings](docs/KERNEL_FINDINGS.md) and
+[Pact Alignment](docs/PACT_ALIGNMENT.md#known-alignment-gaps) own corrective detail.
+
+- No general consent-expiry enforcement, complete coercion defense, or guaranteed
+  consent-failure receipt when both persistence and audit notification fail.
+- No atomic Safe-Stop entry or universal governed-state/TRACE transaction; no
+  lossless consent/Hub-field restoration or schema-enforced consent tuple uniqueness.
+- No large-vocabulary performance guarantee, freely composable pack namespaces,
+  distinct proven MED/LOW confirmation semantics, or complete Unicode/confusable defense.
+- No complete wrapper/worker identity propagation, observable-stream enforcement,
+  universal runtime/tool broker integration, or durable actor-bound lease system.
+- No full-Pact hash verification/pre-seal integrity, payload-inclusive external
+  recomputation, cryptographic non-repudiation, or immunity to off-box rollback.
+- Windows-local proof does not establish Linux, Android-adapter, or macOS proof;
+  multi-process/distributed audit throughput and full async-wrapper safety remain
+  unproven. A REST ingestion layer and production end-user polish are not current claims.
+- Internal advisors, if built, would assess without authority; model/tool-loop
+  agency cannot grant permission. Tenant customization cannot fork constitutional law.
+- Cold verification, cold export, and local v2 stored-field recomputation have
+  different evidence contracts. Generated reverse maps do not replace semantic
+  review, and a local checkpoint does not establish full-gate acceptance or release.
+
 ## Evidence anchors
 The current code snapshot includes proof for:
 - stage-tracked halts and Safe-Stop persistence/recovery

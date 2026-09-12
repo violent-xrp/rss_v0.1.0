@@ -251,12 +251,7 @@ def write_owned_archive(path: Path, text: str) -> None:
 # Explicit allowlist: (relative path, substring that must appear in the full
 # flagged line). Reserve for INTENTIONAL historical numbers in living docs;
 # authored archive text is excluded, while generated archive bodies are checked.
-ORPHAN_ALLOWED: tuple = (
-    # ROADMAP CLOSED item recording the rc.1 acceptance snapshot — historical
-    # record, not a current claim (first live catch of this guard, 2026-07-06).
-    ("ROADMAP.md", "final rc.1 acceptance/sync pass was clean at 145 tests"),
-    ("ROADMAP.md", "assertions, 0 failures, and 92.2% coverage"),
-)
+ORPHAN_ALLOWED: tuple = ()  # rc.1 history moved to PHASE_LEDGER by DOCS-02.
 
 ORPHAN_PATTERNS = (
     re.compile(

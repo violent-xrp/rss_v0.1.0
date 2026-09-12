@@ -6,6 +6,7 @@ This file is a routing layer for the public documentation. It is not a separate 
 
 ## Start Here
 
+- `../AGENTS.md` - automatic agent entrypoint, operating boundaries, and task routing.
 - `../README.md` - project overview, reviewer path, quick start, and public positioning.
 - `PROJECT_STATUS.md` - generated current-state proof snapshot, drift light, and reviewer doc index.
 - `../ROADMAP.md` - current state, active focus, release boundary, and future queue.
@@ -29,6 +30,11 @@ This file is a routing layer for the public documentation. It is not a separate 
 - `NIST_AI_RMF_MAPPING.md` - RSS mapped to the NIST AI RMF functions as a reviewer aid.
 - `../THREAT_MODEL.md` - current threat boundaries and non-goals.
 - `ACTION_PLANE.md` - future side-effect and action-broker boundary; not a v0.1.0 claim.
+- `KERNEL_FINDINGS.md` - kernel finding evidence, consequences, and closure criteria; scheduling stays in ROADMAP.
+
+## History And Receipts
+
+- `roadmap/PHASE_LEDGER.md` - historical phases and relocated work records; not an execution queue.
 
 ## Naming And Translation
 

@@ -535,3 +535,77 @@ Current synced public numbers:
   or build-system implementation. It will propose whole-roadmap reconciliation;
   the broad rewrite remains subject to separate approval. KERNEL-01 remains
   locally checkpointed, not full-gate accepted.
+
+## 2026-09-11 DOCS-02 Whole-Roadmap Candidate
+
+Documentation candidate at base `0b4ca43`, pending independent implementation
+review and human disposition. No checkpoint, promotion, or release is recorded.
+
+- ROADMAP changes from 612 lines to 231: one rolling queue, current snapshot,
+  explicit release boundary, subject-ordered planned/deferred inventory, and
+  owner/history routes. Kernel work remains prominent. New KERNEL-03 through
+  KERNEL-06 identify proposed near-term slices; existing Task IDs and historical
+  phase labels are not renumbered. BUILD-02/03 and DOCS-03 remain paused.
+- Kernel Findings owns the eleven formerly ownerless kernel findings, plus
+  the explicitly requested adjacent atomic Safe-Stop-entry finding. Entries
+  distinguish source/design evidence from reproduced failure and state proposed
+  closure criteria without scheduling or claiming implementation.
+- Distinct requirements are preserved in finding/alignment owners, with risk
+  boundaries in THREAT_MODEL and non-claims in TRUTH_REGISTER. Closed duplicate
+  retirement remains proposed, not executed; literal records are retained in
+  PHASE_LEDGER, including late Phase G details absent from its earlier lists.
+- rc.1 scope, measurements and exit criteria move to PHASE_LEDGER as literal
+  history. The two obsolete ROADMAP orphan-number exceptions are removed; no
+  baseline rewriter behavior or generator output is otherwise changed. ROADMAP
+  stays whole-file current-owned; archive generated-region boundaries stay intact.
+- Existing acceptance-history bytes and the original Phase Ledger prefix are
+  preserved. No historical receipt or proof number is reworded or re-measured.
+- Local annotated `v0.1.0` at `3bde3c1` is an ancestor 62 commits behind the base.
+  Current planning treats the line as Genesis and defers versioning. Both local
+  tags remain untouched; no hosted release or refreshed remote claim is made.
+  One paragraph in VERSIONING records the distinction without rewriting policy.
+- Exactly three DOCS_INDEX entries are added: AGENTS, PHASE_LEDGER, and
+  KERNEL_FINDINGS. The relay's remaining-list count is corrected in the ownership
+  document for deferred DOCS-03: eleven named files, three already indexed,
+  eight missing named entries. No further index work is performed.
+- Verification is static only: whitespace, offline citation resolution, reverse
+  map freshness, links/anchors, individual name/callsign scans including the new
+  file, and generator-regex/ownership inspection. No acceptance, coverage,
+  combined wrapper, live baseline CLI, Project-Status execution, writing
+  generator, package install, or kernel proof-number refresh is part of this pass.
+- The temporary item-level old-to-new mapping and starting-file copies are
+  outside the repository, routed from the ignored handoff. They are review
+  evidence, not a permanent migration registry or second queue.
+- DOCS-01, BUILD-04, KERNEL-01, and BUILD-01 remain locally checkpointed, not
+  full-gate accepted, not integrated into main, and not released as this staging
+  line. Removing their active rows does not remove the owed acceptance boundary.
+
+## 2026-09-12 DOCS-02 Reviewed Local Checkpoint
+
+The human controller authorized a local checkpoint after two cross-family
+implementation reviews returned PASS for the candidate at base `0b4ca43`.
+The eleven candidate-file hashes matched the reviewed state before disposition.
+This is documentation/static acceptance, not full-gate kernel acceptance,
+integration into main, a push, or a tagged release.
+
+- Review covered kernel visibility, detail ownership, preserved history,
+  release boundaries, generator first-match safety, and bounded index routing.
+  Preservation evidence included sampled high-risk content checks; neither
+  report establishes exhaustive independent semantic review of all mapped items.
+- The twelfth finding is the expressly requested atomic Safe-Stop-entry item
+  beside the eleven original seeds. The eight deferred missing index entries
+  refer to the named subset, not an exhaustive repository-wide index count.
+- Landing changes only disposition prose in ROADMAP and appends this receipt;
+  the reviewed findings, alignment, limits, history, index/version clarification,
+  and two-entry orphan-allowlist removal remain unchanged. The approved Python
+  configuration edit is not a kernel-code or Pact change.
+- The complete reviewed acceptance-history prefix is preserved before this
+  append. No historical receipt or kernel proof number is reworded or refreshed.
+  Static landing checks cover whitespace, citation resolution, reverse-map
+  freshness, local links, individual name/callsign scans and generator regexes.
+  No acceptance, coverage, combined wrapper, live baseline CLI, Project-Status
+  execution, writing generator, or package installation is part of this checkpoint.
+- DOCS-02 leaves the rolling queue as closed/checkpointed, with its outstanding
+  full-gate/release distinction retained in Release Boundary. KERNEL-02 is the
+  resume point, still paused until separately opened. BUILD-02/03 and DOCS-03
+  remain paused; this disposition does not start another documentation slice.
