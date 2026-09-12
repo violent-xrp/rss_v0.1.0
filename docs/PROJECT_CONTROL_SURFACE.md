@@ -83,15 +83,21 @@ workflow-callsign leakage.
 
 ## Deferred Index Reconciliation
 
-DOCS-03 is deferred work, not authority to expand the DOCS-02 slice. That slice
-adds only the agent entrypoint, Phase Ledger, and Kernel Findings to DOCS_INDEX.
-The relay's remaining-list count was inconsistent: it named eleven files, of
-which three proposal files were already indexed. The eight missing named entries
-are CHANGELOG.md, CONTRIBUTING.md, CLAUDE.md, GEMINI.md, docs/PACT_VOICE.md,
+DOCS-03 is the bounded follow-up deferred by DOCS-02; its candidate now adds
+the eight named missing routes to [Docs Index](DOCS_INDEX.md): CHANGELOG.md,
+CONTRIBUTING.md, CLAUDE.md, GEMINI.md, docs/PACT_VOICE.md,
 docs/proposals/SIGIL_SET_PROPOSAL.md, docs/roadmap/ACCEPTANCE_HISTORY.md, and
-docs/roadmap/COVERAGE_TRACKER.md. The amendment plan, canon-export workflow, and
-three-window proposal already have entries. Verify this inventory again when
-DOCS-03 is selected; do not silently add unrelated index work or another tracker.
+docs/roadmap/COVERAGE_TRACKER.md. All eight were verified tracked and absent
+from the index before this pass. The amendment plan, canon-export workflow,
+and three-window proposal were already indexed and are not duplicated.
+
+This is a named-set reconciliation, not a claim that every repository artifact
+belongs in the index. The index remains a router: loaders own no independent
+policy, drafting aids/proposals are not Pact authority, and history is not a
+second queue. Its existing Action Plane and ROADMAP descriptions are corrected
+to distinguish built broker behavior from future execution and the rolling
+queue from subject-ordered inventory. No owner, file, or requirement is moved.
+Candidate review/disposition stays in ROADMAP; do not add another tracker.
 
 ## Proposal Lifecycle
 

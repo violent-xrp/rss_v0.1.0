@@ -11,8 +11,8 @@ not inferred from an old phase label or a local tag.
 
 ### Current Build Thread
 
-KERNEL-02 is locally checkpointed after independent review and human disposition.
-Table order records the human-approved sequence, starting with DOCS-03 and then
+KERNEL-02 and DOCS-03 are locally checkpointed after independent review and human disposition.
+Table order records the human-approved sequence, starting with BUILD-05 and then
 the coordination tasks below. Queue rows schedule work only; no implementation
 or Git operation is authorized by a queue row.
 Each slice needs bounded proof, cross-family review relayed through the human
@@ -21,7 +21,6 @@ after that sequence; BUILD-02/03 stay deferred. Report new safety blockers first
 
 | Workstream | Task ID | Work | State | Evidence | Next action | Detail owner |
 | --- | --- | --- | --- | --- | --- | --- |
-| Build system | DOCS-03 | Remaining documentation-index routing | paused | unreviewed | Reconcile the missing index entries after the KERNEL-02 checkpoint; no further roadmap redesign. | [Index follow-up](docs/PROJECT_CONTROL_SURFACE.md#deferred-index-reconciliation) |
 | Build system | BUILD-05 | Roots promotion readiness | paused | unreviewed | After DOCS-03, check Main ancestry and reconcile Main-only commits into Roots with approval if needed; reproduce complete applicable gates at the resulting checkpoint and obtain cross-family review of the Main-bound diff. | [Promotion loop](docs/BUILD_DISCIPLINE.md#promotion-and-reconciliation-loop), [owed proof](#release-boundary) |
 | Build system | BUILD-06 | Main promotion and Roots reconciliation | paused | unreviewed | After BUILD-05 acceptance and exact Git approval, merge into Main, gate the result and push; reconcile Main back into Roots, gate and push Roots. No tag. | [Promotion loop](docs/BUILD_DISCIPLINE.md#promotion-and-reconciliation-loop) |
 | Build system | BUILD-07 | Preservation-first Lab baseline refresh | paused | unreviewed | After BUILD-06, verify recoverable preservation of unique Lab history, dirty/untracked work and needed ignored context before any replacement; review dispositions, then refresh shared baseline/instructions with approval. Keep experiments and Lab rules distinct; no blind reset or wholesale Lab promotion. | [Lane boundaries](docs/BUILD_DISCIPLINE.md#three-trees-one-direction-of-trust) |
@@ -105,6 +104,11 @@ Additional reviewed local checkpoint: KERNEL-02 is closed/checkpointed after
 its bounded candidate gates and independent review; see the
 [review disposition](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-12-kernel-02-reviewed-local-checkpoint).
 It is not integrated into main or released and does not discharge BUILD-05.
+
+DOCS-03 is closed/checkpointed after independent review and human disposition;
+see its [review disposition](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-12-docs-03-reviewed-local-checkpoint).
+Its bounded index reconciliation does not discharge accumulated promotion,
+demo, or cold-verifier obligations. BUILD-05 is the next readiness pass.
 
 Keep these stages distinct: local checkpoint records the candidate; reproduced
 proof records particular executed checks; full-gate acceptance requires the

@@ -708,3 +708,74 @@ landing changes only ROADMAP disposition and appends this receipt.
   point under separate implementation authority already given by the human.
   This checkpoint is not accumulated Main-bound acceptance, main integration,
   a push, a tag or a release, and does not discharge BUILD-05's obligations.
+
+## 2026-09-12 DOCS-03 Index-Routing Candidate
+
+The human controller authorized this bounded documentation pass after the
+reviewed KERNEL-02 checkpoint `f597869`. It began from a clean Roots tree.
+The candidate is uncommitted and awaits independent review and disposition;
+the earlier checkpoint authority does not extend to this new candidate.
+
+- Reverified the eight named deferred files against Git and DOCS_INDEX: all
+  existed and were tracked, and none had an individual index entry. The index
+  now adds exactly those eight routes, from 30 to 38 entries, with no removed
+  or duplicate route. This is not an exhaustive repository-document count.
+- The added routes cover contribution guidance, the two thin loader adapters,
+  module coverage detail, non-authoritative Pact drafting guidance, change and
+  acceptance history, and the proposed sigil set. Descriptions preserve the
+  distinction between routing, policy, generated evidence, history and proposals.
+- Two existing descriptions were stale: Action Plane was labeled wholly future
+  despite the built local broker; ROADMAP was described as having a future
+  queue rather than one rolling queue plus subject-ordered inventory. Those
+  descriptions are corrected without changing their owners' technical content.
+- No document, requirement, proposal or historical record was moved, renamed
+  or retired. The remaining three previously indexed proposals are not added
+  again. No new front door, tracker, generator, or workstream is introduced.
+- PROJECT_CONTROL_SURFACE records the bounded routing reconciliation while
+  ROADMAP owns candidate state and next action. DOCS-03 is blocked/unreviewed
+  pending review, not marked complete by the builder; BUILD-05 remains paused.
+- Verification checks named-set equality, all index targets, changed-document
+  links/anchors, generator first-match values, archive markers, public name and
+  callsign hygiene, and exact preservation outside these four documentation
+  files. Proof-command results are recorded in the per-tree handoff for review.
+  No code, test, CLAIM tag, baseline number, license, or Pact text is changed;
+  generated surfaces are unchanged and no writing generator is part of this pass.
+- The complete KERNEL-02 checkpoint acceptance-history prefix is preserved
+  byte-for-byte before this append. The prior candidate and review receipts
+  remain historical records, not rewritten into current state.
+
+No DOCS-03 checkpoint, promotion-readiness implementation, merge, push, tag,
+Lab refresh, Taproot change, or next kernel slice is authorized by this receipt.
+
+## 2026-09-12 DOCS-03 Reviewed Local Checkpoint
+
+Two independent model-family reviews returned PASS on the four-file candidate
+at `f597869`, and the human controller authorized its local checkpoint followed
+by BUILD-05 promotion readiness. The reviewed hashes were rechecked before landing.
+
+- Both reviews confirmed the exact eight additions, 30 to 38 index routes,
+  zero removed or duplicate routes, and only two corrected old descriptions.
+  The index and ownership-detail candidate bytes are unchanged during landing.
+- Both reviews reported public hygiene passing. The fully recorded matching
+  environment reproduced acceptance at 3013 passing assertions across 181
+  functions, no failures; statement coverage was 92.7 percent, with traceability
+  of 125 sections across 181 claims and 181 tests. The other review's reported
+  interpreter differs without an exact executable record; it is not additional
+  confirmed cross-version proof and does not require repeating this doc review.
+- Static checks established 73 changed-document links without a broken target,
+  all 38 index routes resolving, current generator first matches, and unchanged
+  generated output. The complete reviewed acceptance-history prefix is retained
+  before this append; no historical receipt or proof count is rewritten.
+- Landing changes only queue/disposition prose and this appended receipt.
+  These disposition edits receive static checks, not a new measurement claim.
+  DOCS-03 leaves the queue as closed/checkpointed with its receipt linked.
+- The pre-existing Coverage Tracker target-status contradiction remains open
+  for BUILD-05: its generated module measurements do not prove the authored
+  every-module target conclusion. The index route does not endorse that claim.
+  Cosmetic route-style differences do not trigger another cleanup pass.
+
+This local checkpoint is not accumulated Main-bound acceptance, Main integration,
+a push, a tag, or a release. BUILD-05 must still establish current applicable
+gates, demo/cold-verifier evidence and cross-family review of the accumulated
+Main-bound changes. Main reconciliation, promotion and push require exact
+separate approval; no other lane or next kernel slice is opened here.
