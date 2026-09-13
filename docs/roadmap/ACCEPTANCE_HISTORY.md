@@ -779,3 +779,41 @@ a push, a tag, or a release. BUILD-05 must still establish current applicable
 gates, demo/cold-verifier evidence and cross-family review of the accumulated
 Main-bound changes. Main reconciliation, promotion and push require exact
 separate approval; no other lane or next kernel slice is opened here.
+
+## 2026-09-13 BUILD-03 Documentation-Only Review Disposition
+
+The human controller accepted the independently reviewed documentation subset
+and authorized a local checkpoint. Review covered the command/effect inventory,
+test-layout routing, labelled PowerShell example, Project Status mode semantics
+and execution-evidence format. This is not closure of the whole BUILD-03 task.
+
+- Independent static review returned PASS without required content changes.
+  The optional wording suggestion was not implemented.
+- Source reconciliation matched the tracked Python inventory: 62 files,
+  26 guarded entrypoints with no missing, extra or duplicate table entries,
+  and 36 without such a guard. All 14 test/support paths were routed.
+- The reviewer reproduced local link resolution, the Pact-reference resolver,
+  reverse-map freshness, isolated name/callsign scans and whitespace checks.
+  The documented kernel baseline was only parsed, not re-measured. No
+  acceptance, coverage, demo or infrastructure-test run supports this slice.
+- Review execution evidence is retained as a partial summary, not an exact or
+  authenticated command ledger. Placeholder invocations omit executable text;
+  unavailable timestamps/statuses and the reconstructed interpreter observation
+  remain gaps. The scans also launch read-only Git enumeration subprocesses;
+  in-process calls do not imply no children, and inline Python invocations are
+  processes too. File-hash preservation does not prove absence of every host
+  effect. These reporting limits do not overturn the bounded content review.
+- Landing updates disposition prose only. The checkpoint excludes the pending
+  BUILD-05 truth corrections and readiness receipt, as well as earlier queue
+  reordering; those working-tree changes remain preserved for separate
+  disposition. The pre-existing authored coverage-target contradiction is not
+  fixed or waived by this checkpoint.
+- BUILD-03's remaining shell/encoding, external-launcher, scan and broader
+  execution-boundary work stays open. No host-isolation design is selected or
+  implemented. Cleanup implementation, demo exit-status repair and promotion
+  remain separate, unaccepted work.
+
+This local checkpoint is not full-gate acceptance, Main integration, a push,
+a tag or a release. BUILD-05 remains on HOLD. No incident-impact conclusion,
+artifact disposal, process action, host change or next implementation slice
+is authorized by this disposition.
