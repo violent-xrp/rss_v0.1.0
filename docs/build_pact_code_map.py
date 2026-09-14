@@ -13,10 +13,16 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+from build_input_scope import InputScopeError, configure_utf8_output, tracked_inputs
 
 
 SECTION_SIGN = "\N{SECTION SIGN}"
@@ -44,12 +50,17 @@ def extract_heading_section(line: str) -> str | None:
     return None
 
 
-def extract_code_refs(src_dir: Path) -> dict[str, list[tuple[str, int]]]:
-    """Return section id -> list of (repo-relative file path, line number)."""
+def extract_code_refs(
+    src_dir: Path, files: list[Path] | None = None
+) -> dict[str, list[tuple[str, int]]]:
+    """Parse selected files; omitted files retains the low-level fixture API.
+
+    Only build() enforces repository input selection. This helper is not a gate.
+    """
     refs: dict[str, list[tuple[str, int]]] = defaultdict(list)
     repo_root = src_dir.parent.parent
 
-    for py_file in sorted(src_dir.rglob("*.py")):
+    for py_file in sorted(src_dir.rglob("*.py") if files is None else files):
         if py_file.name == "__init__.py":
             continue
         rel_path = py_file.relative_to(repo_root).as_posix()
@@ -64,12 +75,14 @@ def extract_code_refs(src_dir: Path) -> dict[str, list[tuple[str, int]]]:
     return dict(refs)
 
 
-def extract_pact_sections(pact_dir: Path) -> dict[str, str]:
-    """Return Pact section id -> repo-relative Pact file path."""
+def extract_pact_sections(
+    pact_dir: Path, files: list[Path] | None = None
+) -> dict[str, str]:
+    """Parse headings; the optional low-level directory API is fixture-only."""
     sections: dict[str, str] = {}
     repo_root = pact_dir.parent
 
-    for md_file in sorted(pact_dir.glob("pact_section*.md")):
+    for md_file in sorted(pact_dir.glob("pact_section*.md") if files is None else files):
         rel_path = md_file.relative_to(repo_root).as_posix()
         content = md_file.read_text(encoding="utf-8")
         for line in content.splitlines():
@@ -195,22 +208,31 @@ def render_markdown(
 
 
 def build(repo_root: Path) -> str:
+    repo_root = Path(os.path.abspath(repo_root))
     src_dir = repo_root / "src" / "rss"
     pact_dir = repo_root / "pact"
-    if not src_dir.exists() or not pact_dir.exists():
-        raise FileNotFoundError("Missing src/rss/ or pact/ directories.")
-
-    code_refs = extract_code_refs(src_dir)
-    pact_sections = extract_pact_sections(pact_dir)
+    files = tracked_inputs(
+        repo_root,
+        lambda p: (p.parts[:2] == ("src", "rss") and p.suffix == ".py"
+                   and p.name != "__init__.py")
+        or (len(p.parts) == 2 and p.parts[0] == "pact"
+            and p.match("pact_section*.md")),
+    )
+    code_files = [p for p in files if p.is_relative_to(src_dir)]
+    pact_files = [p for p in files if p.is_relative_to(pact_dir)]
+    if not code_files or not pact_files:
+        raise InputScopeError("missing tracked source or Pact inputs")
+    code_refs = extract_code_refs(src_dir, code_files)
+    pact_sections = extract_pact_sections(pact_dir, pact_files)
     all_code_files = {
         path.relative_to(repo_root).as_posix()
-        for path in src_dir.rglob("*.py")
-        if path.name != "__init__.py"
+        for path in code_files
     }
     return render_markdown(pact_sections, code_refs, all_code_files)
 
 
 def main(argv: list[str] | None = None) -> int:
+    configure_utf8_output()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stdout", action="store_true", help="Print the generated map.")
     parser.add_argument("--check", action="store_true", help="Fail if docs/pact_code_map.md is stale.")
@@ -221,7 +243,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         markdown = build(repo_root)
-    except FileNotFoundError as exc:
+    except (InputScopeError, OSError, UnicodeError) as exc:
         print(f"build_pact_code_map: {exc}", file=sys.stderr)
         return 1
 

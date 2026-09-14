@@ -817,3 +817,207 @@ This local checkpoint is not full-gate acceptance, Main integration, a push,
 a tag or a release. BUILD-05 remains on HOLD. No incident-impact conclusion,
 artifact disposal, process action, host change or next implementation slice
 is authorized by this disposition.
+
+## 2026-09-13 BUILD-03 Generator Input Boundary Candidate
+
+The human controller authorized the next bounded BUILD-03 slice in the existing
+environment. This candidate changes input discovery and CLI output encoding for
+the claim matrix and reverse Pact-code map; it is not independently accepted
+or checkpointed. The earlier documentation checkpoint does not cover this code.
+
+- A shared non-CLI helper selects Git index membership and reads current working
+  files. Both generators exclude matching untracked/ignored scratch. Staged
+  additions, tracked-but-ignored paths and unstaged edits stay eligible; staged
+  deletions disappear, while missing selected working files refuse the run.
+- Selected input paths reject invalid/unresolved index records, links/reparse
+  components and non-regular/missing files. Wrong/non-Git roots and Git failures
+  refuse without a directory-walk fallback. Inherited Git redirection is ignored
+  and discovery disables fsmonitor. This is not source authentication, an output
+  guard, concurrent-writer protection or a host sandbox.
+- The builder ran 18 infrastructure unittest methods successfully, with no
+  skips, in owned disposable Git/source fixtures. Proof includes live generator
+  subprocesses, Unicode filenames/output under an inherited cp1252 setting,
+  unchanged output sentinels after refusal, a real symlink refusal, and mocked
+  reparse/unmerged/invalid-path cases. No actual Windows junction was created.
+- An explicitly selected PowerShell Core 7.6.5 process reproduced synthetic
+  native exit statuses 0 and 23, Unicode stdout/stderr and import-path restoration.
+  Python was 3.13.13. This is one chosen route, not all-command or cross-shell
+  parity, and not an unattended scheduled-run proof.
+- Read-only live claim-floor and reverse-map checks passed. Both generated
+  stdout views matched the existing tracked documents after only timestamp,
+  line-ending and final-newline normalization. No generated file was written.
+  No kernel source, canonical test, registration, claim tag or measured proof
+  number changed; canonical acceptance and coverage were not rerun.
+- Bounded launcher inventory identified no tracked/local launcher migration
+  target, active non-sample hook or visible native service/task definition with
+  a literal current Roots/Main path. Indirect/relative references, inaccessible
+  definitions, global editor/agent configuration and running-process ownership
+  remain unverified. No installation or host configuration changed.
+- The tool rejected an initial combined test/empty-parent-removal command before
+  execution. Explicit parent removal was not retried. The test-only run used a
+  newly owned external review parent; child fixtures cleaned up and that empty
+  parent is retained. Existing incident artifacts and prior working changes
+  were preserved. No broader cleanup or process termination was performed.
+
+Review remains pending. BUILD-03 retains resolver/Pact-authority and hygiene
+selection decisions outside this slice; their current exceptions were recorded,
+not changed. BUILD-02 cleanup, BUILD-05 demo-exit/coverage-target disposition,
+promotion, other lanes and host isolation are not closed or authorized here.
+This candidate is not full-gate acceptance, Main integration, push, tag or release.
+
+
+## 2026-09-14 BUILD-03 F1-F8 Correction Candidate
+
+Independent review returned HOLD on the generator-boundary candidate. The human
+controller authorized a bounded F1-F8 correction and two TEMP-spelling fixture
+runs, followed by focused independent re-review. This receipt qualifies the
+2026-09-13 generator receipt; all earlier receipt bytes are preserved. It does
+not reopen the separately checkpointed documentation disposition or close
+BUILD-03.
+
+Correction scope:
+
+- F1: the selector uses Windows `GetLongPathNameW` only to compare the supplied
+  root with Git's top-level spelling. Existing root/ancestor `lstat` checks run
+  first; selected paths retain the supplied spelling. Conversion errors refuse
+  the run. No drive-alias equivalence, host configuration or launcher change.
+- F2-F5: fixture refusals now identify missing-file, Git and decoding causes or
+  the specific path/mode error. The malformed traversal target exists outside
+  the checkout within the owned fixture. Valid-root selection is a positive
+  control for nested-root refusal; an actual directory replacing an indexed
+  file exercises the filesystem non-regular branch. New Windows cases cover
+  real 8.3 spelling and a simulated different reported drive spelling.
+- F6-F7: TESTING records TEMP/skip conditions, Git/runtime identification and
+  host Git configuration dependence. Selector discovery strips all inherited
+  `GIT_*` variables, including the fixture setup's configuration exclusions.
+  System/global/repository configuration can therefore affect discovery;
+  fsmonitor is explicitly disabled. UTF-8 and name-shape checks cover every
+  index record before filtering; stage/mode/filesystem checks cover selections.
+- F8: the resolver inventory now distinguishes Git-enumerated reference inputs
+  plus the resolver's self-admission from the Pact-heading directory walk.
+  This corrects a pre-existing documentation error; resolver code is unchanged.
+
+Builder evidence actually run on 2026-09-14:
+
+- `python -B docs/test_build_inputs.py -v`: 23 tests passed, no failures,
+  errors or skips, exit 0, under each of the same owned fixture base's long and
+  Windows 8.3 spellings. TEMP, TMP and TMPDIR were set only in child environments;
+  each child's `tempfile.gettempdir()` matched its selected spelling. The
+  original 18-test builder receipt omitted TEMP spelling; review reported
+  4 failures and 4 errors under short spelling and 18 passes under long spelling.
+- Both corrected runs included the selected PowerShell Unicode stdout/stderr,
+  native exits 0/23 and scoped PYTHONPATH-restoration case, the real symlink
+  case, and the real 8.3 regression. No skips occurred on this host; other hosts
+  can explicitly skip for absent shell selection, non-Windows platform, absent
+  distinct 8.3 spelling or unavailable symlink support/privilege.
+- Runtime: Python 3.13.13, PowerShell Core 7.6.5, PATH-resolved Git
+  2.55.0.windows.1. Exact executable paths, TEMP spellings, commands, output and
+  exit records are retained in the ignored handoff's named private review
+  directory. Its fixture base was empty after both runs.
+- Syntax parsing of the two corrected Python files and `git diff --check`
+  passed. Byte comparison preserved the prior 61,344-byte receipt prefix and
+  every ROADMAP byte outside BUILD-03's row. All other tracked files, protected
+  artifacts, HEAD and index were unchanged against the pre-correction manifest.
+- No canonical acceptance, coverage, baseline, combined hygiene or live
+  generator output-equivalence run was repeated. The earlier static/output
+  results remain earlier builder/reviewer evidence. Kernel figures
+  181 functions / 3013 assertions / 0 failures, 92.7% coverage and 26 modules
+  are inherited, not remeasured here.
+
+The builder reconciled ROADMAP's previously reported hash change to
+human-authorized SITE bookkeeping, preserved separately from this correction.
+Only BUILD-03's row changes in this pass. The SITE prerequisite and all other
+queue rows remain intact; pre-existing threat-model, coverage-tracker and
+BUILD-05 work remain outside this candidate's attribution.
+
+The candidate remains uncommitted and awaits focused independent re-review and
+explicit human disposition. No local checkpoint, full-gate acceptance, Main
+integration, release, host sandbox or Windows migration is claimed. Resolver
+and hygiene selection exceptions, later-read/concurrent-writer limits,
+hard-link and output-path limits, and the outstanding incident questions
+remain open. A review PASS would not itself authorize those later actions.
+
+
+## 2026-09-14 BUILD-03 Correction Review and Wording Disposition
+
+The human controller relayed CL's cross-family PASS for CX's F1-F8 correction,
+with two nonblocking Low wording findings, then authorized documentation-only
+L1/L2 corrections and recording that scoped PASS. CL's review covered the named
+correction, not full BUILD-03 acceptance, a checkpoint, Main integration or release.
+The reviewed code and tests are unchanged by this disposition.
+
+CL reported static review of the selector, tests, relevant generator/resolver
+callers and changed documentation, plus read-only provenance, snapshot, diff and
+preservation checks. CL did not execute the fixture tests or generators. The two
+23-test runs remain recorded builder evidence, not independently reproduced
+execution. CL did not independently reproduce the earlier SITE subtraction claim
+or the earlier review's failure/error split.
+
+Qualifications to the preceding F1-F8 receipt; the entire prior 65,910 bytes of
+history are preserved:
+
+- **L1 — executable discovery:** bare `git` follows the platform's process
+  search. On Windows, the parent application's directory, parent current
+  directory and Windows/system directories are searched before PATH. TESTING
+  now describes that search rather than treating PATH as the sole source.
+- The recorded Git path was returned by `shutil.which("git")`; the runner
+  invoked that looked-up path to obtain Git 2.55.0.windows.1. This does not
+  establish the executable image used by each test/selector child invoking
+  bare `git`. Existing artifact fields and earlier "PATH-resolved Git" labels
+  are lookup/probe records, not observed identities of those children.
+- **L2 — TEMP observation:** for each run, a same-environment probe child's
+  `tempfile.gettempdir()` matched the selected spelling. The probe was separate
+  from the test process; the latter did not report its selected temp directory.
+  Earlier "each child's" wording must be read with this qualification.
+
+The original review packet, manifests, snapshots, logs and receipt bytes remain
+unchanged. The current documentation and handoff carry these qualifications;
+the frozen packet continues to describe the bytes CL reviewed. CL's PASS applies
+to that reviewed correction. These human-authorized wording updates have not
+received a further independent review.
+
+Only TESTING wording/status, BUILD-03's ROADMAP row, this appended receipt and
+the private current handoff changed. Text/diff, hash and Git-state checks were
+used for this documentation pass; no fixture suite, generator, canonical
+acceptance, coverage, baseline or combined hygiene gate was run. No kernel
+figure was remeasured.
+
+BUILD-03 remains blocked with reviewed evidence for the F1-F8 slice, awaiting
+explicit human checkpoint/proof disposition. Resolver/hygiene selection and host
+boundary work remain open. SITE-01 and BUILD-05 remain HOLD. No files were staged,
+committed or promoted, and no push, release or new implementation slice was authorized.
+
+
+## 2026-09-14 BUILD-03 Generator Boundary Local Checkpoint
+
+The human controller authorized a BUILD-03-only local checkpoint on
+`root-down-to-hell`, followed by preparation of a bounded remainder proposal
+for review. Implementation of that next slice is not authorized. The commit
+containing this receipt records the generator-boundary checkpoint.
+
+The checkpoint includes the shared selector, its standalone infrastructure
+tests, the two generator changes, BUILD-03's TESTING changes, its ROADMAP row
+and its appended generator/correction/disposition receipts. Only that row is
+updated in the committed ROADMAP; pre-existing queue relocations, SITE notes
+and other queue changes remain working-tree changes. The earlier uncommitted
+BUILD-05 receipt is likewise excluded from this commit and preserved in place.
+THREAT_MODEL, COVERAGE_TRACKER and protected evidence remain outside the commit.
+
+CL's cross-family PASS covers the F1-F8 correction. Human-authorized L1/L2
+wording qualifications and checkpoint bookkeeping are recorded separately from
+that review; they do not claim another independent review. The two 23-test runs
+with no skips, including the selected PowerShell case, remain earlier builder
+evidence. CL reviewed the records without running those tests.
+
+Checkpoint validation is limited to staged-content attribution, syntax/inventory
+inspection without importing RSS, whitespace checks and hash/Git preservation.
+The staged Python inventory is 64 files: 27 guarded entrypoints and 37 without
+a main guard. No fixture suite, generator, canonical acceptance, coverage,
+baseline or combined hygiene gate was run for this checkpoint. No kernel proof
+figure was remeasured.
+
+The checkpoint does not close BUILD-03 or establish a host sandbox. Resolver/
+hygiene input selection and remaining execution-boundary decisions stay open.
+The authorized next activity is a proposal, not implementation. SITE-01 and
+BUILD-05 remain HOLD. No Main integration, push, tag, release, host redesign
+or other workstream is included.

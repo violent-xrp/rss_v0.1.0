@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """build_claim_matrix.py — generate docs/claim_matrix.md from split tests.
 
-Walks the test modules, finds every `# CLAIM: §x.y.z — description` tag, and
+Selects tracked test modules, finds every `# CLAIM: §x.y.z — description` tag, and
 builds a markdown document mapping Pact sections to the test functions that
 prove them. The output is a grep-friendly, human-readable traceability
 matrix — the Phase G deliverable.
@@ -25,6 +25,11 @@ import sys
 from collections import defaultdict
 from datetime import datetime, UTC
 from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+from build_input_scope import InputScopeError, configure_utf8_output, tracked_inputs
 
 
 CLAIM_RE = re.compile(r"^\s*#\s*CLAIM:\s*(.+?)\s*$")
@@ -203,12 +208,19 @@ def render_markdown(matrix: dict, total_tests: int, total_claims: int) -> str:
 
 
 def main() -> int:
+    configure_utf8_output()
     repo_root = Path(__file__).resolve().parent.parent
     tests_dir = repo_root / "tests"
-    test_files = sorted(
-        p for p in tests_dir.glob("test_*.py")
-        if p.name not in {"test_all.py", "test_support.py"}
-    )
+    try:
+        test_files = tracked_inputs(
+            repo_root,
+            lambda p: len(p.parts) == 2 and p.parts[0] == "tests"
+            and p.match("test_*.py")
+            and p.name not in {"test_all.py", "test_support.py"},
+        )
+    except InputScopeError as exc:
+        print(f"[claim-matrix] {exc}", file=sys.stderr)
+        return 1
     if not test_files:
         print(f"no split test modules found under {tests_dir}", file=sys.stderr)
         return 1

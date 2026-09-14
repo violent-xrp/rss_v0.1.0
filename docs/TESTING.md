@@ -303,11 +303,11 @@ and the human controller authorized its bounded checkpoint.
 - **BUILD-03 — shell and scan boundaries:** checked-in RSS gates are Python;
   do not rewrite them merely to select PowerShell 7 for Windows launchers.
   Bash-style `PYTHONPATH=src ...` examples need a labelled PowerShell equivalent,
-  and Unicode output must be tested at the Python process boundary. Public
-  hygiene/resolver scans mostly use Git-tracked content, but claim generation
-  scans live `tests/test_*.py` and the reverse map scans live source Python.
-  Keep scratch programs outside those roots; ignored files are not automatically
-  excluded from every generator, nor automatically cleaned from disk.
+  and Unicode output must be tested at the Python process boundary. The original
+  claim/reverse-map discovery used live directory walks; the candidate below
+  narrows those two supported generator paths. Other scanners retain distinct
+  selection rules. Keep scratch outside source/Pact roots; ignored files are
+  not automatically excluded from every scanner or cleaned from disk.
 
 Helper-factory consolidation, repeated teardown, grouping, and stale test wording
 from the former Future Cleanup list remain candidates under BUILD-02. Any future
@@ -348,11 +348,132 @@ Offline fixture evidence is not a general network restriction. Similarly,
 classified as read-only merely from their names. Its default classification
 smoke test is distinct from the canonical acceptance runner.
 
+### BUILD-03 Generator Boundary Candidate
+
+This bounded implementation follows the documentation checkpoint. Independent
+cross-family review passed the F1–F8 correction with two Low wording findings.
+The human controller authorized their documentation-only correction and then a
+local checkpoint of the generator slice; see the
+[checkpoint disposition](roadmap/ACCEPTANCE_HISTORY.md#2026-09-14-build-03-generator-boundary-local-checkpoint).
+BUILD-03 and host-isolation work remain open. No launcher, account, permission
+profile, scheduler or installation is added.
+
+Closure criteria for this slice:
+
+- Both traceability generators select index membership, read working-file
+  content, and exclude matching untracked/ignored scratch. Staged additions
+  and unstaged edits remain visible; a tracked file is not dropped because an
+  ignore rule later matches it. Staged deletion removes membership, while an
+  unstaged missing selected file refuses the run.
+- Selection refuses a wrong/non-Git root and Git failure. UTF-8 decoding and
+  relative-path shape checks apply to every index record before filtering;
+  stage, mode and filesystem checks apply only to selected inputs. Those checks
+  refuse unresolved stages, non-file index modes, and missing/non-regular or
+  linked/reparse selected inputs and ancestors. No filesystem-walk fallback.
+  Reference extraction and reverse-map module totals use the same selected set.
+- UTF-8 output is established inside both generator CLIs. Controlled child
+  tests cover Unicode output and failed input discovery; a separately selected
+  PowerShell route must preserve output and native failure status after scoped
+  environment restoration. This does not establish every workflow's encoding
+  parity or prove Windows PowerShell 5.1 compatibility.
+- Account for known RSS launch points through read-only discovery, distinguish
+  absent targets from inaccessible/indirect definitions, and migrate nothing
+  merely because a newer shell exists. Record the actual shell/interpreter.
+- Keep current generated output equivalent, historical receipts intact and
+  canonical kernel registrations/counts unchanged. The scoped review PASS does
+  not authorize checkpointing or acceptance of all BUILD-03.
+
+`docs/build_input_scope.py` is the shared non-CLI selector. It uses NUL-delimited
+Git index records, removes inherited `GIT_*` variables and disables the Git
+fsmonitor setting for its discovery commands. This also removes
+`GIT_CONFIG_NOSYSTEM` and `GIT_CONFIG_GLOBAL`: discovery can read host system,
+global and repository configuration. Fixture setup commands separately use an
+empty global configuration and disable system configuration; that setup does
+not isolate selector discovery from host configuration. Bare `git` uses the
+platform's process search. On Windows, the parent application's directory, its
+current directory and Windows/system directories are searched before PATH; see
+the [Windows search order](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw).
+A recorded `shutil.which("git")` path is a lookup result, not an observation of
+each selector child's executable. The selector does not authenticate source or
+exclude tracked generated files by guessing from their names. Adding a new
+source/test file requires deliberate index membership before it enters these two generators;
+an untracked candidate needs a separately scoped review. This is not authority
+to stage files automatically.
+
+On Windows, `GetLongPathNameW` expands the supplied root's 8.3 spelling only for
+the comparison with Git's reported top level. Conversion failure refuses the
+run. The supplied root and ancestors are checked with `lstat` first, and returned
+input paths retain that supplied spelling. The correction does not add drive
+alias equivalence. Supported generator CLIs already resolve their script path
+before passing a root to the selector; ancestor refusal therefore covers the
+path supplied to the selector, not an earlier launcher spelling.
+
+The reverse-map low-level directory parsers retain their non-Git fixture API;
+only `build()` and the supported CLI apply the selector. No sandbox, concurrent
+writer lock, hard-link isolation, output-destination containment, or protection
+against arbitrary imported code is established. A file can change after the
+preflight; existing default output paths and writing modes are not hardened here.
+
+Boundary work retained under this same task, not silently closed: the resolver
+still builds its Pact heading set from a directory walk and admits its own
+untracked file; hygiene retains explicit untracked-loader exceptions and its
+separate Git path parser. External `--pact` semantics and candidate-file inclusion
+need a bounded compatibility decision before those gates change. Other Git
+consumers are not claimed to use this selector. These are not new queue rows.
+
+Bounded launcher discovery found no tracked shell/IDE launcher configuration,
+no configuration at the checked local IDE locations, and only sample Git hooks.
+Visible native service/task definitions had no literal current Roots/Main path
+match. Indirect, relative, environment-variable and alias references, global
+editor/agent settings, invisible definitions and running-process ownership were
+not established. No identified migration target is not proof of no automation.
+The observed proof shell is PowerShell Core 7.6.5 supplied by the current tool
+environment, not a permanently installed project launcher. No account change,
+Windows upgrade, 5.1 removal or new PowerShell installation is required by this
+candidate. Exact local paths and query limitations belong in the ignored handoff.
+
+Infrastructure proof (not canonical kernel acceptance):
+
+```powershell
+python -B docs/test_build_inputs.py
+```
+
+It creates only owned temporary Git/source fixtures and uses inspected child
+commands. Refusal assertions identify missing-file/Git/decoding causes or the
+specific path/mode refusal; the nested-root case first proves valid-root
+selection. A real selected-file-as-directory case covers non-regular filesystem
+input. Windows cases exercise real 8.3 spelling and simulate a different Git
+drive spelling without creating a drive alias. Non-Windows platforms skip those
+Windows cases; absent distinct 8.3 spelling skips its regression explicitly.
+The real symlink case can skip when creation or privilege is unavailable.
+
+The optional shell case requires `RSS_PROOF_POWERSHELL` to name the explicitly
+approved existing executable; absent that selection it skips and must not be
+reported as shell proof. Set it only in the test process's environment, or restore
+its prior value afterward. The proof installs no executable. Record interpreter,
+selected shell paths/versions, the Git path returned by `shutil.which` and the
+version returned by invoking that looked-up path. Label lookup results separately
+from observed selector-child executable identity. Record TEMP/TMP/TMPDIR
+spellings and each skip per run. Review's 18-test run failed under a short TEMP
+spelling and passed under the same directory's long spelling; the original
+builder result omitted TEMP spelling. On 2026-09-14, the corrected suite passed
+23 tests with no skips under each spelling, including the selected PowerShell
+case. These remain builder results; CL reviewed their records without running
+the tests. See the
+[correction receipt](roadmap/ACCEPTANCE_HISTORY.md#2026-09-14-build-03-f1-f8-correction-candidate)
+and [review and wording disposition](roadmap/ACCEPTANCE_HISTORY.md#2026-09-14-build-03-correction-review-and-wording-disposition)
+for versions, probe qualifications and scope. This is separate from canonical
+acceptance.
+Temporary cleanup failures remain visible; preserve unresolved residue and
+report it, never terminate other processes to remove it.
+
 ### BUILD-03 Command and Effect Inventory
 
-Documentation-only slice, source-inspected on 2026-09-12; independent static
+Original documentation-only slice, source-inspected on 2026-09-12; independent static
 review passed and the human controller authorized a local checkpoint on
 2026-09-13. See the [bounded disposition](roadmap/ACCEPTANCE_HISTORY.md#2026-09-13-build-03-documentation-only-review-disposition).
+The two generator rows and new infrastructure route below describe the subsequent
+candidate, whose F1–F8 correction received a separate scoped review PASS.
 This is the maintained invocation/effect table, not another queue or permission
 grant. ROADMAP owns next actions.
 No command below is authorization to run it, install a dependency, contact a
@@ -361,8 +482,12 @@ to identify it, including guessed `--help` or `--check` flags.
 
 Reconciliation uses `git ls-files -z -- '*.py'`, parses source without importing
 it to find `if __name__ == '__main__'` guards, then inspects each dispatch and its
-called helpers. At this snapshot: 62 tracked Python files, 26 guarded entrypoints
-listed below and 36 without such a guard. Compare the table's source-path set
+called helpers. At the documentation checkpoint: 62 tracked Python files,
+26 guarded entrypoints and 36 without such a guard. The generator checkpoint
+adds the unguarded `docs/build_input_scope.py` helper and guarded
+`docs/test_build_inputs.py` proof: 64 tracked Python files, 27 guarded entrypoints
+and 37 without such a guard. Before a new candidate is tracked, account for it
+as an explicit supplement to index discovery. Compare the table's source-path set
 against discovery, not just the count. Credit module-form aliases and focused
 imports against their source files; do not count aliases as new scripts.
 This does not inventory running processes, external launchers or scripts in
@@ -389,15 +514,16 @@ destination. A `--json` flag is not uniformly a file-output option.
 
 | Entrypoint | Invocation and modes | Effects, outputs and exit/cleanup limits |
 | --- | --- | --- |
-| `docs/build_claim_matrix.py` | `python -B docs/build_claim_matrix.py`; `--stdout`; `--floor-only` | Reads live split-test source; default writes `docs/claim_matrix.md`. Floor-only takes precedence, then stdout; both avoid that write. Other flags are not validated: `--help` or `--check` alone still writes. Normal success 0; missing modules/floor findings 1. Does not run tests. |
-| `docs/build_pact_code_map.py` | `python -B docs/build_pact_code_map.py`; `--check`; `--stdout` | Reads live `src/rss` and Pact; default writes `docs/pact_code_map.md`. Check compares only; stdout prints and takes precedence over check. Current 0, missing/stale check 1. No proof children. |
+| `docs/build_claim_matrix.py` | `python -B docs/build_claim_matrix.py`; `--stdout`; `--floor-only` | Candidate: Git index selection of immediate split-test paths, then live working-source reads; default writes `docs/claim_matrix.md`. UTF-8 stdout/stderr. Floor-only takes precedence, then stdout; both avoid that write. Other flags are not validated: `--help` or `--check` alone still writes. Normal success 0; discovery/missing modules/floor findings 1. Git discovery children, no test execution. |
+| `docs/build_pact_code_map.py` | `python -B docs/build_pact_code_map.py`; `--check`; `--stdout` | Candidate: Git index selects source/Pact inputs, then reads live content; default writes `docs/pact_code_map.md`. UTF-8 stdout/stderr. Check compares only; stdout prints and takes precedence over check. Current 0; input discovery/read or missing/stale check 1. Git discovery children, no proof children. Lower-level parser helpers retain a separate fixture-only directory API. |
 | `docs/build_project_status.py` | `python -B docs/build_project_status.py`; `--check`; `--stdout`; internal `--assume-gates-passed` | Default runs baseline/map children and writes `docs/PROJECT_STATUS.md`; check/stdout suppress that write, not the children. Assumed-green mode skips those children and reads existing docs, not fresh proof. Child failures can be rendered as RED/YELLOW rather than a nonzero generation exit. Own freshness failure 1, caught build/link failure 2. No Git-cleanliness test. |
 | `docs/check_contact_surface.py` | `python -B docs/check_contact_surface.py` | Read-only Git enumeration and tracked-content checks; console output. Pass 0, findings 1; no proof children or intended file writes. |
 | `docs/check_public_hygiene.py` | `python -B docs/check_public_hygiene.py` | Runs baseline `--check --require-clean`, contact, claim floor, map check, assumed-green status check and resolver check, then name/callsign scans. Acceptance/coverage children create fixtures and owned coverage data. All steps run despite earlier failures; final aggregate 0/1. This wrapper is not read-only or a sandbox. |
-| `docs/resolve_pact_sections.py` | `python -B docs/resolve_pact_sections.py --check`; optional `--repo PATH`, `--pact PATH`, `--json PATH` | Default/check alone read tracked content and Pact via Git enumeration. `--json PATH` creates parent directories and writes a report **even with `--check`**; that flag is parsed but does not gate writes. Exit 0 clean, 2 phantom-only, 3 structure-only, 4 both. Changing inspected roots needs explicit scope. |
+| `docs/resolve_pact_sections.py` | `python -B docs/resolve_pact_sections.py --check`; optional `--repo PATH`, `--pact PATH`, `--json PATH` | Reference inputs use Git enumeration plus explicit admission of the resolver's own file; Pact headings use a directory walk. `--json PATH` creates parent directories and writes a report **even with `--check`**; that flag is parsed but does not gate writes. Exit 0 clean, 2 phantom-only, 3 structure-only, 4 both. Changing inspected roots needs explicit scope. |
 | `docs/sync_baseline.py` | `python -B docs/sync_baseline.py`; `--check`, `--no-cov`, `--no-claim`, `--require-clean`, `--json` | Preflights archives/runtime paths, then runs acceptance, Git module discovery, coverage and matrix handling. Default synchronizes `CURRENT_DOCS` and regenerates matrix; check suppresses those writes, not acceptance/coverage. No-cov skips only coverage; no-claim skips only matrix handling. Require-clean concerns parsed acceptance failures, not Git status. JSON prints. Archive replacement owns sibling temps; ordinary docs use direct writes, no multi-file transaction. Parsed acceptance can hide child failure and matrix regeneration can fall back to old output; those defects remain open. Check/orphans 1, specified preflight/proof failure 2. |
 | `docs/test_run_coverage.py` | `python -B docs/test_run_coverage.py` | Separate unittest infrastructure proof; real owned temporary files/SQLite/link fixtures with mocked child dispatch. No live coverage/baseline pipeline. Unittest verdict; context-managed cleanup, with deliberate failure injection. Not canonical registration. |
 | `docs/test_sync_baseline.py` | `python -B docs/test_sync_baseline.py` | Separate unittest infrastructure proof; real temporary archive writes, patched root and orchestration/child boundaries. Does not run the live synchronizer CLI. Unittest verdict and owned fixture cleanup; not canonical registration. |
+| `docs/test_build_inputs.py` | `python -B docs/test_build_inputs.py`; optional explicitly selected `RSS_PROOF_POWERSHELL` environment variable | Candidate unittest infrastructure proof. Owns temporary source/Git fixtures, runs Git init/add/index commands there, invokes in-process and copied generator CLIs, and optionally a chosen PowerShell with synthetic Python children. Fixture base refuses Git-checkout ancestry and linked/reparse ancestry. Filesystem fixtures, output sentinels and failure injection; visible cleanup errors. No kernel registration or host configuration change. Selector Git discovery retains host configuration dependence. Shell selection, Windows platform/8.3 availability and symlink privileges can cause explicit skips; record each skip and TEMP spelling. |
 | `examples/demo_suite.py` | `python -B examples/demo_suite.py --offline`; alternate `--live-llm`, `--db PATH`, `--keep-db`, `--artifacts DIR`, `--artifact-prefix NAME` | CLI defaults **live** if neither mode is supplied; report helper defaults offline. Creates/updates SQLite and TRACE; artifact options write JSON/Markdown/TRACE outputs. Cleans only its own auto-created DB unless retained, never caller-supplied DB; close/cleanup errors can be swallowed. Live contacts configured model endpoint. Normal CLI exit is currently 0 for PASS **or ATTENTION**; inspect report predicates, not exit alone. |
 | `examples/demo_llm.py` | `python -B examples/demo_llm.py`; compatibility entrypoint, no supported flags | Calls demo `run(live_llm=True)` unconditionally; `--offline` is not parsed or forwarded. Same live network, DB and cleanup effects; no verdict-to-exit mapping. Prefer the canonical demo CLI for explicit mode selection. |
 | `run_coverage.py` | `python -B run_coverage.py`; `--html` | Runtime-path refusal precedes children/temp creation. Runs canonical coverage and report using the same interpreter/CWD; strips inherited `COVERAGE_*` redirection. Owns a unique temporary config/data/report directory. Default/failure cleans it; successful HTML retains it and prints paths. Preserves child failure; output/cleanup failures surface nonzero. Root `.coverage` is not refreshed. No filesystem/network sandbox for tests. |
@@ -436,7 +562,8 @@ DB. `export-trace [filename] [--text]` writes the selected file (default
 restricted recovery instead permits status/clear only. The adapter's URL is
 configurable: default loopback is not proof of absent network access.
 
-The 36 non-entrypoint files are accounted for through callers and the
+The non-entrypoint files, including the candidate input-selector helper, are
+accounted for through callers and the
 [Test Layout](#test-layout), not labelled inert. Library/package imports,
 runtime/persistence, adapter and seeding helpers inherit callers' effects;
 pytest loads `conftest.py` automatically. This table does not authorize unknown
