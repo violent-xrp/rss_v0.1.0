@@ -2,10 +2,16 @@
 
 _Licensed under AGPLv3; see `LICENSE/LICENSE_INDEX.md`._
 
-ROADMAP is the rolling work queue for the RSS kernel and its build system.
+ROADMAP is the rolling work queue for Rose Sigil Systems: project structure,
+the kernel, development and repository-lane work, and the website.
 It selects work and records disposition; linked owners hold technical detail.
 The current line is treated as Genesis. The next version decision is deferred,
 not inferred from an old phase label or a local tag.
+
+[Sigil Crucible](docs/SIGIL_CRUCIBLE.md) names the development mechanism and routes
+BUILD documents to their existing owners. The `Build system` workstream also
+schedules repository-lane operations and method handoffs; it does not place
+those owners inside Crucible. Existing BUILD IDs remain stable.
 
 ## Active Work
 
@@ -25,12 +31,18 @@ after that sequence; BUILD-02/03 stay deferred. Report new safety blockers first
 | Build system | BUILD-06 | Main promotion and Roots reconciliation | paused | unreviewed | After BUILD-05 acceptance and exact Git approval, merge into Main, gate the result and push; reconcile Main back into Roots, gate and push Roots. No tag. | [Promotion loop](docs/BUILD_DISCIPLINE.md#promotion-and-reconciliation-loop) |
 | Build system | BUILD-07 | Preservation-first Lab baseline refresh | paused | unreviewed | After BUILD-06, verify recoverable preservation of unique Lab history, dirty/untracked work and needed ignored context before any replacement; review dispositions, then refresh shared baseline/instructions with approval. Keep experiments and Lab rules distinct; no blind reset or wholesale Lab promotion. | [Lane boundaries](docs/BUILD_DISCIPLINE.md#three-trees-one-direction-of-trust) |
 | Build system | BUILD-08 | Separate Taproot review handoff | paused | unreviewed | After BUILD-07, route pending method changes into a separate Taproot review/disposition. This row tracks handoff only; candidate detail and acceptance stay in Taproot, without inheriting the kernel roadmap. | [Method ownership](docs/PROJECT_CONTROL_SURFACE.md#supporting-evidence-and-session-state) |
+| Project | DOCS-04 | Rose Sigil Systems: named project architecture and boundary reconciliation | paused | unreviewed | After the existing build/readiness sequence, reconcile project structure, runtime behavior and development/proof views through current owners. Preserve established RSS names; label implemented, proposed and uninspected boundaries. Reuse BUILD-03 and KERNEL-05 evidence. No moves or new proof totals. | [Architecture map routes](docs/PROJECT_CONTROL_SURFACE.md#named-architecture-map-reconciliation) |
 | Kernel | KERNEL-03 | Atomic Safe-Stop entry | paused | unreviewed | Specify halt/receipt failure outcomes and restart proof before implementation. | [Entry finding](docs/KERNEL_FINDINGS.md#atomic-safe-stop-entry) |
 | Kernel | KERNEL-04 | OATH duration enforcement and coercion semantics | paused | unreviewed | Decide expiry semantics and restoration obligations; keep coercion-warning semantics distinct. | [Consent finding](docs/KERNEL_FINDINGS.md#oath-consent-duration-and-coercion-semantics) |
 | Kernel | KERNEL-05 | Seat load-bearing audit | paused | unreviewed | Map each seat's unique invariant to active callers and behavioral proof; decide unused-route disposition. | [Seat audit](docs/KERNEL_FINDINGS.md#seat-load-bearing-audit) |
 | Kernel | KERNEL-06 | Identity and propagation cluster | paused | unreviewed | Scope caller authentication, actor/request binding, and wrapper/worker propagation separately; recovery design precedes keys. | [Ingress](docs/KERNEL_FINDINGS.md#caller-identity-and-ingress-boundary), [worker context](docs/KERNEL_FINDINGS.md#thread-and-worker-context-propagation), [recovery](docs/KERNEL_FINDINGS.md#t-0-recovery-and-lock-out-before-keys) |
 | Build system | BUILD-02 | Owned temporary-file lifecycle | paused | unreviewed | Scope cleanup/failure-path proof; legacy removal requires separate preservation approval. | [Testing findings](docs/TESTING.md#build-system-findings) |
-| Build system | BUILD-03 | Script accountability and enforced execution boundaries | blocked | checkpointed | The reviewed generator slice is locally checkpointed. Prepare the bounded resolver/hygiene and execution-boundary remainder proposal for human review; no next implementation or full-gate acceptance is selected. | [Remainder scope](docs/TESTING.md#build-03-generator-boundary-candidate), [checkpoint disposition](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-14-build-03-generator-boundary-local-checkpoint) |
+| Build system | BUILD-03 | Sigil Crucible: script accountability and enforced execution boundaries | blocked | checkpointed | The Sigil Crucible documentation/map and its corrections are locally checkpointed after independent review and human disposition. Resolve the retained input-selection compatibility choices before selecting a code slice; the retained proposal remains unimplemented and unreviewed. Full BUILD-03 acceptance and execution-boundary decisions remain open. DOCS-04 stays deferred after BUILD-08; full reorganization stays postponed. | [Sigil Crucible](docs/SIGIL_CRUCIBLE.md#build-03-agreements), [map scope](docs/SIGIL_CRUCIBLE.md#project-context-and-map-scope), [static map](docs/SIGIL_CRUCIBLE.md#build-03-static-map), [retained remainder](docs/TESTING.md#build-03-bounded-remainder-proposal), [documentation checkpoint](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-14-build-03-sigil-crucible-documentation-local-checkpoint) |
+
+DOCS-04 is project-wide work. The human controller explicitly confirmed on
+2026-09-14 that it stays deferred after BUILD-08. This preserves the selected
+build/readiness sequence as an authorized exception to the normal insertion
+rule below; it adds no prerequisite to BUILD-03.
 
 State and Evidence are independent. State is `active` (work underway), `paused`
 (deferred by decision, resumable when chosen), `blocked` (awaiting an external
@@ -41,13 +53,25 @@ the approved destination). Finding/design review is not implementation review.
 Checkpointed does not mean pushed, promoted, or released; landed is not a tag.
 Closed/checkpointed work can still owe full-gate acceptance: see Release Boundary.
 
+BUILD-03's five condition labels belong to the same documentation/map candidate;
+they are not separate implementation slices or a change to other queue rows.
+
+| Label | Accepted agreement | Current evidence and next review |
+| --- | --- | --- |
+| BUILD-03-A | [Stable repository and proof contract](docs/SIGIL_CRUCIBLE.md#build-03-a--stable-repository-and-proof-contract) | Retained: one repository and aggregate command; source paths, registration and reported totals unchanged. Preservation independently checked for the base candidate and both correction deltas; the bounded documentation slice is locally checkpointed. |
+| BUILD-03-B | [Complete dated baseline](docs/SIGIL_CRUCIBLE.md#build-03-b--complete-dated-baseline) | Complete file inventory retained unchanged. Its scope and ownership wording is dated; the new owner remains a declared candidate supplement. |
+| BUILD-03-C | [Role, proof subject, effects and authority](docs/SIGIL_CRUCIBLE.md#build-03-c--role-proof-subject-effects-and-authority) | Mixed-unit map remains provisional. Separate required-authority and observed-enforcement columns were independently checked in the F1-F6 correction; unassessed requirements stay explicit. |
+| BUILD-03-D | [Registration by name](docs/SIGIL_CRUCIBLE.md#build-03-d--registration-by-name) | All 181 entries were independently reconciled by qualified name, with unique definitions and no omissions or duplicates. This is static membership evidence; no acceptance rerun. |
+| BUILD-03-E | [Dependencies before moves](docs/SIGIL_CRUCIBLE.md#build-03-e--dependencies-before-moves) | Key caller/path edges independently checked, including the runtime's shared cold verifier. Interpretations remain provisional; no move or code slice selected. |
+
 Queue upkeep:
 
 - Record each verified finding once with Task ID, workstream, state, evidence,
   next action, and detail link. Keep one implementation slice active.
-- Workstream is the primary goal, not the edited files: `Kernel` or `Build system`,
-  never bare `Build`. The Build posture is unchanged. Task IDs are references,
-  not filenames; `PACT-nn` is reserved within Kernel. No phase or existing ID is renumbered.
+- Workstream is the primary goal, not the edited files: `Project` for project-wide
+  reconciliation, `Kernel`, `Build system`, or `Website`, never bare `Build`.
+  The Build posture is unchanged. Task IDs are references, not filenames;
+  `PACT-nn` is reserved within Kernel. No phase or existing ID is renumbered.
 - Insert new rows above the resume point unless the human controller directs
   otherwise. Insertion records priority, not implementation authority.
 - Reprioritize by moving existing rows, not renumbering IDs or making a new list.

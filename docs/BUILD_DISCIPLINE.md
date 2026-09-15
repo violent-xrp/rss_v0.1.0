@@ -1,6 +1,12 @@
-# RSS Build Discipline
+# Build Discipline — Sigil Crucible and Repository Lanes
 
 _Licensed under AGPLv3; see `../LICENSE/LICENSE_INDEX.md`._
+
+[Sigil Crucible](SIGIL_CRUCIBLE.md) names the development mechanism and routes
+BUILD documents to their existing owners. This guide owns RSS construction,
+review and repository-lane promotion procedure. Routing lane operations here
+does not make them Crucible components; reusable operating method remains with
+Taproot. The responsibility map and ROADMAP queue retain their own jobs.
 
 ## Purpose
 

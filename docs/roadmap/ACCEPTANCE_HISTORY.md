@@ -1021,3 +1021,46 @@ hygiene input selection and remaining execution-boundary decisions stay open.
 The authorized next activity is a proposal, not implementation. SITE-01 and
 BUILD-05 remain HOLD. No Main integration, push, tag, release, host redesign
 or other workstream is included.
+
+## 2026-09-14 BUILD-03 Sigil Crucible Documentation Local Checkpoint
+
+**Disposition:** bounded documentation checkpoint after independent review and
+explicit human authorization. BUILD-03 remains open. This is not implementation
+of the retained input-selection proposal, full-gate acceptance, Main integration
+or release.
+
+**Scope:** [Sigil Crucible](../SIGIL_CRUCIBLE.md) records the development-mechanism
+identity, the five BUILD-03 agreements, responsibility and dependency maps, and
+static registration reconciliation. The complete dated
+[component inventory](../BUILD_COMPONENT_INVENTORY.md) is retained unchanged.
+Supporting document routes and the approved DOCS-04 queue/routing additions are
+included. DOCS-04 remains deferred after BUILD-08 and adds no prerequisite.
+The [retained remainder proposal](../TESTING.md#build-03-bounded-remainder-proposal)
+is supporting documentation, explicitly unimplemented and unreviewed; tracking
+it does not approve its compatibility choices or proof plan.
+
+**Review evidence:** independent review reconciled all 181 registered names to
+distinct definitions and checked key source relationships. Follow-up reviews
+checked the F1-F6 corrections, final terminology and placement wording, packet
+diffs and preservation. The final review reported 727 local links with none
+broken and no actionable findings. These are review results, not fresh
+acceptance or coverage measurements.
+
+**Checkpoint bookkeeping:** review-state wording and this receipt record the
+human disposition. The staged documentation is checked for the selected file
+set, local-link resolution, whitespace and attribution. Earlier queue changes,
+the pre-existing BUILD-05 receipt, threat-model work and coverage-tracker work
+remain outside this checkpoint. Existing working-file history and protected
+evidence are preserved.
+
+**Execution boundary:** no source, test registration, gate executable or reported
+proof total changes. No tests, generators, canonical acceptance, coverage,
+baseline synchronization or combined hygiene/full gates ran for this checkpoint.
+The generator checkpoint at `f2ef219` remains intact. Historical execution figures
+are inherited, and known public-wording/full-gate obligations remain open.
+
+**Next:** resolve the input-selection compatibility contract and the separate
+historical-public-wording disposition before selecting a bounded resolver/hygiene
+implementation. Host execution limits remain separate; this documentation
+checkpoint establishes no host confinement. SITE-01, BUILD-05 and other
+workstream holds are unchanged.

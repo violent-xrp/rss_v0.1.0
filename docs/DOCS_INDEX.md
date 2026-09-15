@@ -18,6 +18,8 @@ This file is a routing layer for the public documentation. It is not a separate 
 
 ## Proof And Gates
 
+- [Sigil Crucible](SIGIL_CRUCIBLE.md) - development-mechanism responsibilities and the BUILD-03 map; routes BUILD IDs to existing owners, including separate lane operations and reusable method.
+
 - `TESTING.md` - canonical gate commands and runner discipline.
 - [COVERAGE_TRACKER.md](roadmap/COVERAGE_TRACKER.md) - synced module coverage detail and target history; not execution order.
 - `claim_matrix.md` - generated Pact-to-test claim traceability.

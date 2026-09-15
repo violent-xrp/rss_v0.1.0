@@ -24,13 +24,14 @@ generators. Historical lists and receipts are not touched.
 | Surface | Owns | Must Not Own | Maintenance Rule |
 | --- | --- | --- | --- |
 | `README.md` | public entry posture, quick start, reviewer path | detailed future architecture or volatile proof history | keep concise; link to evidence docs |
-| `ROADMAP.md` | one Current Build Thread queue for kernel and build-system priorities; release and future inventory | detailed claim proof or a second queue in its supporting sections | record finding, next action, and disposition once; link to detail and closure evidence |
+| `ROADMAP.md` | one Current Build Thread queue for project-wide, kernel, build-system and website priorities; release and future inventory | detailed claim proof or a second queue in its supporting sections | record finding, next action, and disposition once; link to detail and closure evidence |
 | `TRUTH_REGISTER.md` | current public truth, partial truth, non-claims | long design plans | sync proof numbers mechanically |
 | `CLAIM_DISCIPLINE.md` | rules for what RSS may publicly claim | roadmap sequencing | keep tied to runner-truth discipline |
 | `CHANGELOG.md` | chronological landed changes | current-state dashboard | add one coherent line per meaningful commit/lane |
 | `THREAT_MODEL.md` | threat boundaries and non-goals | implementation queue | update when a threat boundary changes |
 | `docs/PACT_ALIGNMENT.md` | human claim-vs-Pact/code alignment inventory | execution order or release plan | update when code, Pact text, or wording risk changes |
-| `docs/TESTING.md` | canonical gate commands, test discipline, and build-system finding/closure detail | product positioning or an independent priority queue | update on verified tool hazards or behavior changes; scheduling stays in ROADMAP |
+| `docs/SIGIL_CRUCIBLE.md` | Sigil Crucible identity, BUILD document routes, responsibility contract and static maps | task scheduling, copied gate commands, runtime authority or historical receipt rewrites | maintain the five BUILD-03 agreement labels and review maps against their source anchors; ROADMAP owns state |
+| `docs/TESTING.md` | canonical gate commands, test discipline, command effects and detailed build execution evidence | duplicate Crucible responsibility rules, product positioning or an independent priority queue | maintain execution detail; route responsibility mapping to SIGIL_CRUCIBLE and scheduling to ROADMAP |
 | `docs/KERNEL_FINDINGS.md` | kernel findings, evidence, consequences, and closure criteria | scheduling, priority, or release claims | preserve distinct requirements; update evidence and closure detail while ROADMAP owns selection and state |
 | `docs/ACTION_PLANE.md` | built broker decision boundary, known lifecycle limits, and future execution vocabulary | release sequencing or volatile proof counts | distinguish registered local proof from future containment and unresolved lifecycle guarantees |
 | `docs/NIST_AI_RMF_MAPPING.md` | reviewer mapping to NIST AI RMF language | certification or compliance claims | keep conservative and evidence-linked |
@@ -98,6 +99,34 @@ second queue. Its existing Action Plane and ROADMAP descriptions are corrected
 to distinguish built broker behavior from future execution and the rolling
 queue from subject-ordered inventory. No owner, file, or requirement is moved.
 Candidate review/disposition stays in ROADMAP; do not add another tracker.
+
+## Named architecture map reconciliation
+
+This section routes the DOCS-04 follow-up; ROADMAP owns its scheduling and
+disposition. Reconcile three connected views through the existing owners:
+
+| View | Existing owners | Reconciliation focus |
+| --- | --- | --- |
+| Project structure | [External Map](EXTERNAL_MAP.md#core-translation), [public control surfaces](#public-control-surfaces), [method ownership](#supporting-evidence-and-session-state) | Rose Sigil Systems as the project; named components, document owners and working lanes; Sigil Crucible's relationship to the kernel and the separate reusable operating method. |
+| Runtime behavior | [Pact Alignment](PACT_ALIGNMENT.md#current-kernel-alignment), [subsystem handles](SUBSYSTEM_HANDLES.md#canonical-handles), [Action Plane](ACTION_PLANE.md#status) | The Pact, eight seats, supporting subsystems, operator/advisor interfaces and action boundaries; separate current mechanics from proposed enforcement. |
+| Development and proof | [Sigil Crucible](SIGIL_CRUCIBLE.md#project-context-and-map-scope), [Testing](TESTING.md#canonical-runner) | Reuse BUILD-03's inventory and mixed-component map to show construction, harnesses, proof subjects, measurements and gates without changing their registration or totals. |
+
+For each component, retain its established name and trace purpose, live
+implementation, dependencies, effects, required authority, observed enforcement
+and supporting evidence. Label implemented, proposed and uninspected portions.
+A named responsibility may span files, and a file may serve several
+responsibilities. Use Mermaid only as a presentation of those sourced facts.
+
+The dated Roots inventory remains the baseline for its recorded scope. A wider
+view must state which lanes and components were inspected; private material
+requires its own scoped access and publication decisions. Do not infer project
+completeness from a single checkout's file count.
+
+This is reconciliation work, not authorization for physical reorganization,
+new repositories, renamed commands, Pact amendments or different proof totals.
+Reuse KERNEL-05 for the seat-invariant audit and BUILD-03 for development
+boundaries; do not create a parallel audit or expand those tasks through a
+diagram. Maintain detail with the owners above and keep one ROADMAP queue.
 
 ## Proposal Lifecycle
 

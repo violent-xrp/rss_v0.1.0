@@ -48,6 +48,29 @@ External readers do not need to adopt the internal vocabulary. They can use the 
 | SEAL | amendment / artifact ratification | Handles review, approval, and ratification of governed artifacts. |
 | SCRIBE | draft and proposal workspace | Builds candidate text and UAP bundles before sealing. |
 
+## Development Terminology
+
+Rose Sigil Systems (RSS) names the overall project. Sigil Crucible names its
+development mechanism: the instructions and tools used to build and verify the
+kernel and related code. Keep project identity and component identity distinct.
+
+Use each established RSS name with its ordinary engineering description.
+Naming identifies a responsibility; it does not claim invention of the
+underlying concept or implementation of every planned capability. Distinguish
+existing behavior, proposed design and unproven limits.
+
+| Project term | Familiar engineering description | Current scope |
+| --- | --- | --- |
+| [Sigil Crucible](SIGIL_CRUCIBLE.md) | development and verification toolchain | Name for existing development tools and their build discipline; consolidated responsibility mapping is a design candidate. It grants no runtime authority or host confinement. |
+| Kernel / runtime | governance runtime and supporting services | Implements the current local governance behavior; its reusable services may also have operator callers. |
+| Proof body | behavioral test | Checks a named behavior. A passing result supports only the checked conditions. |
+| Shared harness | test support and orchestration | Imports, fixtures, counters, guards and result handling; distinct from the behavior being tested. |
+| Aggregate acceptance | combined test-suite runner | The existing canonical registry runs several proof subjects together. |
+| Claim matrix | requirements-to-test traceability | Derived references connect requirement sections and tagged test bodies; path selection affects what is included. |
+| Coverage | package line-coverage measurement | Measures the configured package under the combined suite; it is not an assertion-quality score. |
+| Gate | scripted acceptance check | Supplies evidence for human disposition; a green result does not authorize promotion or publication. |
+| BUILD task ID | build-system work item (development toolchain, repository-lane operation or method handoff) | Stable scheduling reference in ROADMAP, independent of filenames and component names. |
+
 ## Seat Load-Bearing View
 
 RSS has two seat rhythms. They differ by operating cadence, not by rank.

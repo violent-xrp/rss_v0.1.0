@@ -1,4 +1,4 @@
-# RSS Testing Guide
+# Sigil Crucible — Testing Guide
 
 _Licensed under AGPLv3; see `../LICENSE/LICENSE_INDEX.md`._
 
@@ -466,6 +466,130 @@ for versions, probe qualifications and scope. This is separate from canonical
 acceptance.
 Temporary cleanup failures remain visible; preserve unresolved residue and
 report it, never terminate other processes to remove it.
+
+### BUILD-03 Responsibility Classification
+
+[Sigil Crucible](SIGIL_CRUCIBLE.md#build-03-agreements) now owns the five
+human-selected BUILD-03 agreements, responsibility vocabulary and static map.
+The complete [component inventory](BUILD_COMPONENT_INVENTORY.md) remains the
+dated baseline. This heading retains the existing link target; it does not
+duplicate that owner's classification rules.
+
+This guide continues to own runnable commands, command effects, execution
+evidence and the retained input-selection proposal below. The map is a design
+candidate, not acceptance, checkpoint or implementation approval.
+
+### BUILD-03 Bounded Remainder Proposal
+
+**Retained proposal, 2026-09-14; not implemented or independently reviewed.**
+The human has selected responsibility classification and mapping before choosing
+the next code slice. The [current classification](#build-03-responsibility-classification)
+therefore takes precedence over this proposal's earlier implementation sequence.
+The reviewed generator checkpoint at `f2ef219` remains intact.
+
+Resolver/hygiene input selection remains a candidate for later selection against
+that map. Its compatibility decisions and proof plan below remain unresolved;
+no full-gate acceptance or host-isolation claim follows from the checkpoint.
+
+Static source inspection found that the resolver enumerates reference files with
+Git plus self-inclusion, obtains Pact headings through `rglob("*.md")`, resolves
+caller roots before inspection, and silently skips missing reference files.
+Hygiene parses line-delimited Git output and adds three fixed root entrypoint
+candidates outside the index. Its `main()` launches acceptance/coverage-related
+children, so it is not a suitable fixture-only proof command. Tracked Python/
+shell/config caller search found only hygiene's default resolver `--check` call;
+this does not establish whether a human uses the external `--pact` option.
+
+#### Compatibility decisions for human review
+
+| Decision | Recommended contract | Consequence requiring review |
+| --- | --- | --- |
+| Index membership | Both scans use index membership and working-file bytes. Resolver reference coverage stays broad; hygiene keeps its existing private-prefix exclusions and Markdown scan scope. No directory-walk fallback. | Staged additions and unstaged edits participate; ordinary untracked/ignored scratch does not. Missing selected files refuse the scan instead of disappearing from the result. |
+| New entrypoint candidates | Remove automatic inclusion of the resolver and the three declared root entrypoint files. If one of these exact candidate paths exists but is untracked, refuse with a named diagnostic before reading its content. Deliberate staging makes it eligible. | This preserves a visible pre-commit stop for new loaders instead of silently skipping them. No automatic staging and no general untracked-file admission. The fixed existence checks must inspect links/reparse paths without following them. |
+| Pact heading inputs | Select tracked Markdown below the approved Pact directory from the same validated index input set. Refuse missing or empty selected Pact input. | An untracked heading can no longer make a tracked reference appear resolved. Heading parsing, content-decoding rules and reference classifications stay within their current semantics. |
+| Explicit `--pact` | Support the default `pact/` and an explicitly named, validated subtree in the same checkout; interpret relative values from `--repo`. Refuse external directories. | This deliberately narrows today's arbitrary-directory interface and changes relative-path interpretation when launched elsewhere. Retaining external canon support would require a separate source contract; do not silently accept it through a walk. |
+| Caller root handling | Validate supplied roots and ancestors before any operation that could hide a link or alias; reuse the selector's documented 8.3 comparison rule and fail-closed errors. | No new drive-alias equivalence or claim of launcher-spelling protection. Distinguish the explicit caller-root checks from any existing default script-root derivation. |
+
+A second documentation decision is needed before public acceptance. Current
+BUILD-03 wording in this owner and the review/checkpoint receipts contains
+workflow callsigns, while hygiene's scoped Markdown allowlist is empty. Static
+comparison predicts findings; no hygiene verdict was reproduced in this pass.
+The checkpoint bookkeeping introduced some of those occurrences.
+
+Recommended treatment: retain exact original receipt bytes in the existing
+private checkpoint evidence, then obtain explicit approval for role-only wording
+in the affected public prose and receipt lines. This would be a narrow exception
+to the historical-text preservation rule, with exact before/after attribution
+and independent review. Do not broaden the scan allowlist or alter receipt bytes
+under the current proposal-only authorization. If that exception is declined,
+leave the public-hygiene issue open and return a revised disposition.
+
+#### Bounded implementation and proof plan
+
+The proposed code scope is `docs/resolve_pact_sections.py`,
+`docs/check_public_hygiene.py` and focused cases in
+`docs/test_build_inputs.py`. Change `docs/build_input_scope.py` only if the
+approved fixed-candidate checks require a shared validation primitive; its
+existing generator contract must remain intact. Documentation scope is this
+owner, only BUILD-03's queue row, and a new receipt. The role-wording exception
+above requires its own explicit disposition before those preserved lines change.
+No canonical kernel registration or proof-count update is proposed.
+
+After separate implementation/proof authorization, use owned synthetic Git
+fixtures to establish:
+
+- Correct membership for staged additions/deletions, tracked-but-ignored files,
+  dirty working bytes, and untracked source/Pact distractors; an untracked valid
+  Pact heading must not resolve an otherwise invalid reference.
+- Refusal for the named untracked entrypoint candidates, wrong/nested roots,
+  Git errors, malformed or undecodable index names, unresolved/non-file selected
+  entries, missing selected files, and selected links/reparse ancestors.
+  Positive controls and cause-specific assertions must rule out unrelated errors.
+- Correct treatment of spaces/Unicode names and Windows long/8.3 spellings,
+  explicit in-checkout Pact directories, empty Pact input and external Pact
+  refusal. Retain the existing generator regression cases and record each skip.
+- Caller-level propagation: both scans actually use the shared selection result,
+  fail before consuming refused content, and report failure rather than an empty
+  successful scan. Exercise hygiene scan functions without invoking its full
+  wrapper; any resolver child uses only owned fixture roots and no report path.
+- A bounded comparison of selected file lists and classifications on synthetic
+  fixtures, with every intended difference explained. Preserve existing private,
+  provenance-name and callsign scan coverage; do not relax allowlists to pass.
+- Exact candidate hashes, before/after Git attribution, runtime and TEMP spellings,
+  fixture ownership/retention, and preserved unrelated/protected bytes. Hand the
+  candidate through the human for independent review; a PASS still needs human
+  checkpoint disposition.
+
+This plan authorizes no command now. It excludes the combined hygiene wrapper,
+canonical acceptance, coverage, baseline synchronization and generated-document
+refresh. Stop for a compatibility dispute, unexplained preservation change or
+need to alter other workstreams; do not silently expand the slice.
+
+#### Execution limits and later acceptance
+
+The next input-selection slice would leave broader execution requirements open.
+Use the resolver's `--check` route as the proposed first design example: identify
+its approved input/output effects, optional `--json` behavior, Git executable and
+configuration selection, child processes, interruption and output/resource
+limits. Today `--check --json PATH` still writes a report. This proposal neither
+changes that interface nor treats it as read-only.
+
+Keep the existing workstation constraint: no new account, ACL changes, WSL,
+installation, interpreter relocation or host redesign. Current path guards
+constrain cooperating code's selected inputs; they do not confine arbitrary
+Python, imported code or child-process access. No OS-enforced design has been
+selected. Human disposition must retain that limitation or select a separately
+bounded design; it cannot turn fixture success into host-isolation evidence.
+External-launcher discovery gaps remain as recorded in the generator section.
+
+Full-gate acceptance needs a later, explicit run plan after the scoped candidate
+is reviewed: name the acceptance, coverage, baseline, hygiene and generator
+equivalence evidence required, resolve known public-wording findings, and
+preserve run-owned output and existing evidence. The inherited
+181 functions / 3013 assertions / 0 failures, 92.7% coverage and 26 modules remain
+unremeasured. Review, local checkpoint, full-gate acceptance, Main integration
+and release remain separate dispositions. SITE-01, BUILD-05 and other
+workstreams retain their existing holds.
 
 ### BUILD-03 Command and Effect Inventory
 

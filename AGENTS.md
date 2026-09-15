@@ -49,6 +49,7 @@ Tracked-document routing after the task is identified:
 
 - `docs/PROJECT_CONTROL_SURFACE.md` — document ownership, proposal lifecycle,
   generated surfaces, or public-document changes;
+- `docs/SIGIL_CRUCIBLE.md` — build-mechanism identity, responsibilities and BUILD document routing;
 - `docs/BUILD_DISCIPLINE.md` — Build, Landing, promotion, public edits, or gate
   discipline;
 - `CONTRIBUTING.md` — code, tests, pull-request preparation, or contributor
