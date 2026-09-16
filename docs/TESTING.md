@@ -246,8 +246,10 @@ Additional proof bodies are imported and registered by `tests/test_all.py`:
 
 Those three have no `__main__` runner: directly executing their files does not
 run their proofs. Use canonical registration, a deliberately selected focused
-import, or optional pytest collection. `tests/test_support.py` owns shared
-counters, runner/HTTP-guard helpers and cleanup; it is not a proof-body module.
+import, or optional pytest collection. The independent `tests/proof_support.py`
+owns counters, runner/HTTP-guard helpers and Windows stream setup.
+`tests/test_support.py` re-exports those functions for kernel-facing tests and
+retains kernel imports and cleanup. Neither helper is a proof-body module.
 `tests/conftest.py` is pytest's automatic import-path shim, not a standalone
 runner and not loaded by the direct canonical command.
 
@@ -414,12 +416,12 @@ writer lock, hard-link isolation, output-destination containment, or protection
 against arbitrary imported code is established. A file can change after the
 preflight; existing default output paths and writing modes are not hardened here.
 
-Boundary work retained under this same task, not silently closed: the resolver
-still builds its Pact heading set from a directory walk and admits its own
-untracked file; hygiene retains explicit untracked-loader exceptions and its
-separate Git path parser. External `--pact` semantics and candidate-file inclusion
-need a bounded compatibility decision before those gates change. Other Git
-consumers are not claimed to use this selector. These are not new queue rows.
+The generator checkpoint left resolver/hygiene input-selection exceptions open.
+The [same-checkout input candidate](#build-03-bounded-remainder-proposal) below
+now addresses those exceptions after the compatibility decision. Review and
+checkpoint status are maintained in [Sigil Crucible](SIGIL_CRUCIBLE.md) and
+[ROADMAP](../ROADMAP.md). Other Git consumers are not claimed to use this
+selector; broader execution boundaries remain open under BUILD-03.
 
 Bounded launcher discovery found no tracked shell/IDE launcher configuration,
 no configuration at the checked local IDE locations, and only sample Git hooks.
@@ -479,19 +481,23 @@ This guide continues to own runnable commands, command effects, execution
 evidence and the retained input-selection proposal below. The map is a design
 candidate, not acceptance, checkpoint or implementation approval.
 
+The [standalone identity supplement](SIGIL_CRUCIBLE.md#build-03-identity-upkeep--standalone-input-proofs)
+accounts for the input candidate's tooling units, harness and 41 test methods.
+It owns classification; this guide retains commands and execution evidence.
+
 ### BUILD-03 Bounded Remainder Proposal
 
-**Retained proposal, 2026-09-14; not implemented or independently reviewed.**
-The human has selected responsibility classification and mapping before choosing
-the next code slice. The [current classification](#build-03-responsibility-classification)
-therefore takes precedence over this proposal's earlier implementation sequence.
-The reviewed generator checkpoint at `f2ef219` remains intact.
+**Same-checkout input candidate, built 2026-09-15.**
+After the responsibility map and documentation checkpoint, the human selected
+the same-checkout contract for this bounded code slice. The resolver and both
+hygiene scans now use the shared Git-index selector. The generator contract and
+canonical kernel registration remain unchanged.
 
-Resolver/hygiene input selection remains a candidate for later selection against
-that map. Its compatibility decisions and proof plan below remain unresolved;
-no full-gate acceptance or host-isolation claim follows from the checkpoint.
+The selected input contract below is implemented in this working candidate;
+broader execution design, historical public-wording disposition and full-gate
+acceptance remain open. This input contract does not establish a host sandbox or full-gate acceptance.
 
-Static source inspection found that the resolver enumerates reference files with
+At the preceding `b78b99d` checkpoint, static source inspection found that the resolver enumerates reference files with
 Git plus self-inclusion, obtains Pact headings through `rglob("*.md")`, resolves
 caller roots before inspection, and silently skips missing reference files.
 Hygiene parses line-delimited Git output and adds three fixed root entrypoint
@@ -500,14 +506,14 @@ children, so it is not a suitable fixture-only proof command. Tracked Python/
 shell/config caller search found only hygiene's default resolver `--check` call;
 this does not establish whether a human uses the external `--pact` option.
 
-#### Compatibility decisions for human review
+#### Selected input contract
 
-| Decision | Recommended contract | Consequence requiring review |
+| Decision | Candidate contract | Compatibility consequence |
 | --- | --- | --- |
 | Index membership | Both scans use index membership and working-file bytes. Resolver reference coverage stays broad; hygiene keeps its existing private-prefix exclusions and Markdown scan scope. No directory-walk fallback. | Staged additions and unstaged edits participate; ordinary untracked/ignored scratch does not. Missing selected files refuse the scan instead of disappearing from the result. |
 | New entrypoint candidates | Remove automatic inclusion of the resolver and the three declared root entrypoint files. If one of these exact candidate paths exists but is untracked, refuse with a named diagnostic before reading its content. Deliberate staging makes it eligible. | This preserves a visible pre-commit stop for new loaders instead of silently skipping them. No automatic staging and no general untracked-file admission. The fixed existence checks must inspect links/reparse paths without following them. |
-| Pact heading inputs | Select tracked Markdown below the approved Pact directory from the same validated index input set. Refuse missing or empty selected Pact input. | An untracked heading can no longer make a tracked reference appear resolved. Heading parsing, content-decoding rules and reference classifications stay within their current semantics. |
-| Explicit `--pact` | Support the default `pact/` and an explicitly named, validated subtree in the same checkout; interpret relative values from `--repo`. Refuse external directories. | This deliberately narrows today's arbitrary-directory interface and changes relative-path interpretation when launched elsewhere. Retaining external canon support would require a separate source contract; do not silently accept it through a walk. |
+| Pact heading inputs | Select tracked Markdown below the approved Pact directory from the same validated index input set. Refuse missing or empty selected Pact input. | An untracked heading can no longer make a tracked reference appear resolved. Heading parsing, content-decoding rules, platform Markdown filename matching and reference classifications keep their current semantics. Empty input means no selected Markdown files; heading content is not newly authenticated. |
+| Explicit `--pact` | Support the default `pact/` and an explicitly named, validated subtree below the same checkout root; interpret relative values from `--repo`. Refuse external directories and the checkout root itself. Use the supplied root spelling for containment; no new alias equivalence. | This deliberately narrows today's arbitrary-directory interface and changes relative-path interpretation when launched elsewhere. Retaining external canon support would require a separate source contract; do not silently accept it through a walk. |
 | Caller root handling | Validate supplied roots and ancestors before any operation that could hide a link or alias; reuse the selector's documented 8.3 comparison rule and fail-closed errors. | No new drive-alias equivalence or claim of launcher-spelling protection. Distinguish the explicit caller-root checks from any existing default script-root derivation. |
 
 A second documentation decision is needed before public acceptance. Current
@@ -524,19 +530,30 @@ and independent review. Do not broaden the scan allowlist or alter receipt bytes
 under the current proposal-only authorization. If that exception is declined,
 leave the public-hygiene issue open and return a revised disposition.
 
-#### Bounded implementation and proof plan
+#### Candidate scope and bounded proof
 
-The proposed code scope is `docs/resolve_pact_sections.py`,
-`docs/check_public_hygiene.py` and focused cases in
-`docs/test_build_inputs.py`. Change `docs/build_input_scope.py` only if the
-approved fixed-candidate checks require a shared validation primitive; its
-existing generator contract must remain intact. Documentation scope is this
-owner, only BUILD-03's queue row, and a new receipt. The role-wording exception
-above requires its own explicit disposition before those preserved lines change.
-No canonical kernel registration or proof-count update is proposed.
+Code changes are limited to `docs/resolve_pact_sections.py`,
+`docs/check_public_hygiene.py`, `docs/build_input_scope.py` and focused cases in
+`docs/test_build_inputs.py`. The selector adds optional fixed candidates: indexed
+candidates participate even if the ordinary predicate excludes them; an existing
+untracked candidate is refused using non-following metadata checks. Omitted
+candidate arguments preserve the generator contract.
 
-After separate implementation/proof authorization, use owned synthetic Git
-fixtures to establish:
+The resolver validates the complete selected reference set and its Pact subtree
+before reading scan content. Input failure returns 1; classifications retain
+0/2/3/4. `--json` still writes only when supplied, including with `--check`.
+The hygiene scan functions report selection failure as 1; the full wrapper's
+child sequence, scan exclusions and allowlists are unchanged. Direct and package
+imports share the same helper. Default script-root derivation still resolves
+`__file__`; caller-supplied roots are checked by the selector.
+
+Documentation changes cover this owner, BUILD-03's queue row, a new receipt and
+one affected source-anchor correction in the dated Crucible map. Its other
+bindings, technical tables and registration appendix remain unchanged. The
+role-wording exception above still requires separate disposition. No canonical
+kernel registration or reported kernel proof-count change was made.
+
+The bounded fixture requirements for this candidate are:
 
 - Correct membership for staged additions/deletions, tracked-but-ignored files,
   dirty working bytes, and untracked source/Pact distractors; an untracked valid
@@ -560,14 +577,28 @@ fixtures to establish:
   candidate through the human for independent review; a PASS still needs human
   checkpoint disposition.
 
-This plan authorizes no command now. It excludes the combined hygiene wrapper,
-canonical acceptance, coverage, baseline synchronization and generated-document
-refresh. Stop for a compatibility dispute, unexplained preservation change or
-need to alter other workstreams; do not silently expand the slice.
+Builder results: **41 standalone infrastructure tests passed under each of the
+same owned TEMP directory's long and Windows 8.3 spellings; zero failures,
+errors or skips.** The 23 earlier test bodies are preserved; 18 new consumer
+tests cover this slice. The actual test process recorded its own temporary
+directory. The selected existing PowerShell proof ran in both passes.
+
+The first 40-test attempt had one fixture error: Git refused removal from the
+index because the synthetic file's staged and working bytes differed. Its
+fixture-only `rm --cached --force` correction preserves the working file, as
+asserted. Both subsequent 40-test runs passed. A later static check caught an
+unintended Windows `.MD` exclusion; platform filename matching and its regression
+produced the final 41-test passes. Earlier logs and tested-source snapshots are
+retained. These are builder results, not independent review.
+
+See the [candidate receipt](roadmap/ACCEPTANCE_HISTORY.md#2026-09-15-build-03-same-checkout-input-candidate).
+No combined hygiene wrapper, canonical acceptance, coverage, baseline
+synchronization or generated-document refresh ran. A compatibility dispute or
+unexplained preservation change requires a new disposition, not a wider slice.
 
 #### Execution limits and later acceptance
 
-The next input-selection slice would leave broader execution requirements open.
+This input-selection candidate leaves broader execution requirements open.
 Use the resolver's `--check` route as the proposed first design example: identify
 its approved input/output effects, optional `--json` behavior, Git executable and
 configuration selection, child processes, interruption and output/resource
@@ -642,12 +673,13 @@ destination. A `--json` flag is not uniformly a file-output option.
 | `docs/build_pact_code_map.py` | `python -B docs/build_pact_code_map.py`; `--check`; `--stdout` | Candidate: Git index selects source/Pact inputs, then reads live content; default writes `docs/pact_code_map.md`. UTF-8 stdout/stderr. Check compares only; stdout prints and takes precedence over check. Current 0; input discovery/read or missing/stale check 1. Git discovery children, no proof children. Lower-level parser helpers retain a separate fixture-only directory API. |
 | `docs/build_project_status.py` | `python -B docs/build_project_status.py`; `--check`; `--stdout`; internal `--assume-gates-passed` | Default runs baseline/map children and writes `docs/PROJECT_STATUS.md`; check/stdout suppress that write, not the children. Assumed-green mode skips those children and reads existing docs, not fresh proof. Child failures can be rendered as RED/YELLOW rather than a nonzero generation exit. Own freshness failure 1, caught build/link failure 2. No Git-cleanliness test. |
 | `docs/check_contact_surface.py` | `python -B docs/check_contact_surface.py` | Read-only Git enumeration and tracked-content checks; console output. Pass 0, findings 1; no proof children or intended file writes. |
-| `docs/check_public_hygiene.py` | `python -B docs/check_public_hygiene.py` | Runs baseline `--check --require-clean`, contact, claim floor, map check, assumed-green status check and resolver check, then name/callsign scans. Acceptance/coverage children create fixtures and owned coverage data. All steps run despite earlier failures; final aggregate 0/1. This wrapper is not read-only or a sandbox. |
-| `docs/resolve_pact_sections.py` | `python -B docs/resolve_pact_sections.py --check`; optional `--repo PATH`, `--pact PATH`, `--json PATH` | Reference inputs use Git enumeration plus explicit admission of the resolver's own file; Pact headings use a directory walk. `--json PATH` creates parent directories and writes a report **even with `--check`**; that flag is parsed but does not gate writes. Exit 0 clean, 2 phantom-only, 3 structure-only, 4 both. Changing inspected roots needs explicit scope. |
+| `docs/check_public_hygiene.py` | `python -B docs/check_public_hygiene.py` | Runs baseline `--check --require-clean`, contact, claim floor, map check, assumed-green status check and resolver check, then name/callsign scans. Acceptance/coverage children create fixtures and owned coverage data. All steps run despite earlier failures; final aggregate 0/1. Own scans use the shared index selector and report input refusal. This wrapper is not read-only or a sandbox. |
+| `docs/resolve_pact_sections.py` | `python -B docs/resolve_pact_sections.py --check`; optional `--repo PATH`, `--pact PATH`, `--json PATH` | Reference and Pact inputs use validated Git-index membership with live working bytes; named untracked resolver candidates refuse. `--pact` selects a same-checkout subtree relative to `--repo`. `--json PATH` creates parent directories and writes a report **even with `--check`**. Exit 1 input failure; 0 clean, 2 phantom-only, 3 structure-only, 4 both. No output-path confinement. |
 | `docs/sync_baseline.py` | `python -B docs/sync_baseline.py`; `--check`, `--no-cov`, `--no-claim`, `--require-clean`, `--json` | Preflights archives/runtime paths, then runs acceptance, Git module discovery, coverage and matrix handling. Default synchronizes `CURRENT_DOCS` and regenerates matrix; check suppresses those writes, not acceptance/coverage. No-cov skips only coverage; no-claim skips only matrix handling. Require-clean concerns parsed acceptance failures, not Git status. JSON prints. Archive replacement owns sibling temps; ordinary docs use direct writes, no multi-file transaction. Parsed acceptance can hide child failure and matrix regeneration can fall back to old output; those defects remain open. Check/orphans 1, specified preflight/proof failure 2. |
 | `docs/test_run_coverage.py` | `python -B docs/test_run_coverage.py` | Separate unittest infrastructure proof; real owned temporary files/SQLite/link fixtures with mocked child dispatch. No live coverage/baseline pipeline. Unittest verdict; context-managed cleanup, with deliberate failure injection. Not canonical registration. |
 | `docs/test_sync_baseline.py` | `python -B docs/test_sync_baseline.py` | Separate unittest infrastructure proof; real temporary archive writes, patched root and orchestration/child boundaries. Does not run the live synchronizer CLI. Unittest verdict and owned fixture cleanup; not canonical registration. |
-| `docs/test_build_inputs.py` | `python -B docs/test_build_inputs.py`; optional explicitly selected `RSS_PROOF_POWERSHELL` environment variable | Candidate unittest infrastructure proof. Owns temporary source/Git fixtures, runs Git init/add/index commands there, invokes in-process and copied generator CLIs, and optionally a chosen PowerShell with synthetic Python children. Fixture base refuses Git-checkout ancestry and linked/reparse ancestry. Filesystem fixtures, output sentinels and failure injection; visible cleanup errors. No kernel registration or host configuration change. Selector Git discovery retains host configuration dependence. Shell selection, Windows platform/8.3 availability and symlink privileges can cause explicit skips; record each skip and TEMP spelling. |
+| `docs/test_build_inputs.py` | `python -B docs/test_build_inputs.py`; optional explicitly selected `RSS_PROOF_POWERSHELL` environment variable | Candidate unittest infrastructure proof. Owns temporary source/Git fixtures, runs Git init/add/index commands there, invokes generator/resolver CLIs in copied fixtures and hygiene scan functions without the wrapper, and optionally a chosen PowerShell with synthetic Python children. Fixture base refuses Git-checkout ancestry and linked/reparse ancestry. Filesystem fixtures, output sentinels and failure injection; visible cleanup errors. No kernel registration or host configuration change. Selector Git discovery retains host configuration dependence. Shell selection, Windows platform/8.3 availability and symlink privileges can cause explicit skips; record each skip and TEMP spelling. |
+| `docs/test_proof_support.py` | `python -B docs/test_proof_support.py -v` | Standalone Crucible harness contract suite, separate from canonical counts. Captures console and patches counter/environment/urllib state; launches fresh Python children from the current checkout, including facade/kernel import checks and a child that refuses kernel imports while exercising the four tooling proofs. Tooling proofs create/remove owned temporary files. Children have a 90-second timeout; timeout can terminate that owned child. This is not host or output confinement. Windows UTF-8 case skips off Windows; record skips. No live model service or host configuration change is required. |
 | `examples/demo_suite.py` | `python -B examples/demo_suite.py --offline`; alternate `--live-llm`, `--db PATH`, `--keep-db`, `--artifacts DIR`, `--artifact-prefix NAME` | CLI defaults **live** if neither mode is supplied; report helper defaults offline. Creates/updates SQLite and TRACE; artifact options write JSON/Markdown/TRACE outputs. Cleans only its own auto-created DB unless retained, never caller-supplied DB; close/cleanup errors can be swallowed. Live contacts configured model endpoint. Normal CLI exit is currently 0 for PASS **or ATTENTION**; inspect report predicates, not exit alone. |
 | `examples/demo_llm.py` | `python -B examples/demo_llm.py`; compatibility entrypoint, no supported flags | Calls demo `run(live_llm=True)` unconditionally; `--offline` is not parsed or forwarded. Same live network, DB and cleanup effects; no verdict-to-exit mapping. Prefer the canonical demo CLI for explicit mode selection. |
 | `run_coverage.py` | `python -B run_coverage.py`; `--html` | Runtime-path refusal precedes children/temp creation. Runs canonical coverage and report using the same interpreter/CWD; strips inherited `COVERAGE_*` redirection. Owns a unique temporary config/data/report directory. Default/failure cleans it; successful HTML retains it and prints paths. Preserves child failure; output/cleanup failures surface nonzero. Root `.coverage` is not refreshed. No filesystem/network sandbox for tests. |
@@ -656,7 +688,7 @@ destination. A `--json` flag is not uniformly a file-output option.
 | `src/rss/audit/pact_canon_export.py` | `python -B -m rss.audit.pact_canon_export`; `--pact-dir PATH`, `--db PATH`, `--section ID`, `--json`; separate write mode `--write --t0-command`, optionally `--expected-file-hash HASH` | Default preview reads Pact/optional read-only DB. Authorized write mode can replace eligible Section 1-7 files through sibling temp/replace; Section 0 refused. Own temporary cleanup may raise. Refused/missing result 2, otherwise 0, which can mean no canon/no write. Soft command flag is not authenticated authority; Pact writes require separate approval. |
 | `src/rss/audit/verify.py` | `python -B src/rss/audit/verify.py DB`; `--container ID`, `--json`, `--stats`, `--use-registry`, `--safe-stop`; module alias `python -B -m rss.audit.verify` with the same arguments | Cold SQLite `mode=ro`, no runtime bootstrap; closes connections, reports to stdout. Exit 0 verified, 2 broken chain, 3 invalid schema, 4 file/open failure. Safe-Stop status alone does not change exit; a failed optional registry import warns and disables that supplement. No blanket promise about OS metadata/sidecars. |
 | `src/rss/governance/seats/cycle.py` | Mention only: incidental `__main__` example, **no supported CLI invocation** | Constructs an in-memory seat and prints example responses; no DB/network/file/child effects found in that block. Not a supported acceptance route. |
-| `tests/test_all.py` | `python -B tests/test_all.py` | Canonical runner imports registered proof bodies; owns counters and enables the bounded urllib guard. Fixtures may write/delete files and start threads; direct runner lacks coverage launcher's runtime-path preflight. Failure/error exits 1, success 0. Imperfect fixture cleanup remains BUILD-02. |
+| `tests/test_all.py` | `python -B tests/test_all.py` | Canonical runner imports registered proof bodies; uses proof_support's counters and enables the bounded urllib guard. Fixtures may write/delete files and start threads; direct runner lacks coverage launcher's runtime-path preflight. Failure/error exits 1, success 0. Imperfect fixture cleanup remains BUILD-02. |
 | `tests/test_action_plane.py` | `python -B tests/test_action_plane.py` | Direct-test class: shared effects and limits below; broker proofs, not canonical totals. |
 | `tests/test_adversarial_scenarios.py` | `python -B tests/test_adversarial_scenarios.py` | Direct-test class: shared effects and limits below; adversarial proofs. |
 | `tests/test_audit_trace.py` | `python -B tests/test_audit_trace.py` | Direct-test class: shared effects and limits below; audit proofs. |
@@ -746,6 +778,62 @@ supported. Recheck dependent dispositions rather than silently treating the
 correction as acceptance. Do not rewrite historical interpreter paths or proof
 numbers to match a later environment. This documentation slice changes no
 measured baseline and closes no incident-impact or promotion question.
+
+### BUILD-03 Independent Proof Support Execution
+
+Builder evidence from 2026-09-15, supplemented by pytest parity on 2026-09-16;
+the execution records remain builder evidence. Current review and checkpoint
+status are recorded with the [candidate and identities](SIGIL_CRUCIBLE.md#build-03-independent-proof-support-candidate);
+that owner holds the boundary details. The code footprint is five Python files; the two added
+files postdate the preserved inventory and are included in this local checkpoint.
+`tests/proof_support.py` has no CLI guard; `docs/test_proof_support.py` adds one.
+The dated inventory is not rewritten.
+
+| Invocation / evidence | Result |
+| --- | --- |
+| `python -B docs/test_proof_support.py -v` | 13 unittest cases passed, 0 failures/errors/skips. These are standalone cases, not canonical functions or `check()` assertions. |
+| `python -B tests/test_all.py` | 181 functions, 3013 assertions, 0 failures; exit 0 and unchanged verdict line; zero unexpected urllib attempts. |
+| Three focused `-c` command bodies above, each run with `-B` and a `finally` observer | Adapter 40, broker revalidation 222, lifecycle 105 assertions; each one function, exit 0. The observer checks one defining module and shared function objects, including after `sys.exit`. These assertions are already part of canonical acceptance. |
+| Optional pytest with explicit `--import-mode=prepend` | Supplemental run, 2026-09-16: pytest 9.1.1, 181 passed, exit 0. Collected qualified names match the canonical registry without duplicates; one `proof_support` instance and shared check/runner function objects. The environment-marker unit case is separate. |
+
+The selected interpreter reports Python 3.13.13. Proof children inherit
+`PYTHONDONTWRITEBYTECODE=1`; TEMP/TMP/TMPDIR point at a new owned fixture directory
+outside the checkout, and no fixture residue remained at verification. The
+standalone Windows encoding child overrides `PYTHONIOENCODING` to cp1252 and
+checks actual UTF-8 output after harness import. Exact runtime paths, commands,
+source hashes, logs and environment overrides are retained in the private
+candidate packet routed by the current handoff. The recorded `gettempdir()`
+value for the 2026-09-15 runs comes from a separately labeled runtime probe,
+not from each test process. The 2026-09-16 pytest observer records the pytest
+process's own `tempfile.gettempdir()`, matching its owned fixture directory.
+
+Pytest is optional development tooling, not a kernel runtime dependency. The
+human authorized installing it to complete this compatibility check. The existing
+development environment gained pytest 9.1.1 and its resolved dependencies:
+colorama 0.4.6, iniconfig 2.3.0, packaging 26.3, pluggy 1.6.0 and Pygments 2.21.0.
+Installation used the existing package manager and explicit interpreter with
+binary wheels from the public package index. All pre-existing environment files,
+including coverage 7.13.5, were preserved. No project requirements or Python
+source file changed.
+
+The supplemental command was `python -B -m pytest -q tests/test_all.py
+--import-mode=prepend`, with explicit checkout root/conftest boundary, an empty
+packet-local configuration, cache disabled, third-party plugin autoload disabled,
+and a selected observation plugin. That plugin records collection, module
+identity, versions and TEMP from the test process; it does not change the tests
+or enable the canonical runner's suite-wide HTTP guard. Existing proof-local
+HTTP controls remain. Exact arguments and dependency/environment snapshots
+are retained with the supplemental packet. Only this pytest check was rerun;
+the aggregate and standalone results above remain the 2026-09-15 records.
+
+These runs exercise temporary files and fixture databases; the direct runner
+has no OS confinement or protection against arbitrary imports. The pre-run
+check found no root runtime database/sidecars. Protected root outputs were
+verified unchanged afterward. Legacy cleanup behavior was preserved, not fixed.
+No live-service integration, coverage, baseline, full hygiene, generator
+equivalence or input-suite rerun occurred. Existing coverage/module figures
+remain inherited. This is builder execution evidence, not independent acceptance
+or BUILD-03 closure.
 
 ### BUILD-05 Script-Evidence Findings
 

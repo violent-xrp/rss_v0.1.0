@@ -1,4 +1,4 @@
-"""Synthetic input-selection regressions for the two traceability generators.
+"""Synthetic input-selection regressions for generators and public-surface scans.
 
 Run with python -B docs/test_build_inputs.py. This is infrastructure proof, not
 kernel acceptance. Git commands operate only in owned temporary repositories;
@@ -22,6 +22,8 @@ from unittest.mock import patch
 import build_input_scope as scope
 import build_claim_matrix as claims
 import build_pact_code_map as reverse
+import resolve_pact_sections as resolver
+import check_public_hygiene as hygiene
 
 
 def proof_source(name="owned", section="1", assertion=True):
@@ -501,6 +503,422 @@ class BuildInputTests(unittest.TestCase):
                     self.assertIn("stderr § Ω", result.stderr.decode("utf-8", errors="strict"))
                     self.assertIn("RESTORED=True", result.stdout.decode("utf-8", errors="strict"))
                     self.preserved_outputs()
+
+
+    def resolver_main(self, *args):
+        out, err = StringIO(), StringIO()
+        with patch.object(sys, "argv", ["resolve_pact_sections.py", "--repo",
+                                       str(self.root), *args]), \
+                redirect_stdout(out), redirect_stderr(err):
+            code = resolver.main()
+        self.preserved_outputs()
+        return code, out.getvalue(), err.getvalue()
+
+    def hygiene_scan(self, name):
+        out, err = StringIO(), StringIO()
+        with patch.object(hygiene, "REPO_ROOT", self.root), \
+                patch.object(hygiene, "run_step", side_effect=AssertionError("no full wrapper")), \
+                redirect_stdout(out), redirect_stderr(err):
+            code = getattr(hygiene, name)()
+        self.preserved_outputs()
+        return code, out.getvalue(), err.getvalue()
+
+    def consumers(self):
+        return (("resolver", lambda: resolver.sweep(self.root)),
+                ("hygiene", hygiene.public_candidate_files))
+
+    def test_resolver_index_membership_uses_dirty_pact_and_ignores_untracked_headings(self):
+        with self.fixture():
+            reader = self.write("docs/reader Ω.md", "See \N{SECTION SIGN}1.\n")
+            reader.write_text("See \N{SECTION SIGN}2.\nSee \N{SECTION SIGN}999.\n", encoding="utf-8")
+            self.write("pact/pact_section1.md", "# Section 2\n", stage=False)
+            self.write("pact/canon Ω.md", "# Section 3\n")
+            keep = self.write("docs/keep.md", "See \N{SECTION SIGN}3.\n")
+            self.write(".gitignore", "docs/keep.md\npact/scratch*\n")
+            self.write("pact/scratch.md", "# Section 999\n", stage=False)
+            self.write("pact/untracked.md", "# Section 999\n", stage=False)
+            self.write("docs/untracked.md", "See \N{SECTION SIGN}777.\n", stage=False)
+            removed = self.write("docs/removed.md", "See \N{SECTION SIGN}777.\n")
+            self.git("rm", "--cached", "--", "docs/removed.md")
+            result = resolver.sweep(self.root)
+            observed = [(hit.identifier, hit.outcome) for hit in result.occurrences
+                        if hit.path == "docs/reader Ω.md"]
+            self.assertEqual(observed, [("2", "RESOLVED"), ("999", "PHANTOM")])
+            self.assertEqual(result.pact_heading_identifiers, 2)
+            self.assertTrue(any(hit.path == "docs/keep.md" and hit.outcome == "RESOLVED"
+                                for hit in result.occurrences))
+            paths = resolver.tracked_files(self.root)
+            self.assertIn(keep, paths)
+            self.assertNotIn(removed, paths)
+            self.assertTrue(removed.is_file())
+            self.assertFalse(any("untracked" in hit.path or hit.identifier == "777"
+                                 for hit in result.occurrences))
+            self.preserved_outputs()
+
+    def test_hygiene_keeps_private_exclusions_and_reads_tracked_dirty_unicode_files(self):
+        with self.fixture():
+            term = hygiene.EXTERNAL_PROVENANCE_NAME_TERMS[0]
+            for name in ("local/private.md", "demo_artifacts/private.md"):
+                self.write(name, term)
+            live = self.write("docs/tracked Ω.md", "clean")
+            self.write(".gitignore", "docs/tracked*\ndocs/scratch*\n")
+            self.write("docs/scratch.md", term, stage=False)
+            self.write("docs/untracked.md", term, stage=False)
+            self.assertEqual(self.hygiene_scan("provenance_name_hygiene_scan")[0], 0)
+            live.write_text(term, encoding="utf-8")
+            code, out, err = self.hygiene_scan("provenance_name_hygiene_scan")
+            self.assertEqual((code, err), (1, ""))
+            self.assertIn("docs/tracked Ω.md:1", out)
+            for excluded in ("private.md", "scratch.md", "untracked.md"):
+                self.assertNotIn(excluded, out)
+            # Remove only fixture index membership; retain its dirty working bytes.
+            self.git("rm", "--cached", "--force", "--", "docs/tracked Ω.md")
+            self.assertTrue(live.is_file())
+            self.assertEqual(self.hygiene_scan("provenance_name_hygiene_scan")[0], 0)
+
+    def test_hygiene_callsign_scope_and_loader_filename_allowance_remain_distinct(self):
+        with self.fixture():
+            token = hygiene.CALLSIGN_TERMS[-2]
+            term = hygiene.EXTERNAL_PROVENANCE_NAME_TERMS[0]
+            self.write("other/unscoped.md", token)
+            self.write("docs/non_markdown.txt", token)
+            self.write("local/private.md", token)
+            for name in hygiene.PUBLIC_AGENT_ENTRYPOINT_FILES:
+                self.write(name, "clean")
+            self.assertEqual(self.hygiene_scan("callsign_leak_scan")[0], 0)
+            self.assertEqual(self.hygiene_scan("provenance_name_hygiene_scan")[0], 0)
+            self.write("docs/candidate Ω.md", token)
+            code, out, err = self.hygiene_scan("callsign_leak_scan")
+            self.assertEqual((code, err), (1, ""))
+            self.assertIn("docs/candidate Ω.md:1", out)
+            self.assertNotIn("unscoped.md:", out)
+            # A protocol filename allowance does not exempt its contents.
+            self.write(hygiene.PUBLIC_AGENT_ENTRYPOINT_FILES[1], term, stage=False)
+            code, out, err = self.hygiene_scan("provenance_name_hygiene_scan")
+            self.assertEqual((code, err), (1, ""))
+            self.assertIn(hygiene.PUBLIC_AGENT_ENTRYPOINT_FILES[1] + ":1", out)
+
+    def test_named_untracked_candidates_refuse_before_any_scan_content_read(self):
+        choices = (("resolver", "docs/resolve_pact_sections.py"),
+                   *(("hygiene", name) for name in hygiene.PUBLIC_AGENT_ENTRYPOINT_FILES))
+        for consumer, name in choices:
+            with self.subTest(consumer=consumer, name=name), self.fixture():
+                candidate = self.write(name, "owned untracked candidate", stage=False)
+                with patch.object(hygiene, "REPO_ROOT", self.root), \
+                        patch.object(Path, "read_bytes") as read_bytes, \
+                        patch.object(Path, "read_text") as read_text, \
+                        self.assertRaisesRegex(scope.InputScopeError,
+                                               "untracked entrypoint candidate refused") as failure:
+                    (resolver.sweep(self.root) if consumer == "resolver"
+                     else hygiene.public_candidate_files())
+                self.assertIn(name.replace("/", os.sep), str(failure.exception))
+                read_bytes.assert_not_called()
+                read_text.assert_not_called()
+                self.git("add", "--", name)
+                with patch.object(hygiene, "REPO_ROOT", self.root):
+                    selected = (resolver.tracked_files(self.root) if consumer == "resolver"
+                                else hygiene.public_candidate_files())
+                self.assertIn(candidate, selected)
+                self.preserved_outputs()
+
+    def test_selector_candidates_require_index_membership_even_when_filter_excludes_them(self):
+        with self.fixture():
+            candidate = self.write("AGENTS.md", "owned")
+            self.assertEqual(scope.tracked_inputs(self.root, lambda rel: False,
+                                                candidate_paths=("AGENTS.md",)), [candidate])
+            self.git("rm", "--cached", "--", "AGENTS.md")
+            with self.assertRaisesRegex(scope.InputScopeError, "untracked entrypoint candidate"):
+                scope.tracked_inputs(self.root, lambda rel: False, candidate_paths=("AGENTS.md",))
+            with self.assertRaisesRegex(scope.InputScopeError, "^non-relative Git input path refused$"):
+                scope.tracked_inputs(self.root, lambda rel: False, candidate_paths=("../outside",))
+
+    def test_candidate_parent_and_leaf_reparse_checks_do_not_follow_links(self):
+        cases = (("resolver", "docs", "docs/resolve_pact_sections.py", stat.S_IFDIR),
+                 ("hygiene", "AGENTS.md", None, stat.S_IFLNK))
+        for consumer, marked, hidden, mode in cases:
+            with self.subTest(consumer=consumer), self.fixture():
+                if consumer == "hygiene":
+                    self.write("AGENTS.md", "untracked", stage=False)
+                target = self.root / marked
+                real_lstat = Path.lstat
+                inspected = []
+                def intercepted(path):
+                    inspected.append(path)
+                    if path == target:
+                        return SimpleNamespace(st_mode=mode,
+                                               st_file_attributes=stat.FILE_ATTRIBUTE_REPARSE_POINT)
+                    return real_lstat(path)
+                with patch.object(hygiene, "REPO_ROOT", self.root), \
+                        patch.object(Path, "lstat", autospec=True, side_effect=intercepted), \
+                        patch.object(Path, "read_bytes") as reads, \
+                        self.assertRaisesRegex(scope.InputScopeError, "linked/reparse input refused"):
+                    (resolver.sweep(self.root) if consumer == "resolver"
+                     else hygiene.public_candidate_files())
+                self.assertIn(target, inspected)
+                if hidden:
+                    self.assertNotIn(self.root / hidden, inspected)
+                reads.assert_not_called()
+                self.preserved_outputs()
+
+    def test_consumers_refuse_missing_selected_files_with_the_missing_filename(self):
+        with self.fixture():
+            missing = self.write("docs/selected Ω.md", "clean")
+            self.assertEqual(resolver.sweep(self.root).phantom, 0)
+            self.assertEqual(self.hygiene_scan("provenance_name_hygiene_scan")[0], 0)
+            missing.unlink()
+            with patch.object(hygiene, "REPO_ROOT", self.root):
+                for name, consume in self.consumers():
+                    with self.subTest(consumer=name), \
+                            patch.object(Path, "read_bytes") as reads, \
+                            self.assertRaises(scope.InputScopeError) as failure:
+                        consume()
+                    self.assertIsInstance(failure.exception.__cause__, FileNotFoundError)
+                    self.assertEqual(Path(failure.exception.__cause__.filename), missing)
+                    reads.assert_not_called()
+            with patch.object(resolver, "write_json") as write_report:
+                code, out, err = self.resolver_main("--check", "--json", str(self.parent / "report.json"))
+            self.assertEqual((code, out), (1, ""))
+            self.assertIn("selected Ω.md", err)
+            write_report.assert_not_called()
+            for scan in ("provenance_name_hygiene_scan", "callsign_leak_scan"):
+                code, out, err = self.hygiene_scan(scan)
+                self.assertEqual(code, 1)
+                self.assertNotIn("scan passed", out)
+                self.assertIn("selected Ω.md", err)
+
+    def test_consumer_roots_refuse_nested_non_git_and_reparse_ancestors(self):
+        with self.fixture():
+            self.assertEqual(resolver.sweep(self.root).phantom, 0)
+            original = self.root
+            self.root = original / "docs"
+            with patch.object(hygiene, "REPO_ROOT", self.root):
+                for name, consume in self.consumers():
+                    with self.subTest(consumer=name), \
+                            self.assertRaisesRegex(scope.InputScopeError, "not the Git worktree top level"):
+                        consume()
+            self.root = original
+            real_lstat = Path.lstat
+            def intercepted(path):
+                if path == original.parent:
+                    return SimpleNamespace(st_mode=stat.S_IFDIR,
+                                           st_file_attributes=stat.FILE_ATTRIBUTE_REPARSE_POINT)
+                return real_lstat(path)
+            with patch.object(hygiene, "REPO_ROOT", self.root), \
+                    patch.object(Path, "lstat", autospec=True, side_effect=intercepted), \
+                    patch.object(scope.subprocess, "run") as run:
+                for name, consume in self.consumers():
+                    with self.subTest(consumer=name), \
+                            self.assertRaisesRegex(scope.InputScopeError, "linked/reparse input refused"):
+                        consume()
+                run.assert_not_called()
+        with self.fixture(initialize_git=False), patch.object(hygiene, "REPO_ROOT", self.root):
+            for name, consume in self.consumers():
+                with self.subTest(consumer=name), self.assertRaises(scope.InputScopeError) as failure:
+                    consume()
+                self.assertIsInstance(failure.exception.__cause__, subprocess.CalledProcessError)
+                self.assertIn("rev-parse", failure.exception.__cause__.cmd)
+
+    def test_consumers_pin_invalid_index_record_failures_before_reads(self):
+        with self.fixture(), patch.object(hygiene, "REPO_ROOT", self.root):
+            top = self.git("rev-parse", "--show-toplevel")
+            self.write("docs/selected.md", "clean")
+            cases = ((b"100644", b"0", b"docs/\xff.md", "decode"),
+                     (b"100644", b"0", b"../empty-git-config", "shape"),
+                     (b"100644", b"2", b"docs/selected.md", "mode"),
+                     (b"120000", b"0", b"docs/selected.md", "mode"),
+                     (b"160000", b"0", b"docs/selected.md", "mode"))
+            for mode, stage, name, cause in cases:
+                for consumer, consume in self.consumers():
+                    record = mode + b" " + b"0" * 40 + b" " + stage + b"\t" + name + b"\0"
+                    results = [subprocess.CompletedProcess([], 0, top),
+                               subprocess.CompletedProcess([], 0, record)]
+                    with self.subTest(consumer=consumer, cause=cause, mode=mode), \
+                            patch.object(scope.subprocess, "run", side_effect=results), \
+                            patch.object(Path, "read_bytes") as reads, \
+                            self.assertRaises(scope.InputScopeError) as failure:
+                        consume()
+                    if cause == "decode":
+                        self.assertIsInstance(failure.exception.__cause__, UnicodeDecodeError)
+                    else:
+                        self.assertIn("non-relative" if cause == "shape" else "unmerged or non-file",
+                                      str(failure.exception))
+                    reads.assert_not_called()
+
+    def test_consumers_refuse_directory_at_selected_path(self):
+        with self.fixture(), patch.object(hygiene, "REPO_ROOT", self.root):
+            path = self.write("docs/selected.md", "clean")
+            path.unlink()
+            path.mkdir()
+            for name, consume in self.consumers():
+                with self.subTest(consumer=name), \
+                        self.assertRaisesRegex(scope.InputScopeError, "^non-regular input refused:") as failure:
+                    consume()
+                self.assertIn("selected.md", str(failure.exception))
+            self.preserved_outputs()
+
+    def test_resolver_explicit_pact_is_relative_to_repo_and_uses_only_tracked_markdown(self):
+        with self.fixture():
+            self.write("canon Ω/canon.md", "# Section 7\n")
+            self.write("canon Ω/untracked.md", "# Section 8\n", stage=False)
+            self.write("docs/reader.md", "See \N{SECTION SIGN}7.\nSee \N{SECTION SIGN}8.\n")
+            for supplied in (Path("canon Ω"), self.root / "canon Ω"):
+                with self.subTest(pact=supplied), patch.object(os, "getcwd", return_value=str(self.parent)):
+                    result = resolver.sweep(self.root, supplied)
+                found = [(hit.identifier, hit.outcome) for hit in result.occurrences
+                         if hit.path == "docs/reader.md"]
+                self.assertEqual(found, [("7", "RESOLVED"), ("8", "PHANTOM")])
+                self.assertEqual(result.pact_heading_identifiers, 1)
+            self.preserved_outputs()
+
+    def test_resolver_external_and_root_pact_options_refuse_before_reads(self):
+        with self.fixture():
+            outside = self.parent / "external-canon"
+            outside.mkdir()
+            sentinel = outside / "owned.md"
+            content = b"# Section 999\n"
+            sentinel.write_bytes(content)
+            for supplied, message in ((outside, "outside the checkout"),
+                                      (Path("../external-canon"), "outside the checkout"),
+                                      (self.root, "subtree below the checkout root")):
+                with self.subTest(pact=supplied), patch.object(Path, "read_bytes") as reads, \
+                        self.assertRaisesRegex(scope.InputScopeError, message):
+                    resolver.sweep(self.root, supplied)
+                reads.assert_not_called()
+            self.assertEqual(sentinel.read_bytes(), content)
+            self.preserved_outputs()
+
+    def test_resolver_missing_empty_and_untracked_only_pact_selection_refuse(self):
+        with self.fixture():
+            empty = self.root / "empty"
+            empty.mkdir()
+            self.write("untracked-canon/new.md", "# Section 999\n", stage=False)
+            for supplied in (empty, self.root / "untracked-canon"):
+                with self.subTest(pact=supplied), \
+                        self.assertRaisesRegex(scope.InputScopeError, "missing tracked Pact Markdown inputs"):
+                    resolver.sweep(self.root, supplied)
+            with self.assertRaises(scope.InputScopeError) as failure:
+                resolver.sweep(self.root, Path("missing-canon"))
+            self.assertIsInstance(failure.exception.__cause__, FileNotFoundError)
+            self.assertEqual(Path(failure.exception.__cause__.filename), self.root / "missing-canon")
+            self.git("rm", "--cached", "--", "pact/pact_section1.md")
+            self.assertTrue((self.root / "pact/pact_section1.md").is_file())
+            with self.assertRaisesRegex(scope.InputScopeError, "missing tracked Pact Markdown inputs"):
+                resolver.sweep(self.root)
+            self.preserved_outputs()
+
+    def test_resolver_pact_directory_reparse_refuses_even_without_indexed_descendants(self):
+        with self.fixture():
+            directory = self.root / "untracked-canon"
+            directory.mkdir()
+            real_lstat = Path.lstat
+            def intercepted(path):
+                if path == directory:
+                    return SimpleNamespace(st_mode=stat.S_IFDIR,
+                                           st_file_attributes=stat.FILE_ATTRIBUTE_REPARSE_POINT)
+                return real_lstat(path)
+            with patch.object(Path, "lstat", autospec=True, side_effect=intercepted), \
+                    patch.object(Path, "read_bytes") as reads, \
+                    self.assertRaisesRegex(scope.InputScopeError, "linked/reparse input refused"):
+                resolver.sweep(self.root, directory)
+            reads.assert_not_called()
+
+    def test_resolver_classifications_and_text_decoding_keep_existing_semantics(self):
+        with self.fixture():
+            self.write("docs/classifications.md",
+                       "# 88 Own heading\nSee \N{SECTION SIGN}1.\n"
+                       "AGPLv3 \N{SECTION SIGN}13.\nSee \N{SECTION SIGN}88.\nSee \N{SECTION SIGN}999.\n")
+            binary = self.write("docs/binary.dat", "placeholder")
+            binary.write_bytes(b"\x00\xa7")
+            encoded = self.write("docs/legacy.txt", "placeholder")
+            encoded.write_bytes("See \N{SECTION SIGN}1.\n".encode("cp1252"))
+            result = resolver.sweep(self.root)
+            observed = [(hit.identifier, hit.outcome) for hit in result.occurrences
+                        if hit.path == "docs/classifications.md"]
+            self.assertEqual(observed, [("1", "RESOLVED"), ("13", "EXTERNAL-INSTRUMENT"),
+                                        ("88", "DOC-STRUCTURE"), ("999", "PHANTOM")])
+            self.assertTrue(any(hit.path == "docs/legacy.txt" and hit.outcome == "RESOLVED"
+                                for hit in result.occurrences))
+            self.assertFalse(any(hit.path == "docs/binary.dat" for hit in result.occurrences))
+
+    @unittest.skipUnless(os.name == "nt", "Windows consumer 8.3 spelling proof")
+    def test_consumers_accept_long_and_short_roots_without_changing_returned_spelling(self):
+        import ctypes
+        from ctypes import wintypes
+        with self.fixture():
+            long_root = Path(os.fsdecode(self.git("rev-parse", "--show-toplevel").rstrip(b"\r\n")))
+            get_short = ctypes.WinDLL("kernel32", use_last_error=True).GetShortPathNameW
+            get_short.argtypes = (wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD)
+            get_short.restype = wintypes.DWORD
+            size = get_short(str(long_root), None, 0)
+            if not size:
+                raise ctypes.WinError(ctypes.get_last_error())
+            buffer = ctypes.create_unicode_buffer(size)
+            length = get_short(str(long_root), buffer, size)
+            self.assertGreater(length, 0)
+            self.assertLess(length, size)
+            short_root = Path(buffer.value)
+            if os.path.normcase(str(short_root)) == os.path.normcase(str(long_root)):
+                self.skipTest("fixture volume/path has no distinct 8.3 spelling")
+            for supplied in (long_root, short_root):
+                with self.subTest(root=supplied), patch.object(hygiene, "REPO_ROOT", supplied):
+                    self.assertEqual(resolver.sweep(supplied, Path("pact")).phantom, 0)
+                    self.assertEqual(set(resolver.tracked_files(supplied)),
+                                     set(hygiene.public_candidate_files()))
+                    self.assertTrue(all(str(path).startswith(str(supplied))
+                                        for path in hygiene.public_candidate_files()))
+
+    def test_resolver_fixture_cli_refusal_classification_and_utf8(self):
+        with self.fixture():
+            source = Path(__file__).resolve().parent
+            for name in ("build_input_scope.py", "resolve_pact_sections.py"):
+                path = self.root / "docs" / name
+                path.write_bytes((source / name).read_bytes())
+                self.git("add", "--", "docs/" + name)
+            reader = self.write("docs/reader Ω.md", "See \N{SECTION SIGN}1.\n")
+            env = dict(self.git_env, PYTHONIOENCODING="cp1252", PYTHONDONTWRITEBYTECODE="1")
+            command = [sys.executable, "-S", "-B", str(self.root / "docs/resolve_pact_sections.py"),
+                       "--repo", str(self.root), "--check"]
+            success = subprocess.run([*command, "--pact", "pact"], cwd=self.parent,
+                                     env=env, capture_output=True)
+            self.assertEqual(success.returncode, 0, success.stderr.decode("utf-8"))
+            self.assertEqual(success.stderr, b"")
+            module = subprocess.run(
+                [sys.executable, "-S", "-B", "-m", "docs.resolve_pact_sections",
+                 "--repo", str(self.root), "--pact", "pact", "--check"],
+                cwd=self.root, env=env, capture_output=True,
+            )
+            self.assertEqual(module.returncode, 0, module.stderr.decode("utf-8"))
+            self.assertEqual(module.stdout, success.stdout)
+            reader.write_text("See \N{SECTION SIGN}999.\n", encoding="utf-8")
+            phantom = subprocess.run(command, cwd=self.parent, env=env, capture_output=True)
+            self.assertEqual(phantom.returncode, 2, phantom.stderr.decode("utf-8"))
+            self.assertIn("docs/reader Ω.md:1: \N{SECTION SIGN}999",
+                          phantom.stdout.decode("utf-8", errors="strict"))
+            external = subprocess.run([*command, "--pact", str(self.parent)],
+                                      cwd=self.parent, env=env, capture_output=True)
+            self.assertEqual(external.returncode, 1)
+            self.assertEqual(external.stdout, b"")
+            self.assertIn("outside the checkout", external.stderr.decode("utf-8"))
+            self.git("rm", "--cached", "--", "docs/resolve_pact_sections.py")
+            refused = subprocess.run(command, cwd=self.parent, env=env, capture_output=True)
+            self.assertEqual(refused.returncode, 1)
+            self.assertEqual(refused.stdout, b"")
+            self.assertIn("untracked entrypoint candidate refused", refused.stderr.decode("utf-8"))
+            self.assertIn("checkout § 中文", refused.stderr.decode("utf-8"))
+            self.preserved_outputs()
+
+
+    def test_resolver_preserves_platform_markdown_filename_case_semantics(self):
+        with self.fixture():
+            self.write("pact/uppercase.MD", "# Section 41\n")
+            self.write("pact/not_markdown.txt", "# Section 42\n")
+            self.write("docs/case-reader.md", "See \N{SECTION SIGN}41.\nSee \N{SECTION SIGN}42.\n")
+            result = resolver.sweep(self.root)
+            found = [(hit.identifier, hit.outcome) for hit in result.occurrences
+                     if hit.path == "docs/case-reader.md"]
+            self.assertEqual(found, [("41", "RESOLVED" if os.name == "nt" else "PHANTOM"),
+                                     ("42", "PHANTOM")])
+            self.preserved_outputs()
 
 
 if __name__ == "__main__":

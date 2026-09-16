@@ -54,7 +54,7 @@ Rose Sigil Systems (RSS) names the overall project. Sigil Crucible names its
 development mechanism: the instructions and tools used to build and verify the
 kernel and related code. Keep project identity and component identity distinct.
 
-Use each established RSS name with its ordinary engineering description.
+Use each RSS name with its ordinary engineering description.
 Naming identifies a responsibility; it does not claim invention of the
 underlying concept or implementation of every planned capability. Distinguish
 existing behavior, proposed design and unproven limits.
@@ -62,7 +62,8 @@ existing behavior, proposed design and unproven limits.
 | Project term | Familiar engineering description | Current scope |
 | --- | --- | --- |
 | [Sigil Crucible](SIGIL_CRUCIBLE.md) | development and verification toolchain | Name for existing development tools and their build discipline; consolidated responsibility mapping is a design candidate. It grants no runtime authority or host confinement. |
-| Kernel / runtime | governance runtime and supporting services | Implements the current local governance behavior; its reusable services may also have operator callers. |
+| [Sigil Kernel](PACT_ALIGNMENT.md#current-kernel-alignment) (kernel / runtime) | governance runtime and supporting services | Human-selected name for the current local governance runtime; reusable services may also have operator callers. The name does not move package paths or add capability. |
+| [RSS Architecture](PROJECT_CONTROL_SURFACE.md#named-architecture-map-reconciliation) | architecture view and responsibility map | Human-selected name for the shared view of RSS components and their relationships. DOCS-04 reconciles the view; it adds no runtime subsystem or authority tier. |
 | Proof body | behavioral test | Checks a named behavior. A passing result supports only the checked conditions. |
 | Shared harness | test support and orchestration | Imports, fixtures, counters, guards and result handling; distinct from the behavior being tested. |
 | Aggregate acceptance | combined test-suite runner | The existing canonical registry runs several proof subjects together. |

@@ -25,6 +25,11 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+if __package__:
+    from .build_input_scope import InputScopeError, tracked_inputs
+else:
+    from build_input_scope import InputScopeError, tracked_inputs
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -147,30 +152,13 @@ def run_step(label: str, command: list[str]) -> int:
 
 
 def public_candidate_files() -> list[Path]:
-    result = subprocess.run(
-        ["git", "ls-files"],
-        cwd=REPO_ROOT,
-        text=True,
-        capture_output=True,
-        check=True,
+    return tracked_inputs(
+        REPO_ROOT,
+        lambda relative: not relative.as_posix().startswith(
+            ("local/", ".git/", "demo_artifacts/")
+        ),
+        candidate_paths=PUBLIC_AGENT_ENTRYPOINT_FILES,
     )
-    relative_paths: set[str] = set()
-    for line in result.stdout.splitlines():
-        rel = line.strip()
-        if not rel:
-            continue
-        if rel.startswith(("local/", ".git/", "demo_artifacts/")):
-            continue
-        relative_paths.add(rel)
-
-    # A new entrypoint must be scanned before its first commit, not only after it
-    # becomes visible to git ls-files. This closes the pre-commit silence that the
-    # entrypoint candidate exposed.
-    for rel in PUBLIC_AGENT_ENTRYPOINT_FILES:
-        if (REPO_ROOT / rel).is_file():
-            relative_paths.add(rel)
-
-    return [REPO_ROOT / rel for rel in sorted(relative_paths)]
 
 
 def is_allowed_provenance_name_hit(path: str, line_number: int, line: str) -> bool:
@@ -188,7 +176,12 @@ def provenance_name_hygiene_scan() -> int:
     allowed_count = 0
     allowed_path_count = 0
 
-    for path in public_candidate_files():
+    try:
+        paths = public_candidate_files()
+    except InputScopeError as exc:
+        print(f"Public input selection failed: {exc}", file=sys.stderr)
+        return 1
+    for path in paths:
         rel = path.relative_to(REPO_ROOT).as_posix()
         if path_pattern.search(rel):
             if rel in ALLOWED_PROVENANCE_NAME_PATHS:
@@ -243,7 +236,12 @@ def callsign_leak_scan() -> int:
     unexpected: list[str] = []
     allowed_count = 0
 
-    for path in callsign_scan_files():
+    try:
+        paths = callsign_scan_files()
+    except InputScopeError as exc:
+        print(f"Public input selection failed: {exc}", file=sys.stderr)
+        return 1
+    for path in paths:
         rel = path.relative_to(REPO_ROOT).as_posix()
         try:
             text = path.read_text(encoding="utf-8", errors="replace")

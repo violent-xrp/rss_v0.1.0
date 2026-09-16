@@ -1,4 +1,4 @@
-"""Tracked working-file inputs for the two traceability generators.
+"""Tracked working-file inputs for traceability and public-surface tools.
 
 Not a sandbox, snapshot lock, output-path guard or script-execution policy.
 Licensed under AGPLv3; see LICENSE/LICENSE_INDEX.md.
@@ -59,15 +59,46 @@ def _long_path_spelling(path: Path) -> str:
     return buffer.value
 
 
+def _relative_input(name: str) -> PurePosixPath:
+    relative = PurePosixPath(name)
+    if (relative.is_absolute() or relative.as_posix() != name
+            or any(part in ("", ".", "..") for part in name.split("/"))
+            or "\\" in name or ":" in name):
+        raise InputScopeError("non-relative Git input path refused")
+    return relative
+
+
+def _require_indexed_candidates(
+    root: Path, candidates: tuple[PurePosixPath, ...], selected: list[Path]
+) -> None:
+    """Inspect fixed candidate paths without following untracked links."""
+    selected_paths = set(selected)
+    for relative in candidates:
+        if root / relative in selected_paths:
+            continue  # Selected members already passed stage/mode/path checks.
+        path = root
+        for index, part in enumerate(relative.parts):
+            path /= part
+            try:
+                _plain_path(path, directory=index < len(relative.parts) - 1)
+            except FileNotFoundError:
+                break  # This fixed candidate does not exist.
+        else:
+            raise InputScopeError(f"untracked entrypoint candidate refused: {path}")
+
+
 def tracked_inputs(
-    repo_root: Path, include: Callable[[PurePosixPath], bool]
+    repo_root: Path, include: Callable[[PurePosixPath], bool], *,
+    candidate_paths: tuple[str, ...] = (),
 ) -> list[Path]:
     """Select index membership, validate paths, then let callers read live bytes.
 
     Staged additions and unstaged edits are eligible; untracked/ignored scratch
     is not. Tracked files remain eligible if an ignore rule later matches them.
     Staged deletion removes membership; unstaged deletion fails. No Git-less
-    fallback. The validation/read interval is not protected against a writer.
+    fallback. Named candidate_paths are also selected when indexed; an existing
+    untracked candidate refuses the scan before callers read any content.
+    The validation/read interval is not protected against a writer.
     """
     root = Path(os.path.abspath(repo_root))
     # Repository selection must not inherit a different index/worktree from the
@@ -91,6 +122,8 @@ def tracked_inputs(
         top = Path(os.fsdecode(git("rev-parse", "--show-toplevel").rstrip(b"\r\n")))
         if os.path.normcase(os.path.abspath(top)) != os.path.normcase(_long_path_spelling(root)):
             raise InputScopeError("requested root is not the Git worktree top level")
+        candidates = tuple(_relative_input(name) for name in candidate_paths)
+        candidate_files = {root / relative for relative in candidates}
         records = git("ls-files", "--stage", "--full-name", "-z").split(b"\0")
         selected: list[Path] = []
         for record in records:
@@ -99,12 +132,8 @@ def tracked_inputs(
             metadata, raw_name = record.split(b"\t", 1)
             mode, _object_id, stage = metadata.split()
             name = raw_name.decode("utf-8", errors="strict")
-            relative = PurePosixPath(name)
-            if (relative.is_absolute() or relative.as_posix() != name
-                    or any(part in ("", ".", "..") for part in name.split("/"))
-                    or "\\" in name or ":" in name):
-                raise InputScopeError("non-relative Git input path refused")
-            if not include(relative):
+            relative = _relative_input(name)
+            if not include(relative) and root / relative not in candidate_files:
                 continue
             if stage != b"0" or mode not in (b"100644", b"100755"):
                 raise InputScopeError(f"unmerged or non-file index input refused: {name}")
@@ -113,6 +142,7 @@ def tracked_inputs(
                 path /= part
                 _plain_path(path, directory=index < len(relative.parts) - 1)
             selected.append(path)
+        _require_indexed_candidates(root, candidates, selected)
         return sorted(selected)
     except (OSError, UnicodeError, ValueError, subprocess.CalledProcessError) as exc:
         raise InputScopeError(f"tracked input discovery failed: {exc}") from exc

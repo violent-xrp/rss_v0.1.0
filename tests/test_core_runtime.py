@@ -963,7 +963,7 @@ def test_llm():
 
     captured = io.StringIO()
     exit_code = None
-    with patch.multiple(support, _pass=0, _fail=0, _errors=0, _funcs=0):
+    with support.isolated_counters():
         with redirect_stdout(captured):
             try:
                 support.run_tests("Guard rejection probe", [

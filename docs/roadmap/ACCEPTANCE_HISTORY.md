@@ -1064,3 +1064,97 @@ historical-public-wording disposition before selecting a bounded resolver/hygien
 implementation. Host execution limits remain separate; this documentation
 checkpoint establishes no host confinement. SITE-01, BUILD-05 and other
 workstream holds are unchanged.
+
+
+## 2026-09-15 BUILD-03 Same-Checkout Input Candidate
+
+**Disposition:** built candidate; independent review and human disposition pending.
+The human selected the same-checkout input contract. Earlier generator and
+documentation checkpoints remain distinct from this uncommitted slice.
+
+Scope:
+- The resolver and both public-surface scan functions use the shared Git-index
+  selector and live working bytes. Selected missing, malformed, non-regular,
+  unmerged or linked/reparse inputs fail before scan content is consumed.
+- Existing untracked fixed entrypoints refuse the scan; deliberate index
+  membership makes them eligible. No automatic staging or untracked-content read.
+- Pact headings come from indexed Markdown below the same-checkout subtree;
+  relative `--pact` values start at `--repo`. External paths, the checkout root
+  and absent/empty selected input refuse. Platform filename case behavior and
+  existing text decoding/classification semantics remain.
+- Resolver input failure is exit 1. `--json` retains its explicit report write,
+  including with `--check`. Hygiene's child chain, exclusions and allowlists are
+  unchanged; the fixture proof invokes scan functions, not the full wrapper.
+- Four Python files, TESTING, only BUILD-03's queue row, one dated-map
+  anchor correction, this appended receipt and the private current handoff.
+
+Builder evidence:
+- Python 3.13.13, Git 2.55.0.windows.1 and selected PowerShell 7.6.5.
+- Final standalone suite: 41 tests under the long TEMP spelling and 41 under
+  its Windows 8.3 spelling; both exit 0, zero failures/errors/skips. These are two
+  runs of the same suite, not 82 distinct tests. The test process itself recorded
+  `tempfile.gettempdir()`. Exact runtime paths, source hashes, commands and logs
+  remain in the private candidate packet.
+- All 23 earlier test bodies are AST-identical; 18 new consumer tests cover the
+  changed boundaries. Generator CLIs retain their fixture regression checks.
+- The first 40-test run had one synthetic Git-index setup error. Its correction
+  changes only fixture `rm --cached` to `rm --cached --force` and asserts the
+  dirty working file remains. Two 40-test passes followed. Static review then
+  found an unintended uppercase Markdown exclusion on Windows; the final case
+  compatibility correction and added regression produced the 41-test passes.
+  Failed and superseded evidence is retained, not overwritten.
+
+Preservation and limits:
+- The pre-existing receipt prefix, unrelated queue rows/order, threat-model and
+  coverage-tracker work, dated inventory, protected output and prior packets are
+  preserved. No real repository index, ref or canonical kernel-test source changed.
+- The selector still depends on platform Git executable search and host Git
+  configuration. A `shutil.which` path is a lookup, not measured child identity.
+  File checks are not source authentication, a writer lock, hard-link isolation,
+  output confinement or an OS sandbox. Named-entrypoint refusal concerns scan
+  reads; it cannot prevent an interpreter from loading the code it executes.
+- No canonical acceptance, coverage, baseline sync, combined hygiene, full
+  generator-output equivalence, Main integration, push, tag or release ran.
+  The inherited 181/3013/0, 92.7% and 26-module figures were not remeasured.
+- Historical public-wording corrections remain separately undecided. This
+  builder evidence neither closes BUILD-03 nor authorizes the next slice.
+
+
+## 2026-09-16 BUILD-03 Input Selection and Proof Support Local Checkpoint
+
+The human authorized this bounded local checkpoint after independent static
+review and disposition. It records the same-checkout input-selection slice,
+its identity supplements, and the first proof-support separation between
+Sigil Crucible and kernel-facing fixtures. Related RSS Architecture terminology
+and the reviewed option A design support this slice; DOCS-04 is not closed.
+
+The resolver and hygiene scans use the shared index selector. The independent
+proof-support module owns the counters and runner, and the kernel-facing facade
+re-exports the same functions. Tooling proof bodies use the independent module.
+The sole registered proof-body change is the reviewed isolated-counter context
+in the existing guard probe; registration, CLAIM tags and aggregate totals remain.
+
+Independent review of the implementation and pytest supplement initially held
+the candidate for stale current-map references and packet metadata. Scoped
+correction review passed; the human accepted it and the prescribed Low wording
+cleanup, "tooling import boundary". Original evidence packets and historical
+design/appendix bytes are retained. Corrected manifest records supersede stale
+context without changing original snapshots or their file/Git-state payloads.
+
+Execution remains builder evidence: the 41-case input suite under both TEMP
+spellings; 13 standalone proof-support cases; aggregate 181 functions / 3013
+assertions / 0 failures; focused subsets of 40, 222 and 105 assertions; and
+pytest prepend parity with 181 passed. Independent review checked source,
+records and preservation but did not execute these tests. Repeated runs and
+standalone cases are not added to canonical totals.
+
+No new tests, coverage, baseline, combined hygiene, generator equivalence or
+input-suite run was performed for the final documentation and checkpoint.
+Coverage and module figures remain inherited. This local checkpoint does not
+claim full-gate acceptance, host isolation, complete Kernel/Crucible separation,
+or closure of BUILD-03. Historical public wording and wider execution boundaries
+remain open. No Main integration, push, release or other workstream is included.
+
+The separate BUILD-05 receipt and truth corrections, unrelated queue scheduling,
+protected root outputs, private handoff and retained packets stay outside this
+checkpoint. Existing working changes and evidence are preserved.

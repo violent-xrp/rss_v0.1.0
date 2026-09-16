@@ -25,7 +25,7 @@
 # This notice is a summary; the binding terms are LICENSE/AGPLv3.md and,
 # where executed, a signed commercial agreement.
 # ==============================================================================
-"""Shared imports, counters, and helpers for the RSS acceptance suite."""
+"""Kernel-facing compatibility imports and fixtures for acceptance proofs."""
 import os
 import sys
 import json
@@ -35,17 +35,11 @@ import traceback
 from datetime import datetime, timedelta, UTC
 from contextlib import contextmanager, nullcontext
 
-# Windows console UTF-8 shim: the default Windows console uses cp1252 which
-# cannot encode §, →, ☐, ✓ and other Unicode the suite prints. Reconfigure
-# stdout/stderr to UTF-8 so tests that print sigils / arrows don't crash.
-# Python 3.7+ provides reconfigure(); the try/except keeps this safe on
-# non-standard streams (e.g., when output is being piped through a wrapper).
-if sys.platform == "win32":
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, Exception):
-        pass
+# The independent harness configures streams before any kernel import.
+from proof_support import (
+    _running_under_pytest, check, section, safe_run, reset_counters,
+    deny_live_http, run_tests, module_tests, run_module, isolated_counters,
+)
 
 # Path shim: add ../src to sys.path so the rss package resolves when running
 # `python tests/test_all.py` directly from the repo root. conftest.py does
@@ -90,119 +84,6 @@ from rss.core.runtime import Runtime, SafeStopRecovery, bootstrap, DEFAULT_TERMS
 # Layer 7
 from rss.hubs.tecton import (Tecton, TectonError, ContainerRequest, ContainerPermissions,
                     ContainerProfile, TenantContainer, SEAT_SIGILS, VALID_TRANSITIONS)
-
-
-_pass = 0
-_fail = 0
-_errors = 0
-_funcs = 0
-
-
-def _running_under_pytest() -> bool:
-    """Return True when this module is executing under pytest.
-
-    `python tests/test_all.py` remains the canonical acceptance runner, but
-    pytest collection must still be truthful: a failed `check(...)` should
-    fail the collected test immediately instead of only incrementing our
-    private counters.
-    """
-    return "PYTEST_CURRENT_TEST" in os.environ
-
-
-def check(condition, msg):
-    global _pass, _fail
-    if condition:
-        _pass += 1
-        print(f"  [PASS] {msg}")
-    else:
-        _fail += 1
-        print(f"  [FAIL] {msg}")
-        if _running_under_pytest():
-            raise AssertionError(msg)
-
-
-def section(title):
-    print(f"\n{'='*60}\n{title}\n{'='*60}")
-
-
-def safe_run(test_func):
-    """Run a test function with error protection."""
-    global _errors, _funcs
-    _funcs += 1
-    try:
-        test_func()
-    except Exception as e:
-        _errors += 1
-        print(f"  [ERROR] {test_func.__name__} crashed: {e}")
-        traceback.print_exc()
-
-
-def reset_counters():
-    """Reset the custom acceptance counters for a direct module run."""
-    global _pass, _fail, _errors, _funcs
-    _pass = 0
-    _fail = 0
-    _errors = 0
-    _funcs = 0
-
-
-@contextmanager
-def deny_live_http():
-    """Block urllib transport below response fixtures; retain swallowed attempts."""
-    from unittest.mock import patch
-    from urllib.error import URLError
-
-    attempts = []
-
-    def refuse(request, *args, **kwargs):
-        attempts.append(getattr(request, "full_url", str(request)))
-        raise URLError("live HTTP is forbidden in canonical acceptance")
-
-    with patch("urllib.request.OpenerDirector.open", side_effect=refuse):
-        yield attempts
-
-
-def run_tests(label, tests, *, forbid_http=False):
-    """Run proofs; optionally fail on HTTP attempts even if code catches errors."""
-    global _errors
-    reset_counters()
-    with deny_live_http() if forbid_http else nullcontext([]) as attempts:
-        for test_func in tests:
-            safe_run(test_func)
-    if attempts:
-        _errors += 1
-        print(f"  [ERROR] live HTTP guard blocked {len(attempts)} unexpected request(s)")
-    elif forbid_http:
-        print("  [HTTP guard] zero unexpected urllib transport attempts")
-
-    print(f"\n{'='*60}")
-    print(
-        f"{label} - {_funcs} test functions, "
-        f"{_pass} assertions passed, {_fail} failed",
-        end="",
-    )
-    if _errors > 0:
-        print(f", {_errors} ERRORS")
-    else:
-        print()
-    print(f"{'='*60}")
-    if _fail > 0 or _errors > 0:
-        raise SystemExit(1)
-
-
-def module_tests(namespace):
-    """Return directly defined test functions in source order."""
-    return [
-        obj for name, obj in namespace.items()
-        if name.startswith("test_") and callable(obj)
-    ]
-
-
-def run_module(namespace):
-    """Run the directly executed split test module with a readable label."""
-    file_path = namespace.get("__file__")
-    label = os.path.splitext(os.path.basename(file_path))[0] if file_path else namespace.get("__name__", "test_module")
-    run_tests(label, module_tests(namespace))
 
 
 def _cleanup_db(path):

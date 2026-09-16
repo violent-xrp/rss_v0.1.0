@@ -18,31 +18,34 @@ those owners inside Crucible. Existing BUILD IDs remain stable.
 ### Current Build Thread
 
 KERNEL-02 and DOCS-03 are locally checkpointed after independent review and human disposition.
-Table order records the human-approved sequence, starting with BUILD-05 and then
-the coordination tasks below. Queue rows schedule work only; no implementation
+Table order records the human-selected priority of the DOCS-04 development-boundary
+design and its related BUILD-03 work. Other scheduling changes are outside this
+bounded checkpoint. Queue rows schedule work only; no implementation, host change
 or Git operation is authorized by a queue row.
 Each slice needs bounded proof, cross-family review relayed through the human
 controller, and disposition before advancing. Remaining kernel work is retained
-after that sequence; BUILD-02/03 stay deferred. Report new safety blockers first.
+after that sequence. Report new safety blockers first; finding reviews do not
+accept a corrective implementation or a new execution-boundary design.
 
 | Workstream | Task ID | Work | State | Evidence | Next action | Detail owner |
 | --- | --- | --- | --- | --- | --- | --- |
+| Project | DOCS-04 | RSS Architecture: named components and boundary reconciliation | blocked | unreviewed | The reviewed option A design and related first BUILD-03 separation slice are locally checkpointed. Broader RSS Architecture reconciliation and physical reorganization remain deferred; this checkpoint does not complete DOCS-04. | [Architecture map routes](docs/PROJECT_CONTROL_SURFACE.md#named-architecture-map-reconciliation), [separation design](docs/SIGIL_CRUCIBLE.md#docs-04-kernel-and-crucible-separation-design) |
+| Build system | BUILD-03 | Sigil Crucible: script accountability and enforced execution boundaries | blocked | checkpointed | The independently reviewed input-selection and proof-support slices are locally checkpointed after human disposition, including the prescribed N1 wording cleanup. Full-gate acceptance, historical public-wording disposition and wider execution boundaries remain open. Select further boundary work only through a new human disposition; no Main integration or push. | [Sigil Crucible](docs/SIGIL_CRUCIBLE.md#build-03-agreements), [map scope](docs/SIGIL_CRUCIBLE.md#project-context-and-map-scope), [static map](docs/SIGIL_CRUCIBLE.md#build-03-static-map), [retained remainder](docs/TESTING.md#build-03-bounded-remainder-proposal), [documentation checkpoint](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-14-build-03-sigil-crucible-documentation-local-checkpoint), [input candidate](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-15-build-03-same-checkout-input-candidate), [input identities](docs/SIGIL_CRUCIBLE.md#build-03-identity-upkeep--standalone-input-proofs), [proof support](docs/SIGIL_CRUCIBLE.md#build-03-independent-proof-support-candidate) |
 | Build system | BUILD-05 | Roots promotion readiness | paused | unreviewed | After DOCS-03, check Main ancestry and reconcile Main-only commits into Roots with approval if needed; reproduce complete applicable gates at the resulting checkpoint and obtain cross-family review of the Main-bound diff. | [Promotion loop](docs/BUILD_DISCIPLINE.md#promotion-and-reconciliation-loop), [owed proof](#release-boundary) |
 | Build system | BUILD-06 | Main promotion and Roots reconciliation | paused | unreviewed | After BUILD-05 acceptance and exact Git approval, merge into Main, gate the result and push; reconcile Main back into Roots, gate and push Roots. No tag. | [Promotion loop](docs/BUILD_DISCIPLINE.md#promotion-and-reconciliation-loop) |
 | Build system | BUILD-07 | Preservation-first Lab baseline refresh | paused | unreviewed | After BUILD-06, verify recoverable preservation of unique Lab history, dirty/untracked work and needed ignored context before any replacement; review dispositions, then refresh shared baseline/instructions with approval. Keep experiments and Lab rules distinct; no blind reset or wholesale Lab promotion. | [Lane boundaries](docs/BUILD_DISCIPLINE.md#three-trees-one-direction-of-trust) |
 | Build system | BUILD-08 | Separate Taproot review handoff | paused | unreviewed | After BUILD-07, route pending method changes into a separate Taproot review/disposition. This row tracks handoff only; candidate detail and acceptance stay in Taproot, without inheriting the kernel roadmap. | [Method ownership](docs/PROJECT_CONTROL_SURFACE.md#supporting-evidence-and-session-state) |
-| Project | DOCS-04 | Rose Sigil Systems: named project architecture and boundary reconciliation | paused | unreviewed | After the existing build/readiness sequence, reconcile project structure, runtime behavior and development/proof views through current owners. Preserve established RSS names; label implemented, proposed and uninspected boundaries. Reuse BUILD-03 and KERNEL-05 evidence. No moves or new proof totals. | [Architecture map routes](docs/PROJECT_CONTROL_SURFACE.md#named-architecture-map-reconciliation) |
 | Kernel | KERNEL-03 | Atomic Safe-Stop entry | paused | unreviewed | Specify halt/receipt failure outcomes and restart proof before implementation. | [Entry finding](docs/KERNEL_FINDINGS.md#atomic-safe-stop-entry) |
 | Kernel | KERNEL-04 | OATH duration enforcement and coercion semantics | paused | unreviewed | Decide expiry semantics and restoration obligations; keep coercion-warning semantics distinct. | [Consent finding](docs/KERNEL_FINDINGS.md#oath-consent-duration-and-coercion-semantics) |
 | Kernel | KERNEL-05 | Seat load-bearing audit | paused | unreviewed | Map each seat's unique invariant to active callers and behavioral proof; decide unused-route disposition. | [Seat audit](docs/KERNEL_FINDINGS.md#seat-load-bearing-audit) |
 | Kernel | KERNEL-06 | Identity and propagation cluster | paused | unreviewed | Scope caller authentication, actor/request binding, and wrapper/worker propagation separately; recovery design precedes keys. | [Ingress](docs/KERNEL_FINDINGS.md#caller-identity-and-ingress-boundary), [worker context](docs/KERNEL_FINDINGS.md#thread-and-worker-context-propagation), [recovery](docs/KERNEL_FINDINGS.md#t-0-recovery-and-lock-out-before-keys) |
 | Build system | BUILD-02 | Owned temporary-file lifecycle | paused | unreviewed | Scope cleanup/failure-path proof; legacy removal requires separate preservation approval. | [Testing findings](docs/TESTING.md#build-system-findings) |
-| Build system | BUILD-03 | Sigil Crucible: script accountability and enforced execution boundaries | blocked | checkpointed | The Sigil Crucible documentation/map and its corrections are locally checkpointed after independent review and human disposition. Resolve the retained input-selection compatibility choices before selecting a code slice; the retained proposal remains unimplemented and unreviewed. Full BUILD-03 acceptance and execution-boundary decisions remain open. DOCS-04 stays deferred after BUILD-08; full reorganization stays postponed. | [Sigil Crucible](docs/SIGIL_CRUCIBLE.md#build-03-agreements), [map scope](docs/SIGIL_CRUCIBLE.md#project-context-and-map-scope), [static map](docs/SIGIL_CRUCIBLE.md#build-03-static-map), [retained remainder](docs/TESTING.md#build-03-bounded-remainder-proposal), [documentation checkpoint](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-14-build-03-sigil-crucible-documentation-local-checkpoint) |
 
-DOCS-04 is project-wide work. The human controller explicitly confirmed on
-2026-09-14 that it stays deferred after BUILD-08. This preserves the selected
-build/readiness sequence as an authorized exception to the normal insertion
-rule below; it adds no prerequisite to BUILD-03.
+DOCS-04 is project-wide work. The human controller's latest separation priority
+supersedes the 2026-09-14 placement after BUILD-08. Its bounded design now comes
+first; the remaining rows retain their relative order. This is a scheduling
+decision, not a claim that every BUILD-03 correction technically requires a
+complete architecture map or that physical reorganization is approved.
 
 State and Evidence are independent. State is `active` (work underway), `paused`
 (deferred by decision, resumable when chosen), `blocked` (awaiting an external
@@ -132,7 +135,8 @@ It is not integrated into main or released and does not discharge BUILD-05.
 DOCS-03 is closed/checkpointed after independent review and human disposition;
 see its [review disposition](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-12-docs-03-reviewed-local-checkpoint).
 Its bounded index reconciliation does not discharge accumulated promotion,
-demo, or cold-verifier obligations. BUILD-05 is the next readiness pass.
+demo, or cold-verifier obligations. BUILD-05 remains the readiness resume point
+after the higher-priority boundary work in Current Build Thread.
 
 Keep these stages distinct: local checkpoint records the candidate; reproduced
 proof records particular executed checks; full-gate acceptance requires the

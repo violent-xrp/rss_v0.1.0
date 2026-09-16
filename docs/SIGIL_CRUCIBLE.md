@@ -147,16 +147,24 @@ open. Naming is settled and need not delay a selected correctness repair.
 
 ## BUILD-03 static map
 
-**Static candidate, 2026-09-14.** Source anchors below refer to unchanged code at
-`f2ef219`. Analysis parsed 64 tracked Python files with the standard library and
-did not import project modules or execute proof bodies. Function subjects and
-boundary interpretations are provisional; direct source relationships are
-distinguished from proposed placement.
+**Static map, started 2026-09-14; harness revalidated 2026-09-16.**
+The original analysis at `f2ef219` parsed 64 tracked Python files with the
+standard library and did not import project modules or execute proof bodies.
+Function subjects and boundary interpretations remain provisional; direct source
+relationships are distinguished from proposed placement.
 
-All relative source-line anchors in this map and the registration appendix are
-bound to `f2ef219`. Revalidate affected anchors after any referenced source
-changes. Changes under `tests/`, including `tests/test_all.py`, also require
-fresh static name reconciliation.
+The current harness rows, tooling-import edge, initialization and path consumers
+below use the [proof-support candidate source hashes](#candidate-source-binding).
+The combined-hygiene child-command anchor was revalidated for the 2026-09-15
+input-selection candidate; its child-command list is unchanged. Other map anchors
+and the preserved registration appendix retain their `f2ef219` binding. The
+appendix is a dated baseline, including its pre-separation tooling line numbers.
+
+The implementation and its independent static review reconciled all 181 names.
+This documentation correction changes no source and reuses that reconciliation.
+Revalidate affected current-map anchors after any referenced source changes.
+Changes under `tests/`, including `tests/test_all.py`, also require fresh static
+name reconciliation.
 
 This pass covers command dispatch, the shared harness, registration, reference
 data, measurement and consumers of paths. Audit services and demo helpers are
@@ -172,7 +180,10 @@ flowchart LR
     CLI --> Demo["Demo suite"]
     Demo --> Runtime
     Runtime --> Verify["Shared cold verifier"]
-    Registry["Aggregate registry"] --> Harness["Shared harness"]
+    Registry["Aggregate registry"] --> Harness["test_support facade"]
+    Registry --> Tooling["Tooling proofs"]
+    Harness --> ProofSupport["proof_support runner"]
+    Tooling --> ProofSupport
     Harness --> Runtime
     Harness --> Reference["Reference data helpers"]
     Coverage["Coverage launcher"] --> Registry
@@ -223,22 +234,24 @@ repair performed by this map.
 
 | Unit / source anchor | Role / subject | Potential effects | Required authority | Observed enforcement / caller context |
 | --- | --- | --- | --- | --- |
-| [module initialization and imports](../tests/test_support.py#L43) | harness | process-state | Unassessed. | Reconfigures Windows streams, adds src to sys.path, and imports kernel services plus reference_pack. All wildcard consumers depend on this import-time reach. |
-| [_running_under_pytest](../tests/test_support.py#L101), [check](../tests/test_support.py#L112) | harness | memory, console; conditional exception | Unassessed. | Counter/report behavior plus pytest failure behavior. These are not proof bodies. |
-| [section](../tests/test_support.py#L124), [reset_counters](../tests/test_support.py#L140) | harness | memory, console | Unassessed. | Formatting and aggregate counters. Resetting once per future group would change the aggregate contract. |
-| [safe_run](../tests/test_support.py#L128) | harness | delegates proof effects, memory, console | Unassessed. | Calls the supplied proof and counts errors/functions; it is not a confinement boundary. |
-| [deny_live_http](../tests/test_support.py#L150) | harness | process-state | Unassessed. | Patches urllib.request.OpenerDirector.open and retains attempts. It does not cover every possible network API or impose OS isolation. |
-| [run_tests](../tests/test_support.py#L165) | harness | delegates proof effects, memory, console | Unassessed. | Resets counters, runs proofs, prints aggregate verdict and raises SystemExit on recorded failures/errors. forbid_http defaults false. |
-| [module_tests](../tests/test_support.py#L193), [run_module](../tests/test_support.py#L201) | harness | reflection; delegates proof effects | Unassessed. | Collects test_-named callables and runs a direct module; no forbid_http=True is supplied here. |
-| [_cleanup_db](../tests/test_support.py#L208) | harness / fixture lifecycle | file-write (deletion), process-state | Unassessed. | Deletes the supplied DB and sidecars with retries; final errors are swallowed. Ownership and refusal guarantees are not established by this helper. |
+| [Windows stream setup](../tests/proof_support.py#L39) | harness | process-state | Unassessed. | proof_support configures the streams before the facade imports kernel services. This setup has one owner. |
+| [facade imports](../tests/test_support.py#L39), [kernel imports](../tests/test_support.py#L50), [reference data import](../tests/test_support.py#L79) | harness / kernel fixture facade | process-state | Unassessed. | test_support adds src to sys.path, re-exports the runner functions and imports kernel services plus reference_pack. The ten remaining wildcard consumers retain this import-time reach; the tooling module uses proof_support directly. |
+| [_running_under_pytest](../tests/proof_support.py#L64), [check](../tests/proof_support.py#L75) | harness | memory, console; conditional exception | Unassessed. | Counter/report behavior plus pytest failure behavior. These are not proof bodies. |
+| [section](../tests/proof_support.py#L87), [reset_counters](../tests/proof_support.py#L103) | harness | memory, console | Unassessed. | Formatting and aggregate counters. Resetting once per future group would change the aggregate contract. |
+| [isolated_counters](../tests/proof_support.py#L53) | harness | memory | Unassessed. | Saves and restores the four owner counters around a nested proof scope; inner counts do not enter the outer aggregate. This is not thread isolation. |
+| [safe_run](../tests/proof_support.py#L91) | harness | delegates proof effects, memory, console | Unassessed. | Calls the supplied proof and counts errors/functions; it is not a confinement boundary. |
+| [deny_live_http](../tests/proof_support.py#L113) | harness | process-state | Unassessed. | Patches urllib.request.OpenerDirector.open and retains attempts. It does not cover every possible network API or impose OS isolation. |
+| [run_tests](../tests/proof_support.py#L128) | harness | delegates proof effects, memory, console | Unassessed. | Resets counters, runs proofs, prints aggregate verdict and raises SystemExit on recorded failures/errors. forbid_http defaults false. |
+| [module_tests](../tests/proof_support.py#L156), [run_module](../tests/proof_support.py#L164) | harness | reflection; delegates proof effects | Unassessed. | Collects test_-named callables and runs a direct module; no forbid_http=True is supplied here. |
+| [_cleanup_db](../tests/test_support.py#L89) | harness / fixture lifecycle | file-write (deletion), process-state | Unassessed. | Deletes the supplied DB and sidecars with retries; final errors are swallowed. Ownership and refusal guarantees are not established by this helper. |
 | [TESTS](../tests/test_all.py#L249), [run_all](../tests/test_all.py#L435) | harness | delegates all registered proof effects | Unassessed. | One aggregate registry; run_all supplies forbid_http=True. Membership is reconciled by qualified name below. |
-| [tooling wildcard import](../tests/test_docs_tooling.py#L34) | test; subject tooling | process-state, temporary file-write through fixtures | Unassessed. | The proof bodies use check/section and standard-library names. sys is also explicitly imported; wildcard overlap alone does not prove that import is needed. Kernel imports still occur when test_support loads. |
+| [explicit tooling imports](../tests/test_docs_tooling.py#L36) | test; subject tooling | process-state, temporary file-write through fixtures | Unassessed. | The proof bodies use check/section from proof_support and explicit standard-library imports. This module no longer imports test_support or kernel services. Aggregate acceptance still loads its other, kernel-dependent proof modules. |
 | [_load_main_module](../tests/test_cli.py#L36), [demo/main loaders](../tests/test_demo_reference_pack.py#L49) | test helper | process-state; later fixture effects | Unassessed. | Loads source by filename with importlib. Static import edges alone would miss these paths. |
 
 <details>
 <summary>Per-module global names also exported by test_support</summary>
 
-This is a static overlap list, not executed wildcard resolution. Explicit imports can shadow these names. It gives a reviewer a concrete starting set before changing the harness.
+This is a retained static overlap list from the original map, not executed wildcard resolution. Explicit imports can shadow these names. The tooling row now points to its explicit imports; overlapping names do not establish a dependency on test_support.
 
 | Proof module | Referenced overlapping names |
 | --- | --- |
@@ -249,7 +262,7 @@ This is a static overlap list, not executed wildcard resolution. Explicit import
 | [tests/test_cli.py](../tests/test_cli.py#L33) | `RSSConfig`, `bootstrap`, `check`, `os`, `section`, `tempfile` |
 | [tests/test_core_runtime.py](../tests/test_core_runtime.py#L32) | `AuditLogError`, `CanonArtifact`, `ConstitutionConfig`, `ConstitutionError`, `ExecutionIntent`, `ExecutionStateMachine`, `LLMAdapter`, `Oath`, `Persistence`, `RSSConfig`, `Runtime`, `SafeStopRecovery`, `SafeStopTriggered`, `Seal`, `SealPacket`, `Term`, `UTC`, `Ward`, `WardError`, `_cleanup_db`, `bootstrap`, `check`, `compute_hash`, `datetime`, `deny_live_http`, `json`, `load_constitution`, `os`, `run_module`, `safe_stop`, `section`, `sqlite3`, `tempfile`, `timedelta`, `verify_integrity` |
 | [tests/test_demo_reference_pack.py](../tests/test_demo_reference_pack.py#L38) | `DEMO_CONTAINERS`, `REFERENCE_PACK`, `RSSConfig`, `_cleanup_db`, `bootstrap`, `check`, `compute_hash`, `json`, `load_demo_containers`, `load_reference_pack`, `os`, `run_module`, `section`, `seed_demo_world`, `tempfile` |
-| [tests/test_docs_tooling.py](../tests/test_docs_tooling.py#L34) | `check`, `os`, `section`, `sys`, `tempfile` |
+| [tests/test_docs_tooling.py](../tests/test_docs_tooling.py#L36) | `check`, `os`, `section`, `sys`, `tempfile` |
 | [tests/test_governance_seats.py](../tests/test_governance_seats.py#L32) | `CONTENT_ONLY`, `CanonArtifact`, `Cycle`, `ExecutionStateMachine`, `MeaningError`, `MeaningLaw`, `Oath`, `PAVBuilder`, `RSSConfig`, `Scope`, `Scribe`, `ScribeError`, `Seal`, `SealError`, `SealPacket`, `Term`, `UTC`, `Ward`, `WardError`, `_cleanup_db`, `bootstrap`, `check`, `datetime`, `os`, `run_module`, `section`, `tempfile`, `timedelta` |
 | [tests/test_hubs_persistence.py](../tests/test_hubs_persistence.py#L32) | `CONTENT_ONLY`, `FULL_CONTEXT`, `HubEntry`, `HubError`, `HubTopology`, `PAVBuilder`, `PURGE_SENTINEL`, `Persistence`, `RSSConfig`, `SafeStopRecovery`, `Scope`, `ScopeError`, `Tecton`, `Term`, `TraceEvent`, `UTC`, `_cleanup_db`, `bootstrap`, `check`, `datetime`, `json`, `os`, `run_module`, `section`, `sqlite3`, `tempfile` |
 | [tests/test_tenant_containers.py](../tests/test_tenant_containers.py#L32) | `ContainerPermissions`, `ContainerProfile`, `ContainerRequest`, `RSSConfig`, `SEAT_SIGILS`, `Tecton`, `TectonError`, `VALID_TRANSITIONS`, `_cleanup_db`, `bootstrap`, `check`, `os`, `run_module`, `section`, `sqlite3`, `tempfile` |
@@ -305,13 +318,13 @@ membership and package-file counts above do not remeasure execution or coverage.
 | [operator demo command](../src/main.py#L144) | examples.demo_suite | Operator-to-demo integration; no defect or move is selected solely from this edge. |
 | [Runtime.verify_pre_emission_boot_chain](../src/rss/core/runtime.py#L618) | rss.audit.verify.verify_trace_file | Runtime-to-shared-verifier dependency. It refines the baseline whole-file operator label. |
 | [canonical registry imports](../tests/test_all.py#L66) | test_docs_tooling | Four tooling proofs participate in aggregate acceptance. |
-| [tooling proof module](../tests/test_docs_tooling.py#L34) | test_support -> kernel + reference_pack imports | Import coupling survives folder separation unless the harness interface changes. |
+| [tooling proof module](../tests/test_docs_tooling.py#L36) | proof_support plus explicit standard-library imports | The direct tooling-to-test_support import and its kernel/reference import reach have been removed. The shared aggregate still runs both tooling and kernel proofs. |
 | [claim selector](../docs/build_claim_matrix.py#L217) | tests/test_*.py at two path components | Nested test folders would drop their claim inputs under the current predicate. |
 | [demo source-reading proof](../tests/test_adversarial_scenarios.py#L1118) | three fixed demo_llm.py candidates | Move planning must preserve or deliberately reconcile this source-text check. |
-| [pytest path shim](../tests/conftest.py#L41), [direct-run path shim](../tests/test_support.py#L53) | sibling src directory | Pytest and direct invocation have distinct setup paths. Keep both in any future import migration. |
-| [CLI source loader](../tests/test_cli.py#L38), [tool source loaders](../tests/test_docs_tooling.py#L38) | src/main.py and named docs/*.py paths | importlib loads by filesystem path; module import searches alone are incomplete. |
+| [pytest path shim](../tests/conftest.py#L41), [direct-run path shim](../tests/test_support.py#L47) | sibling src directory | Pytest and direct invocation have distinct setup paths. Keep both in any future import migration. |
+| [CLI source loader](../tests/test_cli.py#L38), [tool source loaders](../tests/test_docs_tooling.py#L39) | src/main.py and named docs/*.py paths | importlib loads by filesystem path; module import searches alone are incomplete. |
 | [coverage launcher](../run_coverage.py#L66), [baseline orchestration](../docs/sync_baseline.py#L335) | tests/test_all.py / run_coverage.py | Both command paths and final-line semantics are compatibility surfaces. |
-| [combined hygiene children](../docs/check_public_hygiene.py#L275) | baseline, contact surface, claim, reverse map, status, resolver | A helper classification does not make the combined wrapper a read-only fixture check. |
+| [combined hygiene children](../docs/check_public_hygiene.py#L273) | baseline, contact surface, claim, reverse map, status, resolver | A helper classification does not make the combined wrapper a read-only fixture check. |
 | [reverse-map scope](../docs/build_pact_code_map.py#L129), [module scope](../docs/sync_baseline.py#L353) | src/rss and Pact/source patterns | A move can change both traceability and reported scope without changing behavior. |
 | [TESTING](TESTING.md), [BUILD_DISCIPLINE](BUILD_DISCIPLINE.md), [receipts](roadmap/ACCEPTANCE_HISTORY.md) | documented commands, links and historical paths | Current routes need reconciliation; historical receipt bytes remain preserved, not mass-renamed. |
 
@@ -528,7 +541,7 @@ automatically change the test's primary subject. Mixed subjects remain visible.
 Review the five agreements against the map and the source anchors before choosing
 a code slice. Check every proposed subject reassignment at a mixed interface.
 Fixed review anchors include the CLI dispatch, runtime-to-verifier import,
-tooling wildcard dependency, claim-selector predicate, one registry entry from
+tooling import boundary, claim-selector predicate, one registry entry from
 each proof module, and the demo source-text dependency. Sampling anchors does
 not replace the complete name reconciliation.
 
@@ -547,3 +560,526 @@ This map changes no code, tests, generated proof views or historical receipts.
 Full gates, Main integration, publication, SITE work, BUILD-02 cleanup, BUILD-05
 acceptance and kernel changes remain outside this candidate. The complete
 baseline remains retained; the new owner is its explicit candidate supplement.
+
+## BUILD-03 identity upkeep — standalone input proofs
+
+**Documentation supplement, 2026-09-15.** Independent static review returned
+PASS for the input candidate, identity supplement and N1/N2 correction; the
+correction review reported no findings. The 41-test runs under both TEMP
+spellings remain builder evidence, not independent execution. This applies
+BUILD-03-B/C/D/E to the additions while retaining the dated inventory and
+canonical registration appendix. ROADMAP owns remaining disposition; this
+records no checkpoint or full BUILD-03 acceptance.
+
+### Identification rule for additions and changes
+
+At the existing detail owner, record the task ID, established component name,
+role, qualified code/test symbol, current path, proof subject for tests,
+multiple effects, required authority, observed enforcement and evidence binding.
+Use the task ID plus qualified symbol as the documentary identity; record the
+path separately. Preserve that identity through a move; a rename, split or merge
+needs an explicit old-to-new mapping so proof and consumers remain accounted for.
+New or unresolved components keep a provisional label rather than receiving an
+invented system name. Review each slice's additions and changes against these
+fields before calling its map current. These are component/proof identities,
+not new ROADMAP task IDs or runtime authority markers.
+
+For this supplement, the parent task is `BUILD-03` and the component is
+**Sigil Crucible**. A test's role is `test`; its subject comes from the behavior
+it checks. The kernel remains a separate runtime responsibility. File location
+and fixture imports do not determine ownership or justify moving code.
+
+### Current code and harness identities
+
+Each identity below has the prefix `BUILD-03::`. Paths and qualified symbols
+refer to the unchanged input candidate. TESTING retains detailed command effects.
+Grouped rows list the union of reachable effects; each linked qualified symbol
+keeps its own identity. Current input compatibility and execution evidence stay
+with TESTING; earlier map observations remain bound to their recorded date.
+
+| Identity / source | Role | Proof subject | Effects | Required authority | Observed enforcement |
+| --- | --- | --- | --- | --- | --- |
+| [build_input_scope.tracked_inputs](build_input_scope.py#L90), including its path/candidate helpers | tooling | not applicable | memory, file-read, child-process; reads metadata and Git index through Git | Scoped permission to inspect the checkout and invoke Git | Root/index/path checks constrain selected inputs; they do not authenticate the caller or confine the process. |
+| [build_input_scope._relative_input](build_input_scope.py#L62) | tooling | not applicable | memory | Execution within an approved scan | Rejects malformed index/candidate path shapes; it does not authenticate content. |
+| [build_input_scope._require_indexed_candidates](build_input_scope.py#L71) | tooling | not applicable | memory, file-read; metadata only | Approved candidate-path inspection within the validated checkout | Non-following metadata checks refuse existing untracked fixed candidates; relies on the caller's validated root. |
+| [build_input_scope.configure_utf8_output](build_input_scope.py#L20) | tooling | not applicable | process-state, console | Permission to configure the invoking CLI's streams | Reconfigures available streams; no runtime authority check. |
+| [resolve_pact_sections.sweep](resolve_pact_sections.py#L281), with [tracked_files](resolve_pact_sections.py#L163), [_pact_paths](resolve_pact_sections.py#L170) and [resolve_pact_sections.pact_identifiers](resolve_pact_sections.py#L203) | tooling | not applicable | memory, file-read, child-process | Scoped permission to scan the approved checkout | Shared selector and same-checkout Pact checks; no source authentication or host containment. |
+| [resolve_pact_sections.main](resolve_pact_sections.py#L364), including [resolve_pact_sections.parse_args](resolve_pact_sections.py#L354) and [write_json](resolve_pact_sections.py#L336) | tooling | not applicable | memory, file-read, child-process, process-state, console; file-write when a JSON path is supplied | Scan authority plus approval for any requested report write | The optional CLI argument triggers writing even with check mode; no output-path confinement is supplied. |
+| [check_public_hygiene.public_candidate_files](check_public_hygiene.py#L154), [provenance_name_hygiene_scan](check_public_hygiene.py#L168) and [callsign_leak_scan](check_public_hygiene.py#L233) | tooling | not applicable | memory, file-read, child-process, console | Scoped permission to inspect public inputs | Shared selector and existing filters; scan functions do not authenticate the operator. The separate wrapper [main](check_public_hygiene.py#L269) launches further gates; its effects stay in TESTING. |
+| [test_build_inputs.proof_source](test_build_inputs.py#L29) | harness | not applicable | memory | Fixture construction within approved proof scope | Returns synthetic strings; this helper does not import or execute them. |
+| [test_build_inputs.BuildInputTests](test_build_inputs.py#L36) fixture and invocation helpers | harness | not applicable | memory, file-read, file-write, child-process, process-state, console, as detailed below | Approved temporary fixtures and selected child commands; no kernel T-0 operation required by this suite | Fixture ancestry checks, output sentinels and the hygiene wrapper tripwire constrain cooperating test paths; no host sandbox or caller authentication. |
+| test_build_inputs.BuildInputTests test methods in the table below | test | tooling, refined per method below | Shared fixture effects plus each row's additions | Same bounded fixture/child authority; selected shell proof additionally requires an explicit executable | Assertions and refusal controls are evidence for named cases, not permission checks or universal isolation. |
+
+The resolver's [_pact_paths](resolve_pact_sections.py#L170) directly depends on
+the private [build_input_scope._plain_path](build_input_scope.py#L27) helper,
+imported through both the direct and package import routes. Its
+[call](resolve_pact_sections.py#L184) checks each Pact-directory component.
+Preserve this dependency when moving or changing either module.
+
+The class's [fixture](test_build_inputs.py#L38), [git](test_build_inputs.py#L78) and
+[write](test_build_inputs.py#L85) helpers own temporary source, Git-index and sentinel
+setup and cleanup. [selected](test_build_inputs.py#L93) and [preserved_outputs](test_build_inputs.py#L96)
+inspect those fixtures. [claim_main](test_build_inputs.py#L100), [reverse_main](test_build_inputs.py#L109),
+[resolver_main](test_build_inputs.py#L508) and [hygiene_scan](test_build_inputs.py#L517) patch invocation
+context and capture streams. [consumers](test_build_inputs.py#L526) returns the resolver/hygiene
+call routes. Helper identities use the same
+`BUILD-03::test_build_inputs.BuildInputTests.` prefix as the test methods.
+
+### Standalone proof identities and subjects
+
+The exact ID is `BUILD-03::test_build_inputs.BuildInputTests.` followed by the
+linked method name. Every row's role is `test`, its component is Sigil Crucible,
+and its proof subject is **tooling** with the refinement shown. Shared effects
+are `memory`, `file-read` and `file-write` for owned fixture setup, mutation and
+cleanup. Additional labels include child work and temporary in-process patches;
+`console` includes captured standard streams. The copied CLI cases also read
+their named tool source files. No inspected test body requests network access,
+writes a runtime database or invokes a kernel T-0 operation; this is static scope,
+not enforcement against arbitrary imported code or host configuration.
+
+Required authority and observed enforcement are separate fields in the table
+above and apply to every test row. Selected-shell, Windows 8.3 and symlink
+availability limits remain in TESTING; a skip must stay visible in execution
+evidence.
+
+<details>
+<summary>41 named tests: 23 retained and 18 added in the input candidate</summary>
+
+| Method identity suffix / current source | Origin | Tooling proof subject | Additional effects |
+| --- | --- | --- | --- |
+| [test_membership_uses_index_but_reads_live_working_bytes](test_build_inputs.py#L117) | retained | selector + claim generator: index membership and dirty bytes | child-process, process-state, console |
+| [test_fixture_refuses_a_temp_base_inside_a_checkout](test_build_inputs.py#L138) | retained | fixture guard: reject a checkout as TEMP base | child-process, process-state |
+| [test_staged_deletion_excludes_a_still_present_file](test_build_inputs.py#L147) | retained | selector + claim generator: staged deletion | child-process, process-state, console |
+| [test_unstaged_missing_file_refuses_before_generator_output](test_build_inputs.py#L157) | retained | selector + generators: missing input before output | child-process, process-state, console |
+| [test_nested_root_and_non_git_have_no_walk_fallback](test_build_inputs.py#L174) | retained | selector + generators: root refusal without fallback | child-process, process-state, console |
+| [test_windows_short_root_selects_the_same_inputs_and_keeps_supplied_spelling](test_build_inputs.py#L191) | retained | selector: Windows long/8.3 root spelling | child-process |
+| [test_different_reported_drive_spelling_is_still_refused](test_build_inputs.py#L219) | retained | selector: mocked drive mismatch refusal | child-process, process-state |
+| [test_long_path_conversion_failure_remains_closed](test_build_inputs.py#L231) | retained | selector: conversion error propagation | child-process, process-state |
+| [test_git_redirection_is_removed_and_fsmonitor_disabled](test_build_inputs.py#L239) | retained | selector: Git environment and fsmonitor arguments | child-process, process-state |
+| [test_nonregular_or_unmerged_index_entries_refuse](test_build_inputs.py#L269) | retained | selector: index mode and stage refusal | child-process, process-state |
+| [test_malformed_index_paths_refuse_before_target_checks](test_build_inputs.py#L283) | retained | selector: malformed path refusal | child-process, process-state |
+| [test_invalid_utf8_index_path_refuses_with_decode_cause](test_build_inputs.py#L297) | retained | selector: UTF-8 decode cause | child-process, process-state |
+| [test_directory_at_selected_file_path_refuses_as_nonregular](test_build_inputs.py#L308) | retained | selector: selected directory refusal | child-process |
+| [test_file_and_ancestor_links_or_reparse_points_refuse](test_build_inputs.py#L317) | retained | selector: mocked link/reparse metadata | child-process, process-state |
+| [test_real_symlink_refuses_without_reading_or_changing_target](test_build_inputs.py#L335) | retained | selector: real symlink and target preservation | child-process |
+| [test_reverse_map_uses_tracked_live_source_and_pact_only](test_build_inputs.py#L355) | retained | reverse generator: source and Pact membership | child-process |
+| [test_reverse_missing_selected_family_refuses_before_write](test_build_inputs.py#L375) | retained | reverse generator: missing input family | child-process, process-state, console |
+| [test_claim_floor_reads_tracked_mutation_before_output](test_build_inputs.py#L383) | retained | claim generator: fidelity floor on dirty proof | child-process, process-state, console |
+| [test_claim_floor_precedence_and_excluded_runner_paths](test_build_inputs.py#L391) | retained | claim generator: floor precedence and exclusions | child-process, process-state, console |
+| [test_reverse_stdout_precedes_stale_check_without_writing](test_build_inputs.py#L400) | retained | reverse generator: stdout/check precedence | child-process, process-state, console |
+| [test_explicit_parser_helpers_keep_the_non_git_fixture_api](test_build_inputs.py#L409) | retained | generator helpers: explicit non-Git parser API | none beyond shared effects |
+| [test_live_fixture_clis_override_cp1252_and_preserve_failure_outputs](test_build_inputs.py#L419) | retained | copied generator CLIs: UTF-8 and refused-output preservation | child-process, process-state, console |
+| [test_selected_powershell_preserves_unicode_and_native_status](test_build_inputs.py#L461) | retained | selected shell: Unicode, native status and child environment restore | child-process, process-state, console |
+| [test_resolver_index_membership_uses_dirty_pact_and_ignores_untracked_headings](test_build_inputs.py#L530) | added | resolver: live bytes and tracked heading membership | child-process |
+| [test_hygiene_keeps_private_exclusions_and_reads_tracked_dirty_unicode_files](test_build_inputs.py#L558) | added | hygiene: scan exclusions and live membership | child-process, process-state, console |
+| [test_hygiene_callsign_scope_and_loader_filename_allowance_remain_distinct](test_build_inputs.py#L579) | added | hygiene: content scope versus filename allowance | child-process, process-state, console |
+| [test_named_untracked_candidates_refuse_before_any_scan_content_read](test_build_inputs.py#L601) | added | resolver + hygiene: fixed candidates before content reads | child-process, process-state |
+| [test_selector_candidates_require_index_membership_even_when_filter_excludes_them](test_build_inputs.py#L624) | added | selector: candidate membership independent of filter | child-process |
+| [test_candidate_parent_and_leaf_reparse_checks_do_not_follow_links](test_build_inputs.py#L635) | added | resolver + hygiene: fixed-candidate metadata refusal | child-process, process-state |
+| [test_consumers_refuse_missing_selected_files_with_the_missing_filename](test_build_inputs.py#L663) | added | resolver + hygiene: missing-file cause and CLI failure | child-process, process-state, console |
+| [test_consumer_roots_refuse_nested_non_git_and_reparse_ancestors](test_build_inputs.py#L689) | added | resolver + hygiene: invalid root and ancestor refusal | child-process, process-state |
+| [test_consumers_pin_invalid_index_record_failures_before_reads](test_build_inputs.py#L721) | added | resolver + hygiene: invalid index before reads | child-process, process-state |
+| [test_consumers_refuse_directory_at_selected_path](test_build_inputs.py#L747) | added | resolver + hygiene: selected directory refusal | child-process, process-state |
+| [test_resolver_explicit_pact_is_relative_to_repo_and_uses_only_tracked_markdown](test_build_inputs.py#L759) | added | resolver: explicit in-checkout Pact subtree | child-process, process-state |
+| [test_resolver_external_and_root_pact_options_refuse_before_reads](test_build_inputs.py#L773) | added | resolver: external/root Pact refusal | child-process, process-state |
+| [test_resolver_missing_empty_and_untracked_only_pact_selection_refuse](test_build_inputs.py#L790) | added | resolver: missing or empty selected Pact | child-process |
+| [test_resolver_pact_directory_reparse_refuses_even_without_indexed_descendants](test_build_inputs.py#L809) | added | resolver: Pact-directory metadata before membership | child-process, process-state |
+| [test_resolver_classifications_and_text_decoding_keep_existing_semantics](test_build_inputs.py#L825) | added | resolver: classifications, cp1252 and binary decoding | child-process |
+| [test_consumers_accept_long_and_short_roots_without_changing_returned_spelling](test_build_inputs.py#L844) | added | resolver + hygiene: Windows long/8.3 root spelling | child-process, process-state |
+| [test_resolver_fixture_cli_refusal_classification_and_utf8](test_build_inputs.py#L870) | added | copied resolver CLI: direct/package routes, refusals and UTF-8 | child-process, process-state, console |
+| [test_resolver_preserves_platform_markdown_filename_case_semantics](test_build_inputs.py#L911) | added | resolver: platform Markdown filename matching | child-process |
+
+</details>
+
+Static membership was reconciled by name against all 41 methods in this class:
+no missing, duplicate or extra rows. The earlier snapshot supplies the 23/18
+attribution split. All source-line anchors in this supplement bind to these input-candidate
+working-file bytes (SHA-256):
+
+| Source | SHA-256 |
+| --- | --- |
+| [test_build_inputs.py](test_build_inputs.py) | `6df3290d615e22b9a70ee8f24a2208c9742cd10cf362c488c2ae6423c3ce4533` |
+| [build_input_scope.py](build_input_scope.py) | `529922e288e32e54bf9ca35129694e0f78cb7cac426a6bd066920a6b8bcd81a7` |
+| [resolve_pact_sections.py](resolve_pact_sections.py) | `641f7a550a4f1d823f4b385995beeeb969bb4ae46601a36fce2e2fb12be433a9` |
+| [check_public_hygiene.py](check_public_hygiene.py) | `891fcf9af53f303c1b3a0741f94bdc8e82f31aadfc96f719303d746a6cdc2427` |
+
+Recheck changed anchors and reconcile names when the suite changes.
+This covers the named standalone suite and affected input-tool units, not every
+standalone suite or every project component.
+
+The [input-candidate receipt](roadmap/ACCEPTANCE_HISTORY.md#2026-09-15-build-03-same-checkout-input-candidate)
+holds the existing builder runs. This documentation pass reruns no proof.
+These unittest methods remain outside the 181-function canonical registry;
+neither the new identity labels nor repeated TEMP runs are added to its totals.
+No code, registry, CLAIM tags, public counts, paths or dated inventory changes
+are required to establish these identities.
+
+## DOCS-04 kernel and Crucible separation design
+
+**Reviewed option A design record, 2026-09-15.** Independent static review
+resolved F1-F4; the subsequent N1 identity correction and two design notes were
+included in the human's authorization to proceed with the bounded implementation.
+The proposal wording and earlier source bindings below are retained as the
+reviewed design record. Current implementation, identities and review status
+are in the [proof-support candidate](#build-03-independent-proof-support-candidate).
+Design PASS is not independent review of the implemented code.
+The human controller agreed to the separation direction and selected **RSS Architecture**
+as the name for the shared architectural view. This section supplies its
+development-boundary detail under
+[DOCS-04](PROJECT_CONTROL_SURFACE.md#named-architecture-map-reconciliation).
+Its role is documentation; its component scope spans Sigil Kernel and Sigil
+Crucible. DOCS-04 tracks reconciliation and BUILD-03 tracks the related tooling
+work. These task references do not merge ownership or authorize implementation.
+Use the [document ownership rule](PROJECT_CONTROL_SURFACE.md#core-rule).
+
+The design reuses the reviewed [mixed-unit map](#build-03-static-map) and
+[registration reconciliation](#registration-reconciliation). It retains
+the complete dated inventory; runtime inspection remains incomplete.
+
+### Responsibility boundary
+
+Rose Sigil Systems remains the project. Sigil Kernel and RSS Architecture are
+human-selected names, now routed through the [terminology owner](EXTERNAL_MAP.md#development-terminology).
+The names describe responsibilities and views; they introduce no package layout
+or additional authority tier.
+
+| Named responsibility | Conventional meaning and boundary | Existing evidence owner |
+| --- | --- | --- |
+| Sigil Kernel | Runtime governance, state transitions, persistence and shared runtime services. Runtime callers determine membership; a directory name alone does not. | [Kernel findings](KERNEL_FINDINGS.md), [command/service map](#command-and-service-responsibilities) |
+| Sigil Crucible | Development instructions, proof harnesses, proof registration, generators, measurements and gates. Kernel proof bodies prove the kernel but do not become runtime dependencies. | This owner; [execution detail](TESTING.md) |
+| Operator interfaces | Commands over runtime or development services, with effects assessed per command. An operator-to-demo call is not automatically a runtime dependency defect. | [Command map](#command-and-service-responsibilities) |
+| Demonstration/reference material | Scenario data and examples; separate from runtime necessity even when measured under the same package. No new product direction is implied. | [Reference map](#reference-and-demonstration-functions), [measurement map](#measurement-boundaries) |
+| The Pact | Constitutional requirements retain their existing role and text. | [Pact alignment](PACT_ALIGNMENT.md#current-kernel-alignment) |
+| Reusable operating method | Development method retains its separate owner and is not moved into the harness. | [Method ownership](PROJECT_CONTROL_SURFACE.md#supporting-evidence-and-session-state) |
+
+One repository and the existing aggregate command remain the selected contract.
+Separation must make dependencies understandable and selectively removable.
+It supplies neither host confinement nor a new route to runtime authority.
+
+### Proposed first cut: kernel-independent proof support
+
+The demonstrated coupling is
+[test_docs_tooling](../tests/test_docs_tooling.py#L34) ->
+[test_support imports](../tests/test_support.py#L56) -> kernel and
+[reference_pack](../tests/test_support.py#L85).
+Static name analysis of the tooling module finds only `check`, `section`,
+`os` and `tempfile` needed from that wildcard; it already imports `sys`.
+All four proof bodies can retain their current qualified identities:
+[test_docs_tooling.test_reverse_pact_code_map_generator_parses_pact_heading_variants](../tests/test_docs_tooling.py#L54),
+[test_docs_tooling.test_project_status_generator_renders_bounded_public_status_view](../tests/test_docs_tooling.py#L118),
+[test_docs_tooling.test_orphan_number_guard_flags_unrecognized_stale_counts](../tests/test_docs_tooling.py#L227) and
+[test_docs_tooling.test_claim_fidelity_floor_catches_vacuous_and_unanchored_claims](../tests/test_docs_tooling.py#L275).
+
+**Proposal:** add `tests/proof_support.py` as a Sigil Crucible harness module.
+This is a proposed path, not an existing component. Keep `test_support` as the
+compatibility interface for kernel-facing tests and have the four tooling proofs
+import `check`/`section` from the independent module, with explicit standard-library
+imports. Preserve those four tooling proof bodies, names, CLAIM tags,
+registration order and [test_all.run_all](../tests/test_all.py#L434).
+The sole proposed edit inside an existing registered proof body is the
+`test_llm` context-manager expression specified below.
+
+| Proposed path and change | Role | Proof subject | Effects | Required authority | Proposed implementation condition |
+| --- | --- | --- | --- | --- | --- |
+| `tests/proof_support.py` (new): runner functions, four counters, `isolated_counters` and Windows stream setup | harness | not applicable | memory, console, stream configuration and temporary urllib patching | Approved proof invocation; no runtime T-0 operation | Sole counter and stream-setup owner; standard-library imports only, no kernel/demo import or `src` path shim. The HTTP guard retains its existing urllib scope. |
+| `tests/test_support.py`: re-export runner functions and `isolated_counters`; retain kernel imports and fixture utilities | harness | not applicable | existing imports, path state and fixture database cleanup; stream setup through importing the owner | Existing fixture scope | No local counter storage, copied counter aliases or write-forwarding mechanism. Preserve used helper/standard-library/kernel exports. Remove duplicate stream-setup code; use the independent owner's setup. |
+| `tests/test_docs_tooling.py`: replace wildcard import with explicit harness/standard-library imports | test | tooling | existing temporary files, module loading and process state | Approved tooling-proof fixtures | Importing and exercising the proofs must not require kernel/demo imports. Existing four proof bodies stay unchanged; file effects remain. |
+| `tests/test_core_runtime.py`: change only `test_llm`'s nested-probe context expression | test | kernel + tooling | existing controlled adapter calls, guard/counter state and captured console | Existing fixture scope | The new helper must restore outer counters before the existing post-probe checks. Preserve the entire remainder of this file. |
+| `docs/test_proof_support.py` (new): additional harness-boundary contract tests | test | tooling | owned temporary fixtures, child processes and captured output | A separately approved bounded proof plan | Standalone suite, kept outside canonical totals. Prove the new boundaries without displacing or silently duplicating the existing adapter/guard integration proof. |
+
+
+The runner transfer comprises
+[_running_under_pytest](../tests/test_support.py#L101),
+[check](../tests/test_support.py#L112), [section](../tests/test_support.py#L124),
+[safe_run](../tests/test_support.py#L128), [reset_counters](../tests/test_support.py#L140),
+[deny_live_http](../tests/test_support.py#L150), [run_tests](../tests/test_support.py#L165),
+[module_tests](../tests/test_support.py#L193) and [run_module](../tests/test_support.py#L201).
+`check` and the aggregate runner must share the same defining-module state.
+The old claim of no external counter-writing consumer is withdrawn. The
+registered [test_core_runtime.test_llm](../tests/test_core_runtime.py#L828)
+imports `test_support as support` and
+[patches its four counter attributes](../tests/test_core_runtime.py#L966).
+The earlier global-name analysis did not establish absence of module-attribute
+writes passed as patch keywords. Its retained record is not a complete consumer map.
+
+Option A transfers the existing `test_support` runner definitions above to
+`proof_support` and keeps their supported `test_support` names as function
+aliases. The new planned identity is `BUILD-03::proof_support.isolated_counters`,
+also exposed as `test_support.isolated_counters`. The four private counter
+attributes are intentionally retired from the facade as part of this proposed
+internal-interface change. Do not preserve misleading scalar copies.
+Reconcile [dynamic exports](../tests/test_support.py#L248), including used
+`run_module`, `deny_live_http`, `traceback`, `contextmanager` and `nullcontext`.
+
+### Option A: the single proposed proof-body edit
+
+In [test_llm's Guard rejection probe](../tests/test_core_runtime.py#L959),
+replace only this context-manager expression:
+
+```diff
+-    with patch.multiple(support, _pass=0, _fail=0, _errors=0, _funcs=0):
++    with support.isolated_counters():
+```
+
+Retain the existing `import test_support as support`, captured output,
+nested `run_tests` call, exception handling and both post-probe `check` calls.
+Everything else in this registered proof body and file remains byte-identical.
+The [CLAIM tag](../tests/test_core_runtime.py#L829), qualified identity,
+[registry position](../tests/test_all.py#L284) and all assertion expressions
+are preserved. This identifies a specific future exception to the earlier
+blanket proof-body-preservation proposal; it is not permission to rewrite tests.
+BUILD-03-A's mapping-time preservation remains in force during this document pass.
+
+`isolated_counters()` is a proposed context manager in `proof_support`. It
+saves the current `_pass`, `_fail`, `_errors` and `_funcs` values, starts
+the inner scope at zero, and restores the exact saved values in `finally`.
+Restoration must occur after normal completion, an ordinary exception and
+`SystemExit`, including nested uses. Inner counts must not replace or add to
+outer counts. The existing post-probe checks run after restoration and count
+normally toward the enclosing proof. This is sequential/nested proof accounting,
+not a thread-isolation or runtime-authority mechanism.
+
+### Existing proof and compatibility consumers
+
+For this separation, `test_core_runtime.test_llm` has mixed subjects:
+kernel adapter behavior and Crucible harness behavior. Its existing
+[guard-restoration checks](../tests/test_core_runtime.py#L948) and
+[verdict checks](../tests/test_core_runtime.py#L974) already exercise swallowed
+HTTP attempts, restoration, exit status and these exact output fragments:
+
+- `live HTTP guard blocked 1 unexpected request(s)`
+- `0 assertions passed, 0 failed, 1 ERRORS`
+
+These are verdict-format consumers alongside
+[sync_baseline.parse_acceptance](sync_baseline.py#L334). Retain the dated
+registration appendix and its earlier kernel-only subject label as historical
+mapping; this paragraph is the explicit mixed-subject correction. The new
+standalone suite must add boundary evidence for option A and leave this existing
+registered integration proof accounted for in canonical acceptance.
+
+The documented focused [adapter](TESTING.md#L48),
+[broker revalidation](TESTING.md#L71) and [broker lifecycle](TESTING.md#L90)
+commands import `run_tests` from `test_support`. Preserve those imports,
+signatures, flags and behavior; the commands stay with TESTING and are not
+rewritten by this design. The direct canonical runner and these commands must
+share the intended `proof_support` module instance.
+
+The independent harness alone owns the existing
+[Windows UTF-8 setup](../tests/test_support.py#L43), retaining its encoding,
+error policy and handling of streams without `reconfigure`. The facade imports
+that owner before any kernel import, preserving setup order, instead of
+configuring streams again. Keep
+[_cleanup_db](../tests/test_support.py#L208) and its failure semantics outside
+this cut; BUILD-02 owns that correction.
+
+### Review and proof requirements before implementation
+
+The proposed implementation footprint is exactly the five Python paths in the
+table, including the one context-expression edit above. Scheduling stays with
+DOCS-04; any approved implementation is a bounded BUILD-03 slice. Identify every
+moved, aliased and new symbol under its task and qualified name. Alongside those
+five Python paths, the implementation owes [TESTING](TESTING.md) a command/effect
+inventory row for `docs/test_proof_support.py`, and this owner the corresponding
+task-plus-qualified-symbol identities. These are documentation obligations,
+not additional Python changes. The current follow-up changes documentation
+only; its edits are outside the static PASS. Human disposition of the design
+and bounded implementation/proof scope remains pending.
+
+The future proof plan must cover:
+
+- Nonzero, distinct outer counter values restored exactly after normal return,
+  ordinary exceptions, `SystemExit` and nested helper use. Exercise the facade
+  alias and the independent owner together so a second counter store or a
+  reset of outer counts fails visibly.
+- Failed checks under pytest, caught test exceptions, reset behavior and the
+  existing swallowed-attempt verdict. Preserve the registered probe above;
+  standalone tests target the added isolation and dependency contracts.
+- A fresh child that refuses kernel/demo imports while importing and exercising
+  the tooling proofs. Include their Unicode output under the Windows encoding
+  contract. A pre-import module inventory alone is insufficient.
+- The direct aggregate route, all three documented focused-command interfaces,
+  and optional pytest parity with `--import-mode=prepend` explicitly selected.
+  Check duplicate module instances in each route. Other pytest import modes
+  remain unassessed; record runtime availability and any unperformed check.
+  [conftest](../tests/conftest.py#L39) retains its current job and path.
+- Name-by-name canonical registration reconciliation, unchanged CLAIM tags and
+  assertion expressions, and the exact one-expression proof-body exception.
+  Reproduce unchanged aggregate function/assertion totals and the final verdict
+  line. The nested probe must neither reset those totals nor leave an error
+  behind. A changed total is a failure to investigate, not a new baseline to sync.
+
+A harness implementation needs aggregate acceptance as well as its standalone
+contract tests. Scope those commands, fixture effects and evidence before running;
+preserve retained outputs. No tests, project imports or full gates were run for
+this design correction. Earlier execution figures remain inherited.
+Do not add a new command or a direct-run entrypoint to the tooling proof file.
+
+### Remaining boundaries and source binding
+
+This first cut would remove one demonstrated dependency. It would not complete
+project separation. Reuse the existing map for shared cold verification,
+operator/demo calls, reference data counted in package measurements, and
+[path-coupled consumers](#dependency-and-path-consumers). Do not move a shared
+runtime verifier wholesale or split proof totals to make labels look cleaner.
+The standalone input harness also directly calls
+[build_input_scope._plain_path](test_build_inputs.py#L43), in addition to the
+resolver dependency recorded above; include both callers in any later helper move.
+
+Python source anchors in this design bind to unchanged source at revision
+`b78b99dc1017a6a60bbf3e7593288fce4fc84772`, except the standalone input-harness
+anchor, which binds to the public source hashes in the identity supplement.
+The focused-command anchors bind to [TESTING](TESTING.md) working-file SHA-256
+`e511468662662cc2c5bc553fa6f72b9b648b36138c3e4d5b0c579e10de0ae27a`.
+Recheck anchors and symbol identities whenever their source changes.
+Runtime invariants remain with KERNEL-05 and their existing owners. Public count
+wording, wider execution limits and complete separation remain unresolved; this
+design does not dispose of them.
+
+
+## BUILD-03 independent proof support candidate
+
+**Implemented candidate, 2026-09-15; scoped static PASS accepted, 2026-09-16.**
+The human accepted the independent F1-F3 correction PASS, which reused the
+earlier source/proof review of unchanged implementation. Current-map anchors,
+tooling-import wording and replacement manifest metadata passed scoped review.
+The remaining Low wording finding now uses the reviewer's exact phrase,
+"tooling import boundary". This editorial change and status bookkeeping were
+human-authorized after review; they are not a new independent review or proof run.
+The bounded input-selection and proof-support slices are locally checkpointed
+after human approval. Wider BUILD-03 obligations and complete Kernel/Crucible
+separation remain open.
+The human authorized the first option A separation slice after static design
+PASS and the stated documentation corrections. This is part of Sigil Crucible,
+with DOCS-04 coordinating RSS Architecture and BUILD-03 tracking the code slice.
+One repository, existing command, registration, CLAIM tags and aggregate totals
+are retained. This is the first dependency separation, not completion of the
+Kernel/Crucible boundary.
+
+### Implemented boundary and transfer identities
+
+`tests/proof_support.py` owns the counters, runner and existing Windows stream
+setup. Its imports are standard-library only. `tests/test_support.py` imports it
+before any kernel import and re-exports the same function objects while retaining
+kernel imports and fixture cleanup. The four tooling proofs use explicit
+`proof_support` and standard-library imports; their bodies are unchanged.
+
+Every symbol below uses the `BUILD-03::` prefix. A transferred definition keeps
+its old facade identity as an alias of the new defining-module identity; no
+counter values are copied. The nested `proof_support.deny_live_http.refuse`
+identity belongs to the transferred guard. Module initialization, including
+stream setup, is `BUILD-03::proof_support`; its four state identities are
+`proof_support._pass`, `proof_support._fail`, `proof_support._errors` and
+`proof_support._funcs` under the same task prefix.
+
+| Old facade → defining symbol | Disposition |
+| --- | --- |
+| `test_support._running_under_pytest` → [proof_support._running_under_pytest](../tests/proof_support.py#L64) | transferred definition; facade alias retained |
+| `test_support.check` → [proof_support.check](../tests/proof_support.py#L75) | transferred definition; facade alias retained |
+| `test_support.section` → [proof_support.section](../tests/proof_support.py#L87) | transferred definition; facade alias retained |
+| `test_support.safe_run` → [proof_support.safe_run](../tests/proof_support.py#L91) | transferred definition; facade alias retained |
+| `test_support.reset_counters` → [proof_support.reset_counters](../tests/proof_support.py#L103) | transferred definition; facade alias retained |
+| `test_support.deny_live_http` → [proof_support.deny_live_http](../tests/proof_support.py#L113) | transferred definition; facade alias retained |
+| `test_support.run_tests` → [proof_support.run_tests](../tests/proof_support.py#L128) | transferred definition; facade alias retained |
+| `test_support.module_tests` → [proof_support.module_tests](../tests/proof_support.py#L156) | transferred definition; facade alias retained |
+| `test_support.run_module` → [proof_support.run_module](../tests/proof_support.py#L164) | transferred definition; facade alias retained |
+| `test_support.isolated_counters` → [proof_support.isolated_counters](../tests/proof_support.py#L53) | new helper and facade alias |
+
+Role for these definitions, aliases and state symbols is **harness**; proof
+subject is not applicable. Effects are memory/counters, console, stream setup
+and temporary urllib patching when the guard is invoked. Required authority is
+a scoped proof invocation. Observed enforcement consists of the existing urllib
+seam and sequential save/zero/finally-restore accounting, not authenticated
+callers, thread isolation, network confinement or a host sandbox.
+
+The sole existing registered proof-body edit is in
+[test_core_runtime.test_llm](../tests/test_core_runtime.py#L828), identity
+`BUILD-03::test_core_runtime.test_llm`. Its context expression now uses
+`support.isolated_counters()`. The rest of that file is byte-identical to the
+design base, including both verdict checks and its CLAIM. Its proof subject
+remains the current mixed kernel/tooling interpretation; the dated registration
+appendix is unchanged. `BUILD-03::test_docs_tooling` records the import-boundary
+change; its four qualified proof identities and bodies are preserved.
+
+### Standalone proof identities
+
+The class, fixture setup, child launcher and local fixture-callable identities
+are harness support, with no proof subject. They are:
+[test_proof_support.ProofSupportTests](test_proof_support.py#L24), [test_proof_support.ProofSupportTests.setUp](test_proof_support.py#L25), [test_proof_support.ProofSupportTests.counters](test_proof_support.py#L42), [test_proof_support.ProofSupportTests.child](test_proof_support.py#L45), [test_proof_support.ProofSupportTests.test_nested_guard_probe_restores_outer_counts_and_transport.swallowed](test_proof_support.py#L104), [test_proof_support.ProofSupportTests.test_caught_test_exception_counts_error_and_continues.broken](test_proof_support.py#L140), [test_proof_support.ProofSupportTests.test_module_runner_preserves_function_order.first](test_proof_support.py#L158), [test_proof_support.ProofSupportTests.test_module_runner_preserves_function_order.second](test_proof_support.py#L161).
+
+All following method identities use the `BUILD-03::` prefix. Component is
+Sigil Crucible. Required authority is the approved standalone proof scope,
+including selected child processes and disposable tooling fixtures; no runtime
+T-0 operation is requested. Observed enforcement is unittest assertions,
+captured output, controlled urllib patching and a fresh-child import refusal
+with a positive control. This suite includes facade/kernel-import compatibility
+checks; only the specifically refused-import child proves kernel-free tooling
+execution. Its subprocess timeout applies to the child it starts. None of
+these mechanisms confines arbitrary project or third-party code.
+
+| Qualified identity / source | Role | Proof subject | Effects |
+| --- | --- | --- | --- |
+| [test_proof_support.ProofSupportTests.test_isolated_counters_restores_nonzero_outer_and_nested_state](test_proof_support.py#L59) | test | tooling: nonzero outer counts and nested restoration | memory, console, process-state |
+| [test_proof_support.ProofSupportTests.test_isolated_counters_restores_after_exception_and_system_exit](test_proof_support.py#L71) | test | tooling: exception identity and SystemExit restoration | memory, console, process-state |
+| [test_proof_support.ProofSupportTests.test_facade_aliases_share_one_counter_owner](test_proof_support.py#L81) | test | tooling: function identity, retired facade counters and used exports | memory, console, process-state |
+| [test_proof_support.ProofSupportTests.test_nested_guard_probe_restores_outer_counts_and_transport](test_proof_support.py#L99) | test | tooling: nested guard, swallowed attempt and enclosing state | memory, console, process-state |
+| [test_proof_support.ProofSupportTests.test_run_tests_resets_counts_and_preserves_verdict](test_proof_support.py#L126) | test | tooling: reset, failed check and exact verdict | memory, console, process-state |
+| [test_proof_support.ProofSupportTests.test_caught_test_exception_counts_error_and_continues](test_proof_support.py#L139) | test | tooling: error accounting and continuation | memory, console, process-state |
+| [test_proof_support.ProofSupportTests.test_failed_check_raises_in_pytest_context](test_proof_support.py#L150) | test | tooling: pytest environment marker; not pytest parity | memory, console, process-state |
+| [test_proof_support.ProofSupportTests.test_module_runner_preserves_function_order](test_proof_support.py#L156) | test | tooling: module selection, order and counts | memory, console, process-state |
+| [test_proof_support.ProofSupportTests.test_fresh_child_refuses_kernel_imports_and_executes_tooling_proofs](test_proof_support.py#L174) | test | tooling: refusal positive control and four tooling proofs | memory, console, process-state, child-process, file-read, file-write (owned tooling fixtures) |
+| [test_proof_support.ProofSupportTests.test_fresh_aggregate_import_has_one_harness_module](test_proof_support.py#L203) | test | tooling: aggregate import graph and one defining module | memory, console, process-state, child-process, file-read |
+| [test_proof_support.ProofSupportTests.test_facade_configures_streams_once_before_kernel_imports](test_proof_support.py#L220) | test | tooling: stream setup order and no duplicate setup | memory, console, process-state, child-process, file-read |
+| [test_proof_support.ProofSupportTests.test_streams_without_reconfigure_remain_supported](test_proof_support.py#L244) | test | tooling: nonstandard captured streams | memory, console, process-state, child-process, file-read |
+| [test_proof_support.ProofSupportTests.test_windows_child_emits_utf8_under_cp1252](test_proof_support.py#L257) | test | tooling: Windows UTF-8 output from a cp1252 child | memory, console, process-state, child-process, file-read |
+
+### Evidence and remaining limits
+
+Builder execution: 13 standalone unittest cases passed, no failures/errors/skips;
+canonical acceptance retained **181 functions / 3013 assertions / 0 failures**
+and the unchanged verdict line, with zero unexpected urllib attempts. The three
+documented focused commands passed with 40, 222 and 105 assertions respectively;
+they are subsets of canonical acceptance and are never added to its totals.
+
+Fresh-child observations establish a single `proof_support` instance in the
+aggregate import graph and each instrumented focused-command route. Function
+object identity agrees between the facade, owner and tooling proofs. Arbitrary
+additional import paths or module aliases are not prevented. The direct
+aggregate process itself was not instrumented; its import graph was checked
+separately by the fresh-child test.
+
+Supplement, 2026-09-16: after authorized installation of pytest 9.1.1 in the
+existing development environment, prepend parity passed all 181 collected tests.
+The test-process observer matched their qualified names to the canonical registry,
+found one `proof_support` instance, and confirmed shared check/runner objects.
+This is builder execution evidence on unchanged project Python sources; other
+pytest import modes remain unassessed. The earlier standalone marker test remains
+distinct from actual pytest collection. Detailed invocation/effects and the
+installation boundary stay in
+[TESTING](TESTING.md#build-03-independent-proof-support-execution).
+
+Static reconciliation matched all 181 registrations to distinct qualified
+definitions, with no gaps or duplicates. Transferred runner bodies and retained
+cleanup are AST-identical. The only existing proof-body change is the agreed
+context expression; all other Python outside the five paths is unchanged.
+Coverage, baseline sync, combined hygiene, generator equivalence and the earlier
+input suite were not rerun. Coverage and module figures remain inherited.
+The independent static review did not reproduce these executions. The human
+accepted its scoped PASS and authorized the editorial cleanup and checkpoint
+preparation and the subsequent local checkpoint. No tests were rerun for that
+bookkeeping. Wider BUILD-03 acceptance and later separation work remain
+outstanding.
+
+### Candidate source binding
+
+These working-file hashes bind the source anchors in this supplement and the
+refreshed harness anchors in the current static map; recheck them after a change.
+The reviewed design, registration appendix and unaffected map anchors retain
+their dated bindings. No additional source move or module name is implied.
+
+| Source | SHA-256 |
+| --- | --- |
+| `tests/proof_support.py` | `172f1385976000074aeae0501d7d8c23a54290862418728cb2c4defc72f54a36` |
+| `tests/test_support.py` | `5b3d4008e6ee67708b0b85235537f54d794c348196bd824fd0d9a57e2c6c3b51` |
+| `tests/test_docs_tooling.py` | `88b42d8761394e2938f7dce49fb19a6ba04e749c6c8fee24f398085050de919a` |
+| `tests/test_core_runtime.py` | `33e9d9157f1be6e3dd47b8900cacbc8ed89f83610e03e443853cfb34b34e26f7` |
+| `docs/test_proof_support.py` | `905845245c886dbd5f1b3e9e8a351438865dc2b0c593c9fc0572f21df77402f2` |

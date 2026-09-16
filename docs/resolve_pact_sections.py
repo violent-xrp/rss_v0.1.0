@@ -8,19 +8,30 @@ Each occurrence is classified as one of four outcomes:
 * DOC-STRUCTURE: the identifier names a heading in the containing document;
 * PHANTOM: the reference resolves to none of the above.
 
-The command is offline, deterministic, and read-only. It exits non-zero when
-doc-structure misuse or phantom citations remain. It never edits the Pact.
+The scan reads local inputs; optional --json writes a report. It exits non-zero
+when input selection fails, or doc-structure misuse or phantom citations remain.
+It never edits the Pact.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
-import subprocess
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
+
+
+if __package__:
+    from .build_input_scope import (
+        InputScopeError, _plain_path, configure_utf8_output, tracked_inputs,
+    )
+else:
+    from build_input_scope import (
+        InputScopeError, _plain_path, configure_utf8_output, tracked_inputs,
+    )
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -150,21 +161,34 @@ def read_text_if_textual(path: Path) -> str | None:
 
 
 def tracked_files(repo_root: Path) -> list[Path]:
-    result = subprocess.run(
-        ["git", "ls-files", "-z"],
-        cwd=repo_root,
-        capture_output=True,
-        check=True,
+    return tracked_inputs(
+        repo_root, lambda relative: True,
+        candidate_paths=("docs/resolve_pact_sections.py",),
     )
-    relatives = [item for item in result.stdout.split(b"\x00") if item]
-    paths = [repo_root / item.decode("utf-8", errors="surrogateescape") for item in relatives]
 
-    # A newly added resolver is not present in the index before its first
-    # checkpoint. Include it now so the candidate proves it can scan itself.
-    this_file = Path(__file__).resolve()
-    if this_file.is_relative_to(repo_root) and this_file not in paths:
-        paths.append(this_file)
-    return sorted(paths)
+
+def _pact_paths(repo_root: Path, pact_dir: Path | None, paths: list[Path]) -> list[Path]:
+    """Select an explicit in-checkout subtree from the already validated index."""
+    requested = pact_dir if pact_dir is not None else Path("pact")
+    pact_root = Path(os.path.abspath(repo_root / requested))
+    try:
+        relative = pact_root.relative_to(repo_root)
+    except ValueError as exc:
+        raise InputScopeError(f"Pact directory is outside the checkout: {pact_root}") from exc
+    if not relative.parts:
+        raise InputScopeError("Pact directory must be a subtree below the checkout root")
+    directory = repo_root
+    try:
+        for part in relative.parts:
+            directory /= part
+            _plain_path(directory, directory=True)
+    except OSError as exc:
+        raise InputScopeError(f"Pact directory validation failed: {exc}") from exc
+    selected = [path for path in paths
+                if path.match("*.md") and path.is_relative_to(pact_root)]
+    if not selected:
+        raise InputScopeError(f"missing tracked Pact Markdown inputs: {pact_root}")
+    return selected
 
 
 def heading_identifiers(text: str) -> set[str]:
@@ -176,11 +200,9 @@ def heading_identifiers(text: str) -> set[str]:
     return identifiers
 
 
-def pact_identifiers(pact_dir: Path) -> set[str]:
-    if not pact_dir.is_dir():
-        raise RuntimeError(f"Missing Pact directory: {pact_dir}")
+def pact_identifiers(paths: list[Path]) -> set[str]:
     identifiers: set[str] = set()
-    for path in sorted(pact_dir.rglob("*.md")):
+    for path in paths:
         text = read_text_if_textual(path)
         if text is None:
             raise RuntimeError(f"Pact file is not readable text: {path}")
@@ -257,18 +279,15 @@ def classify_file(
 
 
 def sweep(repo_root: Path = REPO_ROOT, pact_dir: Path | None = None) -> SweepResult:
-    repo_root = repo_root.resolve()
-    pact_dir = (pact_dir or repo_root / "pact").resolve()
-    valid_pact = pact_identifiers(pact_dir)
+    repo_root = Path(os.path.abspath(repo_root))
     paths = tracked_files(repo_root)
+    valid_pact = pact_identifiers(_pact_paths(repo_root, pact_dir, paths))
     text_files = 0
     files_with_section_signs = 0
     files_with_references = 0
     section_sign_occurrences = 0
     occurrences: list[Occurrence] = []
     for path in paths:
-        if not path.is_file():
-            continue
         text = read_text_if_textual(path)
         if text is None:
             continue
@@ -335,17 +354,21 @@ def print_result(result: SweepResult) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, default=REPO_ROOT)
-    parser.add_argument("--pact", type=Path)
+    parser.add_argument("--pact", type=Path,
+                        help="Tracked Markdown subtree within --repo (default: pact/)")
     parser.add_argument("--json", type=Path, help="Optional detailed JSON report path")
-    parser.add_argument("--check", action="store_true", help="Explicit read-only gate mode")
+    parser.add_argument("--check", action="store_true", help="Validate; --json still writes if supplied")
     return parser.parse_args()
 
 
 def main() -> int:
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+    configure_utf8_output()
     args = parse_args()
-    result = sweep(args.repo, args.pact)
+    try:
+        result = sweep(args.repo, args.pact)
+    except (InputScopeError, RuntimeError) as exc:
+        print(f"Resolver input failed: {exc}", file=sys.stderr)
+        return 1
     print_result(result)
     if args.json:
         write_json(args.json, result)

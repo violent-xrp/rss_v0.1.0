@@ -12,6 +12,14 @@ It is not a new truth register, not a roadmap replacement, and not a release cla
 
 Each document should own one job. Do not copy the same live claim across multiple documents unless a script keeps it synchronized or the duplicated wording is intentionally stable.
 
+Record document role, component scope, canonical owner and related task IDs
+separately. One document may cover Sigil Kernel and Sigil Crucible while one
+existing owner maintains the shared information. Cite multiple existing task
+IDs only for work the material supports; a reference does not reopen a task
+or grant implementation authority. Split content when its purpose or
+maintenance responsibility differs, and link shared facts rather than copying
+them into parallel documents.
+
 ## Per-Pass Update Ceiling
 
 Per pass, update only: the queue row's state, evidence, and next action; the
@@ -30,7 +38,7 @@ generators. Historical lists and receipts are not touched.
 | `CHANGELOG.md` | chronological landed changes | current-state dashboard | add one coherent line per meaningful commit/lane |
 | `THREAT_MODEL.md` | threat boundaries and non-goals | implementation queue | update when a threat boundary changes |
 | `docs/PACT_ALIGNMENT.md` | human claim-vs-Pact/code alignment inventory | execution order or release plan | update when code, Pact text, or wording risk changes |
-| `docs/SIGIL_CRUCIBLE.md` | Sigil Crucible identity, BUILD document routes, responsibility contract and static maps | task scheduling, copied gate commands, runtime authority or historical receipt rewrites | maintain the five BUILD-03 agreement labels and review maps against their source anchors; ROADMAP owns state |
+| `docs/SIGIL_CRUCIBLE.md` | Sigil Crucible identity, BUILD document routes, responsibility contract, static maps and DOCS-04 development-boundary design within RSS Architecture | task scheduling, copied gate commands, runtime authority or historical receipt rewrites | maintain the five BUILD-03 agreement labels and review maps against their source anchors; ROADMAP owns state |
 | `docs/TESTING.md` | canonical gate commands, test discipline, command effects and detailed build execution evidence | duplicate Crucible responsibility rules, product positioning or an independent priority queue | maintain execution detail; route responsibility mapping to SIGIL_CRUCIBLE and scheduling to ROADMAP |
 | `docs/KERNEL_FINDINGS.md` | kernel findings, evidence, consequences, and closure criteria | scheduling, priority, or release claims | preserve distinct requirements; update evidence and closure detail while ROADMAP owns selection and state |
 | `docs/ACTION_PLANE.md` | built broker decision boundary, known lifecycle limits, and future execution vocabulary | release sequencing or volatile proof counts | distinguish registered local proof from future containment and unresolved lifecycle guarantees |
@@ -101,6 +109,12 @@ queue from subject-ordered inventory. No owner, file, or requirement is moved.
 Candidate review/disposition stays in ROADMAP; do not add another tracker.
 
 ## Named architecture map reconciliation
+
+**[RSS Architecture](EXTERNAL_MAP.md#development-terminology)** is the shared view of RSS components and their
+relationships. It spans Sigil Kernel, Sigil Crucible and related surfaces.
+This names the architectural view; it creates no runtime subsystem or
+authority tier. `DOCS-04` identifies the reconciliation task, while component
+labels identify what its documents describe.
 
 This section routes the DOCS-04 follow-up; ROADMAP owns its scheduling and
 disposition. Reconcile three connected views through the existing owners:

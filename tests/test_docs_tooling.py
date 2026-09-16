@@ -31,7 +31,9 @@ import shutil
 import sys
 from pathlib import Path
 
-from test_support import *
+import os
+import tempfile
+from proof_support import check, section
 
 
 def _load_pact_code_map_module():
