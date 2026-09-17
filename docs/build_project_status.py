@@ -192,7 +192,23 @@ def collect_pact_code_map_gate() -> GateResult:
             status=STATUS_OK,
             detail="docs/pact_code_map.md is current",
         )
-    if result.returncode == 1:
+    # Exit 1 also reports build/input failures. Only the complete existing
+    # freshness diagnostics mean stale; extra output is ambiguous and fails.
+    freshness_messages = (
+        "build_pact_code_map: docs/pact_code_map.md is missing",
+        "build_pact_code_map: docs/pact_code_map.md is stale; "
+        "run python docs/build_pact_code_map.py",
+    )
+    freshness_diagnostics = {
+        message + ending
+        for message in freshness_messages
+        for ending in ("", "\n", "\r\n")
+    }
+    if (
+        result.returncode == 1
+        and result.stdout == ""
+        and result.stderr in freshness_diagnostics
+    ):
         return GateResult(
             name="Reverse Pact-code map",
             status=STATUS_STALE,
@@ -275,7 +291,11 @@ def drift_magnitude_line(gates: list[GateResult]) -> str:
     baseline = next((gate for gate in gates if gate.name == "Baseline sync"), None)
     pact_map = next((gate for gate in gates if gate.name == "Reverse Pact-code map"), None)
     baseline_count = baseline.stale_count if baseline else 0
-    pact_status = "current" if pact_map and pact_map.status == STATUS_OK else "stale"
+    pact_status = {
+        STATUS_OK: "current",
+        STATUS_STALE: "stale",
+        STATUS_FAILED: "failed",
+    }.get(pact_map.status if pact_map else None, "unavailable")
     return (
         f"Baseline doc targets stale: {baseline_count}; "
         f"reverse Pact-code map: {pact_status}."

@@ -944,6 +944,98 @@ Revalidate affected anchors after source changes.
 | `docs/sync_baseline.py` | `4542598cc297d2a3ca89fc79f2a8c52fdbaf459d844f38d9a46677d9228f9f91` |
 | `tests/test_docs_tooling.py` | `88b42d8761394e2938f7dce49fb19a6ba04e749c6c8fee24f398085050de919a` |
 
+### BUILD-03 Reverse-map Status Classification
+
+**Locally checkpointed after independent static PASS and human disposition,
+2026-09-17.** The reviewer reported no findings and checked source, identities,
+preservation and execution records without rerunning tests. See the
+[bounded receipt](roadmap/ACCEPTANCE_HISTORY.md#2026-09-17-build-03-project-status-f1-local-checkpoint).
+This is the F1 caller correction: reverse-map failure classification and the
+separate drift-summary wording. Execution detail stays here; component identities
+and the development/proof edges stay in
+[Sigil Crucible](SIGIL_CRUCIBLE.md#build-03-project-status-caller-identities).
+It changes no generator exit codes, kernel behavior, canonical registration,
+source paths or reported aggregate totals.
+
+The [collector](build_project_status.py#L181) previously treated every reverse
+exit 1 as freshness drift, although the generator also returns 1 for input/build
+failures. The [summary](build_project_status.py#L290) separately called every
+non-current or absent reverse result "stale", including a RED gate.
+
+| Child result | Candidate classification |
+| --- | --- |
+| Exit 0 | GREEN/current, preserving existing success handling even if a stream contains output |
+| Exit 1, empty stdout, and exactly one known freshness diagnostic on stderr | YELLOW/stale, stale count 1 |
+| Any other exit 1, or another nonzero exit | RED/failed, stale count 0 |
+
+The two accepted complete diagnostics from the unchanged
+[reverse-map CLI](build_pact_code_map.py#L234) are:
+
+```text
+build_pact_code_map: docs/pact_code_map.md is missing
+build_pact_code_map: docs/pact_code_map.md is stale; run python docs/build_pact_code_map.py
+```
+
+Matching applies to the decoded strings supplied to the collector, not raw
+child bytes. The unchanged `run_command(text=True)` decodes and normalizes
+newlines before classification. In those strings, each message may be
+unterminated or end with one LF or one CRLF; the collector applies no further
+normalization. Extra lines (including blank lines), surrounding spaces, other
+line separators, or any stdout content make exit 1 a failure. The tests supply
+newline variants synthetically; they do not prove raw child-byte rejection.
+Matching the last line alone would incorrectly accept preceding error output.
+The displayed detail still uses the existing combined-output last line, or
+`exit N` when empty; that presentation does not determine classification.
+
+The magnitude line now renders GREEN as `current`, YELLOW as `stale`, RED as
+`failed`, and an absent/unknown reverse status as `unavailable`. Baseline
+stale counts are unchanged. The overall drift-light algorithm, duplicate-gate
+handling, child invocation, generator writes and Project Status CLI exit behavior
+are unchanged; unavailable wording does not add a new overall-light policy.
+
+**Standalone proof.** Run `python -B docs/test_project_status.py -v` from the
+repository root with the approved interpreter. Its nine unittest methods use
+synthetic child results and memory-only rendering, patch dispatch and put a
+tripwire at `subprocess.Popen`. They do not run a live gate or CLI, create
+filesystem fixtures, or register with `tests/test_all.py`. Importing the status
+tool also loads `sync_baseline` and `run_coverage` and adjusts the import path;
+their main functions are not invoked. This is cooperative fixture discipline,
+not filesystem/network confinement or a subprocess-resource-bound fix.
+
+Builder execution on Python 3.13.13: **9 passed, 0 failures/errors/skips**.
+The same suite against the retained pre-change caller produced **46 expected
+assertion failures across six methods**, with three methods passing and no
+errors/skips. These are subcase failures, not 46 separate tests. The controls
+preserve current/freshness/other-nonzero handling. Failure cases discriminate
+input errors, noisy or stdout-contaminated freshness, RED summary wording and
+missing/unknown status. An integration case checks collected status against the
+rendered page's light, table and magnitude, using a synthetic snapshot.
+
+Both recorded children used the existing interpreter with `-I -S -B` and an
+explicit docs import path. Their observer recorded source hashes before/after,
+test identities and outcomes, no loaded `rss` modules, an import-refusal positive
+control and zero outer child-dispatch calls. The nine-method suite is one suite
+tested against two source versions. Independent static review inspected these
+records without reproducing the runs; no tests were rerun for the checkpoint.
+
+Known limits remain: exact diagnostic text is a temporary compatibility rule,
+not a structured child protocol. Producer wording changes must update this
+contract and its proof together; unexpected exit-1 output fails closed to RED.
+This does not authenticate child output, repair output read/write exceptions or
+partial writes (F2), or change reverse help/abbreviation behavior (F3).
+No live generator, canonical acceptance, input suite, coverage, baseline, pytest
+or full hygiene run occurred. Generated output was not refreshed. The inherited
+181 functions / 3013 assertions / 0 failures, 92.7% coverage and 26 modules were
+not remeasured. BUILD-03 and DOCS-04 remain open.
+
+Source binding for this contract and the linked identity supplement:
+
+| Source | SHA-256 |
+| --- | --- |
+| `docs/build_project_status.py` | `f978f18a5fef0603e09e2e52dd92cd482b8828dfc3a03627b48f8da59c14ce64` |
+| `docs/test_project_status.py` | `fbea25f4996223a23262398b15f9d08c5e1139ec4918ff43bf20b19f1d314877` |
+| `docs/build_pact_code_map.py` (unchanged producer) | `e0eabb2586ec669cc9a9accde92154e776f0ff9aa6012f8ddad6d7317961ec92` |
+
 ### BUILD-03 Command and Effect Inventory
 
 Original documentation-only slice, source-inspected on 2026-09-12; independent static
@@ -993,7 +1085,7 @@ destination. A `--json` flag is not uniformly a file-output option.
 | --- | --- | --- |
 | `docs/build_claim_matrix.py` | `python -B docs/build_claim_matrix.py`; `--stdout`; `--floor-only`; `-h/--help` | Candidate: strict argument parsing precedes generator work. Help exits 0; usage errors exit 2, including unsupported `--check`, abbreviations and bare `--` on the recorded interpreter. Imports/stream setup still occur. Valid modes use Git-index selection and live source reads; default writes `docs/claim_matrix.md`. Floor-only precedes stdout; both avoid that write. UTF-8 streams. Operational success 0; input/missing-module/floor findings 1. No test execution or host confinement. |
 | `docs/build_pact_code_map.py` | `python -B docs/build_pact_code_map.py`; `--check`; `--stdout` | Candidate: Git index selects source/Pact inputs, then reads live content; default writes `docs/pact_code_map.md`. UTF-8 stdout/stderr. Check compares only; stdout prints and takes precedence over check. Current 0; input discovery/read or missing/stale check 1. Git discovery children, no proof children. Lower-level parser helpers retain a separate fixture-only directory API. |
-| `docs/build_project_status.py` | `python -B docs/build_project_status.py`; `--check`; `--stdout`; internal `--assume-gates-passed` | Default runs baseline/map children and writes `docs/PROJECT_STATUS.md`; check/stdout suppress that write, not the children. Assumed-green mode skips those children and reads existing docs, not fresh proof. Child failures can be rendered as RED/YELLOW rather than a nonzero generation exit. Own freshness failure 1, caught build/link failure 2. No Git-cleanliness test. |
+| `docs/build_project_status.py` | `python -B docs/build_project_status.py`; `--check`; `--stdout`; internal `--assume-gates-passed` | Default runs baseline/map children and writes `docs/PROJECT_STATUS.md`; check/stdout suppress that write, not the children. Assumed-green mode skips those children and reads existing docs, not fresh proof. Child failures can be rendered as RED/YELLOW rather than a nonzero generation exit. Reverse exit 1 is YELLOW only for empty stdout and one complete known freshness diagnostic in decoded output (optional single LF/CRLF); other nonzero results are RED. Magnitude distinguishes current/stale/failed/unavailable; see the [caller contract](#build-03-reverse-map-status-classification). Own freshness failure 1, caught build/link failure 2. No Git-cleanliness test. |
 | `docs/check_contact_surface.py` | `python -B docs/check_contact_surface.py` | Read-only Git enumeration and tracked-content checks; console output. Pass 0, findings 1; no proof children or intended file writes. |
 | `docs/check_public_hygiene.py` | `python -B docs/check_public_hygiene.py` | Runs baseline `--check --require-clean`, contact, claim floor, map check, assumed-green status check and resolver check, then name/callsign scans. Acceptance/coverage children create fixtures and owned coverage data. All steps run despite earlier failures; final aggregate 0/1. Own scans use the shared index selector and report input refusal. This wrapper is not read-only or a sandbox. |
 | `docs/resolve_pact_sections.py` | `python -B docs/resolve_pact_sections.py --check`; optional `--repo PATH`, `--pact PATH`, `--json PATH` | Reference and Pact inputs use validated Git-index membership with live working bytes; named untracked resolver candidates refuse. `--pact` selects a same-checkout subtree relative to `--repo`. `--check` plus `--json` refuses before scanning or report creation, exit 1; report-only mode creates parent directories and writes the requested report. Exit 1 also denotes input failure, with a distinct stderr prefix. Scan results: 0 clean, 2 phantom-only, 3 structure-only, 4 both; argparse usage also exits 2. No report-mode output-path confinement. |
@@ -1002,6 +1094,7 @@ destination. A `--json` flag is not uniformly a file-output option.
 | `docs/test_sync_baseline.py` | `python -B docs/test_sync_baseline.py` | Separate unittest infrastructure proof; real temporary archive writes, patched root and orchestration/child boundaries. Does not run the live synchronizer CLI. Unittest verdict and owned fixture cleanup; not canonical registration. |
 | `docs/test_build_inputs.py` | `python -B docs/test_build_inputs.py`; optional explicitly selected `RSS_PROOF_POWERSHELL` environment variable | Candidate unittest infrastructure proof. Owns temporary source/Git fixtures, runs Git init/add/index commands there, invokes generator/resolver CLIs in copied fixtures and hygiene scan functions without the wrapper, and optionally a chosen PowerShell with synthetic Python children. Fixture base refuses Git-checkout ancestry and linked/reparse ancestry. Filesystem fixtures, output sentinels and failure injection; visible cleanup errors. No kernel registration or host configuration change. Selector Git discovery retains host configuration dependence. Shell selection, Windows platform/8.3 availability and symlink privileges can cause explicit skips; record each skip and TEMP spelling. |
 | `docs/test_proof_support.py` | `python -B docs/test_proof_support.py -v` | Standalone Crucible harness contract suite, separate from canonical counts. Captures console and patches counter/environment/urllib state; launches fresh Python children from the current checkout, including facade/kernel import checks and a child that refuses kernel imports while exercising the four tooling proofs. Tooling proofs create/remove owned temporary files. Children have a 90-second timeout; timeout can terminate that owned child. This is not host or output confinement. Windows UTF-8 case skips off Windows; record skips. No live model service or host configuration change is required. |
+| `docs/test_project_status.py` | `python -B docs/test_project_status.py -v` | Standalone Crucible caller-classification/rendering proof: nine unittest methods with synthetic child results, patched dispatch and a subprocess tripwire. Imports tooling and adjusts its import path; memory/console/mock effects, no intended fixtures, live children or kernel imports. Does not invoke the generator CLI or canonical registration. Unittest verdict; no install required and no host confinement claimed. |
 | `examples/demo_suite.py` | `python -B examples/demo_suite.py --offline`; alternate `--live-llm`, `--db PATH`, `--keep-db`, `--artifacts DIR`, `--artifact-prefix NAME` | CLI defaults **live** if neither mode is supplied; report helper defaults offline. Creates/updates SQLite and TRACE; artifact options write JSON/Markdown/TRACE outputs. Cleans only its own auto-created DB unless retained, never caller-supplied DB; close/cleanup errors can be swallowed. Live contacts configured model endpoint. Normal CLI exit is currently 0 for PASS **or ATTENTION**; inspect report predicates, not exit alone. |
 | `examples/demo_llm.py` | `python -B examples/demo_llm.py`; compatibility entrypoint, no supported flags | Calls demo `run(live_llm=True)` unconditionally; `--offline` is not parsed or forwarded. Same live network, DB and cleanup effects; no verdict-to-exit mapping. Prefer the canonical demo CLI for explicit mode selection. |
 | `run_coverage.py` | `python -B run_coverage.py`; `--html` | Runtime-path refusal precedes children/temp creation. Runs canonical coverage and report using the same interpreter/CWD; strips inherited `COVERAGE_*` redirection. Owns a unique temporary config/data/report directory. Default/failure cleans it; successful HTML retains it and prints paths. Preserves child failure; output/cleanup failures surface nonzero. Root `.coverage` is not refreshed. No filesystem/network sandbox for tests. |

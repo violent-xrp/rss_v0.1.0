@@ -1259,3 +1259,49 @@ Other queue changes, the earlier BUILD-05 receipt, threat/coverage corrections,
 protected outputs, private handoff history and retained evidence are preserved.
 Further implementation, full gates, Main integration or another push require
 separate disposition; SITE-01 and BUILD-05 keep their holds.
+
+
+## 2026-09-17 BUILD-03 Project Status F1 Local Checkpoint
+
+The human accepted the independently reviewed F1 caller correction and
+authorized this bounded local checkpoint, including review-status bookkeeping
+and this receipt. Project Status now distinguishes reverse-map input/build
+failure from the two known freshness diagnostics, and separately renders
+current, stale, failed and unavailable reverse-gate states. The two affected
+functions and new standalone suite retain their exact reviewed working bytes.
+
+Independent static review returned PASS with no findings. The reviewer checked
+source, producer/caller/fixture diagnostic agreement, consumers, identities,
+record integrity and preservation without executing project code or tests.
+The accepted candidate manifest SHA-256 is
+`e90c62fba08f36200d2d01be2c821715c6b88066856765f778f8d83debf73cb6`;
+its diff SHA-256 is
+`b4915cd5dcca97ab3ec98ab82702c408c9150f2287e020c92b6f6f8357582ce0`.
+Original evidence packets remain unchanged.
+
+Builder execution remains distinct from static review and this checkpoint:
+- The nine-method standalone suite passed, with no failures, errors or skips.
+- The same suite against the retained old caller had three passing controls and
+  46 expected assertion failures across six methods, with no errors or skips.
+  These are subcase failures across two source versions of one suite, not
+  additional canonical tests.
+- The observer recorded unchanged source hashes, no loaded kernel modules and
+  zero outer child-dispatch calls. Inputs were synthetic decoded child results;
+  no live gate or generator CLI was exercised.
+- Matching occurs after the existing subprocess decoding/newline normalization.
+  It is a diagnostic-text compatibility rule, not authentication or a structured
+  child protocol.
+
+No tests, generators, coverage, baseline, combined hygiene or pytest were rerun
+for this checkpoint. Canonical 181/3013/0, 92.7% and 26-module figures remain
+inherited. Optional detail-label and redundant-CRLF suggestions are deferred.
+F2 output exception/partial-write questions, F3 reverse CLI documentation,
+wider execution limits and full-gate acceptance remain open. This does not
+close BUILD-03 or DOCS-04 or perform further physical separation.
+
+The parent is `7f23c24`. This checkpoint is local only; no Main integration,
+push, tag or release is included. Only BUILD-03's row and this new receipt enter
+from the two mixed files. Other queue changes, the earlier BUILD-05 receipt,
+threat/coverage corrections, protected outputs, private handoff history and
+retained evidence are preserved. SITE-01 and BUILD-05 keep their holds;
+further work requires its own disposition.

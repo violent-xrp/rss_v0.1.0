@@ -1129,3 +1129,68 @@ their dated bindings. No additional source move or module name is implied.
 | `tests/test_docs_tooling.py` | `88b42d8761394e2938f7dce49fb19a6ba04e749c6c8fee24f398085050de919a` |
 | `tests/test_core_runtime.py` | `33e9d9157f1be6e3dd47b8900cacbc8ed89f83610e03e443853cfb34b34e26f7` |
 | `docs/test_proof_support.py` | `905845245c886dbd5f1b3e9e8a351438865dc2b0c593c9fc0572f21df77402f2` |
+
+
+## BUILD-03 Project Status Caller Identities
+
+**Sigil Crucible slice, 2026-09-17; locally checkpointed after independent
+static PASS with no findings and human disposition.** The review did not rerun
+tests; its evidence scope and the checkpoint are recorded in the
+[bounded receipt](roadmap/ACCEPTANCE_HISTORY.md#2026-09-17-build-03-project-status-f1-local-checkpoint). This
+supplement identifies F1's two affected caller responsibilities and its new
+standalone proof. [TESTING](TESTING.md#build-03-reverse-map-status-classification)
+owns the contract, commands, source hashes and execution evidence; ROADMAP owns
+disposition. The dated complete inventory and earlier identity/registration
+tables remain intact. No file move, new component, runtime authority or
+canonical-count change is implied.
+
+Every qualified symbol below has documentary prefix `BUILD-03::`; paths and line
+anchors are bound to the three public source hashes in the linked contract.
+Revalidate after changes. Role, proof subject, effects, required authority and
+observed enforcement remain separate; production units have no proof subject.
+
+| Identity / source | Role | Proof subject | Effects | Required authority | Observed enforcement |
+| --- | --- | --- | --- | --- | --- |
+| [build_project_status.collect_pact_code_map_gate](build_project_status.py#L181) | tooling | not applicable | memory, child-process, console capture; child reads source/Pact as data via Git | Permission to invoke the reverse check on the checkout | Exit 0 retained; exact complete decoded stderr plus empty stdout distinguishes known exit-1 freshness from failure. No authentication, timeout or process confinement added. |
+| [build_project_status.drift_magnitude_line](build_project_status.py#L290) | tooling | not applicable | memory to string | Approved caller execution; no T-0 requirement identified | Explicit current/stale/failed wording; absent or unknown reverse gate says unavailable. No authority check; does not change overall-light policy. |
+| [test_project_status.ProjectStatusTests](test_project_status.py#L24), [setUp](test_project_status.py#L25), [collect](test_project_status.py#L32) | harness | not applicable | memory, process-state (temporary mocks) | Approved standalone proof execution | Dispatch is mocked and its command asserted; Popen tripwire restored by unittest cleanup. No live child intended; no host confinement. |
+
+The module-level `MISSING`, `STALE` and `INPUT_FAILURE` fixture strings
+have identities `BUILD-03::test_project_status.MISSING`,
+`BUILD-03::test_project_status.STALE` and
+`BUILD-03::test_project_status.INPUT_FAILURE`. Their role is harness data;
+proof subject is not applicable, effects are memory, required authority is
+approved proof execution, and enforcement is only the assertions consuming them.
+The module guard dispatches unittest, not the canonical runner.
+
+Each test identity below is a Sigil Crucible `test`. Effects are memory and
+temporary mock state, plus console reporting through unittest; required
+authority is approved standalone execution. Observed enforcement is its
+assertions and the harness tripwire above. No actual child-process effect is
+attributed to a mocked child result.
+
+| Identity / current source | Proof subject |
+| --- | --- |
+| [test_project_status.ProjectStatusTests.test_success_preserves_current_contract](test_project_status.py#L41) | Existing exit-zero classification and command arguments |
+| [test_project_status.ProjectStatusTests.test_exact_freshness_diagnostics_are_stale](test_project_status.py#L49) | Both exact freshness messages and allowed endings |
+| [test_project_status.ProjectStatusTests.test_other_exit_one_failures_are_failed](test_project_status.py#L57) | Input/operational failure and empty diagnostic classification |
+| [test_project_status.ProjectStatusTests.test_noisy_freshness_diagnostics_fail_closed](test_project_status.py#L65) | Whole-stderr discrimination against noise and whitespace |
+| [test_project_status.ProjectStatusTests.test_any_stdout_makes_freshness_ambiguous](test_project_status.py#L80) | Literal empty-stdout requirement and wrong-stream refusal |
+| [test_project_status.ProjectStatusTests.test_other_nonzero_exits_never_mean_stale](test_project_status.py#L91) | Exit code precedence over freshness wording |
+| [test_project_status.ProjectStatusTests.test_magnitude_distinguishes_all_known_states](test_project_status.py#L100) | Current/stale/failed summary with baseline count preserved |
+| [test_project_status.ProjectStatusTests.test_absent_or_unknown_reverse_state_is_unavailable](test_project_status.py#L112) | Unavailable summary for missing or unknown reverse status |
+| [test_project_status.ProjectStatusTests.test_collected_gate_agrees_with_page_status_table_and_magnitude](test_project_status.py#L122) | Collector-to-page agreement: light, table and magnitude |
+
+
+**RSS Architecture edge clarification.** The reverse generator remains Crucible
+tooling reading Sigil Kernel files and Pact text as data, not importing or
+invoking kernel services. Project Status launches that generator's check;
+`collect_pact_code_map_gate` classifies its result, while
+`drift_magnitude_line` separately renders the summary. Both feed the existing
+page renderer. The standalone suite mocks dispatch and exercises those caller
+edges, including page rendering. Its tooling imports transitively load
+`sync_baseline` and `run_coverage`, without calling their entrypoints.
+This labels responsibilities for later separation; it does not perform
+reorganization or complete DOCS-04. The existing canonical rendering proof
+remains registered and byte-unchanged; these nine unittest methods add no
+canonical functions or assertion totals.
