@@ -160,6 +160,7 @@ Unchanged proof_support and tooling-import anchors retain their
 The combined-hygiene child-command anchor was revalidated for the 2026-09-15
 input-selection candidate; its child-command list is unchanged. The claim-selector
 anchor now uses the [argument-candidate source binding](#standalone-proof-identities-and-subjects).
+The reverse-map scope anchor uses the [F2 source binding](TESTING.md#reverse-output-source-binding).
 Other map anchors and the preserved registration appendix retain their `f2ef219` binding. The
 appendix is a dated baseline, including its pre-separation tooling line numbers.
 
@@ -332,7 +333,7 @@ membership and package-file counts above do not remeasure execution or coverage.
 | [CLI source loader](../tests/test_cli.py#L38), [tool source loaders](../tests/test_docs_tooling.py#L39) | src/main.py and named docs/*.py paths | importlib loads by filesystem path; module import searches alone are incomplete. |
 | [coverage launcher](../run_coverage.py#L66), [baseline orchestration](../docs/sync_baseline.py#L335) | tests/test_all.py / run_coverage.py | Both command paths and final-line semantics are compatibility surfaces. |
 | [combined hygiene children](../docs/check_public_hygiene.py#L273) | baseline, contact surface, claim, reverse map, status, resolver | A helper classification does not make the combined wrapper a read-only fixture check. |
-| [reverse-map scope](../docs/build_pact_code_map.py#L129), [module scope](../docs/sync_baseline.py#L353) | src/rss and Pact/source patterns | A move can change both traceability and reported scope without changing behavior. |
+| [reverse-map scope](../docs/build_pact_code_map.py#L131), [module scope](../docs/sync_baseline.py#L353) | src/rss and Pact/source patterns | A move can change both traceability and reported scope without changing behavior. |
 | [TESTING](TESTING.md), [BUILD_DISCIPLINE](BUILD_DISCIPLINE.md), [receipts](roadmap/ACCEPTANCE_HISTORY.md) | documented commands, links and historical paths | Current routes need reconciliation; historical receipt bytes remain preserved, not mass-renamed. |
 
 The edges above justify targeted decisions, not a full reorganization. No
@@ -599,6 +600,14 @@ with no findings; the human accepted the slice and authorized its
 [local checkpoint](roadmap/ACCEPTANCE_HISTORY.md#2026-09-17-build-03-claim-argument-local-checkpoint).
 Earlier checkpoints and proof records retain their scope.
 
+**Reverse-output upkeep, 2026-09-17.** The [F2 slice](TESTING.md#build-03-reverse-map-output-preservation)
+adds a private publication helper and eleven standalone methods. Independent
+static review returned PASS with no findings; the human accepted the slice and
+authorized its [local checkpoint](roadmap/ACCEPTANCE_HISTORY.md#2026-09-17-build-03-reverse-map-f2-local-checkpoint).
+The reviewer inspected execution records without rerunning tests. Current
+identities, anchors and hashes retain the reviewed bytes; execution remains
+builder evidence, and earlier checkpoints retain their scope.
+
 ### Identification rule for additions and changes
 
 At the existing detail owner, record the task ID, established component name,
@@ -620,7 +629,7 @@ and fixture imports do not determine ownership or justify moving code.
 ### Current code and harness identities
 
 Each identity below has the prefix `BUILD-03::`. Paths and qualified symbols
-refer to the current source hashes below, including the check-only and argument candidates.
+refer to the current source hashes below, including the check-only, argument and reverse-output candidates.
 TESTING retains detailed command effects.
 Grouped rows list the union of reachable effects; each linked qualified symbol
 keeps its own identity. Current input compatibility and execution evidence stay
@@ -633,6 +642,8 @@ with TESTING; earlier map observations remain bound to their recorded date.
 | [build_input_scope._require_indexed_candidates](build_input_scope.py#L71) | tooling | not applicable | memory, file-read; metadata only | Approved candidate-path inspection within the validated checkout | Non-following metadata checks refuse existing untracked fixed candidates; relies on the caller's validated root. |
 | [build_input_scope.configure_utf8_output](build_input_scope.py#L20) | tooling | not applicable | process-state, console | Permission to configure the invoking CLI's streams | Reconfigures available streams; no runtime authority check. |
 | [build_claim_matrix.main](build_claim_matrix.py#L211) | tooling | not applicable | memory, file-read, child-process, process-state, console; file-write in default mode | Approved checkout inspection and Git invocation; approval for default output writes | Argument parsing exits before generator selection/render/write on help or usage errors; existing input checks remain. No caller authentication or host confinement. |
+| [build_pact_code_map.main](build_pact_code_map.py#L293) | tooling | not applicable | memory, file-read, process-state, child-process via Git, console; default file-write/replace and failure cleanup | Approved checkout scan/Git execution; output-directory write permission for publication | Selector checks plus handled output metadata/read/publication errors; F1 freshness messages preserved. No caller authentication or output confinement. |
+| [build_pact_code_map._publish_text](build_pact_code_map.py#L236) | tooling | not applicable | file-write, metadata-read/write, flush/fsync, replace, owned-temp cleanup | Approved destination and sibling-temp writes | Replace is publication point; primary failure preserved if cleanup also fails. Existing permission bits only; no ACL, symlink-identity, concurrency or crash-durability guarantee. |
 | [resolve_pact_sections.sweep](resolve_pact_sections.py#L281), with [tracked_files](resolve_pact_sections.py#L163), [_pact_paths](resolve_pact_sections.py#L170) and [resolve_pact_sections.pact_identifiers](resolve_pact_sections.py#L203) | tooling | not applicable | memory, file-read, child-process | Scoped permission to scan the approved checkout | Shared selector and same-checkout Pact checks; no source authentication or host containment. |
 | [resolve_pact_sections.main](resolve_pact_sections.py#L364), including [resolve_pact_sections.parse_args](resolve_pact_sections.py#L354) and [write_json](resolve_pact_sections.py#L336) | tooling | not applicable | memory, file-read, child-process, process-state, console; file-write when a JSON path is supplied without check mode | Scan authority plus approval for any requested report write | Check plus JSON refuses before scanning or report creation; report-only writes remain available without output-path confinement. |
 | [check_public_hygiene.public_candidate_files](check_public_hygiene.py#L154), [provenance_name_hygiene_scan](check_public_hygiene.py#L168) and [callsign_leak_scan](check_public_hygiene.py#L233) | tooling | not applicable | memory, file-read, child-process, console | Scoped permission to inspect public inputs | Shared selector and existing filters; scan functions do not authenticate the operator. The separate wrapper [main](check_public_hygiene.py#L269) launches further gates; its effects stay in TESTING. |
@@ -673,7 +684,7 @@ availability limits remain in TESTING; a skip must stay visible in execution
 evidence.
 
 <details>
-<summary>49 named tests: 23 retained, 18 input-candidate, 4 check-only and 4 argument additions</summary>
+<summary>60 named tests: 23 retained, 18 input-candidate, 4 check-only, 4 argument and 11 reverse-output additions</summary>
 
 | Method identity suffix / current source | Origin | Tooling proof subject | Additional effects |
 | --- | --- | --- | --- |
@@ -726,19 +737,30 @@ evidence.
 | [test_claim_invalid_arguments_refuse_before_input_selection](test_build_inputs.py#L1068) | argument candidate | claim generator: strict usage refusal, invalid-root precedence and help/error ordering | child-process, process-state, console |
 | [test_claim_supported_modes_preserve_dispatch](test_build_inputs.py#L1113) | argument candidate | claim generator: fixed expected matrix, verdicts, precedence and resolved destination | child-process, process-state, console |
 | [test_claim_argument_clis_preserve_owned_outputs](test_build_inputs.py#L1169) | argument candidate | copied claim CLIs: UTF-8 help/refusals, non-Git inputs and existing/absent targets | child-process, console |
+| [test_reverse_output_freshness_and_stdout_controls](test_build_inputs.py#L1229) | reverse-output candidate | reverse output: output freshness and stdout controls | child-process, process-state, console; file-read, file-write (owned publication/mode/cleanup) |
+| [test_reverse_output_read_failures_are_operational_errors](test_build_inputs.py#L1264) | reverse-output candidate | reverse output: output read failures are operational errors | child-process, process-state, console; file-read, file-write (owned publication/mode/cleanup) |
+| [test_reverse_publication_preserves_legacy_bytes_and_existing_mode](test_build_inputs.py#L1309) | reverse-output candidate | reverse output: publication preserves legacy bytes and existing mode | child-process, process-state, console; file-read, file-write (owned publication/mode/cleanup) |
+| [test_reverse_partial_write_preserves_existing_or_absent_output](test_build_inputs.py#L1342) | reverse-output candidate | reverse output: partial write preserves existing or absent output | child-process, process-state, console; file-read, file-write (owned publication/mode/cleanup) |
+| [test_reverse_prepublication_stream_and_replace_failures_preserve_output](test_build_inputs.py#L1397) | reverse-output candidate | reverse output: prepublication stream and replace failures preserve output | child-process, process-state, console; file-read, file-write (owned publication/mode/cleanup) |
+| [test_reverse_mode_failures_preserve_output_and_missing_output_skips_chmod](test_build_inputs.py#L1463) | reverse-output candidate | reverse output: mode failures preserve output and missing output skips chmod | child-process, process-state, console; file-read, file-write (owned publication/mode/cleanup) |
+| [test_reverse_temp_creation_and_fdopen_failures_release_owned_resources](test_build_inputs.py#L1508) | reverse-output candidate | reverse output: temp creation and fdopen failures release owned resources | child-process, process-state, console; file-read, file-write (owned publication/mode/cleanup) |
+| [test_reverse_unlink_failure_keeps_primary_error_and_names_retained_temp](test_build_inputs.py#L1555) | reverse-output candidate | reverse output: unlink failure keeps primary error and names retained temp | child-process, process-state, console; file-read, file-write (owned publication/mode/cleanup) |
+| [test_reverse_close_failure_does_not_mask_partial_write_error](test_build_inputs.py#L1605) | reverse-output candidate | reverse output: close failure does not mask partial write error | child-process, process-state, console; file-read, file-write (owned publication/mode/cleanup) |
+| [test_reverse_raw_fd_close_failure_does_not_mask_fdopen_error](test_build_inputs.py#L1665) | reverse-output candidate | reverse output: raw fd close failure does not mask fdopen error | child-process, process-state, console; file-read, file-write (owned publication/mode/cleanup) |
+| [test_reverse_publication_uses_closed_sibling_then_stops_cleanup](test_build_inputs.py#L1710) | reverse-output candidate | reverse output: publication uses closed sibling then stops cleanup | child-process, process-state, console; file-read, file-write (owned publication/mode/cleanup) |
 
 </details>
 
-Static membership was reconciled by name against all 49 methods in this class:
-no missing, duplicate or extra rows. The earlier 23/18 input-candidate split
-and four check-only rows remain; four argument methods are appended. All 45
-pre-existing method bodies, helper bodies and definition lines are unchanged
-by this slice. Current source-line anchors in this supplement bind to these
-working-file bytes (SHA-256):
+Static membership was reconciled by name against all 60 methods in this class:
+no missing, duplicate or extra rows. Earlier 23/18 input, four check-only and
+four argument identities remain. Eleven reverse-output methods are appended;
+all 49 earlier bodies, helper bodies and definition lines are unchanged by F2.
+Current source-line anchors bind these working-file bytes (SHA-256):
 
 | Source | SHA-256 |
 | --- | --- |
-| [test_build_inputs.py](test_build_inputs.py) | `c7e026920fd8303f30e7b22ebe9ec29009933885652a508f687cfe9c00f08b8c` |
+| [test_build_inputs.py](test_build_inputs.py) | `900bd7f81e6d6f244bde3ac939c820ba1ee1b151d69de4c68689ec1c4cda18cc` |
+| [build_pact_code_map.py](build_pact_code_map.py) | `98555876be8c5360839500fea62e3bc484e746677282d0ed6edda4d31221a375` |
 | [build_claim_matrix.py](build_claim_matrix.py) | `b435b6c56176599b8b06ce25970f10ada5a1418f5bfc99ede36b908b3c8c0ae5` |
 | [build_input_scope.py](build_input_scope.py) | `529922e288e32e54bf9ca35129694e0f78cb7cac426a6bd066920a6b8bcd81a7` |
 | [resolve_pact_sections.py](resolve_pact_sections.py) | `0e63eab1725e3b517520d899d1a644bb4815c9f5ace97362be9dddfbe30c31af` |

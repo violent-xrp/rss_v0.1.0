@@ -1036,6 +1036,110 @@ Source binding for this contract and the linked identity supplement:
 | `docs/test_project_status.py` | `fbea25f4996223a23262398b15f9d08c5e1139ec4918ff43bf20b19f1d314877` |
 | `docs/build_pact_code_map.py` (unchanged producer) | `e0eabb2586ec669cc9a9accde92154e776f0ff9aa6012f8ddad6d7317961ec92` |
 
+### BUILD-03 Reverse-map Output Preservation
+
+**Locally checkpointed, 2026-09-17, after independent static PASS with no
+findings and human disposition.** The reviewer checked source, proof records,
+identities and preservation without rerunning tests. See the
+[bounded receipt](roadmap/ACCEPTANCE_HISTORY.md#2026-09-17-build-03-reverse-map-f2-local-checkpoint). This F2
+slice handles check-output reads and default publication. It follows the local
+DOCS-04 checkpoint without changing that boundary or the F1 caller. The F1
+record above retains its checkpoint-time producer hash and line anchor; current
+producer locations and bytes are bound below. F3 argument behavior is unchanged.
+
+[main](build_pact_code_map.py#L293) still builds the map before dispatch and
+keeps stdout precedence over check. Check-mode output existence/content reads
+now handle `OSError` and `UnicodeError` with `build_pact_code_map: {exc}` on
+stderr, empty stdout and return 1. Exact missing/stale messages, current output
+and their return codes are preserved. Source/Pact files are read as data;
+no kernel service is invoked by this generator.
+
+Default mode calls [_publish_text](build_pact_code_map.py#L236). It creates a
+unique sibling using prefix `.pact_code_map.md.pact-code-map-`, writes UTF-8
+with the old platform newline translation, flushes and fsyncs, closes the stream,
+copies existing permission bits when a destination exists, then calls
+`os.replace`. Successful return from replacement is the publication point.
+Before that point, failure leaves the destination's bytes or absence unchanged;
+partial output belongs only to the temporary file. The helper attempts cleanup
+on failure. If close/cleanup also fails, the original exception stays primary;
+its diagnostic is printed first and secondary notes identify the cleanup problem
+and temporary path. A cleanup failure may leave owned residue for inspection.
+
+The raw descriptor remains owned until `fdopen` succeeds. There is no second
+unlink after successful replacement. A new destination keeps the temporary
+file's restrictive permissions; existing permission bits are copied, not ACLs.
+No preservation of symlink identity, concurrent-writer behavior, crash durability,
+directory fsync, universal interruption recovery or output confinement is claimed.
+The helper does not import the baseline module or change other writers.
+
+Publication and command success are distinct. The success print remains outside
+the publication handler; a post-publication console error can leave the new map
+published. Stdout-mode stream errors are likewise unchanged and outside this
+slice. The handler does not force exit 0 or promise rollback after replacement.
+
+| Path | Result / preservation |
+| --- | --- |
+| Check missing / stale | Exact existing F1 stderr, empty stdout, return 1; no output write |
+| Check current | Existing current banner, return 0; no output write |
+| Check metadata/read/decode failure | Operational prefix, return 1; prior bytes untouched |
+| Default complete publication | Old successful text bytes, wrote banner and return 0 |
+| Temp create/open/write/flush/fsync/close, mode-copy or replace failure | Operational prefix, return 1; destination unchanged; cleanup attempted |
+| Primary failure plus close/cleanup failure | Primary diagnostic first, secondary notes; retained temp is disclosed |
+| Console failure after replacement | New bytes may already be published; unchanged exception behavior |
+
+**Proof interpretation.** Missing/current checks and successful creation or
+replacement are compatibility controls (P1/P3/P5/P6); stale comparison is also
+a control. Read/decode errors, partial publication and replace/cleanup failures
+are discriminating cases (P4/P7/P8/P9). Partial-write injection writes and flushes
+a prefix before raising; a pre-write mock alone is not preservation evidence.
+The identity table records every method separately, without adding unittest
+counts or repeated executions to canonical totals.
+
+Builder evidence on Python 3.13.13: the same 60-method suite passed
+with zero failures, errors or skips under both long and Windows 8.3 TEMP
+spellings. All 49 earlier bodies, helpers and definition lines are unchanged.
+All 11 new methods also ran against the retained old generator:
+2 methods passed and 28 expected assertion failures were recorded,
+with no errors or skips. Per-method causes and source bindings are retained
+in the packet. These are runs of one suite, not added canonical totals.
+The observer recorded each process's actual TEMP, six source hashes before/after,
+test names and no loaded kernel modules. Owned fixtures were empty afterward.
+No live checkout output was written.
+
+The new proof rows and shared effects/authority fields stay in
+[Sigil Crucible](SIGIL_CRUCIBLE.md#standalone-proof-identities-and-subjects).
+The old generator is a packet-only control; committed tests depend on fixture
+expectations and a legacy Path.write_text reference, not Git history or packets.
+
+F2 failure cases call main in-process with build mocked; existing suite CLI
+cases do not establish fresh-process F2 output-failure behavior. Simulated close
+failures close the real resource before raising, so they establish diagnostic
+precedence rather than recovery from a still-open handle. Publication faults
+inject OSError; UnicodeError proof covers check reads, not publication. Mode
+observations are specific to the tested platform. The cleanup-failure case
+inspects the retained temporary file before its owned fixture teardown.
+
+
+The unchanged F1 caller accepts only its exact freshness messages with empty
+stdout and exit 1; new operational diagnostics remain failures. F1 strings and
+producer/caller literals were compared statically. F1 source and its nine-method
+suite were unchanged. The recorded F2 proof runs included no full gates, kernel
+acceptance, coverage, baseline, pytest, live-root generated-output refresh, push
+or checkpoint. The later local checkpoint reran no tests or generators.
+Canonical 181/3013/0 comes from the earlier DOCS-04 execution; 92.7% and 26 modules
+remain inherited. BUILD-03 and DOCS-04 stay open; F3 is deferred and SITE-01 and
+BUILD-05 keep their holds.
+
+#### Reverse-output source binding
+
+Current F2 anchors and identities bind these working-file SHA-256 values:
+
+| Source | SHA-256 |
+| --- | --- |
+| `docs/build_pact_code_map.py` | `98555876be8c5360839500fea62e3bc484e746677282d0ed6edda4d31221a375` |
+| `docs/test_build_inputs.py` | `900bd7f81e6d6f244bde3ac939c820ba1ee1b151d69de4c68689ec1c4cda18cc` |
+
+
 ### BUILD-03 Command and Effect Inventory
 
 Original documentation-only slice, source-inspected on 2026-09-12; independent static
@@ -1084,7 +1188,7 @@ destination. A `--json` flag is not uniformly a file-output option.
 | Entrypoint | Invocation and modes | Effects, outputs and exit/cleanup limits |
 | --- | --- | --- |
 | `docs/build_claim_matrix.py` | `python -B docs/build_claim_matrix.py`; `--stdout`; `--floor-only`; `-h/--help` | Candidate: strict argument parsing precedes generator work. Help exits 0; usage errors exit 2, including unsupported `--check`, abbreviations and bare `--` on the recorded interpreter. Imports/stream setup still occur. Valid modes use Git-index selection and live source reads; default writes `docs/claim_matrix.md`. Floor-only precedes stdout; both avoid that write. UTF-8 streams. Operational success 0; input/missing-module/floor findings 1. No test execution or host confinement. |
-| `docs/build_pact_code_map.py` | `python -B docs/build_pact_code_map.py`; `--check`; `--stdout` | Candidate: Git index selects source/Pact inputs, then reads live content; default writes `docs/pact_code_map.md`. UTF-8 stdout/stderr. Check compares only; stdout prints and takes precedence over check. Current 0; input discovery/read or missing/stale check 1. Git discovery children, no proof children. Lower-level parser helpers retain a separate fixture-only directory API. |
+| `docs/build_pact_code_map.py` | `python -B docs/build_pact_code_map.py`; `--check`; `--stdout` | Git index selects source/Pact data; live reads and UTF-8 streams. Default publishes `docs/pact_code_map.md` through a sibling temp, flush/fsync, close, existing permission-bit copy and replacement. Check compares only; stdout precedes check. Current 0; handled input/output I/O or missing/stale check 1, with freshness strings unchanged. Cleanup may leave a reported temp; post-publication print failures do not roll back. Git children, no proof children; no output confinement or crash-durability claim. See [F2 contract](#build-03-reverse-map-output-preservation). Lower-level parsers retain their fixture-only API. |
 | `docs/build_project_status.py` | `python -B docs/build_project_status.py`; `--check`; `--stdout`; internal `--assume-gates-passed` | Default runs baseline/map children and writes `docs/PROJECT_STATUS.md`; check/stdout suppress that write, not the children. Assumed-green mode skips those children and reads existing docs, not fresh proof. Child failures can be rendered as RED/YELLOW rather than a nonzero generation exit. Reverse exit 1 is YELLOW only for empty stdout and one complete known freshness diagnostic in decoded output (optional single LF/CRLF); other nonzero results are RED. Magnitude distinguishes current/stale/failed/unavailable; see the [caller contract](#build-03-reverse-map-status-classification). Own freshness failure 1, caught build/link failure 2. No Git-cleanliness test. |
 | `docs/check_contact_surface.py` | `python -B docs/check_contact_surface.py` | Read-only Git enumeration and tracked-content checks; console output. Pass 0, findings 1; no proof children or intended file writes. |
 | `docs/check_public_hygiene.py` | `python -B docs/check_public_hygiene.py` | Runs baseline `--check --require-clean`, contact, claim floor, map check, assumed-green status check and resolver check, then name/callsign scans. Acceptance/coverage children create fixtures and owned coverage data. All steps run despite earlier failures; final aggregate 0/1. Own scans use the shared index selector and report input refusal. This wrapper is not read-only or a sandbox. |

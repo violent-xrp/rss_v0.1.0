@@ -16,6 +16,8 @@ import argparse
 import os
 import re
 import sys
+import stat
+import tempfile
 from collections import defaultdict
 from pathlib import Path
 
@@ -231,6 +233,63 @@ def build(repo_root: Path) -> str:
     return render_markdown(pact_sections, code_refs, all_code_files)
 
 
+def _publish_text(out_path: Path, markdown: str) -> None:
+    """Publish complete UTF-8 text at replace; retain the destination on failure.
+
+    Newline translation matches Path.write_text. Existing permission bits are
+    copied; ACLs, symlink identity, concurrent writers and crash durability are
+    not preserved guarantees. A new file keeps mkstemp's restrictive mode.
+    """
+    descriptor, name = tempfile.mkstemp(
+        prefix=f".{out_path.name}.pact-code-map-", dir=out_path.parent,
+    )
+    temporary = Path(name)
+    primary = None
+    try:
+        stream = os.fdopen(descriptor, "w", encoding="utf-8", newline=None)
+        descriptor = None  # The stream now owns the descriptor.
+        try:
+            stream.write(markdown)
+            stream.flush()
+            os.fsync(stream.fileno())
+        except BaseException as exc:
+            primary = exc
+            raise
+        finally:
+            try:
+                stream.close()
+            except BaseException as exc:
+                if primary is None:
+                    raise
+                primary.add_note(f"Temporary stream close failed for {temporary}: {exc}")
+        try:
+            mode = stat.S_IMODE(out_path.stat().st_mode)
+        except FileNotFoundError:
+            pass
+        else:
+            os.chmod(temporary, mode)
+        os.replace(temporary, out_path)  # Publication commit point.
+        temporary = None
+    except BaseException as exc:
+        primary = exc
+        raise
+    finally:
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except BaseException as exc:
+                if primary is None:
+                    raise
+                primary.add_note(f"Temporary descriptor close failed: {exc}")
+        if temporary is not None:
+            try:
+                temporary.unlink(missing_ok=True)
+            except BaseException as exc:
+                if primary is None:
+                    raise
+                primary.add_note(f"Temporary cleanup failed; retained path {temporary}: {exc}")
+
+
 def main(argv: list[str] | None = None) -> int:
     configure_utf8_output()
     parser = argparse.ArgumentParser(description=__doc__)
@@ -252,10 +311,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.check:
-        if not out_path.exists():
-            print("build_pact_code_map: docs/pact_code_map.md is missing", file=sys.stderr)
+        try:
+            if not out_path.exists():
+                print("build_pact_code_map: docs/pact_code_map.md is missing", file=sys.stderr)
+                return 1
+            current = out_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            print(f"build_pact_code_map: {exc}", file=sys.stderr)
             return 1
-        current = out_path.read_text(encoding="utf-8")
         if current != markdown:
             print(
                 "build_pact_code_map: docs/pact_code_map.md is stale; "
@@ -266,7 +329,13 @@ def main(argv: list[str] | None = None) -> int:
         print("[pact-code-map] docs/pact_code_map.md is current")
         return 0
 
-    out_path.write_text(markdown, encoding="utf-8")
+    try:
+        _publish_text(out_path, markdown)
+    except (OSError, UnicodeError) as exc:
+        print(f"build_pact_code_map: {exc}", file=sys.stderr)
+        for note in getattr(exc, "__notes__", ()):
+            print(f"build_pact_code_map: {note}", file=sys.stderr)
+        return 1
     print(f"[pact-code-map] wrote {out_path}")
     return 0
 

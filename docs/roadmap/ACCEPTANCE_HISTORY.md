@@ -1351,3 +1351,50 @@ private handoff history and retained evidence remain preserved. The parent is
 release or full-gate acceptance. The separately authorized F2 work will bind
 its own candidate after this checkpoint; F1 is not reopened, F3 stays deferred,
 and SITE-01 and BUILD-05 keep their holds.
+
+
+## 2026-09-17 BUILD-03 Reverse-map F2 Local Checkpoint
+
+The human accepted the independent F2 implementation PASS with no findings and
+authorized this local checkpoint and receipt. Check-mode output metadata,
+read and decode failures now use the operational diagnostic. Default publication
+uses a sibling temporary file, flush/fsync/close, existing permission-bit copy
+and replacement as the publication point. Earlier failures preserve destination
+bytes or absence; secondary cleanup failures retain the primary diagnostic.
+The generator and standalone suite retain their exact reviewed working bytes.
+
+The accepted implementation manifest SHA-256 is
+`5cc67fa4d66980ad0817f826ad4187adb9fccba9c1886877e19d8e75a6df103a`;
+its candidate diff SHA-256 is
+`091a65c9906caf71144eb3ec7c565d8382877ac88df2a79637a508e80c3bbfa5`.
+Independent static review checked publication/error paths, F1 diagnostic
+compatibility, AST scope, identities, execution-record integrity and preservation.
+The reviewer did not run the tests. Original packets remain unchanged.
+
+Builder evidence remains distinct from that review and this checkpoint:
+- The same 60-method suite passed under long and Windows 8.3 TEMP spellings,
+  with zero failures, errors or skips in both runs and no loaded kernel modules.
+- All 49 earlier methods, helpers and definition lines remain unchanged.
+- Against the old generator, the eleven additions produced 28 expected
+  assertion failures across nine methods; two compatibility controls passed,
+  with no errors or skips. These are subcase failures, not added test totals.
+- F2 fault cases invoke main in-process with build mocked. Close-failure
+  simulations release the real handle first. Publication faults inject OSError;
+  UnicodeError proof covers check reads. These limits remain explicit.
+- The negative child's records/logs completed before its parent's console
+  preview encountered an encoding error. The saved records remain hash-bound.
+
+No tests, generators, coverage, baseline, combined hygiene or pytest were rerun
+for this checkpoint. Canonical 181/3013/0 remains earlier DOCS-04 execution
+evidence; coverage 92.7% and 26 modules remain inherited. Optional historical
+binding wording and future directory durability are deferred. No crash durability,
+ACL/ownership copying, concurrent-writer protection or output confinement is
+claimed. Post-publication console failure does not roll back published bytes.
+
+The parent is `76b304f`. Only BUILD-03's queue row and this new receipt enter
+from the mixed files. Earlier queue/history edits, threat/coverage work,
+DOCS-04 and F1 material, protected outputs, private handoff history, retained
+packets and empty fixture directories are preserved. This checkpoint is local:
+no Main integration, push, tag, release or full-gate acceptance. BUILD-03 and
+DOCS-04 stay open; the next work returns to DOCS-04 separation design. F3 remains
+deferred; SITE-01 and BUILD-05 keep their holds.

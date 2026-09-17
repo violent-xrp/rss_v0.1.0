@@ -1226,5 +1226,546 @@ class BuildInputTests(unittest.TestCase):
 
 
 
+    def test_reverse_output_freshness_and_stdout_controls(self):
+        markdown = "# owned map \N{SECTION SIGN} \N{GREEK CAPITAL LETTER OMEGA}\n"
+        with self.fixture():
+            target = (self.root / "docs/pact_code_map.md").resolve()
+            other = self.root / "docs/claim_matrix.md"
+            for state in ("missing", "stale", "current"):
+                if target.exists():
+                    target.unlink()
+                if state != "missing":
+                    target.write_text(markdown if state == "current" else "old\n", encoding="utf-8")
+                expected = target.read_bytes() if target.exists() else None
+                members = set(target.parent.iterdir())
+                for args in (("--check",), ("--stdout", "--check")):
+                    out, err = StringIO(), StringIO()
+                    with self.subTest(state=state, args=args), \
+                            patch.object(reverse, "__file__", str(self.root / "docs/build_pact_code_map.py")), \
+                            patch.object(reverse, "build", return_value=markdown), \
+                            patch.object(tempfile, "mkstemp", side_effect=AssertionError("publication forbidden")) as create, \
+                            redirect_stdout(out), redirect_stderr(err):
+                        code = reverse.main(list(args))
+                        if "--stdout" in args:
+                            self.assertEqual((code, out.getvalue(), err.getvalue()), (0, markdown + "\n", ""))
+                        elif state == "current":
+                            self.assertEqual((code, out.getvalue(), err.getvalue()),
+                                             (0, "[pact-code-map] docs/pact_code_map.md is current\n", ""))
+                        else:
+                            message = "build_pact_code_map: docs/pact_code_map.md is " + state
+                            if state == "stale":
+                                message += "; run python docs/build_pact_code_map.py"
+                            self.assertEqual((code, out.getvalue(), err.getvalue()), (1, "", message + "\n"))
+                        create.assert_not_called()
+                    self.assertEqual(target.read_bytes() if target.exists() else None, expected)
+                    self.assertEqual(set(target.parent.iterdir()), members)
+                    self.assertEqual(other.read_bytes(), self.sentinels[other])
+
+    def test_reverse_output_read_failures_are_operational_errors(self):
+        original_read, original_exists = Path.read_text, Path.exists
+        for failure in ("invalid-utf8", "read-oserror", "read-unicodeerror", "exists-permission"):
+            with self.subTest(failure=failure), self.fixture():
+                target = (self.root / "docs/pact_code_map.md").resolve()
+                if failure == "invalid-utf8":
+                    target.write_bytes(b"\xff\xfeinvalid UTF-8\r\n")
+                expected = target.read_bytes()
+                members = set(target.parent.iterdir())
+                cause = "utf-8" if failure == "invalid-utf8" else "owned-" + failure
+
+                def read(path, *args, **kwargs):
+                    if path == target and failure in ("read-oserror", "read-unicodeerror"):
+                        error = OSError if failure == "read-oserror" else UnicodeError
+                        raise error(cause)
+                    return original_read(path, *args, **kwargs)
+
+                def exists(path, *args, **kwargs):
+                    if path == target and failure == "exists-permission":
+                        raise PermissionError(cause)
+                    return original_exists(path, *args, **kwargs)
+
+                out, err, escaped = StringIO(), StringIO(), None
+                with patch.object(reverse, "__file__", str(self.root / "docs/build_pact_code_map.py")), \
+                        patch.object(reverse, "build", return_value="# map\n"), \
+                        patch.object(Path, "read_text", read), patch.object(Path, "exists", exists), \
+                        patch.object(tempfile, "mkstemp", side_effect=AssertionError("publication forbidden")), \
+                        redirect_stdout(out), redirect_stderr(err):
+                    try:
+                        code = reverse.main(["--check"])
+                    except Exception as exc:
+                        escaped, code = exc, None
+                self.assertEqual(target.read_bytes(), expected)
+                self.assertEqual(set(target.parent.iterdir()), members)
+                self.assertEqual((self.root / "docs/claim_matrix.md").read_bytes(),
+                                 self.sentinels[self.root / "docs/claim_matrix.md"])
+                self.assertIsNone(escaped, repr(escaped))
+                self.assertEqual((code, out.getvalue()), (1, ""))
+                self.assertTrue(err.getvalue().startswith("build_pact_code_map: "), err.getvalue())
+                self.assertIn(cause, err.getvalue())
+                self.assertNotIn("Traceback", err.getvalue())
+                self.assertNotEqual(err.getvalue(), "build_pact_code_map: docs/pact_code_map.md is missing\n")
+                self.assertNotEqual(err.getvalue(), "build_pact_code_map: docs/pact_code_map.md is stale; "
+                                    "run python docs/build_pact_code_map.py\n")
+
+    def test_reverse_publication_preserves_legacy_bytes_and_existing_mode(self):
+        texts = ("", "plain", "last newline\n", "line one\nline two\n",
+                 "\N{SECTION SIGN} \N{GREEK CAPITAL LETTER OMEGA} \N{CJK UNIFIED IDEOGRAPH-4E2D}\n",
+                 "existing CRLF\r\nplus LF\n")
+        for existing in (True, False):
+            with self.subTest(existing=existing), self.fixture():
+                target = (self.root / "docs/pact_code_map.md").resolve()
+                other = self.root / "docs/claim_matrix.md"
+                legacy = self.parent / "legacy-text-output"
+                for text in texts:
+                    with self.subTest(text=text):
+                        if target.exists():
+                            target.unlink()
+                        if existing:
+                            target.write_bytes(self.sentinels[self.root / "docs/pact_code_map.md"])
+                            target.chmod(0o640 if os.name != "nt" else 0o666)
+                        old_mode = stat.S_IMODE(target.stat().st_mode) if existing else None
+                        legacy.write_text(text, encoding="utf-8")
+                        expected = legacy.read_bytes()
+                        members = set(target.parent.iterdir()) | {target}
+                        out, err = StringIO(), StringIO()
+                        with patch.object(reverse, "__file__", str(self.root / "docs/build_pact_code_map.py")), \
+                                patch.object(reverse, "build", return_value=text), \
+                                redirect_stdout(out), redirect_stderr(err):
+                            code = reverse.main([])
+                        self.assertEqual((code, err.getvalue()), (0, ""))
+                        self.assertEqual(out.getvalue(), f"[pact-code-map] wrote {target}\n")
+                        self.assertEqual(target.read_bytes(), expected)
+                        if existing:
+                            self.assertEqual(stat.S_IMODE(target.stat().st_mode), old_mode)
+                        self.assertEqual(set(target.parent.iterdir()), members)
+                        self.assertEqual(other.read_bytes(), self.sentinels[other])
+
+    def test_reverse_partial_write_preserves_existing_or_absent_output(self):
+        real_fdopen, real_write = os.fdopen, Path.write_text
+        for existing in (True, False):
+            with self.subTest(existing=existing), self.fixture():
+                target = (self.root / "docs/pact_code_map.md").resolve()
+                if not existing:
+                    target.unlink()
+                members = set(target.parent.iterdir())
+                touched = []
+                primary = "owned-partial-write-failure"
+
+                class PartialStream:
+                    def __init__(self, stream):
+                        self.stream = stream
+                    def __getattr__(self, name):
+                        return getattr(self.stream, name)
+                    def __enter__(self):
+                        return self
+                    def __exit__(self, *args):
+                        self.close()
+                    def write(self, text):
+                        touched.append("temporary")
+                        self.stream.write(text[:7])
+                        self.stream.flush()
+                        raise OSError(primary)
+
+                def fdopen(*args, **kwargs):
+                    return PartialStream(real_fdopen(*args, **kwargs))
+
+                def direct_write(path, text, *args, **kwargs):
+                    if path == target:
+                        touched.append("destination")
+                        real_write(path, text[:7], *args, **kwargs)
+                        raise OSError(primary)
+                    return real_write(path, text, *args, **kwargs)
+
+                out, err, escaped = StringIO(), StringIO(), None
+                with patch.object(reverse, "__file__", str(self.root / "docs/build_pact_code_map.py")), \
+                        patch.object(reverse, "build", return_value="new partial content \N{SECTION SIGN}\n"), \
+                        patch.object(os, "fdopen", fdopen), patch.object(Path, "write_text", direct_write), \
+                        redirect_stdout(out), redirect_stderr(err):
+                    try:
+                        code = reverse.main([])
+                    except Exception as exc:
+                        escaped, code = exc, None
+                self.assertEqual(target.read_bytes() if target.exists() else None,
+                                 self.sentinels[self.root / "docs/pact_code_map.md"] if existing else None)
+                self.assertEqual(set(target.parent.iterdir()), members)
+                self.assertEqual((self.root / "docs/claim_matrix.md").read_bytes(),
+                                 self.sentinels[self.root / "docs/claim_matrix.md"])
+                self.assertIsNone(escaped, repr(escaped))
+                self.assertEqual(touched, ["temporary"])
+                self.assertEqual((code, out.getvalue(), err.getvalue()),
+                                 (1, "", "build_pact_code_map: " + primary + "\n"))
+
+    def test_reverse_prepublication_stream_and_replace_failures_preserve_output(self):
+        real_fdopen, real_fsync, real_replace = os.fdopen, os.fsync, os.replace
+        for stage in ("flush", "fsync", "close", "replace"):
+            for existing in (True, False):
+                with self.subTest(stage=stage, existing=existing), self.fixture():
+                    target = (self.root / "docs/pact_code_map.md").resolve()
+                    if not existing:
+                        target.unlink()
+                    members = set(target.parent.iterdir())
+                    primary = "owned-" + stage + "-failure"
+                    reached = []
+
+                    class FaultStream:
+                        def __init__(self, stream):
+                            self.stream = stream
+                        def __getattr__(self, name):
+                            return getattr(self.stream, name)
+                        def __enter__(self):
+                            return self
+                        def __exit__(self, *args):
+                            self.close()
+                        def flush(self):
+                            if stage == "flush":
+                                reached.append(stage)
+                                raise OSError(primary)
+                            return self.stream.flush()
+                        def close(self):
+                            self.stream.close()
+                            if stage == "close" and not reached:
+                                reached.append(stage)
+                                raise OSError(primary)
+
+                    def fdopen(*args, **kwargs):
+                        return FaultStream(real_fdopen(*args, **kwargs))
+
+                    def fsync(fd):
+                        if stage == "fsync":
+                            reached.append(stage)
+                            raise OSError(primary)
+                        return real_fsync(fd)
+
+                    def replace(source, destination):
+                        if stage == "replace":
+                            reached.append(stage)
+                            raise OSError(primary)
+                        return real_replace(source, destination)
+
+                    out, err, escaped = StringIO(), StringIO(), None
+                    with patch.object(reverse, "__file__", str(self.root / "docs/build_pact_code_map.py")), \
+                            patch.object(reverse, "build", return_value="new output\n"), \
+                            patch.object(os, "fdopen", fdopen), patch.object(os, "fsync", fsync), \
+                            patch.object(os, "replace", replace), redirect_stdout(out), redirect_stderr(err):
+                        try:
+                            code = reverse.main([])
+                        except Exception as exc:
+                            escaped, code = exc, None
+                    self.assertEqual(target.read_bytes() if target.exists() else None,
+                                     self.sentinels[self.root / "docs/pact_code_map.md"] if existing else None)
+                    self.assertEqual(set(target.parent.iterdir()), members)
+                    self.assertEqual((self.root / "docs/claim_matrix.md").read_bytes(),
+                                     self.sentinels[self.root / "docs/claim_matrix.md"])
+                    self.assertIsNone(escaped, repr(escaped))
+                    self.assertEqual(reached, [stage])
+                    self.assertEqual((code, out.getvalue(), err.getvalue()),
+                                     (1, "", "build_pact_code_map: " + primary + "\n"))
+
+    def test_reverse_mode_failures_preserve_output_and_missing_output_skips_chmod(self):
+        real_stat = Path.stat
+        for stage, existing in (("stat", True), ("stat", False), ("chmod", True), ("chmod", False)):
+            with self.subTest(stage=stage, existing=existing), self.fixture():
+                target = (self.root / "docs/pact_code_map.md").resolve()
+                if not existing:
+                    target.unlink()
+                members = set(target.parent.iterdir())
+                primary = "owned-" + stage + "-failure"
+
+                def mode_stat(path, *args, **kwargs):
+                    if stage == "stat" and path == target:
+                        raise OSError(primary)
+                    return real_stat(path, *args, **kwargs)
+
+                out, err, escaped = StringIO(), StringIO(), None
+                with patch.object(reverse, "__file__", str(self.root / "docs/build_pact_code_map.py")), \
+                        patch.object(reverse, "build", return_value="new output\n"), \
+                        patch.object(Path, "stat", mode_stat), \
+                        patch.object(os, "chmod", side_effect=OSError(primary)) as chmod, \
+                        redirect_stdout(out), redirect_stderr(err):
+                    try:
+                        code = reverse.main([])
+                    except Exception as exc:
+                        escaped, code = exc, None
+                self.assertIsNone(escaped, repr(escaped))
+                if stage == "chmod" and not existing:
+                    self.assertEqual((code, err.getvalue()), (0, ""))
+                    self.assertEqual(target.read_bytes(), "new output\n".replace("\n", os.linesep).encode("utf-8"))
+                    self.assertEqual(out.getvalue(), f"[pact-code-map] wrote {target}\n")
+                    self.assertEqual(set(target.parent.iterdir()), members | {target})
+                    chmod.assert_not_called()
+                else:
+                    self.assertEqual(target.read_bytes() if target.exists() else None,
+                                     self.sentinels[self.root / "docs/pact_code_map.md"] if existing else None)
+                    self.assertEqual(set(target.parent.iterdir()), members)
+                    self.assertEqual((code, out.getvalue(), err.getvalue()),
+                                     (1, "", "build_pact_code_map: " + primary + "\n"))
+                    if stage == "chmod":
+                        chmod.assert_called_once()
+                    else:
+                        chmod.assert_not_called()
+                self.assertEqual((self.root / "docs/claim_matrix.md").read_bytes(),
+                                 self.sentinels[self.root / "docs/claim_matrix.md"])
+
+    def test_reverse_temp_creation_and_fdopen_failures_release_owned_resources(self):
+        real_mkstemp = tempfile.mkstemp
+        for stage in ("mkstemp", "fdopen"):
+            for existing in (True, False):
+                with self.subTest(stage=stage, existing=existing), self.fixture():
+                    target = (self.root / "docs/pact_code_map.md").resolve()
+                    if not existing:
+                        target.unlink()
+                    members = set(target.parent.iterdir())
+                    primary = "owned-" + stage + "-failure"
+                    created = []
+
+                    def create(*args, **kwargs):
+                        if stage == "mkstemp":
+                            raise OSError(primary)
+                        result = real_mkstemp(*args, **kwargs)
+                        created.append(result)
+                        return result
+
+                    out, err, escaped = StringIO(), StringIO(), None
+                    with patch.object(reverse, "__file__", str(self.root / "docs/build_pact_code_map.py")), \
+                            patch.object(reverse, "build", return_value="new output\n"), \
+                            patch.object(tempfile, "mkstemp", create), \
+                            patch.object(os, "fdopen", side_effect=OSError(primary)) as fdopen, \
+                            redirect_stdout(out), redirect_stderr(err):
+                        try:
+                            code = reverse.main([])
+                        except Exception as exc:
+                            escaped, code = exc, None
+                    self.assertEqual(target.read_bytes() if target.exists() else None,
+                                     self.sentinels[self.root / "docs/pact_code_map.md"] if existing else None)
+                    self.assertEqual(set(target.parent.iterdir()), members)
+                    self.assertEqual((self.root / "docs/claim_matrix.md").read_bytes(),
+                                     self.sentinels[self.root / "docs/claim_matrix.md"])
+                    self.assertIsNone(escaped, repr(escaped))
+                    self.assertEqual((code, out.getvalue(), err.getvalue()),
+                                     (1, "", "build_pact_code_map: " + primary + "\n"))
+                    if stage == "fdopen":
+                        fdopen.assert_called_once()
+                        self.assertEqual(len(created), 1)
+                        with self.assertRaises(OSError) as closed:
+                            os.fstat(created[0][0])
+                        self.assertEqual(closed.exception.errno, errno.EBADF)
+                    else:
+                        fdopen.assert_not_called()
+                        self.assertEqual(created, [])
+
+    def test_reverse_unlink_failure_keeps_primary_error_and_names_retained_temp(self):
+        real_mkstemp, real_unlink = tempfile.mkstemp, Path.unlink
+        for existing in (True, False):
+            with self.subTest(existing=existing), self.fixture():
+                target = (self.root / "docs/pact_code_map.md").resolve()
+                if not existing:
+                    target.unlink()
+                members = set(target.parent.iterdir())
+                created = []
+                primary, secondary = "owned-replace-primary", "owned-unlink-secondary"
+
+                def create(*args, **kwargs):
+                    result = real_mkstemp(*args, **kwargs)
+                    created.append((result[0], Path(result[1])))
+                    return result
+
+                def unlink(path, *args, **kwargs):
+                    if created and path == created[0][1]:
+                        raise OSError(secondary)
+                    return real_unlink(path, *args, **kwargs)
+
+                out, err, escaped = StringIO(), StringIO(), None
+                with patch.object(reverse, "__file__", str(self.root / "docs/build_pact_code_map.py")), \
+                        patch.object(reverse, "build", return_value="new output\n"), \
+                        patch.object(tempfile, "mkstemp", create), \
+                        patch.object(os, "replace", side_effect=OSError(primary)), \
+                        patch.object(Path, "unlink", unlink), redirect_stdout(out), redirect_stderr(err):
+                    try:
+                        code = reverse.main([])
+                    except Exception as exc:
+                        escaped, code = exc, None
+                self.assertEqual(target.read_bytes() if target.exists() else None,
+                                 self.sentinels[self.root / "docs/pact_code_map.md"] if existing else None)
+                self.assertIsNone(escaped, repr(escaped))
+                self.assertEqual((code, out.getvalue()), (1, ""))
+                self.assertEqual(len(created), 1)
+                retained = created[0][1]
+                self.assertEqual(set(target.parent.iterdir()), members | {retained})
+                self.assertEqual(retained.read_bytes(), "new output\n".replace("\n", os.linesep).encode("utf-8"))
+                lines = err.getvalue().splitlines()
+                self.assertEqual(lines[0], "build_pact_code_map: " + primary)
+                self.assertTrue(all(line.startswith("build_pact_code_map: ") for line in lines), lines)
+                self.assertIn(secondary, "\n".join(lines[1:]))
+                self.assertIn(str(retained), "\n".join(lines[1:]))
+                with self.assertRaises(OSError) as closed:
+                    os.fstat(created[0][0])
+                self.assertEqual(closed.exception.errno, errno.EBADF)
+                self.assertEqual((self.root / "docs/claim_matrix.md").read_bytes(),
+                                 self.sentinels[self.root / "docs/claim_matrix.md"])
+
+    def test_reverse_close_failure_does_not_mask_partial_write_error(self):
+        real_fdopen, real_write = os.fdopen, Path.write_text
+        for existing in (True, False):
+            with self.subTest(existing=existing), self.fixture():
+                target = (self.root / "docs/pact_code_map.md").resolve()
+                if not existing:
+                    target.unlink()
+                members = set(target.parent.iterdir())
+                primary, secondary = "owned-write-primary", "owned-close-secondary"
+                closed_streams = []
+
+                class FaultStream:
+                    def __init__(self, stream):
+                        self.stream = stream
+                    def __getattr__(self, name):
+                        return getattr(self.stream, name)
+                    def __enter__(self):
+                        return self
+                    def __exit__(self, *args):
+                        self.close()
+                    def write(self, text):
+                        self.stream.write(text[:4])
+                        self.stream.flush()
+                        raise OSError(primary)
+                    def close(self):
+                        self.stream.close()
+                        closed_streams.append(self.stream.closed)
+                        raise OSError(secondary)
+
+                def fdopen(*args, **kwargs):
+                    return FaultStream(real_fdopen(*args, **kwargs))
+
+                def direct_write(path, text, *args, **kwargs):
+                    if path == target:
+                        real_write(path, text[:4], *args, **kwargs)
+                        raise OSError(primary)
+                    return real_write(path, text, *args, **kwargs)
+
+                out, err, escaped = StringIO(), StringIO(), None
+                with patch.object(reverse, "__file__", str(self.root / "docs/build_pact_code_map.py")), \
+                        patch.object(reverse, "build", return_value="new output\n"), \
+                        patch.object(os, "fdopen", fdopen), patch.object(Path, "write_text", direct_write), \
+                        redirect_stdout(out), redirect_stderr(err):
+                    try:
+                        code = reverse.main([])
+                    except Exception as exc:
+                        escaped, code = exc, None
+                self.assertEqual(target.read_bytes() if target.exists() else None,
+                                 self.sentinels[self.root / "docs/pact_code_map.md"] if existing else None)
+                self.assertEqual(set(target.parent.iterdir()), members)
+                self.assertIsNone(escaped, repr(escaped))
+                self.assertEqual((code, out.getvalue()), (1, ""))
+                self.assertTrue(closed_streams and all(closed_streams), closed_streams)
+                lines = err.getvalue().splitlines()
+                self.assertEqual(lines[0], "build_pact_code_map: " + primary)
+                self.assertIn(secondary, "\n".join(lines[1:]))
+                self.assertTrue(all(line.startswith("build_pact_code_map: ") for line in lines), lines)
+                self.assertEqual((self.root / "docs/claim_matrix.md").read_bytes(),
+                                 self.sentinels[self.root / "docs/claim_matrix.md"])
+
+    def test_reverse_raw_fd_close_failure_does_not_mask_fdopen_error(self):
+        real_mkstemp, real_close = tempfile.mkstemp, os.close
+        with self.fixture():
+            target = (self.root / "docs/pact_code_map.md").resolve()
+            members = set(target.parent.iterdir())
+            created, closed = [], []
+            primary, secondary = "owned-fdopen-primary", "owned-fd-close-secondary"
+
+            def create(*args, **kwargs):
+                result = real_mkstemp(*args, **kwargs)
+                created.append(result)
+                return result
+
+            def close(fd):
+                # Close the real resource, then simulate a reported close failure.
+                # This exercises diagnostic precedence without leaking a test fd.
+                real_close(fd)
+                if created and fd == created[0][0]:
+                    closed.append(fd)
+                    raise OSError(secondary)
+
+            out, err, escaped = StringIO(), StringIO(), None
+            with patch.object(reverse, "__file__", str(self.root / "docs/build_pact_code_map.py")), \
+                    patch.object(reverse, "build", return_value="new output\n"), \
+                    patch.object(tempfile, "mkstemp", create), \
+                    patch.object(os, "fdopen", side_effect=OSError(primary)), \
+                    patch.object(os, "close", close), redirect_stdout(out), redirect_stderr(err):
+                try:
+                    code = reverse.main([])
+                except Exception as exc:
+                    escaped, code = exc, None
+            self.preserved_outputs()
+            self.assertEqual(set(target.parent.iterdir()), members)
+            self.assertIsNone(escaped, repr(escaped))
+            self.assertEqual((code, out.getvalue()), (1, ""))
+            self.assertEqual(len(created), 1)
+            self.assertEqual(closed, [created[0][0]])
+            with self.assertRaises(OSError) as released:
+                os.fstat(created[0][0])
+            self.assertEqual(released.exception.errno, errno.EBADF)
+            lines = err.getvalue().splitlines()
+            self.assertEqual(lines[0], "build_pact_code_map: " + primary)
+            self.assertIn(secondary, "\n".join(lines[1:]))
+            self.assertTrue(all(line.startswith("build_pact_code_map: ") for line in lines), lines)
+
+    def test_reverse_publication_uses_closed_sibling_then_stops_cleanup(self):
+        real_mkstemp, real_fdopen, real_replace, real_unlink = tempfile.mkstemp, os.fdopen, os.replace, Path.unlink
+        for existing in (True, False):
+            with self.subTest(existing=existing), self.fixture():
+                target = (self.root / "docs/pact_code_map.md").resolve()
+                if not existing:
+                    target.unlink()
+                members = set(target.parent.iterdir()) | {target}
+                created, streams, publication, unlinks = [], [], [], []
+
+                def create(*args, **kwargs):
+                    result = real_mkstemp(*args, **kwargs)
+                    created.append((result[0], Path(result[1])))
+                    return result
+
+                def fdopen(*args, **kwargs):
+                    stream = real_fdopen(*args, **kwargs)
+                    streams.append(stream)
+                    return stream
+
+                def replace(source, destination):
+                    publication.append({
+                        "source": Path(source), "destination": Path(destination),
+                        "closed": bool(streams) and streams[0].closed,
+                        "old": target.read_bytes() if target.exists() else None,
+                    })
+                    return real_replace(source, destination)
+
+                def unlink(path, *args, **kwargs):
+                    if created and path == created[0][1]:
+                        unlinks.append(path)
+                        if publication:
+                            raise AssertionError("cleanup after publication is forbidden")
+                    return real_unlink(path, *args, **kwargs)
+
+                out, err = StringIO(), StringIO()
+                with patch.object(reverse, "__file__", str(self.root / "docs/build_pact_code_map.py")), \
+                        patch.object(reverse, "build", return_value="new output\n"), \
+                        patch.object(tempfile, "mkstemp", create), patch.object(os, "fdopen", fdopen), \
+                        patch.object(os, "replace", replace), patch.object(Path, "unlink", unlink), \
+                        redirect_stdout(out), redirect_stderr(err):
+                    code = reverse.main([])
+                self.assertEqual((code, err.getvalue()), (0, ""))
+                self.assertEqual(out.getvalue(), f"[pact-code-map] wrote {target}\n")
+                self.assertEqual(len(created), 1)
+                self.assertEqual(len(publication), 1)
+                self.assertEqual(created[0][1].parent, target.parent)
+                self.assertTrue(created[0][1].name.startswith("." + target.name + ".pact-code-map-"))
+                self.assertNotEqual(created[0][1], target)
+                self.assertEqual(publication[0], {
+                    "source": created[0][1], "destination": target, "closed": True,
+                    "old": self.sentinels[self.root / "docs/pact_code_map.md"] if existing else None,
+                })
+                self.assertEqual(unlinks, [])
+                self.assertEqual(set(target.parent.iterdir()), members)
+                self.assertEqual(target.read_bytes(), "new output\n".replace("\n", os.linesep).encode("utf-8"))
+                self.assertEqual((self.root / "docs/claim_matrix.md").read_bytes(),
+                                 self.sentinels[self.root / "docs/claim_matrix.md"])
+
+
 if __name__ == "__main__":
     unittest.main()
