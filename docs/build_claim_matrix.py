@@ -19,6 +19,7 @@ as proof. Semantic fidelity (does the test body actually prove the cited
 clause?) remains a REVIEW responsibility; no gate can verify it.
 """
 from __future__ import annotations
+import argparse
 import ast
 import re
 import sys
@@ -209,6 +210,13 @@ def render_markdown(matrix: dict, total_tests: int, total_claims: int) -> str:
 
 def main() -> int:
     configure_utf8_output()
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
+        allow_abbrev=False,
+    )
+    parser.add_argument("--stdout", action="store_true", help="print the matrix instead of writing it")
+    parser.add_argument("--floor-only", action="store_true", help="verify the fidelity floor without rendering")
+    args = parser.parse_args()
     repo_root = Path(__file__).resolve().parent.parent
     tests_dir = repo_root / "tests"
     try:
@@ -232,7 +240,7 @@ def main() -> int:
         for violation in floor_violations:
             print(f"  - {violation}", file=sys.stderr)
         return 1
-    if "--floor-only" in sys.argv:
+    if args.floor_only:
         print(f"[claim-matrix] fidelity floor passed across {len(test_files)} modules")
         return 0
 
@@ -246,7 +254,7 @@ def main() -> int:
     matrix = build_matrix(claims)
     md = render_markdown(matrix, total_tests, len(claims))
 
-    if "--stdout" in sys.argv:
+    if args.stdout:
         print(md)
         return 0
 

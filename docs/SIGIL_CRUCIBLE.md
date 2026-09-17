@@ -156,12 +156,13 @@ relationships are distinguished from proposed placement.
 The current harness rows, tooling-import edge, initialization and path consumers
 below use the [proof-support candidate source hashes](#candidate-source-binding).
 The combined-hygiene child-command anchor was revalidated for the 2026-09-15
-input-selection candidate; its child-command list is unchanged. Other map anchors
-and the preserved registration appendix retain their `f2ef219` binding. The
+input-selection candidate; its child-command list is unchanged. The claim-selector
+anchor now uses the [argument-candidate source binding](#standalone-proof-identities-and-subjects).
+Other map anchors and the preserved registration appendix retain their `f2ef219` binding. The
 appendix is a dated baseline, including its pre-separation tooling line numbers.
 
 The implementation and its independent static review reconciled all 181 names.
-This documentation correction changes no source and reuses that reconciliation.
+The later argument slice changes no source under `tests/` and reuses that reconciliation.
 Revalidate affected current-map anchors after any referenced source changes.
 Changes under `tests/`, including `tests/test_all.py`, also require fresh static
 name reconciliation.
@@ -319,7 +320,7 @@ membership and package-file counts above do not remeasure execution or coverage.
 | [Runtime.verify_pre_emission_boot_chain](../src/rss/core/runtime.py#L618) | rss.audit.verify.verify_trace_file | Runtime-to-shared-verifier dependency. It refines the baseline whole-file operator label. |
 | [canonical registry imports](../tests/test_all.py#L66) | test_docs_tooling | Four tooling proofs participate in aggregate acceptance. |
 | [tooling proof module](../tests/test_docs_tooling.py#L36) | proof_support plus explicit standard-library imports | The direct tooling-to-test_support import and its kernel/reference import reach have been removed. The shared aggregate still runs both tooling and kernel proofs. |
-| [claim selector](../docs/build_claim_matrix.py#L217) | tests/test_*.py at two path components | Nested test folders would drop their claim inputs under the current predicate. |
+| [claim selector](../docs/build_claim_matrix.py#L225) | tests/test_*.py at two path components | Nested test folders would drop their claim inputs under the current predicate. |
 | [demo source-reading proof](../tests/test_adversarial_scenarios.py#L1118) | three fixed demo_llm.py candidates | Move planning must preserve or deliberately reconcile this source-text check. |
 | [pytest path shim](../tests/conftest.py#L41), [direct-run path shim](../tests/test_support.py#L47) | sibling src directory | Pytest and direct invocation have distinct setup paths. Keep both in any future import migration. |
 | [CLI source loader](../tests/test_cli.py#L38), [tool source loaders](../tests/test_docs_tooling.py#L39) | src/main.py and named docs/*.py paths | importlib loads by filesystem path; module import searches alone are incomplete. |
@@ -579,6 +580,19 @@ Independent static implementation review returned PASS; the human accepted the
 slice and authorized its local checkpoint. The reviewer checked records without
 rerunning tests. Earlier 41-test evidence retains its original scope.
 
+**Claim-argument upkeep, 2026-09-16.** The
+[argument implementation](TESTING.md#build-03-claim-matrix-argument-contract)
+adds four standalone methods and the claim-generator dispatch identity. The
+design received independent PASS; its two Low findings are incorporated.
+Independent static implementation review returned PASS with one Low diagnostic
+finding. The authorized correction tightens three test bodies and refreshes
+shifted anchors below; the generator and 49 identities remain unchanged.
+Fresh long/8.3 runs are builder evidence; the earlier supported-mode comparison
+is reused without rerunning it. The scoped correction review returned PASS
+with no findings; the human accepted the slice and authorized its
+[local checkpoint](roadmap/ACCEPTANCE_HISTORY.md#2026-09-17-build-03-claim-argument-local-checkpoint).
+Earlier checkpoints and proof records retain their scope.
+
 ### Identification rule for additions and changes
 
 At the existing detail owner, record the task ID, established component name,
@@ -600,7 +614,7 @@ and fixture imports do not determine ownership or justify moving code.
 ### Current code and harness identities
 
 Each identity below has the prefix `BUILD-03::`. Paths and qualified symbols
-refer to the current source hashes below, including the check-only candidate.
+refer to the current source hashes below, including the check-only and argument candidates.
 TESTING retains detailed command effects.
 Grouped rows list the union of reachable effects; each linked qualified symbol
 keeps its own identity. Current input compatibility and execution evidence stay
@@ -612,6 +626,7 @@ with TESTING; earlier map observations remain bound to their recorded date.
 | [build_input_scope._relative_input](build_input_scope.py#L62) | tooling | not applicable | memory | Execution within an approved scan | Rejects malformed index/candidate path shapes; it does not authenticate content. |
 | [build_input_scope._require_indexed_candidates](build_input_scope.py#L71) | tooling | not applicable | memory, file-read; metadata only | Approved candidate-path inspection within the validated checkout | Non-following metadata checks refuse existing untracked fixed candidates; relies on the caller's validated root. |
 | [build_input_scope.configure_utf8_output](build_input_scope.py#L20) | tooling | not applicable | process-state, console | Permission to configure the invoking CLI's streams | Reconfigures available streams; no runtime authority check. |
+| [build_claim_matrix.main](build_claim_matrix.py#L211) | tooling | not applicable | memory, file-read, child-process, process-state, console; file-write in default mode | Approved checkout inspection and Git invocation; approval for default output writes | Argument parsing exits before generator selection/render/write on help or usage errors; existing input checks remain. No caller authentication or host confinement. |
 | [resolve_pact_sections.sweep](resolve_pact_sections.py#L281), with [tracked_files](resolve_pact_sections.py#L163), [_pact_paths](resolve_pact_sections.py#L170) and [resolve_pact_sections.pact_identifiers](resolve_pact_sections.py#L203) | tooling | not applicable | memory, file-read, child-process | Scoped permission to scan the approved checkout | Shared selector and same-checkout Pact checks; no source authentication or host containment. |
 | [resolve_pact_sections.main](resolve_pact_sections.py#L364), including [resolve_pact_sections.parse_args](resolve_pact_sections.py#L354) and [write_json](resolve_pact_sections.py#L336) | tooling | not applicable | memory, file-read, child-process, process-state, console; file-write when a JSON path is supplied without check mode | Scan authority plus approval for any requested report write | Check plus JSON refuses before scanning or report creation; report-only writes remain available without output-path confinement. |
 | [check_public_hygiene.public_candidate_files](check_public_hygiene.py#L154), [provenance_name_hygiene_scan](check_public_hygiene.py#L168) and [callsign_leak_scan](check_public_hygiene.py#L233) | tooling | not applicable | memory, file-read, child-process, console | Scoped permission to inspect public inputs | Shared selector and existing filters; scan functions do not authenticate the operator. The separate wrapper [main](check_public_hygiene.py#L269) launches further gates; its effects stay in TESTING. |
@@ -652,7 +667,7 @@ availability limits remain in TESTING; a skip must stay visible in execution
 evidence.
 
 <details>
-<summary>45 named tests: 23 retained, 18 input-candidate additions and 4 check-only additions</summary>
+<summary>49 named tests: 23 retained, 18 input-candidate, 4 check-only and 4 argument additions</summary>
 
 | Method identity suffix / current source | Origin | Tooling proof subject | Additional effects |
 | --- | --- | --- | --- |
@@ -701,22 +716,35 @@ evidence.
 | [test_resolver_check_preserves_verdicts_without_report_effects](test_build_inputs.py#L948) | check-only candidate | resolver: check/default verdicts and input-refusal preservation | child-process, process-state, console |
 | [test_resolver_json_report_mode_remains_explicit](test_build_inputs.py#L978) | check-only candidate | resolver: explicit report schema, parent creation and status | child-process, process-state, console |
 | [test_resolver_check_conflict_clis_preserve_owned_targets](test_build_inputs.py#L1000) | check-only candidate | copied resolver CLIs: conflict refusal, UTF-8 and target preservation | child-process, process-state, console |
+| [test_claim_help_exits_before_input_selection](test_build_inputs.py#L1044) | argument candidate | claim generator: help exits before selection, floor, rendering or writing | child-process, process-state, console |
+| [test_claim_invalid_arguments_refuse_before_input_selection](test_build_inputs.py#L1068) | argument candidate | claim generator: strict usage refusal, invalid-root precedence and help/error ordering | child-process, process-state, console |
+| [test_claim_supported_modes_preserve_dispatch](test_build_inputs.py#L1113) | argument candidate | claim generator: fixed expected matrix, verdicts, precedence and resolved destination | child-process, process-state, console |
+| [test_claim_argument_clis_preserve_owned_outputs](test_build_inputs.py#L1169) | argument candidate | copied claim CLIs: UTF-8 help/refusals, non-Git inputs and existing/absent targets | child-process, console |
 
 </details>
 
-Static membership was reconciled by name against all 45 methods in this class:
-no missing, duplicate or extra rows. The earlier snapshot supplies the 23/18
-input-candidate split; four check-only methods are appended. All 41 existing
-definition lines remain unchanged, including the one method with the flag-removal
-edit. All source-line anchors in this supplement bind to these current
+Static membership was reconciled by name against all 49 methods in this class:
+no missing, duplicate or extra rows. The earlier 23/18 input-candidate split
+and four check-only rows remain; four argument methods are appended. All 45
+pre-existing method bodies, helper bodies and definition lines are unchanged
+by this slice. Current source-line anchors in this supplement bind to these
 working-file bytes (SHA-256):
 
 | Source | SHA-256 |
 | --- | --- |
-| [test_build_inputs.py](test_build_inputs.py) | `2d978dea1153b8084d5479dfeb413c71cb990326f8f762b8baadd87f1d357e29` |
+| [test_build_inputs.py](test_build_inputs.py) | `c7e026920fd8303f30e7b22ebe9ec29009933885652a508f687cfe9c00f08b8c` |
+| [build_claim_matrix.py](build_claim_matrix.py) | `b435b6c56176599b8b06ce25970f10ada5a1418f5bfc99ede36b908b3c8c0ae5` |
 | [build_input_scope.py](build_input_scope.py) | `529922e288e32e54bf9ca35129694e0f78cb7cac426a6bd066920a6b8bcd81a7` |
 | [resolve_pact_sections.py](resolve_pact_sections.py) | `0e63eab1725e3b517520d899d1a644bb4815c9f5ace97362be9dddfbe30c31af` |
 | [check_public_hygiene.py](check_public_hygiene.py) | `891fcf9af53f303c1b3a0741f94bdc8e82f31aadfc96f719303d746a6cdc2427` |
+
+The [argument execution record](TESTING.md#build-03-claim-matrix-argument-contract)
+records fresh correction runs of the same 49 methods and 30 expected old-generator
+refusal failures. The earlier seven old/new mode comparisons are reused evidence.
+The implementation and diagnostic correction received separate scoped static
+PASS reviews and were locally checkpointed after human disposition. Execution
+remains builder evidence, separate from canonical counts; no proof was rerun
+for this checkpoint.
 
 Recheck changed anchors and reconcile names when the suite changes.
 This covers the named standalone suite and affected input-tool units, not every

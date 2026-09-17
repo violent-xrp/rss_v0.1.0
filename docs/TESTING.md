@@ -774,6 +774,176 @@ No further implementation is selected. Historical public wording, broader
 execution/resource controls and full-gate acceptance remain open; this checkpoint
 closes neither BUILD-03 nor DOCS-04.
 
+### BUILD-03 Claim-Matrix Argument Contract
+
+**Implementation and diagnostic correction independently reviewed PASS; locally checkpointed after human disposition, 2026-09-17.**
+The preceding design received independent PASS with two Low findings; the human
+authorized this two-file implementation and bounded fixture proofs. The
+[resolver check-only checkpoint](roadmap/ACCEPTANCE_HISTORY.md#2026-09-16-build-03-resolver-check-only-local-checkpoint)
+remains separate. [ROADMAP](../ROADMAP.md#current-build-thread) owns disposition.
+
+The independent static implementation review found one Low proof-precision
+issue: usage-banner tokens could satisfy some refusal diagnostic checks.
+The authorized correction compares the final argparse error line exactly and
+binds the help test to its owned fixture. Only three argument-test bodies change;
+the generator, 49-method inventory, other 46 bodies and all helpers are unchanged.
+The reviewer inspected earlier execution records without rerunning tests.
+The scoped correction review returned PASS with no findings. The human accepted
+both reviewed slices and authorized their
+[local checkpoint](roadmap/ACCEPTANCE_HISTORY.md#2026-09-17-build-03-claim-argument-local-checkpoint).
+
+#### Argument boundary and preserved modes
+
+Previously, raw argument membership ignored unsupported options; with valid
+inputs, `--help` or `--check` could reach default writing. The
+[main entrypoint](build_claim_matrix.py#L211) now parses immediately
+after UTF-8 stream setup and before its repository-root derivation, selection,
+floor checking, selected-source reads, rendering or writing. The parser disables
+long-option abbreviation. `RawDescriptionHelpFormatter` preserves the docstring's
+indented Usage block. `main()` keeps its no-argument interface.
+
+| Arguments | Result | Generator work after parsing |
+| --- | --- | --- |
+| No flags | Existing write mode, operational exit 0/1 | Select/check inputs; write the existing matrix destination on success. |
+| `--stdout` | Existing Markdown stdout, exit 0/1 | Same selection/floor behavior; no matrix write. |
+| `--floor-only` | Existing floor verdict, exit 0/1 | Select/check the floor; no rendering or matrix write. |
+| Both supported flags, either order | Floor-only wins, exit 0/1 | Same floor behavior; repeating either boolean remains benign. |
+| `-h` or `--help` alone | Help on stdout, empty stderr, `SystemExit(0)` | None. |
+| Unsupported option, positional or attached boolean value, without help | Diagnostic/usage on stderr, empty stdout, `SystemExit(2)` | None. |
+
+The existing [floor-first](build_claim_matrix.py#L243) and
+[stdout](build_claim_matrix.py#L257) dispatch order is retained.
+Default output still uses the same [direct write](build_claim_matrix.py#L261).
+Reject `--check`, `--std`, `--flo`, `--stdout=value` and
+`--floor-only=value`, including invalid arguments mixed with a supported mode.
+
+**Design finding L1:** on the recorded Python 3.13.13 interpreter, bare `--`,
+`-- tailtoken` and `-- --stdout` are usage errors, exit 2 before generator work.
+They do not select default write mode. Standard help precedence remains:
+`--unknown --help` exits 0, but `--stdout=value --help` exits 2.
+Existing operational 0/1 results keep their meaning; usage errors add exit 2.
+
+Imports, module-level path resolution, import-path adjustment, regex setup and
+UTF-8 stream configuration precede parsing. This is an argument-dispatch
+boundary, not a process without filesystem effects, caller authentication or
+host confinement. No `--check` freshness mode is introduced.
+
+#### Compatibility and identified proof
+
+The hygiene wrapper's [floor call](check_public_hygiene.py#L281), baseline's
+[no-flag writer](sync_baseline.py#L406) and canonical
+[direct floor proof](../tests/test_docs_tooling.py#L277) retain their interfaces.
+Unsupported arguments becoming errors is intentional. Untracked/external
+callers were not inventoried, and the baseline's fallback behavior is unchanged.
+
+Only `docs/build_claim_matrix.py` and `docs/test_build_inputs.py` change in
+Python: the parser import/main dispatch and four appended standalone methods.
+All 45 pre-existing method bodies, helpers and definition lines are retained;
+selector, reverse generator, resolver and kernel files are unchanged. The claim
+floor and rendering function bodies are unchanged. No generated file or
+canonical registration is changed.
+
+The component is **Sigil Crucible**. Code identity
+`BUILD-03::build_claim_matrix.main` and the four test identities are recorded
+with role, proof subject, multiple effects, required authority and observed
+enforcement at the existing
+[identity owner](SIGIL_CRUCIBLE.md#current-code-and-harness-identities).
+The [standalone table](SIGIL_CRUCIBLE.md#standalone-proof-identities-and-subjects)
+now reconciles all 49 methods by name. Existing rows and historical inventories
+are retained; affected current source anchors and hash bindings are refreshed.
+
+The four methods use the prefix `BUILD-03::test_build_inputs.BuildInputTests.`:
+
+1. [test_claim_help_exits_before_input_selection](test_build_inputs.py#L1044):
+   a valid stdout control precedes both help spellings; exact exit 0, empty
+   stderr, advertised modes/readable help and untouched output sentinels.
+   The module path is bound to the owned fixture before calling the entrypoint.
+   Selection, floor, render and writer tripwires remain uncalled.
+2. [test_claim_invalid_arguments_refuse_before_input_selection](test_build_inputs.py#L1068):
+   14 argument cases on valid and absent fixture roots. Usage cases pin exit 2,
+   empty stdout and the exact final error line, including its program prefix;
+   banner text cannot satisfy the comparison. Expectations distinguish unknown
+   arguments from ignored explicit boolean values on Python 3.13.13. The two
+   help/error combinations pin standard precedence; tripwires and sentinels remain.
+3. [test_claim_supported_modes_preserve_dispatch](test_build_inputs.py#L1113):
+   seven supported-mode combinations assert exact fixed matrix content,
+   stdout's extra print newline, each verdict/exit and native file newlines.
+   Only default mode changes its owned matrix; the reverse-map sentinel stays.
+   The printed destination expectation uses its resolved path under short TEMP.
+4. [test_claim_argument_clis_preserve_owned_outputs](test_build_inputs.py#L1169):
+   copied direct/module CLIs under cp1252, Unicode help/diagnostics, indexed
+   stdout controls, indexed/non-Git roots and existing/absent matrix targets.
+   Both routes agree; parser exits preserve the target state. Usage failures
+   compare the exact final error line, including the bare-terminator diagnostic.
+
+**Design finding L2:** method 3 has self-contained expected fixture text. It
+does not read Git history or a private packet. Its frozen clock accounts for
+the [UTC-minute timestamp](build_claim_matrix.py#L167).
+The separate packet-level compatibility run binds exact old/new generator
+hashes and compares seven supported modes on the same owned fixture.
+The existing [claim_main helper](test_build_inputs.py#L100) remains unchanged;
+new parser-exit and default-write tests capture their own expected effects.
+
+#### Bounded execution evidence and limits
+
+Fresh correction execution with the existing Python 3.13.13 and selected
+PowerShell 7.6.5 recorded 49/49 passes under long and 8.3 TEMP spellings, with
+zero failures, errors or skips in each final run. These are two runs of one
+49-method suite, not 98 distinct tests or additions to canonical assertions.
+Each test process recorded its own TEMP, source hashes, names and outcomes;
+no `rss` module loaded.
+
+The retained old generator also failed the corrected help and invalid-argument
+methods with 30 expected subcase failures, zero errors and zero skips.
+Every failure reached the selection tripwire; no fixture/setup failure supplied
+the negative result. This checks the original argument boundary; it does not
+independently discriminate the corrected diagnostic assertions, which run only
+after parser refusal. The CLI method was not run against the old generator.
+
+The earlier seven old/new supported-mode comparisons remain reused evidence,
+not a fresh run of this correction. They were identical for exit, stdout, stderr
+and matrix bytes with the clock fixed. Both generator hashes and the supported-mode
+test body remain unchanged.
+
+In the original implementation, the first long run passed all 49. Its first
+short run passed 48 and failed one
+new expected-path assertion: the generator prints the resolved long destination,
+while the assertion expected its short spelling. Only that assertion changed;
+the generator stayed byte-identical. Both final TEMP runs use the corrected
+test hash. Initial sources, logs and records remain retained. The outer proof
+wrapper also hit a cp1252 display error after saving the first short result;
+its UTF-8 stream correction affects reporting only, and both versions are kept.
+
+These are builder proofs on the working sources and owned copied fixtures.
+The implementation and correction received separate scoped static PASS reviews;
+neither review included test execution. No proof was rerun for this checkpoint.
+No canonical acceptance, coverage,
+baseline, combined hygiene, live-root generator equivalence or pytest run was
+performed. Canonical 181 functions / 3013 assertions / 0 failures, 92.7% coverage
+and 26 modules remain inherited.
+
+Historical public wording, subprocess/resource bounds, concurrent replacement,
+output confinement/direct-write failure behavior, BUILD-02 cleanup and broader
+RSS Architecture work remain open. This local checkpoint does not establish
+full-gate acceptance or BUILD-03/DOCS-04 closure. Main integration, another
+push and release require separate disposition.
+SITE-01 and BUILD-05 retain their holds.
+
+#### Candidate source binding
+
+The current anchors above bind to the reviewed working-source bytes preserved
+by this local checkpoint, whose parent is `5a401a2`. Unchanged caller anchors
+retain their matching source hashes.
+Revalidate affected anchors after source changes.
+
+| Source | SHA-256 |
+| --- | --- |
+| `docs/build_claim_matrix.py` | `b435b6c56176599b8b06ce25970f10ada5a1418f5bfc99ede36b908b3c8c0ae5` |
+| `docs/test_build_inputs.py` | `c7e026920fd8303f30e7b22ebe9ec29009933885652a508f687cfe9c00f08b8c` |
+| `docs/check_public_hygiene.py` | `891fcf9af53f303c1b3a0741f94bdc8e82f31aadfc96f719303d746a6cdc2427` |
+| `docs/sync_baseline.py` | `4542598cc297d2a3ca89fc79f2a8c52fdbaf459d844f38d9a46677d9228f9f91` |
+| `tests/test_docs_tooling.py` | `88b42d8761394e2938f7dce49fb19a6ba04e749c6c8fee24f398085050de919a` |
+
 ### BUILD-03 Command and Effect Inventory
 
 Original documentation-only slice, source-inspected on 2026-09-12; independent static
@@ -821,7 +991,7 @@ destination. A `--json` flag is not uniformly a file-output option.
 
 | Entrypoint | Invocation and modes | Effects, outputs and exit/cleanup limits |
 | --- | --- | --- |
-| `docs/build_claim_matrix.py` | `python -B docs/build_claim_matrix.py`; `--stdout`; `--floor-only` | Candidate: Git index selection of immediate split-test paths, then live working-source reads; default writes `docs/claim_matrix.md`. UTF-8 stdout/stderr. Floor-only takes precedence, then stdout; both avoid that write. Other flags are not validated: `--help` or `--check` alone still writes. Normal success 0; discovery/missing modules/floor findings 1. Git discovery children, no test execution. |
+| `docs/build_claim_matrix.py` | `python -B docs/build_claim_matrix.py`; `--stdout`; `--floor-only`; `-h/--help` | Candidate: strict argument parsing precedes generator work. Help exits 0; usage errors exit 2, including unsupported `--check`, abbreviations and bare `--` on the recorded interpreter. Imports/stream setup still occur. Valid modes use Git-index selection and live source reads; default writes `docs/claim_matrix.md`. Floor-only precedes stdout; both avoid that write. UTF-8 streams. Operational success 0; input/missing-module/floor findings 1. No test execution or host confinement. |
 | `docs/build_pact_code_map.py` | `python -B docs/build_pact_code_map.py`; `--check`; `--stdout` | Candidate: Git index selects source/Pact inputs, then reads live content; default writes `docs/pact_code_map.md`. UTF-8 stdout/stderr. Check compares only; stdout prints and takes precedence over check. Current 0; input discovery/read or missing/stale check 1. Git discovery children, no proof children. Lower-level parser helpers retain a separate fixture-only directory API. |
 | `docs/build_project_status.py` | `python -B docs/build_project_status.py`; `--check`; `--stdout`; internal `--assume-gates-passed` | Default runs baseline/map children and writes `docs/PROJECT_STATUS.md`; check/stdout suppress that write, not the children. Assumed-green mode skips those children and reads existing docs, not fresh proof. Child failures can be rendered as RED/YELLOW rather than a nonzero generation exit. Own freshness failure 1, caught build/link failure 2. No Git-cleanliness test. |
 | `docs/check_contact_surface.py` | `python -B docs/check_contact_surface.py` | Read-only Git enumeration and tracked-content checks; console output. Pass 0, findings 1; no proof children or intended file writes. |

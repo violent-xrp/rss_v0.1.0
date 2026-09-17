@@ -1041,5 +1041,190 @@ class BuildInputTests(unittest.TestCase):
 
 
 
+    def test_claim_help_exits_before_input_selection(self):
+        with self.fixture():
+            self.assertEqual(self.claim_main("--stdout")[0], 0)
+            for flag in ("-h", "--help"):
+                out, err = StringIO(), StringIO()
+                with self.subTest(flag=flag), \
+                        patch.object(claims, "__file__", str(self.root / "docs/build_claim_matrix.py")), \
+                        patch.object(sys, "argv", ["build_claim_matrix.py", flag]), \
+                        patch.object(claims, "tracked_inputs", side_effect=AssertionError("selection forbidden")) as selector, \
+                        patch.object(claims, "verify_floor", side_effect=AssertionError("floor forbidden")) as floor, \
+                        patch.object(claims, "render_markdown", side_effect=AssertionError("render forbidden")) as renderer, \
+                        patch.object(Path, "write_text", side_effect=AssertionError("write forbidden")) as writer, \
+                        redirect_stdout(out), redirect_stderr(err):
+                    with self.assertRaises(SystemExit) as stopped:
+                        claims.main()
+                    self.assertEqual(stopped.exception.code, 0)
+                    self.assertEqual(err.getvalue(), "")
+                    self.assertIn("--stdout", out.getvalue())
+                    self.assertIn("--floor-only", out.getvalue())
+                    self.assertIn("Usage:\n    python build_claim_matrix.py", out.getvalue())
+                    for boundary in (selector, floor, renderer, writer):
+                        boundary.assert_not_called()
+                    self.preserved_outputs()
+
+    def test_claim_invalid_arguments_refuse_before_input_selection(self):
+        with self.fixture():
+            self.assertEqual(self.claim_main("--floor-only")[0], 0)
+            cases = (
+                (("--unknown",), "unrecognized arguments: --unknown", 2),
+                (("--check",), "unrecognized arguments: --check", 2),
+                (("--std",), "unrecognized arguments: --std", 2),
+                (("--flo",), "unrecognized arguments: --flo", 2),
+                (("tailtoken",), "unrecognized arguments: tailtoken", 2),
+                (("--stdout=value",), "argument --stdout: ignored explicit argument 'value'", 2),
+                (("--floor-only=value",), "argument --floor-only: ignored explicit argument 'value'", 2),
+                (("--stdout", "--unknown"), "unrecognized arguments: --unknown", 2),
+                (("--check", "--floor-only"), "unrecognized arguments: --check", 2),
+                (("--",), "unrecognized arguments: --", 2),
+                (("--", "tailtoken"), "unrecognized arguments: -- tailtoken", 2),
+                (("--", "--stdout"), "unrecognized arguments: -- --stdout", 2),
+                (("--unknown", "--help"), "--stdout", 0),
+                (("--stdout=value", "--help"), "argument --stdout: ignored explicit argument 'value'", 2),
+            )
+            for root in (self.root, self.parent / "absent checkout"):
+                for args, expected_text, expected in cases:
+                    out, err = StringIO(), StringIO()
+                    with self.subTest(root=root, args=args), \
+                            patch.object(claims, "__file__", str(root / "docs/build_claim_matrix.py")), \
+                            patch.object(sys, "argv", ["build_claim_matrix.py", *args]), \
+                            patch.object(claims, "tracked_inputs", side_effect=AssertionError("selection forbidden")) as selector, \
+                            patch.object(claims, "verify_floor", side_effect=AssertionError("floor forbidden")) as floor, \
+                            patch.object(claims, "render_markdown", side_effect=AssertionError("render forbidden")) as renderer, \
+                            patch.object(Path, "write_text", side_effect=AssertionError("write forbidden")) as writer, \
+                            redirect_stdout(out), redirect_stderr(err):
+                        with self.assertRaises(SystemExit) as stopped:
+                            claims.main()
+                        self.assertEqual(stopped.exception.code, expected)
+                        if expected == 2:
+                            self.assertEqual(out.getvalue(), "")
+                            self.assertIn("usage:", err.getvalue())
+                            self.assertEqual(err.getvalue().splitlines()[-1],
+                                             f"build_claim_matrix.py: error: {expected_text}")
+                        else:
+                            self.assertEqual(err.getvalue(), "")
+                            self.assertIn(expected_text, out.getvalue())
+                        for boundary in (selector, floor, renderer, writer):
+                            boundary.assert_not_called()
+                        self.preserved_outputs()
+
+    def test_claim_supported_modes_preserve_dispatch(self):
+        from datetime import datetime, UTC
+
+        # Fixed fixture expectations are independent of Git history or packets.
+        expected = (
+            "# RSS Claim Traceability Matrix\n\n"
+            "_Auto-generated from split \x60tests/test_*.py\x60 modules on 2000-01-02 03:04 UTC_\n\n"
+            "This document maps Pact sections to the test functions that prove them. "
+            "Each entry cites a \x60# CLAIM:\x60 tag in the test source. Regenerate with "
+            "\x60python build_claim_matrix.py\x60.\n\n"
+            "**Boundary:** the gate enforces claim presence, one-claim-per-test "
+            "counts, and a non-vacuity floor (every claim cites a Pact section; "
+            "every test contains a real assertion). It does not \N{EM DASH} and cannot \N{EM DASH} "
+            "verify that a test body semantically proves the clause it cites. "
+            "Claim fidelity is a review responsibility.\n\n"
+            "**Coverage:** 1 distinct Pact sections referenced across 1 claim tags on 1 test functions.\n\n"
+            "---\n\n## \N{SECTION SIGN}1\n\n"
+            "- \x60test_owned\x60 \N{EM DASH} synthetic owned\n\n---\n\n"
+            "**Protocol:** when a new test is added, its \x60# CLAIM:\x60 tag should "
+            "cite the Pact section(s) it proves and a one-line description. Every "
+            "non-trivial Pact clause should have at least one claim tag pointing "
+            "at it; gaps visible in this matrix become the next testing work.\n"
+        )
+        clock = SimpleNamespace(now=lambda tz: datetime(2000, 1, 2, 3, 4, tzinfo=tz))
+        floor_verdict = "[claim-matrix] fidelity floor passed across 1 modules\n"
+        cases = (
+            ((), "write"),
+            (("--stdout",), "stdout"),
+            (("--floor-only",), "floor"),
+            (("--stdout", "--floor-only"), "floor"),
+            (("--floor-only", "--stdout"), "floor"),
+            (("--stdout", "--stdout"), "stdout"),
+            (("--floor-only", "--floor-only"), "floor"),
+        )
+        with self.fixture():
+            matrix = self.root / "docs/claim_matrix.md"
+            other = self.root / "docs/pact_code_map.md"
+            for args, mode in cases:
+                matrix.write_bytes(self.sentinels[matrix])
+                out, err = StringIO(), StringIO()
+                with self.subTest(args=args), \
+                        patch.object(claims, "__file__", str(self.root / "docs/build_claim_matrix.py")), \
+                        patch.object(claims, "datetime", clock), \
+                        patch.object(sys, "argv", ["build_claim_matrix.py", *args]), \
+                        redirect_stdout(out), redirect_stderr(err):
+                    code = claims.main()
+                self.assertEqual((code, err.getvalue()), (0, ""))
+                if mode == "write":
+                    self.assertEqual(matrix.read_bytes(), expected.replace("\n", os.linesep).encode("utf-8"))
+                    self.assertEqual(out.getvalue(), f"[claim-matrix] wrote {matrix.resolve()}\n"
+                                     "[claim-matrix] 1 sections, 1 claims, 1 tests\n")
+                else:
+                    self.assertEqual(matrix.read_bytes(), self.sentinels[matrix])
+                    self.assertEqual(out.getvalue(), floor_verdict if mode == "floor" else expected + "\n")
+                self.assertEqual(other.read_bytes(), self.sentinels[other])
+
+    def test_claim_argument_clis_preserve_owned_outputs(self):
+        source = Path(__file__).resolve().parent
+        for initialized in (True, False):
+            with self.fixture(initialize_git=initialized):
+                for name in ("build_input_scope.py", "build_claim_matrix.py"):
+                    (self.root / "docs" / name).write_bytes((source / name).read_bytes())
+                env = dict(self.git_env, PYTHONIOENCODING="cp1252",
+                           PYTHONDONTWRITEBYTECODE="1", PYTHONPATH="")
+                routes = (
+                    ([sys.executable, "-S", "-B", str(self.root / "docs/build_claim_matrix.py")],
+                     self.parent),
+                    ([sys.executable, "-S", "-B", "-m", "docs.build_claim_matrix"], self.root),
+                )
+                matrix = self.root / "docs/claim_matrix.md"
+                other = self.root / "docs/pact_code_map.md"
+                cases = (
+                    (("--help",), 0, "--floor-only"),
+                    (("--check",), 2, "unrecognized arguments: --check"),
+                    (("--unknown-\N{GREEK CAPITAL LETTER OMEGA}",), 2, "unrecognized arguments: --unknown-\N{GREEK CAPITAL LETTER OMEGA}"),
+                    (("--",), 2, "unrecognized arguments: --"),
+                )
+                if initialized:
+                    for command, cwd in routes:
+                        positive = subprocess.run([*command, "--stdout"], cwd=cwd, env=env,
+                                                  capture_output=True, check=False)
+                        self.assertEqual(positive.returncode, 0, positive.stderr.decode("utf-8"))
+                        self.assertEqual(positive.stderr, b"")
+                        self.assertIn("## \N{SECTION SIGN}1", positive.stdout.decode("utf-8", errors="strict"))
+                        self.preserved_outputs()
+                for existing in (True, False):
+                    if existing:
+                        matrix.write_bytes(self.sentinels[matrix])
+                    else:
+                        matrix.unlink()
+                    for args, expected, expected_text in cases:
+                        outputs = []
+                        for command, cwd in routes:
+                            with self.subTest(git=initialized, existing=existing, route=command, args=args):
+                                result = subprocess.run([*command, *args], cwd=cwd, env=env,
+                                                        capture_output=True, check=False)
+                                stdout = result.stdout.decode("utf-8", errors="strict")
+                                stderr = result.stderr.decode("utf-8", errors="strict")
+                                self.assertEqual(result.returncode, expected)
+                                self.assertEqual(stderr if expected == 0 else stdout, "")
+                                if expected == 0:
+                                    self.assertIn(expected_text, stdout)
+                                    self.assertIn("\N{SECTION SIGN}x.y.z", stdout)
+                                else:
+                                    self.assertEqual(stderr.splitlines()[-1],
+                                                     f"build_claim_matrix.py: error: {expected_text}")
+                                if existing:
+                                    self.assertEqual(matrix.read_bytes(), self.sentinels[matrix])
+                                else:
+                                    self.assertFalse(matrix.exists())
+                                self.assertEqual(other.read_bytes(), self.sentinels[other])
+                                outputs.append((result.returncode, stdout, stderr))
+                        self.assertEqual(outputs[0], outputs[1])
+
+
+
 if __name__ == "__main__":
     unittest.main()

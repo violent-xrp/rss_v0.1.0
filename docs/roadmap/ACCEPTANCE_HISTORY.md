@@ -1213,3 +1213,49 @@ Unrelated scheduling, the separate BUILD-05 receipt and truth corrections,
 all earlier receipt bytes, protected outputs and retained evidence are preserved.
 The private handoff stays untracked. No Main integration, push, tag, release
 or other workstream is included. Further work needs its own disposition.
+
+
+## 2026-09-17 BUILD-03 Claim-Argument Local Checkpoint
+
+The human accepted the independently reviewed claim-matrix argument
+implementation and its diagnostic-precision correction, and authorized this
+bounded local checkpoint. Strict argument parsing now handles help and usage
+before generator selection, rendering or writing. Supported modes retain their
+dispatch order and outputs. The correction changes three test bodies to bind
+help to its fixture and compare exact final error lines rather than usage-banner
+tokens. The generator and test files retain their exact reviewed working bytes.
+
+Independent static review returned PASS for the implementation and then PASS
+with no findings for the correction. The reviewer inspected the execution
+records without rerunning tests. The correction's accepted manifest SHA-256 is
+`6e391a6c67ff4190763eea92e24517f3b3989a09f109f137f6b0ac8ea85fa538`;
+its diff SHA-256 is
+`1653dd8f4d96b6cee75855aa74f71cdb2a7bdf4f347d44748b59543b8797cd8b`.
+The implementation manifest is
+`d1c37f4f1b04664deba698a735730809bff37f460a54d7ec103612999748cf5c`.
+An additional advisory static PASS has unverified reviewer routing and does not
+supply independent acceptance. Original packets remain unchanged.
+
+Builder evidence remains distinct from static review and this checkpoint:
+- The same 49-method suite passed under long and Windows 8.3 TEMP spellings,
+  with zero failures, errors or skips in each run and no kernel modules loaded.
+- Two methods against the retained old generator produced 30 expected
+  selection-tripwire failures, with zero errors or skips. This checks the
+  original argument boundary, not diagnostic-text mutation discrimination.
+- The earlier seven-mode old/new compatibility comparison is reused; it was
+  not rerun for the correction or this checkpoint. No old-source CLI run exists.
+- All 49 identities and source bindings remain recorded with their existing
+  owner. Repeated runs and standalone methods are not canonical test totals.
+
+No tests, generators, coverage, baseline, combined hygiene or pytest were rerun.
+The 181/3013/0, 92.7% and 26-module figures remain inherited. This checkpoint
+does not close BUILD-03 or DOCS-04, establish host confinement, or discharge
+historical wording, output/resource limits or full-gate acceptance obligations.
+
+The parent is `5a401a2`, already published as a Roots staging backup. This new
+checkpoint is local only; Main, tags and remote branches are not changed here.
+Only BUILD-03's row and this appended receipt enter from the two mixed files.
+Other queue changes, the earlier BUILD-05 receipt, threat/coverage corrections,
+protected outputs, private handoff history and retained evidence are preserved.
+Further implementation, full gates, Main integration or another push require
+separate disposition; SITE-01 and BUILD-05 keep their holds.
