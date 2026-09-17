@@ -541,7 +541,9 @@ candidate arguments preserve the generator contract.
 
 The resolver validates the complete selected reference set and its Pact subtree
 before reading scan content. Input failure returns 1; classifications retain
-0/2/3/4. `--json` still writes only when supplied, including with `--check`.
+0/2/3/4. In that input slice, `--json` still wrote when supplied with `--check`.
+The later [check-only candidate](#build-03-resolver-check-only-contract) supersedes
+that flag-combination behavior.
 The hygiene scan functions report selection failure as 1; the full wrapper's
 child sequence, scan exclusions and allowlists are unchanged. Direct and package
 imports share the same helper. Default script-root derivation still resolves
@@ -599,11 +601,11 @@ unexplained preservation change requires a new disposition, not a wider slice.
 #### Execution limits and later acceptance
 
 This input-selection candidate leaves broader execution requirements open.
-Use the resolver's `--check` route as the proposed first design example: identify
-its approved input/output effects, optional `--json` behavior, Git executable and
+The [resolver check-only candidate](#build-03-resolver-check-only-contract)
+addresses the selected first route and its flag conflict. Git executable and
 configuration selection, child processes, interruption and output/resource
-limits. Today `--check --json PATH` still writes a report. This proposal neither
-changes that interface nor treats it as read-only.
+limits still require later disposition. The input-selection slice itself did
+not change the report interface or establish a read-only process.
 
 Keep the existing workstation constraint: no new account, ACL changes, WSL,
 installation, interpreter relocation or host redesign. Current path guards
@@ -621,6 +623,156 @@ preserve run-owned output and existing evidence. The inherited
 unremeasured. Review, local checkpoint, full-gate acceptance, Main integration
 and release remain separate dispositions. SITE-01, BUILD-05 and other
 workstreams retain their existing holds.
+
+### BUILD-03 Resolver Check-Only Contract
+
+**Reviewed check-only slice, 2026-09-16; human-authorized local checkpoint.**
+The input-selection and proof-support slices remain locally checkpointed at
+`93f17cf`. The human authorized this two-file implementation after independent
+static design PASS. The three review findings are addressed below: omit the
+non-discriminating interruption case, disclose the exit-code overlap, and extend
+the existing standalone identity table. Component: **Sigil Crucible**; task:
+**BUILD-03**. No Sigil Kernel code, Pact text, package layout or canonical proof
+registration changes in this slice.
+
+#### Selected route and compatibility change
+
+At the checkpoint, `--check` did not prevent a supplied `--json PATH` from
+writing a report. The candidate now refuses a syntactically valid combination
+in `main`, after module initialization, stream setup and argument parsing,
+but **before `sweep`, Git discovery, scan-content reads or report creation**.
+It returns **1**, emits no stdout and prints this diagnostic to stderr:
+`Resolver options failed: --check cannot be combined with --json`.
+The guard uses `args.json is not None`, including an empty supplied value;
+flag help describes the conflict.
+
+Ordinary argparse usage errors still exit **2**, which already overlaps the
+phantom-only scan result. The new conflict deliberately uses exit **1** instead
+of argparse's error path. Input-selection failures also exit 1, distinguished by
+`Resolver input failed:` rather than `Resolver options failed:`. Exit codes
+alone therefore do not distinguish every error category.
+
+| Invocation | Candidate behavior | Preserved contract |
+| --- | --- | --- |
+| `--check` without `--json` | Scan and print the existing result; never enter report creation. | Same-checkout selection, classifications, UTF-8 output and scan exit codes 0/2/3/4; input failure remains 1. |
+| `--check --json PATH`, in either argument order | Refuse before the scan with exit 1 and the diagnostic above. | Existing and absent output targets remain untouched; even an invalid input root does not change option-conflict precedence. |
+| `--json PATH` without `--check` | Continue the existing explicit report-writing mode. | Same report schema, path interpretation, parent creation and classification status; no new output guard is implied. |
+| Neither flag | Continue the existing console scan. | No new command, alias or default-mode change. |
+
+A caller that wants a report removes `--check`; a caller that wants check-only
+behavior omits `--json`. The tracked hygiene wrapper uses only `--check` and
+needs no edit. One existing infrastructure-test call is adjusted below. The
+tracked caller search does not establish how external launchers or humans use
+the combination.
+
+#### Identities, effects and ownership
+
+All symbols retain their existing `BUILD-03::` identities. The changed resolver
+and test anchors, together with unchanged selector and hygiene anchors, bind to
+the [current public source hashes](SIGIL_CRUCIBLE.md#standalone-proof-identities-and-subjects).
+The 41 existing test definition lines did not shift. Roles, proof subjects,
+effects, required authority and observed enforcement follow
+[the existing classification rule](SIGIL_CRUCIBLE.md#build-03-c--role-proof-subject-effects-and-authority).
+
+| Unit / source | Role | Proof subject | Effects and targets | Required authority | Observed enforcement |
+| --- | --- | --- | --- | --- | --- |
+| [resolve_pact_sections.parse_args](resolve_pact_sections.py#L354) and [main](resolve_pact_sections.py#L364) | tooling | not applicable | process-state, console; delegates scan and report-only writes | Permission for the selected invocation and any requested report write | Early option conflict supplies a program-level report-write boundary for check mode; it does not authenticate the caller. |
+| [resolve_pact_sections.sweep](resolve_pact_sections.py#L281) | tooling | not applicable | memory, file-read, child-process through the selector | Approved checkout scan | Validated membership and live source reads; unchanged. |
+| [build_input_scope.tracked_inputs](build_input_scope.py#L90) | tooling | not applicable | file-read, memory, child-process; root/index/path metadata and Git configuration | Approved Git invocation and checkout inspection | Path/stage/mode checks, stripped inherited Git variables, optional locks and fsmonitor disabled; unchanged. |
+| [resolve_pact_sections.write_json](resolve_pact_sections.py#L336) | tooling | not applicable | file-write: parent directories and requested report | Separate approval for the report destination | Direct write without destination confinement or atomic replacement; unchanged and unreachable through check mode. |
+| [test_build_inputs.BuildInputTests.resolver_main](test_build_inputs.py#L508) | harness | not applicable | process-state, console; delegates resolver effects | Owned fixture proof scope | Patches argv and captures streams; unchanged. |
+| [test_build_inputs.BuildInputTests.test_consumers_refuse_missing_selected_files_with_the_missing_filename](test_build_inputs.py#L663) | test | tooling input refusal | owned fixture file-write, file-read, child-process, process-state, console | Approved temporary fixtures and proof children | Retains missing-file cause checks and the report-write tripwire; only the invocation below changes. |
+
+The **one existing test-body edit** removes `"--check", ` from the
+[resolver_main call](test_build_inputs.py#L679), leaving `--json` and its owned
+report target. Every assertion, positive control, named missing-file check and
+writer tripwire remains. An option-conflict refusal cannot satisfy the required
+missing-file diagnostic. The other 40 existing methods are AST-identical to the
+reviewed design base.
+
+#### Footprint and bounded proof
+
+Exactly **two Python paths** change: `docs/resolve_pact_sections.py` (flag help
+and early dispatch check) and `docs/test_build_inputs.py` (one existing call and
+four appended methods). The selector, hygiene wrapper, generators, `tests/` and
+kernel package are unchanged. The boundary remains tooling within Sigil Crucible.
+
+The [standalone proof identities table](SIGIL_CRUCIBLE.md#standalone-proof-identities-and-subjects)
+is the canonical home for these four additions under
+`BUILD-03::test_build_inputs.BuildInputTests.`. It now accounts for **45 methods:
+23 retained generator/selector cases, 18 input-consumer additions and 4
+check-only additions**. Existing anchors were checked; new rows and current
+source hashes are recorded there. Each new role is **test**, with tooling proof
+subject, owned-fixture authority and asserted behavior rather than caller
+authentication.
+
+| Method suffix | Evidence exercised |
+| --- | --- |
+| [test_resolver_check_rejects_json_before_scan_or_write](test_build_inputs.py#L924) | Both flag orders, invalid-root precedence and empty JSON values give exact exit/output. Tripwires keep scan and writer uncalled; a valid check-only control succeeds. |
+| [test_resolver_check_preserves_verdicts_without_report_effects](test_build_inputs.py#L948) | Real fixture controls preserve statuses 0/2/3/4, summary meanings, default-mode parity and named input failure 1; writer remains uncalled. |
+| [test_resolver_json_report_mode_remains_explicit](test_build_inputs.py#L978) | Report-only mode creates the expected JSON schema and absent parent in an owned destination, preserves fixture sentinels and keeps the classification status. |
+| [test_resolver_check_conflict_clis_preserve_owned_targets](test_build_inputs.py#L1000) | Copied direct and module CLIs agree under Unicode paths and a cp1252 environment. Strict UTF-8 decoding, exact diagnostic with native newline, existing sentinel bytes, absent parent and valid check controls are checked. |
+
+The proposed fifth interruption case was dropped: it would already pass against
+the old resolver and did not prove this new boundary. No new interruption,
+cancellation or process-tree control is claimed.
+
+**Builder results:** all **45 methods passed**, with **zero failures, errors or
+skips**, under each spelling of the same owned TEMP directory: long and Windows
+8.3. These are two runs of one suite, not 90 distinct tests. Each actual test
+process recorded its own temporary directory, interpreter and source hashes.
+The selected existing PowerShell proof ran in both passes. No installation or
+host configuration change was made.
+
+The two refusal regression methods were also run against a retained copy of
+the old resolver with the new tests. Both rejected the old behavior: two methods,
+14 failing subcases, exit 1, no errors or skips. The first new-suite attempt had
+44 successful methods and eight failing subcases in the CLI case because its
+expected newline was LF while Windows emitted CRLF. Only that new expectation
+changed to the platform newline; all earlier logs and tested bytes are retained.
+
+Proof effects are owned fixture reads/writes, captured console, process-state
+patches and copied Python/Git children. The run plan used the existing
+interpreter and shell, bound both TEMP spellings and source hashes before each
+attempt, and introduced no timeout or process termination. Only the suite's
+newly owned temporary fixtures were cleaned; packet evidence remains retained.
+These executions remain builder evidence. Independent static implementation
+review returned PASS after checking source, records and preservation, without
+rerunning the tests; the human accepted the slice and authorized its local
+checkpoint.
+
+Documentation changes cover this owner, affected Crucible identities/source
+bindings, BUILD-03's queue cells and the private handoff. The
+[local checkpoint receipt](roadmap/ACCEPTANCE_HISTORY.md#2026-09-16-build-03-resolver-check-only-local-checkpoint)
+records disposition and the Low disclosure finding: two passages in the earlier
+bounded remainder section were also qualified and linked to this contract.
+Earlier receipt bytes and the dated inventory remain preserved.
+No canonical acceptance, coverage, baseline, combined hygiene, live-checkout
+generator equivalence or pytest run occurred. The canonical
+181 functions / 3013 assertions / 0 failures, 92.7% coverage and 26 modules
+remain inherited; unittest methods are not added to those figures.
+
+#### Remaining execution limits and review decision
+
+The guarantee is **no resolver-created report in check mode**. Imports and
+stream setup still precede the check; the process is not confined by the host.
+Git remains a bare executable selected by platform process search and may read
+host configuration; the child has no timeout or captured-output cap. Scan input,
+accumulated occurrences and console output are also unbounded. Path validation
+does not lock subsequent reads against concurrent replacement. Neither helper
+confines arbitrary Python or child-process authority; shell redirection remains
+an outer operation with its own approved destination.
+
+Report mode retains unrestricted destination selection, direct-write failure
+and partial-output risks. This slice introduces no runtime database, kernel
+authority route, account/ACL/WSL change, interpreter relocation or process
+management scheme.
+
+Scoped independent implementation review passed; the human accepted the slice
+and authorized a local checkpoint with the disclosure finding recorded above.
+No further implementation is selected. Historical public wording, broader
+execution/resource controls and full-gate acceptance remain open; this checkpoint
+closes neither BUILD-03 nor DOCS-04.
 
 ### BUILD-03 Command and Effect Inventory
 
@@ -674,7 +826,7 @@ destination. A `--json` flag is not uniformly a file-output option.
 | `docs/build_project_status.py` | `python -B docs/build_project_status.py`; `--check`; `--stdout`; internal `--assume-gates-passed` | Default runs baseline/map children and writes `docs/PROJECT_STATUS.md`; check/stdout suppress that write, not the children. Assumed-green mode skips those children and reads existing docs, not fresh proof. Child failures can be rendered as RED/YELLOW rather than a nonzero generation exit. Own freshness failure 1, caught build/link failure 2. No Git-cleanliness test. |
 | `docs/check_contact_surface.py` | `python -B docs/check_contact_surface.py` | Read-only Git enumeration and tracked-content checks; console output. Pass 0, findings 1; no proof children or intended file writes. |
 | `docs/check_public_hygiene.py` | `python -B docs/check_public_hygiene.py` | Runs baseline `--check --require-clean`, contact, claim floor, map check, assumed-green status check and resolver check, then name/callsign scans. Acceptance/coverage children create fixtures and owned coverage data. All steps run despite earlier failures; final aggregate 0/1. Own scans use the shared index selector and report input refusal. This wrapper is not read-only or a sandbox. |
-| `docs/resolve_pact_sections.py` | `python -B docs/resolve_pact_sections.py --check`; optional `--repo PATH`, `--pact PATH`, `--json PATH` | Reference and Pact inputs use validated Git-index membership with live working bytes; named untracked resolver candidates refuse. `--pact` selects a same-checkout subtree relative to `--repo`. `--json PATH` creates parent directories and writes a report **even with `--check`**. Exit 1 input failure; 0 clean, 2 phantom-only, 3 structure-only, 4 both. No output-path confinement. |
+| `docs/resolve_pact_sections.py` | `python -B docs/resolve_pact_sections.py --check`; optional `--repo PATH`, `--pact PATH`, `--json PATH` | Reference and Pact inputs use validated Git-index membership with live working bytes; named untracked resolver candidates refuse. `--pact` selects a same-checkout subtree relative to `--repo`. `--check` plus `--json` refuses before scanning or report creation, exit 1; report-only mode creates parent directories and writes the requested report. Exit 1 also denotes input failure, with a distinct stderr prefix. Scan results: 0 clean, 2 phantom-only, 3 structure-only, 4 both; argparse usage also exits 2. No report-mode output-path confinement. |
 | `docs/sync_baseline.py` | `python -B docs/sync_baseline.py`; `--check`, `--no-cov`, `--no-claim`, `--require-clean`, `--json` | Preflights archives/runtime paths, then runs acceptance, Git module discovery, coverage and matrix handling. Default synchronizes `CURRENT_DOCS` and regenerates matrix; check suppresses those writes, not acceptance/coverage. No-cov skips only coverage; no-claim skips only matrix handling. Require-clean concerns parsed acceptance failures, not Git status. JSON prints. Archive replacement owns sibling temps; ordinary docs use direct writes, no multi-file transaction. Parsed acceptance can hide child failure and matrix regeneration can fall back to old output; those defects remain open. Check/orphans 1, specified preflight/proof failure 2. |
 | `docs/test_run_coverage.py` | `python -B docs/test_run_coverage.py` | Separate unittest infrastructure proof; real owned temporary files/SQLite/link fixtures with mocked child dispatch. No live coverage/baseline pipeline. Unittest verdict; context-managed cleanup, with deliberate failure injection. Not canonical registration. |
 | `docs/test_sync_baseline.py` | `python -B docs/test_sync_baseline.py` | Separate unittest infrastructure proof; real temporary archive writes, patched root and orchestration/child boundaries. Does not run the live synchronizer CLI. Unittest verdict and owned fixture cleanup; not canonical registration. |

@@ -571,6 +571,14 @@ BUILD-03-B/C/D/E to the additions while retaining the dated inventory and
 canonical registration appendix. ROADMAP owns remaining disposition; this
 records no checkpoint or full BUILD-03 acceptance.
 
+**Check-only upkeep, 2026-09-16.** The later input/proof-support checkpoint is
+retained. The [resolver check-only implementation](TESTING.md#build-03-resolver-check-only-contract)
+adds four standalone identities and updates the current mode description and
+source bindings below. Its 45-test executions remain builder evidence.
+Independent static implementation review returned PASS; the human accepted the
+slice and authorized its local checkpoint. The reviewer checked records without
+rerunning tests. Earlier 41-test evidence retains its original scope.
+
 ### Identification rule for additions and changes
 
 At the existing detail owner, record the task ID, established component name,
@@ -592,7 +600,8 @@ and fixture imports do not determine ownership or justify moving code.
 ### Current code and harness identities
 
 Each identity below has the prefix `BUILD-03::`. Paths and qualified symbols
-refer to the unchanged input candidate. TESTING retains detailed command effects.
+refer to the current source hashes below, including the check-only candidate.
+TESTING retains detailed command effects.
 Grouped rows list the union of reachable effects; each linked qualified symbol
 keeps its own identity. Current input compatibility and execution evidence stay
 with TESTING; earlier map observations remain bound to their recorded date.
@@ -604,7 +613,7 @@ with TESTING; earlier map observations remain bound to their recorded date.
 | [build_input_scope._require_indexed_candidates](build_input_scope.py#L71) | tooling | not applicable | memory, file-read; metadata only | Approved candidate-path inspection within the validated checkout | Non-following metadata checks refuse existing untracked fixed candidates; relies on the caller's validated root. |
 | [build_input_scope.configure_utf8_output](build_input_scope.py#L20) | tooling | not applicable | process-state, console | Permission to configure the invoking CLI's streams | Reconfigures available streams; no runtime authority check. |
 | [resolve_pact_sections.sweep](resolve_pact_sections.py#L281), with [tracked_files](resolve_pact_sections.py#L163), [_pact_paths](resolve_pact_sections.py#L170) and [resolve_pact_sections.pact_identifiers](resolve_pact_sections.py#L203) | tooling | not applicable | memory, file-read, child-process | Scoped permission to scan the approved checkout | Shared selector and same-checkout Pact checks; no source authentication or host containment. |
-| [resolve_pact_sections.main](resolve_pact_sections.py#L364), including [resolve_pact_sections.parse_args](resolve_pact_sections.py#L354) and [write_json](resolve_pact_sections.py#L336) | tooling | not applicable | memory, file-read, child-process, process-state, console; file-write when a JSON path is supplied | Scan authority plus approval for any requested report write | The optional CLI argument triggers writing even with check mode; no output-path confinement is supplied. |
+| [resolve_pact_sections.main](resolve_pact_sections.py#L364), including [resolve_pact_sections.parse_args](resolve_pact_sections.py#L354) and [write_json](resolve_pact_sections.py#L336) | tooling | not applicable | memory, file-read, child-process, process-state, console; file-write when a JSON path is supplied without check mode | Scan authority plus approval for any requested report write | Check plus JSON refuses before scanning or report creation; report-only writes remain available without output-path confinement. |
 | [check_public_hygiene.public_candidate_files](check_public_hygiene.py#L154), [provenance_name_hygiene_scan](check_public_hygiene.py#L168) and [callsign_leak_scan](check_public_hygiene.py#L233) | tooling | not applicable | memory, file-read, child-process, console | Scoped permission to inspect public inputs | Shared selector and existing filters; scan functions do not authenticate the operator. The separate wrapper [main](check_public_hygiene.py#L269) launches further gates; its effects stay in TESTING. |
 | [test_build_inputs.proof_source](test_build_inputs.py#L29) | harness | not applicable | memory | Fixture construction within approved proof scope | Returns synthetic strings; this helper does not import or execute them. |
 | [test_build_inputs.BuildInputTests](test_build_inputs.py#L36) fixture and invocation helpers | harness | not applicable | memory, file-read, file-write, child-process, process-state, console, as detailed below | Approved temporary fixtures and selected child commands; no kernel T-0 operation required by this suite | Fixture ancestry checks, output sentinels and the hygiene wrapper tripwire constrain cooperating test paths; no host sandbox or caller authentication. |
@@ -643,7 +652,7 @@ availability limits remain in TESTING; a skip must stay visible in execution
 evidence.
 
 <details>
-<summary>41 named tests: 23 retained and 18 added in the input candidate</summary>
+<summary>45 named tests: 23 retained, 18 input-candidate additions and 4 check-only additions</summary>
 
 | Method identity suffix / current source | Origin | Tooling proof subject | Additional effects |
 | --- | --- | --- | --- |
@@ -688,19 +697,25 @@ evidence.
 | [test_consumers_accept_long_and_short_roots_without_changing_returned_spelling](test_build_inputs.py#L844) | added | resolver + hygiene: Windows long/8.3 root spelling | child-process, process-state |
 | [test_resolver_fixture_cli_refusal_classification_and_utf8](test_build_inputs.py#L870) | added | copied resolver CLI: direct/package routes, refusals and UTF-8 | child-process, process-state, console |
 | [test_resolver_preserves_platform_markdown_filename_case_semantics](test_build_inputs.py#L911) | added | resolver: platform Markdown filename matching | child-process |
+| [test_resolver_check_rejects_json_before_scan_or_write](test_build_inputs.py#L924) | check-only candidate | resolver: option-conflict precedence before scan or writer | child-process, process-state, console |
+| [test_resolver_check_preserves_verdicts_without_report_effects](test_build_inputs.py#L948) | check-only candidate | resolver: check/default verdicts and input-refusal preservation | child-process, process-state, console |
+| [test_resolver_json_report_mode_remains_explicit](test_build_inputs.py#L978) | check-only candidate | resolver: explicit report schema, parent creation and status | child-process, process-state, console |
+| [test_resolver_check_conflict_clis_preserve_owned_targets](test_build_inputs.py#L1000) | check-only candidate | copied resolver CLIs: conflict refusal, UTF-8 and target preservation | child-process, process-state, console |
 
 </details>
 
-Static membership was reconciled by name against all 41 methods in this class:
+Static membership was reconciled by name against all 45 methods in this class:
 no missing, duplicate or extra rows. The earlier snapshot supplies the 23/18
-attribution split. All source-line anchors in this supplement bind to these input-candidate
+input-candidate split; four check-only methods are appended. All 41 existing
+definition lines remain unchanged, including the one method with the flag-removal
+edit. All source-line anchors in this supplement bind to these current
 working-file bytes (SHA-256):
 
 | Source | SHA-256 |
 | --- | --- |
-| [test_build_inputs.py](test_build_inputs.py) | `6df3290d615e22b9a70ee8f24a2208c9742cd10cf362c488c2ae6423c3ce4533` |
+| [test_build_inputs.py](test_build_inputs.py) | `2d978dea1153b8084d5479dfeb413c71cb990326f8f762b8baadd87f1d357e29` |
 | [build_input_scope.py](build_input_scope.py) | `529922e288e32e54bf9ca35129694e0f78cb7cac426a6bd066920a6b8bcd81a7` |
-| [resolve_pact_sections.py](resolve_pact_sections.py) | `641f7a550a4f1d823f4b385995beeeb969bb4ae46601a36fce2e2fb12be433a9` |
+| [resolve_pact_sections.py](resolve_pact_sections.py) | `0e63eab1725e3b517520d899d1a644bb4815c9f5ace97362be9dddfbe30c31af` |
 | [check_public_hygiene.py](check_public_hygiene.py) | `891fcf9af53f303c1b3a0741f94bdc8e82f31aadfc96f719303d746a6cdc2427` |
 
 Recheck changed anchors and reconcile names when the suite changes.
@@ -708,11 +723,14 @@ This covers the named standalone suite and affected input-tool units, not every
 standalone suite or every project component.
 
 The [input-candidate receipt](roadmap/ACCEPTANCE_HISTORY.md#2026-09-15-build-03-same-checkout-input-candidate)
-holds the existing builder runs. This documentation pass reruns no proof.
-These unittest methods remain outside the 181-function canonical registry;
-neither the new identity labels nor repeated TEMP runs are added to its totals.
-No code, registry, CLAIM tags, public counts, paths or dated inventory changes
-are required to establish these identities.
+holds the earlier 41-test builder runs. The later
+[check-only execution record](TESTING.md#build-03-resolver-check-only-contract)
+reports the 45-test runs, the retained initial newline-assertion failure and the
+old-resolver regression controls. These unittest methods remain outside the
+181-function canonical registry; repeated TEMP runs do not add distinct tests
+or canonical assertions. The check-only implementation changes two tooling
+Python files; registry, CLAIM tags, public counts, paths and dated inventory
+remain unchanged.
 
 ## DOCS-04 kernel and Crucible separation design
 

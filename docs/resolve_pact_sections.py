@@ -357,13 +357,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pact", type=Path,
                         help="Tracked Markdown subtree within --repo (default: pact/)")
     parser.add_argument("--json", type=Path, help="Optional detailed JSON report path")
-    parser.add_argument("--check", action="store_true", help="Validate; --json still writes if supplied")
+    parser.add_argument("--check", action="store_true", help="Validate without writing a report; conflicts with --json")
     return parser.parse_args()
 
 
 def main() -> int:
     configure_utf8_output()
     args = parse_args()
+    if args.check and args.json is not None:
+        print("Resolver options failed: --check cannot be combined with --json", file=sys.stderr)
+        return 1
     try:
         result = sweep(args.repo, args.pact)
     except (InputScopeError, RuntimeError) as exc:

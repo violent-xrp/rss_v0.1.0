@@ -676,7 +676,7 @@ class BuildInputTests(unittest.TestCase):
                     self.assertEqual(Path(failure.exception.__cause__.filename), missing)
                     reads.assert_not_called()
             with patch.object(resolver, "write_json") as write_report:
-                code, out, err = self.resolver_main("--check", "--json", str(self.parent / "report.json"))
+                code, out, err = self.resolver_main("--json", str(self.parent / "report.json"))
             self.assertEqual((code, out), (1, ""))
             self.assertIn("selected Ω.md", err)
             write_report.assert_not_called()
@@ -919,6 +919,126 @@ class BuildInputTests(unittest.TestCase):
             self.assertEqual(found, [("41", "RESOLVED" if os.name == "nt" else "PHANTOM"),
                                      ("42", "PHANTOM")])
             self.preserved_outputs()
+
+
+    def test_resolver_check_rejects_json_before_scan_or_write(self):
+        with self.fixture():
+            self.assertEqual(self.resolver_main("--check")[0], 0)
+            report = self.parent / "report.json"
+            sentinel = b"owned report sentinel\x00\r\n"
+            report.write_bytes(sentinel)
+            conflict = "Resolver options failed: --check cannot be combined with --json\n"
+            arguments = (
+                ("--check", "--json", str(report)),
+                ("--json", str(report), "--check"),
+                ("--check", "--json", str(report), "--repo", str(self.parent / "absent")),
+                ("--json", str(report), "--check", "--repo", str(self.parent / "absent")),
+                ("--check", "--json", ""),
+                ("--json", "", "--check"),
+            )
+            for args in arguments:
+                with self.subTest(args=args), \
+                        patch.object(resolver, "sweep", side_effect=AssertionError("scan forbidden")) as scan, \
+                        patch.object(resolver, "write_json", side_effect=AssertionError("write forbidden")) as writer:
+                    self.assertEqual(self.resolver_main(*args), (1, "", conflict))
+                    scan.assert_not_called()
+                    writer.assert_not_called()
+                    self.assertEqual(report.read_bytes(), sentinel)
+
+    def test_resolver_check_preserves_verdicts_without_report_effects(self):
+        import json
+        with self.fixture():
+            reader = self.write("docs/check_modes.md", "# 88 Own heading\n")
+            cases = (
+                ("See \N{SECTION SIGN}1.\n", 0, 0, 0),
+                ("See \N{SECTION SIGN}999.\n", 2, 1, 0),
+                ("See \N{SECTION SIGN}88.\n", 3, 0, 1),
+                ("See \N{SECTION SIGN}88.\nSee \N{SECTION SIGN}999.\n", 4, 1, 1),
+            )
+            with patch.object(resolver, "write_json", side_effect=AssertionError("write forbidden")) as writer:
+                for text, expected_code, phantom, structure in cases:
+                    with self.subTest(code=expected_code):
+                        reader.write_text("# 88 Own heading\n" + text, encoding="utf-8")
+                        code, out, err = self.resolver_main("--check")
+                        self.assertEqual((code, err), (expected_code, ""))
+                        summary, _ = json.JSONDecoder().raw_decode(out)
+                        self.assertEqual((summary["phantom"], summary["doc_structure"]),
+                                         (phantom, structure))
+                        self.assertEqual("PHANTOM references:" in out, bool(phantom))
+                        self.assertEqual("DOC-STRUCTURE references:" in out, bool(structure))
+                        self.assertEqual(self.resolver_main(), (code, out, err))
+                missing = self.write("docs/missing \N{GREEK CAPITAL LETTER OMEGA}.md", "clean")
+                missing.unlink()
+                code, out, err = self.resolver_main("--check")
+                self.assertEqual((code, out), (1, ""))
+                self.assertIn("Resolver input failed:", err)
+                self.assertIn(missing.name, err)
+                writer.assert_not_called()
+
+    def test_resolver_json_report_mode_remains_explicit(self):
+        import json
+        with self.fixture():
+            self.write("docs/report_reader.md", "See \N{SECTION SIGN}999.\n")
+            report = self.parent / "reports \N{GREEK CAPITAL LETTER OMEGA}" / "result.json"
+            self.assertFalse(report.parent.exists())
+            expected = resolver.sweep(self.root).summary()
+            code, out, err = self.resolver_main("--json", str(report))
+            self.assertEqual((code, err), (2, ""))
+            summary, _ = json.JSONDecoder().raw_decode(out)
+            payload = json.loads(report.read_text(encoding="utf-8"))
+            self.assertEqual(summary, expected)
+            self.assertEqual({key: value for key, value in payload.items()
+                              if key != "occurrences"}, expected)
+            self.assertEqual(set(payload), set(expected) | {"occurrences"})
+            self.assertTrue(any(item["path"] == "docs/report_reader.md"
+                                and item["identifier"] == "999"
+                                and item["outcome"] == "PHANTOM"
+                                for item in payload["occurrences"]))
+            self.assertTrue(report.parent.is_dir())
+            self.preserved_outputs()
+
+    def test_resolver_check_conflict_clis_preserve_owned_targets(self):
+        with self.fixture():
+            source = Path(__file__).resolve().parent
+            for name in ("build_input_scope.py", "resolve_pact_sections.py"):
+                (self.root / "docs" / name).write_bytes((source / name).read_bytes())
+                self.git("add", "--", "docs/" + name)
+            env = dict(self.git_env, PYTHONIOENCODING="cp1252",
+                       PYTHONDONTWRITEBYTECODE="1", PYTHONPATH="")
+            routes = (
+                ([sys.executable, "-S", "-B", str(self.root / "docs/resolve_pact_sections.py")],
+                 self.parent),
+                ([sys.executable, "-S", "-B", "-m", "docs.resolve_pact_sections"],
+                 self.root),
+            )
+            report = self.parent / "report \N{GREEK CAPITAL LETTER OMEGA}.json"
+            sentinel = b"owned CLI report sentinel\x00\r\n"
+            report.write_bytes(sentinel)
+            absent = self.parent / "absent \N{GREEK CAPITAL LETTER OMEGA}" / "report.json"
+            expected_error = "Resolver options failed: --check cannot be combined with --json" + os.linesep
+            positive_outputs = []
+            for command, cwd in routes:
+                command = [*command, "--repo", str(self.root)]
+                positive = subprocess.run([*command, "--check"], cwd=cwd, env=env,
+                                          capture_output=True, check=False)
+                self.assertEqual(positive.returncode, 0, positive.stderr.decode("utf-8"))
+                self.assertEqual(positive.stderr, b"")
+                positive_outputs.append(positive.stdout.decode("utf-8", errors="strict"))
+                for target in (report, absent):
+                    for args in (("--check", "--json", str(target)),
+                                 ("--json", str(target), "--check")):
+                        with self.subTest(route=command, args=args):
+                            result = subprocess.run([*command, *args], cwd=cwd, env=env,
+                                                    capture_output=True, check=False)
+                            self.assertEqual(result.returncode, 1)
+                            self.assertEqual(result.stdout, b"")
+                            self.assertEqual(result.stderr.decode("utf-8", errors="strict"),
+                                             expected_error)
+                            self.assertEqual(report.read_bytes(), sentinel)
+                            self.assertFalse(absent.parent.exists())
+                            self.preserved_outputs()
+            self.assertEqual(positive_outputs[0], positive_outputs[1])
+
 
 
 if __name__ == "__main__":

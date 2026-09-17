@@ -1158,3 +1158,58 @@ remain open. No Main integration, push, release or other workstream is included.
 The separate BUILD-05 receipt and truth corrections, unrelated queue scheduling,
 protected root outputs, private handoff and retained packets stay outside this
 checkpoint. Existing working changes and evidence are preserved.
+
+
+## 2026-09-16 BUILD-03 Resolver Check-Only Local Checkpoint
+
+The human accepted the independently reviewed check-only implementation and
+authorized this bounded local checkpoint. Sigil Crucible's resolver now refuses
+`--check` with any supplied `--json` before scanning or report creation.
+Startup and parsing still precede refusal; explicit report-only mode remains
+available. Only the resolver help/dispatch and the standalone input suite change
+in Python. The existing missing-file test drops one flag without changing its
+assertions; four methods are appended, and the other 40 bodies remain unchanged.
+
+Independent static review returned PASS for the implementation, proof records,
+identity accounting and preservation. The reviewer did not execute the tests.
+The accepted working candidate was bound by manifest SHA-256
+`cae03fe1a13c021846ce39a78cf334320eb5c63c85f9fbfd08bb6ab2d3a01fff`
+and candidate-diff SHA-256
+`85f53bd102870abf9a063b8765bff7147f411159d852e4ad63865525836d69fe`.
+The parent checkpoint is `93f17cf`. Original manifests, snapshots and run records
+remain retained; this receipt adds disposition rather than replacing them.
+
+**Low finding L1, disclosed:** the reviewed candidate also edited two passages
+in [BUILD-03 Bounded Remainder Proposal](../TESTING.md#build-03-bounded-remainder-proposal),
+at reviewed-candidate TESTING lines 543-547 and 603-609. These already-checkpointed
+passages changed current-tense descriptions of `--check --json` into historical
+descriptions and linked the new contract. Both changes were accurate and
+reviewed, but the handoff/relay did not name those spans. They belong to this
+check-only slice. No further wording change to those passages is made here.
+
+Builder execution evidence remains distinct from independent review:
+- The same 45-method suite passed under the owned TEMP directory's long and
+  Windows 8.3 spellings: each run had zero failures, errors or skips.
+- Two regression methods against the copied old resolver produced 14 expected
+  failing subcases, with no errors/skips, proving the missing-refusal causes.
+- The retained initial run had 44 successful methods and eight CLI subcase
+  failures from an LF-versus-CRLF expectation. Only that new expectation changed
+  to the platform newline; the resolver bytes did not change between attempts.
+- Public identities account for all 45 methods, with source hashes and anchors.
+  Repeated runs and unittest methods are not added to canonical totals.
+
+This landing changes review/disposition bookkeeping only. Both Python files
+retain the exact reviewed bytes; cosmetic blank lines are left unchanged.
+No tests, canonical acceptance, coverage, baseline, combined hygiene, generator
+equivalence or pytest were rerun. The 181/3013/0, 92.7% and 26-module figures
+remain inherited. This is not full-gate acceptance or complete execution
+confinement, and it does not close BUILD-03 or DOCS-04.
+
+The earlier review's raw-index cache-byte discrepancy remains explicitly
+unexplained. The implementation packet adopted a fresh verified baseline;
+local staging and this commit intentionally change the index and Roots HEAD.
+Only BUILD-03's queue row and this new receipt enter from the two mixed files.
+Unrelated scheduling, the separate BUILD-05 receipt and truth corrections,
+all earlier receipt bytes, protected outputs and retained evidence are preserved.
+The private handoff stays untracked. No Main integration, push, tag, release
+or other workstream is included. Further work needs its own disposition.
