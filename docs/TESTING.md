@@ -1093,7 +1093,7 @@ destination. A `--json` flag is not uniformly a file-output option.
 | `docs/test_run_coverage.py` | `python -B docs/test_run_coverage.py` | Separate unittest infrastructure proof; real owned temporary files/SQLite/link fixtures with mocked child dispatch. No live coverage/baseline pipeline. Unittest verdict; context-managed cleanup, with deliberate failure injection. Not canonical registration. |
 | `docs/test_sync_baseline.py` | `python -B docs/test_sync_baseline.py` | Separate unittest infrastructure proof; real temporary archive writes, patched root and orchestration/child boundaries. Does not run the live synchronizer CLI. Unittest verdict and owned fixture cleanup; not canonical registration. |
 | `docs/test_build_inputs.py` | `python -B docs/test_build_inputs.py`; optional explicitly selected `RSS_PROOF_POWERSHELL` environment variable | Candidate unittest infrastructure proof. Owns temporary source/Git fixtures, runs Git init/add/index commands there, invokes generator/resolver CLIs in copied fixtures and hygiene scan functions without the wrapper, and optionally a chosen PowerShell with synthetic Python children. Fixture base refuses Git-checkout ancestry and linked/reparse ancestry. Filesystem fixtures, output sentinels and failure injection; visible cleanup errors. No kernel registration or host configuration change. Selector Git discovery retains host configuration dependence. Shell selection, Windows platform/8.3 availability and symlink privileges can cause explicit skips; record each skip and TEMP spelling. |
-| `docs/test_proof_support.py` | `python -B docs/test_proof_support.py -v` | Standalone Crucible harness contract suite, separate from canonical counts. Captures console and patches counter/environment/urllib state; launches fresh Python children from the current checkout, including facade/kernel import checks and a child that refuses kernel imports while exercising the four tooling proofs. Tooling proofs create/remove owned temporary files. Children have a 90-second timeout; timeout can terminate that owned child. This is not host or output confinement. Windows UTF-8 case skips off Windows; record skips. No live model service or host configuration change is required. |
+| `docs/test_proof_support.py` | `python -B docs/test_proof_support.py -v` | Standalone Crucible harness contract suite, separate from canonical counts. Captures console and patches counter/environment/urllib state; launches fresh Python children from the current checkout, including facade/kernel import checks and a child that refuses kernel imports while exercising the four tooling proofs. The two DOCS-04 cases additionally refuse the facade's reference-pack import and verify explicit demo object/alias identity plus ordered registration. Tooling proofs create/remove owned temporary files. Children have a 90-second timeout; timeout can terminate that owned child. This is not host or output confinement. Windows UTF-8 case skips off Windows; record skips. No live model service or host configuration change is required. |
 | `docs/test_project_status.py` | `python -B docs/test_project_status.py -v` | Standalone Crucible caller-classification/rendering proof: nine unittest methods with synthetic child results, patched dispatch and a subprocess tripwire. Imports tooling and adjusts its import path; memory/console/mock effects, no intended fixtures, live children or kernel imports. Does not invoke the generator CLI or canonical registration. Unittest verdict; no install required and no host confinement claimed. |
 | `examples/demo_suite.py` | `python -B examples/demo_suite.py --offline`; alternate `--live-llm`, `--db PATH`, `--keep-db`, `--artifacts DIR`, `--artifact-prefix NAME` | CLI defaults **live** if neither mode is supplied; report helper defaults offline. Creates/updates SQLite and TRACE; artifact options write JSON/Markdown/TRACE outputs. Cleans only its own auto-created DB unless retained, never caller-supplied DB; close/cleanup errors can be swallowed. Live contacts configured model endpoint. Normal CLI exit is currently 0 for PASS **or ATTENTION**; inspect report predicates, not exit alone. |
 | `examples/demo_llm.py` | `python -B examples/demo_llm.py`; compatibility entrypoint, no supported flags | Calls demo `run(live_llm=True)` unconditionally; `--offline` is not parsed or forwarded. Same live network, DB and cleanup effects; no verdict-to-exit mapping. Prefer the canonical demo CLI for explicit mode selection. |
@@ -1362,3 +1362,63 @@ deliberate marker relocation. This is not a multi-file transaction, concurrent
 writer lock, arbitrary cleanup framework, or proof against every process crash.
 The existing historical traceability word order remains unchanged; do not
 normalize it as part of this pass.
+
+
+## DOCS-04 Demo Reference Dependency Execution
+
+**Builder evidence, 2026-09-17; independently reviewed and locally checkpointed.**
+Independent static review returned PASS with no findings, inspecting these
+records without reproducing execution. No proofs were rerun for the
+[local checkpoint](roadmap/ACCEPTANCE_HISTORY.md#2026-09-17-docs-04-demo-reference-dependency-local-checkpoint).
+The [implementation and source binding](SIGIL_CRUCIBLE.md#docs-04-demo-reference-dependency-implementation)
+owns this boundary and its identities. The independent design PASS preceded
+implementation; it did not observe these executions. The earlier 13-case
+proof-support record above remains dated evidence, not a current suite count.
+
+| Executed route | Result |
+| --- | --- |
+| Standalone suite's `__main__` route, verbose | 15 unittest methods passed, 0 failures/errors/skips, exit 0. Existing 13 method bodies/definition lines retained. |
+| Copied old facade plus final new boundary method | One expected assertion failure, 0 errors/skips, exit 1. The child printed its positive-control marker, then the retained facade's reference import triggered the unique refusal sentinel. |
+| Copied new facade plus old demo imports and final compatibility method | One expected assertion failure, 0 errors/skips, exit 1: missing `load_reference_pack` binding. No import/setup failure substituted for the asserted missing binding. |
+| Direct demo-module `__main__` route | 3 functions, 105 assertions, 0 failures/errors, exit 0. A retained pre-change source fixture reproduced the same counters and byte-identical stdout/stderr. |
+| Focused facade-import route for the same three demo proofs, `forbid_http=True` | 3 functions, 105 assertions, 0 failures/errors, exit 0; zero unexpected urllib transport attempts. These are the same proofs, not additional canonical totals. |
+| Aggregate `test_all.py` `__main__` route | 181 functions, 3013 assertions, 0 failures/errors, exit 0; exact existing verdict line and zero unexpected urllib transport attempts. |
+| Pytest `--collect-only --import-mode=prepend` | 181 distinct qualified functions collected, identical multiset to the registry; one proof_support and one reference_pack defining-module instance, shared runner/check aliases, exit 0. Collection order is not claimed identical. No pytest proof bodies were executed. |
+
+The existing Python 3.13.13 environment and pytest 9.1.1 were used; nothing was
+installed. A packet observer ran script entrypoints with `runpy.run_path` as
+`__main__`, setting their script directory and arguments; these are observed
+entrypoint-route executions, not uninstrumented direct subprocess claims.
+The focused route uses the documented `from test_support import run_tests`
+pattern with explicit demo-proof imports. The observer records each executing
+process's own TEMP, runtime, counters and all 67 Python source hashes before and
+after; the standalone suite's nested child streams retain their existing
+cp1252-to-UTF-8 checks. Hashes were stable across every run.
+
+Each run had its own owned TEMP/TMP/TMPDIR directory outside the checkout,
+`PYTHONDONTWRITEBYTECODE=1`, and a coverage path inside that directory; no coverage
+command ran. All eight run directories were empty afterward. Retained source
+fixtures and logs remain evidence, not cleanup targets. No root runtime database
+or sidecars existed before or after; protected root outputs remained hash-equal.
+The initial source-edit helper stopped at a line-ending assertion before adding
+tests; preserving the suite's LF endings resolved it before any proof run.
+There were no candidate test failures. Aggregate stderr includes expected
+negative-fixture diagnostics; verdict/counter errors remain zero.
+
+Pytest used packet-local empty configuration, explicit checkout/conftest bounds,
+disabled plugin autoload/cache and an observation plugin. Only `prepend`
+collection/import compatibility was checked here; the older full pytest run
+remains separate. Direct module execution does not add the aggregate HTTP guard;
+the focused and aggregate routes enable it. These guards and owned fixtures are
+cooperative safeguards, not host or arbitrary-network confinement.
+
+The design review's documentation finding is addressed in the current map: the facade import
+row, retained-overlap context and direct-reference-import inventory were updated
+explicitly. The existing test-layout description and dated complete component
+inventory needed no edit. The historical design anchors retain their original
+bindings; changed current anchors and all 181 names were revalidated separately.
+
+Coverage 92.7% and 26 modules remain inherited. No coverage, baseline, combined
+hygiene, input/status standalone suite, live-root generator, live service,
+checkpoint, push or full-gate acceptance occurred. F1 stays checkpointed; F2/F3
+and BUILD-03/DOCS-04 closure remain separate decisions.

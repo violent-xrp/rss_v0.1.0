@@ -265,5 +265,96 @@ class ProofSupportTests(unittest.TestCase):
         self.assertIn("[PASS] \u00a7 \u4e2d\u6587", output)
 
 
+    def test_facade_import_excludes_reference_pack(self):
+        output = self.child(r'''
+            import importlib
+            import importlib.abc
+            from pathlib import Path
+            sys.path.insert(0, str(Path.cwd() / "src"))
+            assert "rss.reference_pack" not in sys.modules
+
+            class ReferenceImportRefused(RuntimeError):
+                pass
+
+            class RefuseReferencePack(importlib.abc.MetaPathFinder):
+                def find_spec(self, fullname, path=None, target=None):
+                    if fullname == "rss.reference_pack" or fullname.startswith("rss.reference_pack."):
+                        raise ReferenceImportRefused("reference-import-refused:" + fullname)
+
+            guard = RefuseReferencePack()
+            sys.meta_path.insert(0, guard)
+            try:
+                importlib.import_module("rss.reference_pack")
+            except ReferenceImportRefused as error:
+                assert str(error) == "reference-import-refused:rss.reference_pack"
+            else:
+                raise AssertionError("reference refusal positive control failed")
+            print("reference-refusal-positive-control", flush=True)
+            assert "rss.reference_pack" not in sys.modules
+
+            import test_support as facade
+            import proof_support
+            assert guard in sys.meta_path
+            assert "rss.core.runtime" in sys.modules
+            assert not any(name == "rss.reference_pack" or name.startswith("rss.reference_pack.")
+                           for name in sys.modules)
+            for name in ("load_reference_pack", "load_demo_containers", "seed_demo_world",
+                         "REFERENCE_PACK", "DEMO_CONTAINERS"):
+                assert not hasattr(facade, name), name
+                assert name not in facade.__all__, name
+            for name in ("check", "section", "safe_run", "reset_counters", "deny_live_http",
+                         "run_tests", "module_tests", "run_module", "isolated_counters",
+                         "_running_under_pytest"):
+                assert getattr(facade, name) is getattr(proof_support, name), name
+            print("facade-reference-boundary-preserved")
+        ''')
+        self.assertIn("reference-refusal-positive-control", output)
+        self.assertIn("facade-reference-boundary-preserved", output)
+
+    def test_demo_reference_imports_preserve_identity_and_registration(self):
+        output = self.child(r'''
+            import ast
+            from pathlib import Path
+            import test_demo_reference_pack as demo
+            import rss.reference_pack as reference
+            for name in ("load_reference_pack", "load_demo_containers", "seed_demo_world",
+                         "REFERENCE_PACK", "DEMO_CONTAINERS"):
+                assert hasattr(demo, name), "missing reference binding: " + name
+                assert getattr(demo, name) is getattr(reference, name), name
+            assert demo.reference_pack_module is reference
+            import test_all
+            origin = Path(reference.__file__).resolve()
+            instances = [(name, module) for name, module in sys.modules.items()
+                         if getattr(module, "__file__", None)
+                         and Path(module.__file__).resolve() == origin]
+            assert instances == [("rss.reference_pack", reference)], instances
+
+            tree = ast.parse(Path(test_all.__file__).read_text(encoding="utf-8"))
+            bindings = {}
+            for node in tree.body:
+                if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("test_"):
+                    for item in node.names:
+                        assert item.name != "*", node.module
+                        local = item.asname or item.name
+                        assert local not in bindings, local
+                        bindings[local] = node.module + "." + item.name
+            assignments = [node for node in tree.body if isinstance(node, ast.Assign)
+                           and any(isinstance(target, ast.Name) and target.id == "TESTS"
+                                   for target in node.targets)]
+            assert len(assignments) == 1
+            assert isinstance(assignments[0].value, ast.List)
+            entries = assignments[0].value.elts
+            assert all(isinstance(entry, ast.Name) for entry in entries)
+            expected = [bindings[entry.id] for entry in entries]
+            actual = [function.__module__ + "." + function.__name__ for function in test_all.TESTS]
+            assert len(expected) == len(set(expected)) == 181
+            assert len(actual) == len(set(actual)) == 181
+            assert actual == expected, (actual, expected)
+            print("reference-identities-and-181-registrations-preserved")
+        ''')
+        self.assertIn("reference-identities-and-181-registrations-preserved", output)
+
+
+
 if __name__ == "__main__":
     unittest.main()

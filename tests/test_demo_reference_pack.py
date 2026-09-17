@@ -38,6 +38,11 @@ import shutil
 from test_support import *
 import rss.reference_pack as reference_pack_module
 from rss.reference_pack import (
+    load_reference_pack,
+    load_demo_containers,
+    seed_demo_world,
+    REFERENCE_PACK,
+    DEMO_CONTAINERS,
     DEMO_QUESTIONS,
     ReferencePackError,
     iter_container_entries,

@@ -147,14 +147,16 @@ open. Naming is settled and need not delay a selected correctness repair.
 
 ## BUILD-03 static map
 
-**Static map, started 2026-09-14; harness revalidated 2026-09-16.**
+**Static map, started 2026-09-14; harness revalidated 2026-09-17.**
 The original analysis at `f2ef219` parsed 64 tracked Python files with the
 standard library and did not import project modules or execute proof bodies.
 Function subjects and boundary interpretations remain provisional; direct source
 relationships are distinguished from proposed placement.
 
-The current harness rows, tooling-import edge, initialization and path consumers
-below use the [proof-support candidate source hashes](#candidate-source-binding).
+The current facade, demo-import and loader anchors below use the
+[DOCS-04 implementation source hashes](#demo-dependency-implementation-source-binding).
+Unchanged proof_support and tooling-import anchors retain their
+[earlier source binding](#candidate-source-binding).
 The combined-hygiene child-command anchor was revalidated for the 2026-09-15
 input-selection candidate; its child-command list is unchanged. The claim-selector
 anchor now uses the [argument-candidate source binding](#standalone-proof-identities-and-subjects).
@@ -162,7 +164,8 @@ Other map anchors and the preserved registration appendix retain their `f2ef219`
 appendix is a dated baseline, including its pre-separation tooling line numbers.
 
 The implementation and its independent static review reconciled all 181 names.
-The later argument slice changes no source under `tests/` and reuses that reconciliation.
+The later argument slice changed no source under `tests/`. The DOCS-04 import
+slice freshly reconciles all 181 qualified names and preserves registry bytes.
 Revalidate affected current-map anchors after any referenced source changes.
 Changes under `tests/`, including `tests/test_all.py`, also require fresh static
 name reconciliation.
@@ -186,7 +189,9 @@ flowchart LR
     Harness --> ProofSupport["proof_support runner"]
     Tooling --> ProofSupport
     Harness --> Runtime
-    Harness --> Reference["Reference data helpers"]
+    Registry --> DemoProof["Demo/reference proofs"]
+    DemoProof --> Harness
+    DemoProof --> Reference["Reference data helpers"]
     Coverage["Coverage launcher"] --> Registry
 ```
 
@@ -236,7 +241,7 @@ repair performed by this map.
 | Unit / source anchor | Role / subject | Potential effects | Required authority | Observed enforcement / caller context |
 | --- | --- | --- | --- | --- |
 | [Windows stream setup](../tests/proof_support.py#L39) | harness | process-state | Unassessed. | proof_support configures the streams before the facade imports kernel services. This setup has one owner. |
-| [facade imports](../tests/test_support.py#L39), [kernel imports](../tests/test_support.py#L50), [reference data import](../tests/test_support.py#L79) | harness / kernel fixture facade | process-state | Unassessed. | test_support adds src to sys.path, re-exports the runner functions and imports kernel services plus reference_pack. The ten remaining wildcard consumers retain this import-time reach; the tooling module uses proof_support directly. |
+| [facade imports](../tests/test_support.py#L39), [kernel imports](../tests/test_support.py#L50) | harness / kernel fixture facade | process-state | Unassessed. | test_support adds src to sys.path, re-exports the runner functions and imports kernel services. It no longer imports reference_pack or exports its five demo names. Ten wildcard consumers retain the kernel reach; demo proofs import reference material explicitly and tooling uses proof_support directly. |
 | [_running_under_pytest](../tests/proof_support.py#L64), [check](../tests/proof_support.py#L75) | harness | memory, console; conditional exception | Unassessed. | Counter/report behavior plus pytest failure behavior. These are not proof bodies. |
 | [section](../tests/proof_support.py#L87), [reset_counters](../tests/proof_support.py#L103) | harness | memory, console | Unassessed. | Formatting and aggregate counters. Resetting once per future group would change the aggregate contract. |
 | [isolated_counters](../tests/proof_support.py#L53) | harness | memory | Unassessed. | Saves and restores the four owner counters around a nested proof scope; inner counts do not enter the outer aggregate. This is not thread isolation. |
@@ -244,15 +249,15 @@ repair performed by this map.
 | [deny_live_http](../tests/proof_support.py#L113) | harness | process-state | Unassessed. | Patches urllib.request.OpenerDirector.open and retains attempts. It does not cover every possible network API or impose OS isolation. |
 | [run_tests](../tests/proof_support.py#L128) | harness | delegates proof effects, memory, console | Unassessed. | Resets counters, runs proofs, prints aggregate verdict and raises SystemExit on recorded failures/errors. forbid_http defaults false. |
 | [module_tests](../tests/proof_support.py#L156), [run_module](../tests/proof_support.py#L164) | harness | reflection; delegates proof effects | Unassessed. | Collects test_-named callables and runs a direct module; no forbid_http=True is supplied here. |
-| [_cleanup_db](../tests/test_support.py#L89) | harness / fixture lifecycle | file-write (deletion), process-state | Unassessed. | Deletes the supplied DB and sidecars with retries; final errors are swallowed. Ownership and refusal guarantees are not established by this helper. |
+| [_cleanup_db](../tests/test_support.py#L88) | harness / fixture lifecycle | file-write (deletion), process-state | Unassessed. | Deletes the supplied DB and sidecars with retries; final errors are swallowed. Ownership and refusal guarantees are not established by this helper. |
 | [TESTS](../tests/test_all.py#L249), [run_all](../tests/test_all.py#L435) | harness | delegates all registered proof effects | Unassessed. | One aggregate registry; run_all supplies forbid_http=True. Membership is reconciled by qualified name below. |
 | [explicit tooling imports](../tests/test_docs_tooling.py#L36) | test; subject tooling | process-state, temporary file-write through fixtures | Unassessed. | The proof bodies use check/section from proof_support and explicit standard-library imports. This module no longer imports test_support or kernel services. Aggregate acceptance still loads its other, kernel-dependent proof modules. |
-| [_load_main_module](../tests/test_cli.py#L36), [demo/main loaders](../tests/test_demo_reference_pack.py#L49) | test helper | process-state; later fixture effects | Unassessed. | Loads source by filename with importlib. Static import edges alone would miss these paths. |
+| [_load_main_module](../tests/test_cli.py#L36), [demo/main loaders](../tests/test_demo_reference_pack.py#L54) | test helper | process-state; later fixture effects | Unassessed. | Loads source by filename with importlib. Static import edges alone would miss these paths. |
 
 <details>
-<summary>Per-module global names also exported by test_support</summary>
+<summary>Retained original per-module overlap with test_support exports</summary>
 
-This is a retained static overlap list from the original map, not executed wildcard resolution. Explicit imports can shadow these names. The tooling row now points to its explicit imports; overlapping names do not establish a dependency on test_support.
+This is a retained static overlap list from the original map, not executed wildcard resolution. Explicit imports can shadow these names. The tooling row points to its explicit imports; overlapping names do not establish a dependency on test_support. After the DOCS-04 import slice, the demo row's `DEMO_CONTAINERS`, `REFERENCE_PACK`, `load_demo_containers`, `load_reference_pack` and `seed_demo_world` are historical overlaps only: they are no longer facade exports and now come from the [explicit demo import block](../tests/test_demo_reference_pack.py#L40).
 
 | Proof module | Referenced overlapping names |
 | --- | --- |
@@ -272,10 +277,11 @@ This is a retained static overlap list from the original map, not executed wildc
 
 ### Reference and demonstration functions
 
-The tracked import scan finds reference_pack imports in the operator entrypoint,
-demo suite, shared harness and demo proofs. No direct import of reference_pack
-was found within `src/rss`. This is an observation about inspected imports,
-not proof that dynamic or external consumers cannot exist.
+The current tracked import scan finds reference_pack imports in the operator
+entrypoint, demo suite and demo proofs, but no longer in the shared facade.
+No direct import was found in another `src/rss` module. Aggregate acceptance
+still imports the demo proofs; CLI proof execution can load the operator module.
+This does not exclude dynamic or external consumers.
 
 | Unit / source anchor | Role | Potential effects | Callers / interpretation |
 | --- | --- | --- | --- |
@@ -1117,8 +1123,10 @@ outstanding.
 
 ### Candidate source binding
 
-These working-file hashes bind the source anchors in this supplement and the
-refreshed harness anchors in the current static map; recheck them after a change.
+These historical working-file hashes bind this first proof-support supplement.
+The changed current facade/demo/suite bytes now use the
+[DOCS-04 implementation binding](#demo-dependency-implementation-source-binding);
+unchanged harness anchors can still use the hashes below.
 The reviewed design, registration appendix and unaffected map anchors retain
 their dated bindings. No additional source move or module name is implied.
 
@@ -1194,3 +1202,275 @@ This labels responsibilities for later separation; it does not perform
 reorganization or complete DOCS-04. The existing canonical rendering proof
 remains registered and byte-unchanged; these nine unittest methods add no
 canonical functions or assertion totals.
+
+
+## DOCS-04 Demo Reference Dependency Design
+
+**Reviewed design record, 2026-09-17; independent static PASS accepted and
+bounded implementation authorized.** The design review had one Low finding
+about naming implementation map spans, incorporated below. The remaining design
+body and its anchors/hashes retain the pre-change `0fc6a13` binding; read its
+proposed/unexecuted wording as the design-time record. Current implementation
+and fresh builder evidence are in the [implementation supplement](#docs-04-demo-reference-dependency-implementation),
+which awaits independent implementation review.
+
+Document role: documentation. Component scope: Sigil Crucible proof support and
+Demonstration/reference, with Sigil Kernel exercised by the existing proofs.
+Canonical detail owner: this section, under the existing
+[ownership rule](PROJECT_CONTROL_SURFACE.md#core-rule). Task: DOCS-04;
+BUILD-03 is a related checkpoint/evidence reference, not a second work order.
+The complete dated inventory, registration appendix and earlier reviewed design
+records remain intact. This adds no queue, component name or authority tier.
+
+### Proposed dependency change
+
+Remove the five demo/reference imports from
+[test_support's import block](../tests/test_support.py#L79), and add exactly those
+five names to the demo proof's existing
+[explicit reference-pack import block](../tests/test_demo_reference_pack.py#L40).
+Keep that block after its [facade import](../tests/test_demo_reference_pack.py#L38):
+the facade establishes the [direct-run source path](../tests/test_support.py#L47).
+Keep the adjacent `reference_pack_module` alias and all proof/helper bodies.
+
+| Existing defining symbol | Kind | Proposed consumer ownership |
+| --- | --- | --- |
+| [rss.reference_pack.load_reference_pack](../src/rss/reference_pack.py#L372) | demonstration loader | explicit demo-proof import |
+| [rss.reference_pack.load_demo_containers](../src/rss/reference_pack.py#L393) | demonstration loader | explicit demo-proof import |
+| [rss.reference_pack.seed_demo_world](../src/rss/reference_pack.py#L441) | demonstration orchestration | explicit demo-proof import |
+| [rss.reference_pack.REFERENCE_PACK](../src/rss/reference_pack.py#L44) | reference data | explicit demo-proof import, same object |
+| [rss.reference_pack.DEMO_CONTAINERS](../src/rss/reference_pack.py#L104) | demonstration data | explicit demo-proof import, same object |
+
+The facade's [dynamic export list](../tests/test_support.py#L129) will then omit
+these five names. This intentionally narrows that facade interface; no alias,
+copied data, lazy import or forwarding layer is proposed. External/untracked
+consumers are unassessed. Reference-pack paths, defining code, runtime services
+and the operator/demo callers stay unchanged.
+
+Current edge: shared facade -> reference pack -> hub-topology definitions.
+Proposed edge: demo proof -> reference pack; shared facade -> existing kernel
+services and proof_support, without the eager reference-pack import. The
+reference pack remains the existing Demonstration/reference responsibility;
+its presence under `src/rss` does not make its loaders proof-support machinery.
+No package extraction, file move or reclassification of public counts follows.
+
+### Observed consumers and compatibility
+
+Static AST inspection of all 67 tracked Python files found ten wildcard facade
+importers. Only `test_demo_reference_pack.py` loads any of these five bare names.
+Nine other wildcard importers receive the exports without using them. No tracked
+attribute, reflection or namespace lookup of these five facade exports was
+identified. This is bounded source inspection, not a proof about arbitrary
+dynamic execution or external consumers.
+
+| Existing proof identity | Actual uses of the five exports | Retained registration |
+| --- | --- | --- |
+| [test_demo_reference_pack.test_genesis_binding_and_offline_fallback](../tests/test_demo_reference_pack.py#L79) | load_reference_pack, REFERENCE_PACK | [test_all line 416](../tests/test_all.py#L416) |
+| [test_demo_reference_pack.test_demo_world_seed_and_container_isolation](../tests/test_demo_reference_pack.py#L129) | all five | [test_all line 417](../tests/test_all.py#L417) |
+| [test_demo_reference_pack.test_phase_g_demo_suite_operator_flow](../tests/test_demo_reference_pack.py#L337) | DEMO_CONTAINERS | [test_all line 418](../tests/test_all.py#L418) |
+
+The [module-attribute patch/restore sequence](../tests/test_demo_reference_pack.py#L247)
+deliberately rebinds `reference_pack_module.REFERENCE_PACK` and
+`reference_pack_module.DEMO_CONTAINERS`. Preserve this alias and its distinction
+from imported object bindings. Explicit imports obtain the same original
+functions/data as the facade currently exposes; do not copy or rebuild data.
+Two [adversarial source checks](../tests/test_adversarial_scenarios.py#L1134)
+mention loader calls as strings, not as facade symbol uses. Their inspected
+example file and all source-text expectations stay unchanged.
+
+The aggregate [still imports the demo proofs](../tests/test_all.py#L243).
+The [operator module](../src/main.py#L49) and
+[demo suite](../examples/demo_suite.py#L31) import reference material directly.
+The [CLI proof loader](../tests/test_cli.py#L36) can load the operator module
+during proof execution. Therefore this slice must claim only removal of the
+facade's eager dependency, not absence of reference material from aggregate
+acceptance or all non-demo execution. No other tracked `src/rss` module was
+found to import `rss.reference_pack` directly; this does not exclude indirect
+loading through operator interfaces.
+
+Name-by-name static reconciliation resolves all 181 registry entries to 181
+distinct top-level definitions across 11 modules, without omissions or duplicate
+bindings. It does not remeasure assertions. Keep that registry, its ordering,
+all canonical proof/helper bodies and CLAIM tags byte-identical apart from the
+demo module's import block. Definition-line shifts require current anchors to
+be refreshed at implementation; they do not change a proof's identity.
+
+### Responsibilities and proposed identities
+
+Existing symbols keep their recorded qualified identities; DOCS-04 is the task
+reference for this proposed dependency change. These fields describe the
+affected boundary, not a replacement per-file inventory. Effects can have
+multiple values. A required permission is distinct from its enforcement.
+
+| Unit | Role | Proof subject | Effects | Required authority | Observed enforcement / caller context |
+| --- | --- | --- | --- | --- | --- |
+| test_support import/export surface | harness, Sigil Crucible | not applicable | file-read through imports, process-state/module bindings, stream configuration via proof_support | permission to execute the proof harness | import ordering and Python bindings; no host confinement; kernel imports remain |
+| demo proof import block and its three registered proofs | test, mixed runtime/operator/demonstration subjects | existing demo/reference behavior; subject labels in the dated appendix retained | imports; existing owned-fixture database/file effects and console during proof execution | existing approved proof execution; no new authority granted | existing runtime interfaces, fixture discipline and assertions; no proof bodies or authority checks changed |
+| reference-pack data and loader definitions | example / demonstration | not applicable | data binding on import; database/state mutation through runtime services when loaders are invoked | existing caller permission and runtime checks; completeness of T-0 requirements not reassessed | existing loader/service behavior; import alone does not invoke seed_demo_world |
+| proposed standalone methods below | test, Sigil Crucible | eager import boundary and consumer object/registration compatibility | child-process, file-read through imports, memory, console; import-only children, no intended database/network operation | separately authorized proof execution | proposed import tripwire and identity assertions; not yet executed and not a sandbox |
+
+Proposed new identities, not existing methods:
+- `DOCS-04::test_proof_support.ProofSupportTests.test_facade_import_excludes_reference_pack`
+- `DOCS-04::test_proof_support.ProofSupportTests.test_demo_reference_imports_preserve_identity_and_registration`
+
+Add these to the existing `docs/test_proof_support.py` suite, not canonical
+`tests/test_all.py`. The suite would grow from 13 to 15 unittest methods; these
+counts must never be added to canonical function or assertion totals. Reuse its
+[fresh-child helper](test_proof_support.py#L45), leaving all 13 existing methods
+and their definition lines unchanged by appending before the module guard.
+
+### Proposed proof and implementation boundary
+
+Future Python footprint: **three paths only**: `tests/test_support.py`,
+`tests/test_demo_reference_pack.py`, and `docs/test_proof_support.py`.
+No file is added, renamed or moved. The first two change only imports; the third
+adds the two standalone methods. No canonical proof body changes are proposed.
+
+1. **Facade boundary:** in a fresh child, establish the checkout's source lookup
+   path without importing the facade, assert `rss.reference_pack` is absent,
+   install a narrowly targeted import finder, and demonstrate that an explicit
+   attempted import is refused with its unique sentinel (not ModuleNotFoundError). Keep the finder active
+   while importing the facade; that import must succeed, with all five names
+   absent from both attributes and `__all__`, reference_pack still unloaded,
+   and the existing shared runner aliases unchanged. Ordinary kernel imports
+   remain allowed. Run this method against the retained old facade: it must fail
+   at the reference import, not at setup, with the positive control passing.
+2. **Consumer compatibility:** in a separate unguarded child, import the demo
+   proof and aggregate through the supported test import route; compare all five
+   demo bindings by object identity with `rss.reference_pack`, retain its module
+   alias identity, check a single defining-module instance by resolved origin,
+   and compare the ordered runtime qualified names with the bindings parsed
+   from the unchanged tracked test_all.py AST, rejecting duplicates. The test
+   must not read a temporary packet or Git history. Separately, the implementation
+   packet must prove registry bytes/order unchanged from this baseline.
+   Importing is not proof execution. A packet-only incomplete-change
+   control (facade import removed, old demo imports retained) must fail the
+   missing-binding assertion. The fully old sources may pass this compatibility
+   control; it proves preservation, not the new boundary by itself.
+3. After separately authorized implementation, run the 15-method standalone
+   suite, the three existing demo proofs through their direct module route,
+   and aggregate acceptance. Retain the prior focused-demo result for comparison;
+   do not invent its count here. Require aggregate **181 functions / 3013
+   assertions / 0 failures** with unchanged verdict format. Any changed total
+   is a failure to investigate, not a baseline to sync. Source-bind each run and
+   preserve owned TEMP/coverage policy. Do not run against live runtime state.
+4. Check the existing documented focused-import route and pytest `prepend`
+   import/collection compatibility without claiming other import modes. No
+   install is proposed. Canonical registration and CLAIM selection remain
+   unchanged; do not substitute collection for an executed aggregate verdict.
+
+Current numbers are inherited execution records, not new results. This design
+ran only static source/name analysis and documentation/preservation checks;
+no project imports, tests, generators or full gates. Future execution requires
+its own bounded plan and human disposition after design review.
+
+At implementation, update this owner’s current facade/map edges, test identities
+and source bindings: specifically the facade/reference-import row (reviewed
+line 239), the five former demo exports in the retained overlap row/context
+(reviewed line 265), and the direct-reference-import inventory (reviewed
+lines 275-276). These line numbers identify the reviewed design snapshot.
+Also update TESTING's existing proof-support command/effect row
+and suite evidence. Find every affected current source anchor, including shifted
+facade and demo-proof definitions; keep explicitly dated historical records
+bound to their old revision. Keep the complete inventory and dated registration
+appendix, with current reconciliation recorded separately. ROADMAP remains the
+sole queue; append a receipt at the appropriate later disposition, not now.
+
+Stop after scoped independent design review and return to the human controller.
+No implementation, checkpoint, full-gate acceptance, BUILD-03/DOCS-04 closure,
+Main integration, push or release is implied. Reverse-output F2/F3, cleanup,
+physical reorganization, SITE-01 and BUILD-05 are outside this slice. This is
+cooperative dependency separation, not technical host or runtime isolation.
+
+### Design source binding
+
+All source anchors in this section refer to unchanged working bytes at
+`0fc6a13856d78a3c42686aac7e5cd866a95da775`, with the following public hashes.
+Revalidate after source changes. The private static-analysis packet supplies
+the 67-file consumer inventory and ordered 181-name reconciliation; no code
+from that packet is needed to identify the public source anchors below.
+
+| Source | SHA-256 |
+| --- | --- |
+| `tests/test_support.py` | `5b3d4008e6ee67708b0b85235537f54d794c348196bd824fd0d9a57e2c6c3b51` |
+| `tests/proof_support.py` | `172f1385976000074aeae0501d7d8c23a54290862418728cb2c4defc72f54a36` |
+| `tests/test_demo_reference_pack.py` | `c4fd2a0e9f8d813dfcd4912105e7a56d8d6242401ab1bac6ee01ccee275e202b` |
+| `tests/test_all.py` | `74dc9f79f1457c5025667c17a12d2b5f6d03ea5bcd2550f8cafae109ab4422f4` |
+| `tests/test_cli.py` | `fe42c796ce150ca581b353f17a5ece22d333c0b55d7b9c0cb5d0c1a536cc9d90` |
+| `tests/test_adversarial_scenarios.py` | `894955887badd150c245b34865b025ee0d278d32c51911ae75fdae6893afa741` |
+| `src/rss/reference_pack.py` | `38e221c480cb9b24058666bef333ea7150234727b24b2c33817f1dd92154adf8` |
+| `src/main.py` | `41e7c06b7ed1f17a211bb93e9902b037d94ddebbc9b8eca519f973c7562adfe9` |
+| `examples/demo_suite.py` | `81ce3555582d4cba1436b0c612ce6c9bda4e67f63ebc673f257dfe879c40c030` |
+| `docs/test_proof_support.py` | `905845245c886dbd5f1b3e9e8a351438865dc2b0c593c9fc0572f21df77402f2` |
+
+
+## DOCS-04 Demo Reference Dependency Implementation
+
+**Locally checkpointed, 2026-09-17, after independent implementation PASS
+with no findings and human disposition.** The reviewer inspected source,
+identities, preservation and execution records without rerunning tests.
+The [bounded receipt](roadmap/ACCEPTANCE_HISTORY.md#2026-09-17-docs-04-demo-reference-dependency-local-checkpoint)
+records this slice; RSS Architecture separation remains open. TESTING owns the
+[execution record](TESTING.md#docs-04-demo-reference-dependency-execution).
+
+The shared facade no longer imports the five reference-pack symbols. The
+[demo proof import block](../tests/test_demo_reference_pack.py#L40) imports the
+same functions/data explicitly after its facade import. The existing module
+alias still owns the patch/restore access. All canonical proof/helper bodies,
+CLAIM tags, registry bytes and order are unchanged. The reference-pack module
+and its runtime/operator callers are unchanged; the deliberate compatibility
+change is that external users can no longer obtain these five names from the
+facade. External consumers remain unassessed.
+
+The current map now removes the facade-to-reference edge, shows the demo proof
+edge, updates the facade and direct-import inventory, and explicitly identifies
+the five historical overlap names as no longer exported. This addresses the
+design review's three specific map spans. The dated inventory and registration
+appendix remain intact. Current name reconciliation still resolves exactly 181
+distinct functions; current locations of the three unchanged demo proof bodies
+are [genesis](../tests/test_demo_reference_pack.py#L84),
+[seed/isolation](../tests/test_demo_reference_pack.py#L134) and
+[operator flow](../tests/test_demo_reference_pack.py#L342).
+
+### Demo dependency identities and limits
+
+Document role: documentation. Component scope: Sigil Crucible harness/tests and
+Demonstration/reference dependencies; the existing proofs exercise Sigil Kernel
+and operator services. Task reference: DOCS-04. Existing symbols retain their
+qualified identities; only the two new proof identities below use `DOCS-04::`.
+No new runtime component, authority tier, command, file or repository is created.
+
+| Identity / source | Role | Proof subject | Effects | Required authority | Observed enforcement / context |
+| --- | --- | --- | --- | --- | --- |
+| [test_support imports](../tests/test_support.py#L39), [exports](../tests/test_support.py#L128) | harness | not applicable | import file-read, process-state; inherited stream setup | approved harness execution | one runner owner, existing kernel imports; reference-pack dependency removed; no host confinement |
+| [test_demo_reference_pack imports](../tests/test_demo_reference_pack.py#L40), [module alias](../tests/test_demo_reference_pack.py#L39) | test-module support | not applicable; proof subjects stay with the three bodies | import file-read, process-state; existing proof effects when invoked | approved proof execution | explicit original object bindings; alias patch/restore preserved at [current line 252](../tests/test_demo_reference_pack.py#L252) |
+| [test_proof_support.ProofSupportTests.test_facade_import_excludes_reference_pack](test_proof_support.py#L268) | test | eager facade import and five-export boundary | child-process, file-read, memory, console; child-local import finder | approved standalone proof execution | sentinel positive control, guarded facade import, absent exports/module, preserved runner identities; targeted cooperative guard only |
+| [test_proof_support.ProofSupportTests.test_demo_reference_imports_preserve_identity_and_registration](test_proof_support.py#L314) | test | five original object bindings, alias identity, one defining-module instance and ordered registration | child-process, file-read, memory, console | approved standalone proof execution | compares live objects and tracked AST; rejects missing bindings/duplicates; no packet/Git-history dependency |
+
+The first 13 standalone method bodies and definition lines are unchanged; two
+methods extend the existing suite to 15. Standalone unittest totals do not add
+to canonical function/assertion totals. The first new method fails against the
+old facade after its refusal positive control succeeds. The second fails on a
+missing binding if only the facade change is applied; fully old sources may
+pass that preservation check, so it is not standalone evidence of separation.
+
+Aggregate acceptance still imports the demo proofs. Operator/CLI execution may
+load reference material. This removes the facade's eager dependency only, not
+all demo loading, runtime authority, host access or package measurement overlap.
+The facade still imports kernel services. Cleanup and output boundaries, F2/F3,
+physical reorganization and broader separation remain outside this candidate.
+
+### Demo dependency implementation source binding
+
+These candidate hashes bind the refreshed current-map anchors and this
+implementation supplement. The earlier design, inventory, registration appendix
+and first proof-support evidence retain their dated hashes and line anchors.
+Revalidate current anchors after future source changes.
+
+| Source | SHA-256 |
+| --- | --- |
+| `tests/test_support.py` | `8f6a0c0af224867c2d8c263c34eb71f0c70c79d1791aef7882e7f5315d1a3dbf` |
+| `tests/test_demo_reference_pack.py` | `c7e8190dda96ae1b70e55de9d8e11ef80dc96a6e43af4873aa19b2748a592705` |
+| `docs/test_proof_support.py` | `1da6f6a54bbf3c1a813adb9475bc4db67190e7318c5ea0f25a1b0fd24770cee0` |
+| `tests/test_all.py` | `74dc9f79f1457c5025667c17a12d2b5f6d03ea5bcd2550f8cafae109ab4422f4` |
+| `tests/proof_support.py` | `172f1385976000074aeae0501d7d8c23a54290862418728cb2c4defc72f54a36` |
+| `src/rss/reference_pack.py` | `38e221c480cb9b24058666bef333ea7150234727b24b2c33817f1dd92154adf8` |

@@ -1305,3 +1305,49 @@ from the two mixed files. Other queue changes, the earlier BUILD-05 receipt,
 threat/coverage corrections, protected outputs, private handoff history and
 retained evidence are preserved. SITE-01 and BUILD-05 keep their holds;
 further work requires its own disposition.
+
+
+## 2026-09-17 DOCS-04 Demo Reference Dependency Local Checkpoint
+
+The human accepted the independent implementation PASS with no findings and
+authorized this bounded local checkpoint and receipt. The facade's eager
+reference-pack import is removed; its sole consuming proof module imports the
+same five original objects explicitly. All canonical proof/helper bodies,
+CLAIM tags and registry bytes are preserved. Two standalone methods identify
+and prove this boundary; the suite now has 15 methods, separate from canonical
+totals. The three Python files retain their exact reviewed working bytes.
+
+The accepted implementation manifest SHA-256 is
+`8cb289d4343a4c16f2fb8a3fdc19328cb63b64e5c4cea5db7349c060460d31a0`;
+its candidate diff SHA-256 is
+`3361e2503c3eb16f5fb7e7c2d8dc740e8b80a69151b9f669f09d54b19653ef6e`.
+Independent static review checked source, controls, identities, run records,
+current-map corrections and preservation, without executing the proofs.
+Original packets remain unchanged. Optional historical-anchor and recorded
+environment-key observations are deferred; neither was a finding.
+
+Builder execution evidence remains separate from this review and checkpoint:
+- 15 standalone methods passed, with zero failures, errors or skips.
+- The old-facade and incomplete-import controls each failed for its intended
+  cause, with no unittest error or skip.
+- Direct demo and focused facade routes each reported 3 functions / 105
+  assertions / 0 failures; the pre-change demo's output streams matched exactly.
+- The observed aggregate entrypoint reported 181 functions / 3013 assertions /
+  0 failures and errors, retaining the verdict and HTTP-guard lines.
+- Pytest prepend collection reconciled 181 distinct registered names and shared
+  defining-module instances; no pytest proof bodies were executed in that run.
+
+No tests, generators, coverage, baseline, combined hygiene or pytest were
+rerun for this checkpoint. Coverage 92.7% and 26 modules remain inherited.
+The facade still imports kernel services; the aggregate still imports demo
+proofs and reference data. This removes one eager dependency, not all demo
+loading, physical layout overlap or host/runtime authority. External facade
+consumers remain unassessed. BUILD-03 and DOCS-04 remain open.
+
+Only DOCS-04's queue row and this appended receipt enter from the two mixed
+files. Earlier queue/receipt edits, threat and coverage work, protected outputs,
+private handoff history and retained evidence remain preserved. The parent is
+`0fc6a13`. This checkpoint is local only: no Main integration, push, tag,
+release or full-gate acceptance. The separately authorized F2 work will bind
+its own candidate after this checkpoint; F1 is not reopened, F3 stays deferred,
+and SITE-01 and BUILD-05 keep their holds.
