@@ -250,6 +250,9 @@ import, or optional pytest collection. The independent `tests/proof_support.py`
 owns counters, runner/HTTP-guard helpers and Windows stream setup.
 `tests/test_support.py` re-exports those functions for kernel-facing tests and
 retains kernel imports and cleanup. Neither helper is a proof-body module.
+
+DOCS-04 S1 harness boundary (2026-09-18): `tests/proof_support.py` remains Kernel-free (no `rss.*` imports; enforced by static AST proof in `docs/test_proof_support.py`). Tooling proofs such as `tests/test_docs_tooling.py` import runners only from `proof_support`. `tests/test_support.py` stays the Kernel-fixture facade for Kernel proofs only. Discriminating proofs fail if tooling import pulls Kernel. Historical 181/3013 counts remain comparison-only; report newly measured totals with reconciliation.
+
 `tests/conftest.py` is pytest's automatic import-path shim, not a standalone
 runner and not loaded by the direct canonical command.
 

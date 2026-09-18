@@ -1398,3 +1398,36 @@ packets and empty fixture directories are preserved. This checkpoint is local:
 no Main integration, push, tag, release or full-gate acceptance. BUILD-03 and
 DOCS-04 stay open; the next work returns to DOCS-04 separation design. F3 remains
 deferred; SITE-01 and BUILD-05 keep their holds.
+## 2026-09-18 DOCS-04 S1 Harness Purity Local Checkpoint
+
+The human accepted the independent CL PASS on the corrected S1 harness-purity
+candidate (HOLD findings F1-F4 cleared, then N1-N4 cleanup CR-approved) and
+authorized this bounded local checkpoint and receipt. Crucible `proof_support`
+remains stdlib-only; tooling proofs import runners from `proof_support` only;
+`test_support` stays the Kernel-fixture facade. Two static AST boundary proofs
+and identity rows record that contract. BUILD-03 evidence retains 13 standalone
+cases; a separate dated S1 sentence records the measured 17-case suite. Demo
+identity anchors were refreshed to live lines. DESIGN polish L1/L2 and the
+cleanup packet remain the review authority chain.
+
+Landing authority cleanup packet:
+`rss-docs04-s1-harness-purity-GK-cleanup-n1n4-5ea708c9`
+after.json SHA-256:
+`ff7469628e3345ab46d08b9eaa3c0400f571a82dd9c8bc1ec1f1ddc50e3a0f79`.
+Prior chain: Build `921803b6` → HOLD-fix `2d9b4603` → cleanup `5ea708c9`.
+Design authority polish-l1l2-9542a1ed.
+
+Builder evidence retained from the cleanup packet (not re-run for Landing):
+- Harness: 17 standalone unittest cases OK.
+- Tooling: 4 functions / 42 assertions passed.
+- Canonical 181/3013/0 retained from reviewed-base log.
+
+SIGIL staging used hunk isolation: only S1 prose, identity rows, evidence split,
+and refreshed demo anchors entered the index. Mandate-amendment / Canon-Export
+design dirt in `docs/SIGIL_CRUCIBLE.md` remained unstaged. Unrelated dirty
+(THREAT_MODEL, PROJECT_CONTROL_SURFACE, COVERAGE_TRACKER, claim_stdout, etc.)
+was preserved outside this commit.
+
+Parent HEAD was `33aa5db36e1aa04b050437b1634e56dd4c7e9f42`. This checkpoint is local only: no Main merge,
+push, tag, Lab sync, S2+, SITE-01 or BUILD-05.
+

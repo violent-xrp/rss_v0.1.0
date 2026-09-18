@@ -234,6 +234,8 @@ facts and describes enforcement only where a specific check was inspected.
 
 ### Harness and proof dependencies
 
+**DOCS-04 S1 harness purity (2026-09-18).** `proof_support` is the Crucible runner (stdlib-only; no `rss.*`). Tooling proofs import runners from `proof_support` only. `test_support` remains the Kernel-fixture facade for Kernel-subject proofs. The two static AST boundary proofs are listed as `DOCS-04::test_proof_support.ProofSupportTests.test_proof_support_source_has_no_rss_imports` and `DOCS-04::test_proof_support.ProofSupportTests.test_docs_tooling_source_imports_runners_only_from_proof_support` in the standalone `ProofSupportTests` identity table below (role: test; subject: tooling static AST import boundary; effects: file-read, memory — not a confinement boundary). TESTING.md carries the operator-facing boundary note. Generator moves and `src/rss_demo/` remain later slices.
+
 The harness is shared infrastructure; proof subjects belong to individual test
 functions. A direct module run and the aggregate do not have identical guard
 settings. Current cleanup/error suppression remains a BUILD-02 concern, not a
@@ -1100,15 +1102,18 @@ these mechanisms confines arbitrary project or third-party code.
 | [test_proof_support.ProofSupportTests.test_caught_test_exception_counts_error_and_continues](test_proof_support.py#L139) | test | tooling: error accounting and continuation | memory, console, process-state |
 | [test_proof_support.ProofSupportTests.test_failed_check_raises_in_pytest_context](test_proof_support.py#L150) | test | tooling: pytest environment marker; not pytest parity | memory, console, process-state |
 | [test_proof_support.ProofSupportTests.test_module_runner_preserves_function_order](test_proof_support.py#L156) | test | tooling: module selection, order and counts | memory, console, process-state |
-| [test_proof_support.ProofSupportTests.test_fresh_child_refuses_kernel_imports_and_executes_tooling_proofs](test_proof_support.py#L174) | test | tooling: refusal positive control and four tooling proofs | memory, console, process-state, child-process, file-read, file-write (owned tooling fixtures) |
-| [test_proof_support.ProofSupportTests.test_fresh_aggregate_import_has_one_harness_module](test_proof_support.py#L203) | test | tooling: aggregate import graph and one defining module | memory, console, process-state, child-process, file-read |
-| [test_proof_support.ProofSupportTests.test_facade_configures_streams_once_before_kernel_imports](test_proof_support.py#L220) | test | tooling: stream setup order and no duplicate setup | memory, console, process-state, child-process, file-read |
-| [test_proof_support.ProofSupportTests.test_streams_without_reconfigure_remain_supported](test_proof_support.py#L244) | test | tooling: nonstandard captured streams | memory, console, process-state, child-process, file-read |
-| [test_proof_support.ProofSupportTests.test_windows_child_emits_utf8_under_cp1252](test_proof_support.py#L257) | test | tooling: Windows UTF-8 output from a cp1252 child | memory, console, process-state, child-process, file-read |
+| `DOCS-04::test_proof_support.ProofSupportTests.test_proof_support_source_has_no_rss_imports` ([source](test_proof_support.py#L174)) | test | tooling: static AST import boundary — `proof_support` source has no `rss.*` | file-read, memory |
+| `DOCS-04::test_proof_support.ProofSupportTests.test_docs_tooling_source_imports_runners_only_from_proof_support` ([source](test_proof_support.py#L191)) | test | tooling: static AST import boundary — tooling top-level runners from `proof_support` only (not `test_support` / `rss.*`) | file-read, memory |
+| [test_proof_support.ProofSupportTests.test_fresh_child_refuses_kernel_imports_and_executes_tooling_proofs](test_proof_support.py#L215) | test | tooling: refusal positive control and four tooling proofs | memory, console, process-state, child-process, file-read, file-write (owned tooling fixtures) |
+| [test_proof_support.ProofSupportTests.test_fresh_aggregate_import_has_one_harness_module](test_proof_support.py#L244) | test | tooling: aggregate import graph and one defining module | memory, console, process-state, child-process, file-read |
+| [test_proof_support.ProofSupportTests.test_facade_configures_streams_once_before_kernel_imports](test_proof_support.py#L261) | test | tooling: stream setup order and no duplicate setup | memory, console, process-state, child-process, file-read |
+| [test_proof_support.ProofSupportTests.test_streams_without_reconfigure_remain_supported](test_proof_support.py#L285) | test | tooling: nonstandard captured streams | memory, console, process-state, child-process, file-read |
+| [test_proof_support.ProofSupportTests.test_windows_child_emits_utf8_under_cp1252](test_proof_support.py#L298) | test | tooling: Windows UTF-8 output from a cp1252 child | memory, console, process-state, child-process, file-read |
 
 ### Evidence and remaining limits
 
 Builder execution: 13 standalone unittest cases passed, no failures/errors/skips;
+DOCS-04 S1 (2026-09-18): standalone suite measured 17 unittest cases (prior 15 plus two static AST boundary proofs), no failures/errors/skips;
 canonical acceptance retained **181 functions / 3013 assertions / 0 failures**
 and the unchanged verdict line, with zero unexpected urllib attempts. The three
 documented focused commands passed with 40, 222 and 105 assertions respectively;
@@ -1465,8 +1470,8 @@ No new runtime component, authority tier, command, file or repository is created
 | --- | --- | --- | --- | --- | --- |
 | [test_support imports](../tests/test_support.py#L39), [exports](../tests/test_support.py#L128) | harness | not applicable | import file-read, process-state; inherited stream setup | approved harness execution | one runner owner, existing kernel imports; reference-pack dependency removed; no host confinement |
 | [test_demo_reference_pack imports](../tests/test_demo_reference_pack.py#L40), [module alias](../tests/test_demo_reference_pack.py#L39) | test-module support | not applicable; proof subjects stay with the three bodies | import file-read, process-state; existing proof effects when invoked | approved proof execution | explicit original object bindings; alias patch/restore preserved at [current line 252](../tests/test_demo_reference_pack.py#L252) |
-| [test_proof_support.ProofSupportTests.test_facade_import_excludes_reference_pack](test_proof_support.py#L268) | test | eager facade import and five-export boundary | child-process, file-read, memory, console; child-local import finder | approved standalone proof execution | sentinel positive control, guarded facade import, absent exports/module, preserved runner identities; targeted cooperative guard only |
-| [test_proof_support.ProofSupportTests.test_demo_reference_imports_preserve_identity_and_registration](test_proof_support.py#L314) | test | five original object bindings, alias identity, one defining-module instance and ordered registration | child-process, file-read, memory, console | approved standalone proof execution | compares live objects and tracked AST; rejects missing bindings/duplicates; no packet/Git-history dependency |
+| [test_proof_support.ProofSupportTests.test_facade_import_excludes_reference_pack](test_proof_support.py#L309) | test | eager facade import and five-export boundary | child-process, file-read, memory, console; child-local import finder | approved standalone proof execution | sentinel positive control, guarded facade import, absent exports/module, preserved runner identities; targeted cooperative guard only |
+| [test_proof_support.ProofSupportTests.test_demo_reference_imports_preserve_identity_and_registration](test_proof_support.py#L355) | test | five original object bindings, alias identity, one defining-module instance and ordered registration | child-process, file-read, memory, console | approved standalone proof execution | compares live objects and tracked AST; rejects missing bindings/duplicates; no packet/Git-history dependency |
 
 The first 13 standalone method bodies and definition lines are unchanged; two
 methods extend the existing suite to 15. Standalone unittest totals do not add

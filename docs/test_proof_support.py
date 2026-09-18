@@ -171,6 +171,47 @@ class ProofSupportTests(unittest.TestCase):
         self.assertIn("owned - 2 test functions, 2 assertions passed, 0 failed",
                       self.output.getvalue())
 
+    def test_proof_support_source_has_no_rss_imports(self):
+        """Static purity: proof_support.py must not import rss (S1 residual)."""
+        import ast
+        source = (TESTS / "proof_support.py").read_text(encoding="utf-8")
+        tree = ast.parse(source, filename="proof_support.py")
+        found = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name == "rss" or alias.name.startswith("rss."):
+                        found.append(("import", alias.name, node.lineno))
+            elif isinstance(node, ast.ImportFrom):
+                mod = node.module or ""
+                if mod == "rss" or mod.startswith("rss."):
+                    found.append(("from", mod, node.lineno))
+        self.assertEqual(found, [], found)
+
+    def test_docs_tooling_source_imports_runners_only_from_proof_support(self):
+        """Tooling proof module must not import test_support or rss at top level."""
+        import ast
+        source = (TESTS / "test_docs_tooling.py").read_text(encoding="utf-8")
+        tree = ast.parse(source, filename="test_docs_tooling.py")
+        bad = []
+        runner_from_proof = False
+        for node in tree.body:
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    name = alias.name
+                    if name == "rss" or name.startswith("rss.") or name == "test_support":
+                        bad.append(("import", name, node.lineno))
+            elif isinstance(node, ast.ImportFrom):
+                mod = node.module or ""
+                if mod == "rss" or mod.startswith("rss.") or mod == "test_support":
+                    bad.append(("from", mod, node.lineno))
+                if mod == "proof_support":
+                    names = {a.name for a in node.names}
+                    if {"check", "section"} & names:
+                        runner_from_proof = True
+        self.assertEqual(bad, [], bad)
+        self.assertTrue(runner_from_proof, "expected from proof_support import check/section")
+
     def test_fresh_child_refuses_kernel_imports_and_executes_tooling_proofs(self):
         output = self.child(r'''
             import importlib.abc
