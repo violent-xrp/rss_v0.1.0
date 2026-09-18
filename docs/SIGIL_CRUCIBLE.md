@@ -13,8 +13,10 @@ capability.
 
 **The name and BUILD-03-A through BUILD-03-E constraints are human-selected.
 The documentation/map candidate and both correction deltas received independent
-PASS reviews. Classifications remain provisional; ROADMAP owns checkpoint state
-and the remaining BUILD-03 decisions.**
+PASS reviews. The 2026-09-17 [separation mandate](#docs-04-separation-outcomes-and-proof-migration)
+amends the earlier preservation constraints for future separation work; prior
+reviews retain their original scope. Classifications remain provisional;
+ROADMAP owns checkpoint state and remaining decisions.**
 
 This document owns Crucible's identity, responsibility contract and BUILD
 document routes. [ROADMAP](../ROADMAP.md#current-build-thread) alone owns task
@@ -70,15 +72,21 @@ and promotion boundaries remain explicit.
 
 ### BUILD-03-A — Stable repository and proof contract
 
-Keep one repository and the existing aggregate command
-`python tests/test_all.py`. Preserve source paths, registration order, CLAIM tags,
-the final verdict line and reported totals while mapping. Full reorganization
-is postponed. A future change must reconcile every affected consumer before
-moving files or altering proof reporting.
+The original mapping/checkpoint work preserved one repository, the aggregate
+command, source paths, proof bodies, registration, CLAIM tags, verdict and totals.
+Those preservation results remain evidence for their dated candidates.
 
-Review condition: compare source/registration bytes and all count-producing
-surfaces against the candidate's baseline. A documentation-only map supplies
-no new acceptance, assertion or coverage result.
+**Amended by human direction, 2026-09-17:** future Kernel/Crucible separation may
+change proof behavior, layout, registration, commands and totals when needed.
+Use the current [proof-migration contract](#docs-04-separation-outcomes-and-proof-migration).
+Compatibility is assessed and deliberately retained or replaced; it is not a
+blanket requirement to keep the old structure. Continue within the existing
+repository unless repository topology is separately selected.
+
+Review condition: reconcile old requirements and evidence to the new design,
+identify intentional compatibility changes, and regenerate affected measurements
+from actual execution. A documentation-only change supplies no new acceptance,
+assertion or coverage result.
 
 ### BUILD-03-B — Complete dated baseline
 
@@ -126,13 +134,16 @@ subject. "Mixed" calls for inspection, not automatic splitting.
 
 ### BUILD-03-D — Registration by name
 
-Resolve every canonical registry entry through its import binding to a unique
-top-level definition. Compare qualified names both ways; check duplicates,
-unresolved bindings and unregistered definitions. Preserve registry order.
+For the current registry, resolve every entry through its import binding to a
+unique top-level definition. Compare qualified names both ways; check duplicates,
+unresolved bindings and unregistered definitions. The current representation and
+order may change under the [proof-migration contract](#docs-04-separation-outcomes-and-proof-migration).
+A replacement runner/registry must have its own complete membership check and
+explain changed identities, grouping, order and reporting units.
 
 The [registration reconciliation](#registration-reconciliation) establishes
-static membership for this candidate. It does not establish that tests execute,
-that assertions are sufficient, or that reported historical totals were rerun.
+static membership for its dated candidate. It does not establish that tests
+execute, that assertions are sufficient, or that historical totals were rerun.
 
 ### BUILD-03-E — Dependencies before moves
 
@@ -1501,3 +1512,318 @@ Revalidate current anchors after future source changes.
 | `tests/test_all.py` | `74dc9f79f1457c5025667c17a12d2b5f6d03ea5bcd2550f8cafae109ab4422f4` |
 | `tests/proof_support.py` | `172f1385976000074aeae0501d7d8c23a54290862418728cb2c4defc72f54a36` |
 | `src/rss/reference_pack.py` | `38e221c480cb9b24058666bef333ea7150234727b24b2c33817f1dd92154adf8` |
+
+
+## DOCS-04 Canon Export Proof Dependency Design
+
+**Retained design option, 2026-09-17; unimplemented and not independently
+reviewed.** The human's later [separation mandate](#docs-04-separation-outcomes-and-proof-migration)
+supersedes this option's selection as the next required slice and its frozen
+proof/layout/count assumptions. The remainder records what that narrow option
+proposed; its imperatives and stop conditions apply only to that original option,
+not to the broader separation now selected. Its source analysis remains useful.
+The prior review relay is superseded; it must not be used to enforce those old
+constraints. Earlier implementation checkpoints retain their own scope.
+
+Document role: documentation. Component scope: Sigil Crucible proof construction
+and the operator services/kernel utility those proofs exercise. Canonical owner:
+this development-boundary map, under the [shared ownership rule](PROJECT_CONTROL_SURFACE.md#core-rule).
+Task reference: DOCS-04; BUILD-03's [stable proof contract](#build-03-a--stable-repository-and-proof-contract)
+continues to constrain registration and reporting. TESTING owns later execution
+commands and evidence; ROADMAP owns scheduling and disposition.
+
+### Selected boundary and alternatives
+
+Remove the broad `test_support` import from the Pact-canon export proof module.
+Its [wildcard import](../tests/test_audit_pact_canon_export.py#L33) supplies only
+five names that its functions load: `check`, `section`, `compute_hash`, `sqlite3`
+and `tempfile`. Today that import also loads the facade's
+[kernel services](../tests/test_support.py#L50), including runtime services the
+four export proofs do not use. The proposed boundary makes those proofs depend
+explicitly on their runner, standard library and actual service/utility imports.
+
+This is **runtime-facade-independent**, not kernel-free: the proofs still use
+`rss.governance.constitution.compute_hash`, and still exercise Pact-canon export
+and drift behavior with disposable SQLite and Pact-text fixtures. Their subject
+does not become tooling merely because their broad harness import is removed.
+
+| Considered edge | Decision for this candidate |
+| --- | --- |
+| Canon-export proofs to broad facade | Select: five used bindings, four registered proofs, no production source change required. |
+| Aggregate runner alias or registry extraction | Defer: changing only its runner alias would leave eager kernel/demo proof imports; extracting the registry changes a broader compatibility surface. |
+| Operator CLI to demo reference pack | Retain as a later candidate. The eager import at [main.py line 49](../src/main.py#L49) could be deferred to [run_demo](../src/main.py#L110), but that is an operator/demo boundary rather than this proof dependency. No decision is implemented here. |
+| Runtime to shared cold verifier | Preserve: [boot verification](../src/rss/core/runtime.py#L618) intentionally consumes the shared service. A runtime caller is not evidence that the verifier belongs wholly to Crucible. |
+| Reference-data or test directory relocation | Defer until path, import, claim-selection and measurement consumers have a separately reviewed migration plan. |
+
+### Observed bindings and consumers
+
+Static analysis parsed all 67 tracked Python files without importing them.
+The four proofs and their three helpers are the complete top-level function set
+of this module. The five facade-supplied names have these consumers:
+
+| Binding | Current consumer | Proposed owner |
+| --- | --- | --- |
+| `check`, `section` | All four registered proof bodies below | Existing [proof_support.check](../tests/proof_support.py#L75) and [section](../tests/proof_support.py#L87), imported explicitly |
+| `compute_hash` | [_insert_amendment](../tests/test_audit_pact_canon_export.py#L83) and [_build_export_fixture](../tests/test_audit_pact_canon_export.py#L121) | Existing [constitution.compute_hash](../src/rss/governance/constitution.py#L58), same function object |
+| `sqlite3` | `_build_export_fixture` | Standard-library import |
+| `tempfile` | All four proof fixture contexts | Standard-library import |
+
+The existing [export service imports](../tests/test_audit_pact_canon_export.py#L34)
+and [drift imports](../tests/test_audit_pact_canon_export.py#L46) stay unchanged.
+The inspected RSS import closure is export to drift and constitution, then
+standard-library dependencies. The package initializers for `rss`, `rss.audit`
+and `rss.governance` add no imports. This is a static closure claim, not a
+completed import/execution proof.
+
+The only explicit tracked Python consumer found is the
+[aggregate import block](../tests/test_all.py#L204). It imports these four
+functions, registered at positions 154-157 in the unchanged ordered registry:
+
+| Existing qualified identity | Current definition | Registry entry |
+| --- | --- | --- |
+| `test_audit_pact_canon_export.test_pact_canon_export_dry_run_refuses_unsafe_paths` | [definition](../tests/test_audit_pact_canon_export.py#L162) | [154](../tests/test_all.py#L403) |
+| `test_audit_pact_canon_export.test_pact_canon_export_write_requires_t0_and_syncs_drift` | [definition](../tests/test_audit_pact_canon_export.py#L188) | [155](../tests/test_all.py#L404) |
+| `test_audit_pact_canon_export.test_pact_canon_export_first_canon_requires_explicit_base_hash` | [definition](../tests/test_audit_pact_canon_export.py#L211) | [156](../tests/test_all.py#L405) |
+| `test_audit_pact_canon_export.test_pact_canon_export_cli_defaults_to_dry_run` | [definition](../tests/test_audit_pact_canon_export.py#L234) | [157](../tests/test_all.py#L406) |
+
+Fresh static reconciliation still resolves all 181 registrations to distinct
+definitions, in their existing order. The target module contains no inspected
+reflection/dynamic-import route for the facade bindings. This does not survey
+external consumers or arbitrary computed imports. Its incidental re-exports of
+the other facade names would disappear; they are not preserved by a lazy facade
+or copied alias layer. The facade's own exports remain unchanged. That narrowed
+module namespace is an explicit proposed compatibility change.
+
+### Proposed implementation footprint
+
+Only two Python files would change after design review and human disposition:
+
+1. `tests/test_audit_pact_canon_export.py`: change module setup/imports only.
+   Add explicit `sqlite3`, `tempfile` and `sys` imports alongside existing standard
+   imports. Import `check` and `section` directly from `proof_support` before any
+   RSS import, preserving its stream-setup ordering. Replace the wildcard with
+   explicit `compute_hash` from constitution, keeping all existing service
+   imports. Use a small local `_SRC` shim, following the existing
+   [pytest shim](../tests/conftest.py#L41): resolve sibling `src` from `__file__`
+   and insert it only if absent. This preserves focused imports that previously
+   obtained path setup from the facade. Do not add a direct-run `__main__` block.
+2. `docs/test_proof_support.py`: append exactly the two proposed methods below
+   before its module guard. Keep the existing 15 method bodies, helper bodies
+   and definition lines unchanged. The future suite would contain 17 methods;
+   these standalone counts never add to canonical function/assertion totals.
+
+All seven target function bodies, four CLAIM comments, assertion expressions,
+service aliases and fixture construction/cleanup stay unchanged. Preserve the
+aggregate file byte-for-byte, source paths, registration order and reporting.
+No `src/` file, facade, proof-support implementation, conftest, generator,
+coverage selector, dated inventory or generated artifact changes. Existing
+cleanup limitations remain BUILD-02 work. There is no new executable file.
+
+### Responsibilities and proposed proof identities
+
+Existing functions keep their qualified identities through shifted line numbers.
+The proposed identities below do not exist yet. Effects describe intended paths,
+not host confinement; an execution permission does not establish authentication.
+
+| Unit / identity | Role and component scope | Proof subject | Effects | Required authority | Observed enforcement / proposed check |
+| --- | --- | --- | --- | --- | --- |
+| Canon-export proof module imports and proposed `_SRC` | harness setup, Sigil Crucible | not applicable | file-read through imports, process-state; inherited stream setup | approved proof execution | currently broad facade import; proposed explicit dependencies and path lookup only |
+| Three existing fixture helpers and four proofs above | test support / tests, Sigil Crucible | export/drift operator behavior using a kernel hash utility | memory, file-read/write, SQLite database-read/write in temporary fixtures; console | approved fixture execution; no permission to modify live Pact or runtime data | existing assertions, fixture contexts and the service's soft T-0 checks remain unchanged; no new caller authentication |
+| `rss.audit.pact_canon_export`, `rss.audit.pact_canon_drift`, `rss.governance.constitution.compute_hash` | operator services / kernel utility | not applicable | existing service effects remain as documented; hash utility is memory-only | existing service permissions; T-0 flag for actual export writes | unchanged source; fixture calls do not authorize live Pact changes |
+| `DOCS-04::test_proof_support.ProofSupportTests.test_canon_export_proofs_run_without_runtime_facade` | proposed test, Sigil Crucible | import boundary plus execution of four unchanged proofs | child-process, process-state, file-read/write, database-read/write, memory, console | separately approved bounded proof execution | proposed positive refusal controls, restricted import graph and owned fixtures; not executed |
+| `DOCS-04::test_proof_support.ProofSupportTests.test_canon_export_bindings_preserve_identity_and_registration` | proposed test, Sigil Crucible | object identity, one defining instance and ordered registration | child-process, file-read through imports/AST, process-state, memory, console | separately approved import/collection proof | proposed identity and registration checks; imports aggregate in a separate unguarded child; not proof-body execution |
+
+### Proposed acceptance proof
+
+1. **Boundary and execution:** a fresh child starts with `tests` added by
+   the existing child helper, which inherits environment/path setup. Within this
+   new child only, remove pre-existing checkout-`src` entries using resolved,
+   case-normalized paths (including equivalent spellings); do not pre-add `src`
+   or import the facade. Assert the target and RSS modules are absent and that
+   `importlib.util.find_spec("rss")` returns `None` before target import. A
+   different installed/discoverable RSS copy is a setup failure, not a passing
+   boundary. Bind the target's discovered source to this checkout too. Install a finder rejecting
+   `test_support`, `examples` and every RSS module except the three service/
+   utility modules and their package parents listed above. Use a distinctive
+   exception and confirm an attempted facade import reaches that refusal before
+   importing the target. The target's own path shim must make its RSS imports
+   work. Require each allowed RSS module/package origin to resolve to its
+   expected file under this checkout's `src`, and the target/proof_support to
+   their expected `tests` files. Keep the finder active, positively check its
+   runtime/reference/example refusals, and run exactly the four target proofs via the existing runner with
+   `forbid_http=True`. Require success and no forbidden module loaded afterward.
+   The HTTP/import guards are bounded cooperative checks, not isolation.
+2. **Identity and registration:** in another fresh child, compare the five
+   explicit bindings and retained service aliases with their original defining
+   objects. Require the expected checkout source origins and one defining-module
+   instance per origin for the proof module, proof_support and the three RSS
+   modules. Import the unchanged
+   aggregate, reconcile all 181 ordered qualified names with its live AST and
+   confirm the four exported function objects occupy the same entries. Do not
+   depend on private packets or Git history inside this permanent test. Full old
+   sources may pass this preservation control; it is not separation evidence.
+3. **Discriminating packet controls:** the new boundary method against the
+   retained old proof module must fail at the facade refusal, after its positive
+   control. A packet-only incomplete import conversion with `compute_hash`
+   omitted must fail the explicit missing-binding assertion in method 2. Preserve
+   the expected causes; a setup/import-path error is not the claimed result.
+4. **Execution comparison:** establish a focused pre-change four-proof baseline
+   on owned temporary fixtures, then run the same focused route after the change
+   with matched environment keys and compare verdict/function/assertion results.
+   Do not infer its assertion total from static call counts. Run the 17-method
+   standalone suite and canonical acceptance, requiring the unchanged aggregate
+   **181 functions / 3013 assertions / 0 failures**, verdict format and HTTP guard
+   result. A changed total is a failure to investigate, not a new baseline to sync.
+   Keep proof records bound to source bytes, each child's actual TEMP and the
+   established protected-output policy. No live-root database or Pact changes.
+5. **Compatibility and scope:** compare all seven function ASTs and four CLAIM
+   comments, preserve registry bytes/order, recheck source anchors, and reconcile
+   pytest collection with explicit `--import-mode=prepend`. Collection is not
+   execution; other pytest modes remain unassessed. Use the existing environment,
+   no install. Keep standalone, focused and aggregate totals separate.
+
+No new command is introduced for the proof module. A future focused command may
+use the existing `proof_support.run_tests` interface and its four explicit proof
+imports; TESTING must name that exact command and effects at implementation.
+Current canonical figures are earlier execution evidence. This design performs
+no project imports, tests, generators, coverage, baseline or full hygiene runs.
+
+### Documentation obligations and stop
+
+Implementation must refresh these specific current surfaces, rather than merely
+adding a new supplement: the facade row in
+[Harness and proof dependencies](#harness-and-proof-dependencies) (ten wildcard
+consumers becomes nine); the retained overlap context and canon-export row
+(still overlapping names, no longer evidence of a facade dependency); the
+overview/dependency map to show the explicit proof-support and service edges;
+the current source bindings; and every current anchor into the shifted canon
+proof module. Add the two new identities and their precise subjects here.
+Update TESTING's proof-support row/evidence from 15 to the measured 17-method
+candidate and record the focused route. Leave explicitly dated design records,
+the registration appendix, the 123-path inventory and earlier receipts intact.
+
+This design candidate changes only this appended section, DOCS-04's queue cells
+and the private handoff. BUILD-03's F2 checkpoint row and evidence are preserved.
+Stop for scoped independent design review, then human disposition before code
+changes or proof execution. No checkpoint, push, Main integration, full-gate
+acceptance or task closure is included. F3, production CLI/demo changes, shared
+verifier extraction, physical moves, SITE-01 and BUILD-05 stay outside this slice.
+
+### Canon proof design source binding
+
+The anchors and source facts in this section bind to unchanged working bytes at
+`33aa5db36e1aa04b050437b1634e56dd4c7e9f42`. The public hashes below include the
+package initializers used in the closure analysis. Revalidate after any affected
+source changes. The static scan and name reconciliation are evidence of inspected
+structure, not dynamic behavior.
+
+| Source | SHA-256 |
+| --- | --- |
+| `tests/test_audit_pact_canon_export.py` | `a554997a46911ff0994373c713a38423a3d454c6c71c38712241c92aca6acd46` |
+| `tests/test_support.py` | `8f6a0c0af224867c2d8c263c34eb71f0c70c79d1791aef7882e7f5315d1a3dbf` |
+| `tests/proof_support.py` | `172f1385976000074aeae0501d7d8c23a54290862418728cb2c4defc72f54a36` |
+| `tests/test_all.py` | `74dc9f79f1457c5025667c17a12d2b5f6d03ea5bcd2550f8cafae109ab4422f4` |
+| `tests/conftest.py` | `015d5654f872dd25ba4275ab02220bbf3bb781e5d7abf81f54ab95ac2943332f` |
+| `docs/test_proof_support.py` | `1da6f6a54bbf3c1a813adb9475bc4db67190e7318c5ea0f25a1b0fd24770cee0` |
+| `src/rss/audit/pact_canon_export.py` | `73f3715f60c1c7b11da726ac05650ed3a2afb9536b6b76a7a573673fe77092c6` |
+| `src/rss/audit/pact_canon_drift.py` | `2c6000ac6dc5635ad0b800187b07d00fefeb8eea82eca416058f013dea3f8963` |
+| `src/rss/governance/constitution.py` | `5052420f59228182079b01a0984ac66b4f4eae49b3d7fd4c63abd7b199230a7e` |
+| `src/rss/__init__.py` | `bd813748041050966a7d8b86e7b662cc75eed3303f04573f62d9c7bba17ad31f` |
+| `src/rss/audit/__init__.py` | `4e209c6aab0291c43b71cc0f3bc8b7ac8c58288fd5e1f373603db5e217ca9694` |
+| `src/rss/governance/__init__.py` | `1afdbe1fa9d23a57230cea337764b80bb5cb322f550f676164bf87212ee16a02` |
+| `src/main.py` | `41e7c06b7ed1f17a211bb93e9902b037d94ddebbc9b8eca519f973c7562adfe9` |
+| `src/rss/core/runtime.py` | `41d49eea3ee75b91d5e99393bbfcc26834a264e024794c18521a05af6d652c09` |
+
+
+## DOCS-04 Separation Outcomes and Proof Migration
+
+**Current human direction, 2026-09-17.** Separation may require changing proof
+behavior, splitting or rewriting tests, moving files, restructuring runners,
+changing interfaces and rebuilding supporting machinery. The human accepts
+necessary breakage and changed totals in service of a coherent Kernel/Crucible
+architecture. Preserving a number, proof body, path or small diff is not an
+acceptance condition for that work. Changes still need an explicit purpose and
+evidence that the resulting system does what its requirements say.
+
+This section is the current owner of that migration rule. It amends BUILD-03-A
+and D for future separation and supersedes the preceding canon-export option's
+fixed two-file footprint, unchanged-proof requirement and fixed totals. Earlier
+designs, receipts, proof logs and the dated inventory remain historical evidence;
+their scope-specific preservation promises do not constrain the new migration.
+This amendment itself changes documentation only and measures no new behavior.
+
+### Separation outcomes
+
+| Responsibility | Required result of the migration design |
+| --- | --- |
+| Sigil Kernel | State the runtime services, invariants and necessary shared libraries. Its runtime entrypoints must not require development runners, generators or proof modules. Prove the declared dependency boundary on the selected entrypoints. |
+| Sigil Crucible | Give construction, test execution, registration, measurement and gates explicit owners. Keep reusable harness primitives separate from kernel-specific fixtures/adapters, whose dependency on the kernel is intentional and named. |
+| Operator and demonstration surfaces | Identify their service interfaces, sample/reference data and deliberate runtime calls. Do not classify a whole file as Kernel or Crucible merely from its current directory. Split mixed responsibilities where their maintenance or effects differ. |
+| Shared services and integration | Name each allowed shared dependency and caller contract. A verifier used during runtime boot remains a runtime dependency even if an operator also invokes it. Integration proofs must cover the edges left between separated components. |
+| Documentation | Retain one canonical owner per fact, with component scope and task IDs recorded separately. Shared documentation may describe both components; link owners rather than duplicating their claims. |
+
+The next design must select target module/package and proof layouts, map current
+units to those destinations, and explain allowed import/call/data edges. Physical
+moves, proof splits and runner changes are eligible choices. Evaluate complete,
+coherent boundary changes; do not require every choice to fit an import-only
+patch. The canon-export import option remains available if it serves that design,
+but no longer determines the architecture or blocks a better cut.
+
+### Proof migration contract
+
+For each affected proof or requirement, record its old identity, intended
+property, new component owner and new proof location/identity. Mark it retained,
+moved, split, merged, rewritten, replaced or retired, with a reason. Preserve
+identity continuity where useful; use explicit old-to-new mappings where names
+or granularity change. Map all affected CLAIM references and execution routes.
+Retiring an obsolete test is permitted; silently losing the requirement it used
+to cover is not. A requirement that itself changes needs an explicit rationale
+and reviewed disposition, rather than being hidden by a passing new suite.
+
+Proof behavior may change to test the intended boundary more accurately. Keep
+positive controls and failures that discriminate the property under test. When
+old behavior is intentionally replaced, state the before/after behavior and why
+the replacement is correct. Account for fixture effects, authority assumptions,
+error/cleanup behavior and cross-component integration where the change touches
+them. This is accountable reconstruction, not a promise of byte-identical tests.
+
+The current 181-function/3013-assertion result is a historical comparison point,
+neither a numerical target nor a minimum for the migrated architecture. New totals must come from
+the new executed suites; report their counting units and overlap. Keep collection,
+execution, assertions, standalone unittest methods and coverage distinct. A count
+change needs reconciliation, not automatic rejection or automatic acceptance.
+Explain both additions and removals. Coverage scope/denominators and generated
+claim evidence must follow the actual selected component/source boundaries.
+
+If commands, paths, registry representation or verdict formatting change,
+reconcile all affected consumers, including tests/test_all.py, run_coverage.py,
+docs/build_claim_matrix.py and docs/sync_baseline.py, plus their callers and
+documentation. A compatibility shim is optional when justified; retaining one
+must not recreate the dependency being removed. Continue using the existing
+commands until a concrete migration replaces them and its callers together.
+Do not hand-edit public totals or overwrite old receipts to manufacture agreement.
+
+### Next design and acceptance evidence
+
+The next reviewable design must provide:
+
+1. A target layout and allowed-dependency map, including shared and mixed units,
+   grounded in the existing inventory and current source rather than directory
+   names alone.
+2. A current-to-target responsibility and proof migration table with explicit
+   splits, moves, interface breaks, replacements and retained integration tests.
+3. A coherent implementation sequence and recoverable checkpoints. Temporary
+   breakage during an owned migration is acceptable; identify it and restore the
+   required behavior before claiming the slice accepted.
+4. A proof plan for component boundaries, runtime requirements, integration and
+   the changed tooling/measurement contracts. Select checks appropriate to the
+   actual change, then publish measured results with the reviewed interpretation.
+5. Exact documentation, command, generator and count-consumer updates owed by
+   each step, using existing owners and the single ROADMAP queue.
+
+Independent design/implementation review and human disposition remain distinct
+from measurements and checkpoints. This direction permits the needed technical
+changes; it does not bypass the existing review sequence. No code or test is
+changed by this amendment. No new repository, Pact amendment, Main integration,
+push or release is selected here. BUILD-03 and DOCS-04 remain open; SITE-01 and
+BUILD-05 retain their holds.

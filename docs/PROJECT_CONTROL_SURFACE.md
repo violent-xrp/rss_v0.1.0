@@ -123,7 +123,7 @@ disposition. Reconcile three connected views through the existing owners:
 | --- | --- | --- |
 | Project structure | [External Map](EXTERNAL_MAP.md#core-translation), [public control surfaces](#public-control-surfaces), [method ownership](#supporting-evidence-and-session-state) | Rose Sigil Systems as the project; named components, document owners and working lanes; Sigil Crucible's relationship to the kernel and the separate reusable operating method. |
 | Runtime behavior | [Pact Alignment](PACT_ALIGNMENT.md#current-kernel-alignment), [subsystem handles](SUBSYSTEM_HANDLES.md#canonical-handles), [Action Plane](ACTION_PLANE.md#status) | The Pact, eight seats, supporting subsystems, operator/advisor interfaces and action boundaries; separate current mechanics from proposed enforcement. |
-| Development and proof | [Sigil Crucible](SIGIL_CRUCIBLE.md#project-context-and-map-scope), [Testing](TESTING.md#canonical-runner) | Reuse BUILD-03's inventory and mixed-component map to show construction, harnesses, proof subjects, measurements and gates without changing their registration or totals. |
+| Development and proof | [Sigil Crucible](SIGIL_CRUCIBLE.md#project-context-and-map-scope), [Testing](TESTING.md#canonical-runner) | Reuse BUILD-03's inventory and mixed-component map to design construction, harnesses, proof subjects, measurements and gates. Necessary restructuring and changed proof behavior/totals follow the [DOCS-04 proof-migration contract](SIGIL_CRUCIBLE.md#docs-04-separation-outcomes-and-proof-migration). |
 
 For each component, retain its established name and trace purpose, live
 implementation, dependencies, effects, required authority, observed enforcement
@@ -136,11 +136,14 @@ view must state which lanes and components were inspected; private material
 requires its own scoped access and publication decisions. Do not infer project
 completeness from a single checkout's file count.
 
-This is reconciliation work, not authorization for physical reorganization,
-new repositories, renamed commands, Pact amendments or different proof totals.
-Reuse KERNEL-05 for the seat-invariant audit and BUILD-03 for development
-boundaries; do not create a parallel audit or expand those tasks through a
-diagram. Maintain detail with the owners above and keep one ROADMAP queue.
+The human's 2026-09-17 separation direction permits necessary structural,
+proof-behavior, command and total changes under the
+[proof-migration contract](SIGIL_CRUCIBLE.md#docs-04-separation-outcomes-and-proof-migration).
+The earlier map-only preservation restrictions no longer govern that migration.
+Concrete implementation follows the existing design/review sequence; this router
+does not choose new repositories or authorize Pact amendments. Reuse KERNEL-05
+for the seat-invariant audit and BUILD-03 for development boundaries. Maintain
+detail with the owners above and keep one ROADMAP queue.
 
 ## Proposal Lifecycle
 
