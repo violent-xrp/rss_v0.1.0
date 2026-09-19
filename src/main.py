@@ -46,7 +46,7 @@ from rss.core.config import RSSConfig, RSS_VERSION
 from rss.core.runtime import SafeStopRecovery, bootstrap
 from rss.governance.seats.rune import Term
 from rss.audit.export import export_trace_json, export_trace_text, export_from_db
-from rss.reference_pack import load_reference_pack, seed_demo_world, DEMO_CONTAINERS, DEMO_QUESTIONS
+from rss_demo.reference_pack import load_reference_pack, seed_demo_world, DEMO_CONTAINERS, DEMO_QUESTIONS
 
 
 def run_tests(rss):

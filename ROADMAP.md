@@ -1,4 +1,4 @@
-# RSS — Roadmap
+# RSS â€” Roadmap
 
 _Licensed under AGPLv3; see `LICENSE/LICENSE_INDEX.md`._
 
@@ -29,7 +29,7 @@ accept a corrective implementation or a new execution-boundary design.
 
 | Workstream | Task ID | Work | State | Evidence | Next action | Detail owner |
 | --- | --- | --- | --- | --- | --- | --- |
-| Project | DOCS-04 | RSS Architecture: named components and boundary reconciliation | active | checkpointed | S1 harness-purity locally checkpointed (CL PASS corrected S1; N1-N4 cleanup). Next: next bounded Kernel/Crucible separation slice under DOCS-04 (S2+ held until separate CR relay); keep candidates separate. | [Architecture map routes](docs/PROJECT_CONTROL_SURFACE.md#named-architecture-map-reconciliation), [separation design](docs/SIGIL_CRUCIBLE.md#docs-04-kernel-and-crucible-separation-design), [demo/reference boundary](docs/SIGIL_CRUCIBLE.md#docs-04-demo-reference-dependency-design), [implementation](docs/SIGIL_CRUCIBLE.md#docs-04-demo-reference-dependency-implementation), [execution](docs/TESTING.md#docs-04-demo-reference-dependency-execution), [current separation mandate](docs/SIGIL_CRUCIBLE.md#docs-04-separation-outcomes-and-proof-migration) S1 landing authority: `rss-docs04-s1-harness-purity-GK-cleanup-n1n4-5ea708c9`; receipt [2026-09-18 DOCS-04 S1](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-18-docs-04-s1-harness-purity-local-checkpoint). |
+| Project | DOCS-04 | RSS Architecture: named components and boundary reconciliation | active | checkpointed | S1 harness-purity + S2 demo extract (`src/rss_demo/`) locally checkpointed (CL PASS pass-2; Lo-1-3 cleanup). Next: S3 generators to `tools/crucible/` | [Architecture map routes](docs/PROJECT_CONTROL_SURFACE.md#named-architecture-map-reconciliation), [separation design](docs/SIGIL_CRUCIBLE.md#docs-04-kernel-and-crucible-separation-design), [demo/reference boundary](docs/SIGIL_CRUCIBLE.md#docs-04-demo-reference-dependency-design), [implementation](docs/SIGIL_CRUCIBLE.md#docs-04-demo-reference-dependency-implementation), [execution](docs/TESTING.md#docs-04-demo-reference-dependency-execution), [current separation mandate](docs/SIGIL_CRUCIBLE.md#docs-04-separation-outcomes-and-proof-migration) S1 landing authority: `rss-docs04-s1-harness-purity-GK-cleanup-n1n4-5ea708c9`; receipt [2026-09-18 DOCS-04 S1](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-18-docs-04-s1-harness-purity-local-checkpoint). |
 | Build system | BUILD-03 | Sigil Crucible: script accountability and enforced execution boundaries | blocked | checkpointed | The reverse-map F2 output-preservation slice is [locally checkpointed](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-17-build-03-reverse-map-f2-local-checkpoint) after independent static PASS with no findings and human disposition. Reviewed source bytes and the F1 contract are preserved. Return to DOCS-04 for the next bounded Kernel/Crucible separation design; F3, broader execution limits and full-gate acceptance remain open. DOCS-04 S1 harness-purity is now locally checkpointed; resume DOCS-04 for the next separation slice when CR relays it. | [Sigil Crucible](docs/SIGIL_CRUCIBLE.md#build-03-agreements), [map scope](docs/SIGIL_CRUCIBLE.md#project-context-and-map-scope), [static map](docs/SIGIL_CRUCIBLE.md#build-03-static-map), [retained remainder](docs/TESTING.md#build-03-bounded-remainder-proposal), [documentation checkpoint](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-14-build-03-sigil-crucible-documentation-local-checkpoint), [input candidate](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-15-build-03-same-checkout-input-candidate), [input identities](docs/SIGIL_CRUCIBLE.md#build-03-identity-upkeep--standalone-input-proofs), [proof support](docs/SIGIL_CRUCIBLE.md#build-03-independent-proof-support-candidate), [status caller contract](docs/TESTING.md#build-03-reverse-map-status-classification), [caller identities](docs/SIGIL_CRUCIBLE.md#build-03-project-status-caller-identities) |
 | Build system | BUILD-05 | Roots promotion readiness | paused | unreviewed | After DOCS-03, check Main ancestry and reconcile Main-only commits into Roots with approval if needed; reproduce complete applicable gates at the resulting checkpoint and obtain cross-family review of the Main-bound diff. | [Promotion loop](docs/BUILD_DISCIPLINE.md#promotion-and-reconciliation-loop), [owed proof](#release-boundary) |
 | Build system | BUILD-06 | Main promotion and Roots reconciliation | paused | unreviewed | After BUILD-05 acceptance and exact Git approval, merge into Main, gate the result and push; reconcile Main back into Roots, gate and push Roots. No tag. | [Promotion loop](docs/BUILD_DISCIPLINE.md#promotion-and-reconciliation-loop) |
@@ -123,11 +123,11 @@ Completed rows have left the rolling queue, not the acceptance obligations.
 They are checkpointed locally, not full-gate accepted, not merged to main, and
 not released as this staging line:
 
-- DOCS-01 — [queue/ownership receipt](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-09-docs-01-documentation-candidate).
-- BUILD-04 — [authored-history protection receipt](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-10-build-04-archive-history-protection-candidate).
-- KERNEL-01 — [bounded broker checkpoint](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-10-kernel-01-reviewed-local-checkpoint).
-- BUILD-01 — [coverage-launcher checkpoint](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-10-build-01-reviewed-local-checkpoint).
-- DOCS-02 — closed/checkpointed; [reviewed roadmap checkpoint](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-12-docs-02-reviewed-local-checkpoint).
+- DOCS-01 â€” [queue/ownership receipt](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-09-docs-01-documentation-candidate).
+- BUILD-04 â€” [authored-history protection receipt](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-10-build-04-archive-history-protection-candidate).
+- KERNEL-01 â€” [bounded broker checkpoint](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-10-kernel-01-reviewed-local-checkpoint).
+- BUILD-01 â€” [coverage-launcher checkpoint](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-10-build-01-reviewed-local-checkpoint).
+- DOCS-02 â€” closed/checkpointed; [reviewed roadmap checkpoint](docs/roadmap/ACCEPTANCE_HISTORY.md#2026-09-12-docs-02-reviewed-local-checkpoint).
 
 Additional reviewed local checkpoint: KERNEL-02 is closed/checkpointed after
 its bounded candidate gates and independent review; see the
@@ -257,7 +257,7 @@ is a design or testing document.
 ## History, Detail, and Limits
 
 [Phase Ledger](docs/roadmap/PHASE_LEDGER.md) preserves Phase A-H and later evidence.
-Its old “Still open” lists are historical observations routed through the owners
+Its old â€œStill openâ€� lists are historical observations routed through the owners
 above, not another work order. CLOSED-prefixed duplicate retirement is proposed
 only; records remain preserved pending human approval.
 

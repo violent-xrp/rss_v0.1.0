@@ -267,6 +267,12 @@ The earlier modular split was mechanical and conservative:
 - the eight direct-run modules listed above retain focused local checks;
   these do not enable the canonical runner's suite-wide HTTP guard
 
+## 2026-09-18 DOCS-04 S2 Demo Extraction Boundary
+
+**DOCS-04 S2 demo extraction (2026-09-18).** `reference_pack` moved to `src/rss_demo/reference_pack.py`. Thin `src/main.py` demo commands import `rss_demo` explicitly. Discriminating proof: a fresh child installs an `rss_demo` import-refusal positive control, imports `rss.core.runtime`, walks importable `rss.*` modules (asserting a real modules-walked count), and asserts no `rss_demo*` loaded and `rss.reference_pack` is absent.
+
+**Claim limit (optional imports):** the Kernel-no-demo proof covers hard imports during the Kernel/`rss.*` walk. Soft/optional patterns such as `try: import rss_demo except ImportError` are outside this proof's claim and are not treated as covered by the hard-import refusal control.
+
 ## Maintenance Rules
 
 - Counts may go up freely when proof grows.
@@ -1469,7 +1475,6 @@ deliberate marker relocation. This is not a multi-file transaction, concurrent
 writer lock, arbitrary cleanup framework, or proof against every process crash.
 The existing historical traceability word order remains unchanged; do not
 normalize it as part of this pass.
-
 
 ## DOCS-04 Demo Reference Dependency Execution
 

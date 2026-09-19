@@ -1083,11 +1083,10 @@ These `src/rss/` modules contain no explicit Pact section reference.
 - `src/rss/governance/seats/cycle.py`
 - `src/rss/governance/seats/scribe.py`
 - `src/rss/governance/t0.py`
-- `src/rss/reference_pack.py`
 
 ## Summary
 - **Total Pact Sections:** 491
 - **Pact Sections with Code Refs:** 117
 - **Pact Sections without Code Refs:** 374
 - **Code References without Matching Pact Section:** 0
-- **Code Modules without Pact Refs:** 8
+- **Code Modules without Pact Refs:** 7

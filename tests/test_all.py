@@ -244,9 +244,11 @@ from test_demo_reference_pack import (
     test_genesis_binding_and_offline_fallback,
     test_demo_world_seed_and_container_isolation,
     test_phase_g_demo_suite_operator_flow,
+    test_kernel_runtime_import_does_not_load_rss_demo,
 )
 
 TESTS = [
+    test_kernel_runtime_import_does_not_load_rss_demo,
     test_constitution,
     test_constitution_load_constitution,
     test_audit_log,

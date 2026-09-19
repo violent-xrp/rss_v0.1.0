@@ -114,7 +114,7 @@ COVERAGE_TOTAL_RE = re.compile(
 )
 
 COVERAGE_MODULE_RE = re.compile(
-    r"^src[\\/](rss[\\/].+?\.py)\s+\d+\s+\d+\s+(\d+(?:\.\d+)?)%",
+    r"^src[\\/]((?:rss|rss_demo)[\\/].+?\.py)\s+\d+\s+\d+\s+(\d+(?:\.\d+)?)%",
     re.MULTILINE,
 )
 
@@ -136,7 +136,7 @@ COVERAGE_LABELS = {
     "rss/audit/pact_canon_drift.py": "audit/pact_canon_drift.py",
     "rss/audit/migrate.py": "audit/migrate.py",
     "rss/governance/seats/scribe.py": "scribe.py",
-    "rss/reference_pack.py": "reference_pack.py",
+    "rss_demo/reference_pack.py": "reference_pack.py",
     "rss/audit/verify.py": "trace_verify.py",
     "rss/audit/export.py": "trace_export.py",
     "rss/hubs/tecton.py": "tecton.py",

@@ -36,8 +36,8 @@ import io
 import shutil
 
 from test_support import *
-import rss.reference_pack as reference_pack_module
-from rss.reference_pack import (
+import rss_demo.reference_pack as reference_pack_module
+from rss_demo.reference_pack import (
     load_reference_pack,
     load_demo_containers,
     seed_demo_world,
@@ -463,6 +463,158 @@ def test_phase_g_demo_suite_operator_flow():
     finally:
         shutil.rmtree(artifact_dir, ignore_errors=True)
 
+
+
+
+
+
+def _rss_importable_module_inventory(src) -> list[str]:
+    """Live count of pkgutil-visible rss.* modules under src (not rss_demo)."""
+    import importlib
+    import pkgutil
+    import sys
+
+    src_s = str(src)
+    inserted = False
+    if src_s not in sys.path:
+        sys.path.insert(0, src_s)
+        inserted = True
+    try:
+        rss = importlib.import_module("rss")
+
+        def _onerror(name: str) -> None:
+            raise
+
+        names: list[str] = []
+        for mod in pkgutil.walk_packages(
+            rss.__path__, rss.__name__ + ".", onerror=_onerror
+        ):
+            if mod.name.endswith(".__pycache__"):
+                continue
+            names.append(mod.name)
+        return names
+    finally:
+        if inserted:
+            try:
+                sys.path.remove(src_s)
+            except ValueError:
+                pass
+
+
+def test_kernel_runtime_import_does_not_load_rss_demo():
+    """DOCS-04 S2: Kernel bootstrap must not import operator demo (child process).
+
+    CL HOLD H1: prove in a fresh child so parent test_support Kernel imports
+    cannot make the check vacuous. Positive control: deliberate rss_demo import
+    is refused by a meta_path blocker before Kernel import.
+
+    Claim limit: this proof covers hard imports during Kernel/rss.* walk.
+    Optional patterns such as ``try: import rss_demo except ImportError`` are
+    outside this claim (documented in docs/TESTING.md).
+    """
+    import importlib.util
+    import os
+    import re
+    import subprocess
+    import sys
+    import textwrap
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    src = root / "src"
+    child_src = textwrap.dedent(
+        """
+        import importlib
+        import importlib.abc
+        import importlib.util
+        import pkgutil
+        import sys
+        from pathlib import Path
+
+        src = Path(__SRC_PATH__)
+        sys.path.insert(0, str(src))
+
+        class RefuseRssDemo(importlib.abc.MetaPathFinder):
+            def find_spec(self, fullname, path=None, target=None):
+                if fullname == "rss_demo" or fullname.startswith("rss_demo."):
+                    raise ModuleNotFoundError("demo-refusal:" + fullname)
+
+        guard = RefuseRssDemo()
+        sys.meta_path.insert(0, guard)
+
+        try:
+            importlib.import_module("rss_demo")
+        except ModuleNotFoundError as error:
+            assert str(error) == "demo-refusal:rss_demo", error
+        else:
+            raise AssertionError("rss_demo import refusal positive control failed")
+        print("demo-refusal-positive-control", flush=True)
+
+        importlib.import_module("rss.core.runtime")
+        import rss
+        def _walk_onerror(name):
+            raise
+
+        walked = []
+        for mod in pkgutil.walk_packages(
+            rss.__path__, rss.__name__ + ".", onerror=_walk_onerror
+        ):
+            name = mod.name
+            if name.endswith(".__pycache__"):
+                continue
+            importlib.import_module(name)
+            walked.append(name)
+        print("modules-walked", len(walked), flush=True)
+
+        assert guard in sys.meta_path
+        leaked = sorted(n for n in sys.modules if n == "rss_demo" or n.startswith("rss_demo."))
+        assert not leaked, leaked
+        assert importlib.util.find_spec("rss.reference_pack") is None
+        print("kernel-no-demo-ok", flush=True)
+        """
+    ).replace("__SRC_PATH__", repr(str(src)))
+
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+    env.pop("PYTEST_CURRENT_TEST", None)
+    result = subprocess.run(
+        [sys.executable, "-B", "-c", child_src],
+        cwd=str(root),
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=120,
+    )
+    out = (result.stdout or "") + (result.stderr or "")
+    section("DOCS-04 S2: Kernel must not load rss_demo")
+    if result.returncode != 0:
+        print("child_out_tail:")
+        print(out[-2000:])
+        check(False, "Kernel-no-demo child exit 0")
+    else:
+        check(True, "Kernel-no-demo child exit 0")
+    check("demo-refusal-positive-control" in out, "positive control marker present")
+    check("kernel-no-demo-ok" in out, "Kernel-no-demo success marker present")
+    inventory = _rss_importable_module_inventory(src)
+    walked_match = re.search(r"^modules-walked (\d+)$", out, re.MULTILINE)
+    check(walked_match is not None, "modules-walked count line present")
+    if walked_match is not None:
+        walked_n = int(walked_match.group(1))
+        check(
+            walked_n == len(inventory),
+            "modules-walked count matches live rss.* inventory ("
+            + str(walked_n)
+            + "=="
+            + str(len(inventory))
+            + ")",
+        )
+    check(
+        importlib.util.find_spec("rss.reference_pack") is None,
+        "rss.reference_pack find_spec must be None",
+    )
 
 if __name__ == "__main__":
     run_module(globals())

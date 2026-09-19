@@ -128,7 +128,7 @@ remains the owner of invocations and known side effects.
 | [src/rss/llm/adapter.py](<../src/rss/llm/adapter.py>) | `kernel` | kernel | provisional | Model service adapter and fallback; caller-selected network effects remain. |
 | [src/rss/persistence/__init__.py](<../src/rss/persistence/__init__.py>) | `kernel` | kernel | package surface | Package marker/exports; import effects and dependencies still need mapping. |
 | [src/rss/persistence/sqlite.py](<../src/rss/persistence/sqlite.py>) | `kernel` | kernel | provisional | SQLite runtime state persistence and restoration. |
-| [src/rss/reference_pack.py](<../src/rss/reference_pack.py>) | `example` | kernel + demonstration | mixed | Shared reference loaders, validators and demo seeding coexist; inspect each caller before placement. |
+| [src/rss_demo/reference_pack.py](<../src/rss_demo/reference_pack.py>) | `example` | kernel + demonstration | mixed | Shared reference loaders, validators and demo seeding coexist; inspect each caller before placement. |
 | [tests/conftest.py](<../tests/conftest.py>) | `harness` | verification | automatic hook | Pytest setup/import behavior; effects and suite reach belong in the later map. |
 | [tests/test_action_plane.py](<../tests/test_action_plane.py>) | `test` | kernel | function review pending | Action proposal, decision, capability and result lifecycle proof bodies. |
 | [tests/test_adversarial_scenarios.py](<../tests/test_adversarial_scenarios.py>) | `test` | kernel | function review pending | Adversarial/integration proof bodies; individual invariant grouping remains pending. |
@@ -163,7 +163,7 @@ a destination.
 | File | Initial units to distinguish |
 | --- | --- |
 | [src/main.py](<../src/main.py>) | run_tests; demo helpers; operator functions; bootstrap and command dispatch. |
-| [src/rss/reference_pack.py](<../src/rss/reference_pack.py>) | Reference validation/loading; demo-container validation/loading; seed_demo_world and shared-data callers. |
+| [src/rss_demo/reference_pack.py](<../src/rss_demo/reference_pack.py>) | Reference validation/loading; demo-container validation/loading; seed_demo_world and shared-data callers. |
 | [src/rss/governance/seats/cycle.py](<../src/rss/governance/seats/cycle.py>) | Cycle runtime service and incidental main-guard example. |
 | [src/rss/audit/verify.py](<../src/rss/audit/verify.py>) | Reusable verification functions and CLI reporting/exit behavior. |
 | [src/rss/audit/pact_canon_drift.py](<../src/rss/audit/pact_canon_drift.py>) | Canon comparison and operator CLI reporting. |

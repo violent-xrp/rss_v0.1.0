@@ -8,7 +8,7 @@ This file preserves the count history and verification receipts that used to liv
 
 ## Current Baseline
 
-<!-- BEGIN GENERATED: baseline · owner sync_baseline.py · do not edit by hand -->
+<!-- BEGIN GENERATED: baseline Â· owner sync_baseline.py Â· do not edit by hand -->
 - **181 test functions / 3013 assertions / 0 failures**
 - **92.7% statement coverage**
 - **181 claims / 181 tests / 125 Pact sections**
@@ -196,12 +196,12 @@ correction:
 - claim matrix: **121 real Pact sections / 179 claims / 179 tests**
 - the prior matrix published **120** headings, but only **116** resolved to the
   Pact: identifiers `4.3.5`, `E-1`, `E-3`, and `E-4` were false headings
-- the two entry-ID proofs now cite exact `§6.9.3 Entry ID Stability`; the mixed
+- the two entry-ID proofs now cite exact `Â§6.9.3 Entry ID Stability`; the mixed
   policy-confusion claim dropped its redundant phase label; and the Phase E
-  regression battery now cites `§1.6.2`, `§4.4.1`, `§6.7.5`, and `§6.9.5`
+  regression battery now cites `Â§1.6.2`, `Â§4.4.1`, `Â§6.7.5`, and `Â§6.9.5`
 - the four false headings were removed and five previously uncited real Pact
-  sections entered, so the honest section count moves **116 → 121** while the
-  published heading count moves **120 → 121**; no test or assertion was removed
+  sections entered, so the honest section count moves **116 â†’ 121** while the
+  published heading count moves **120 â†’ 121**; no test or assertion was removed
 - internal build labels now use `Phase D-*`, `Phase E-*`, or `Phase C-NEW-*`,
   never the Pact section sign; the tracked resolver gates numeric Pact headings,
   explicitly named external legal instruments, internal-label misuse, and
@@ -209,7 +209,7 @@ correction:
 - coverage reproduced at **92.2% total** (`runtime.py`: **88.4%**) on two
   consecutive runs. The citation and phase-label edits add no executable branch
   and the recorded per-module percentages remain aligned with the prior tracker;
-  the **92.4% → 92.2%** total movement is the previously observed coverage-gate
+  the **92.4% â†’ 92.2%** total movement is the previously observed coverage-gate
   nondeterminism, not lost proof, and is recorded rather than silently masked
 
 ### 2026-09-08 consent-restore alias correction candidate
@@ -224,7 +224,7 @@ Build evidence; independent review and checkpoint are pending.
 - The expanded registered proof failed against the old implementation with
   **448 failed assertions** (before the fixture-order assertions were added).
   The final focused proof passes **832 / 832 / 0**, versus the former **64**
-  assertions. Canonical acceptance grows **179 / 1884 / 0 → 179 / 2652 / 0**;
+  assertions. Canonical acceptance grows **179 / 1884 / 0 â†’ 179 / 2652 / 0**;
   no test or assertion was removed, and no new claim or Pact section is added.
 - Focused-only, in-memory coverage executes all **41 executable body lines**
   of the critical validator, with no missing body lines. This is separate
@@ -239,7 +239,7 @@ Build evidence; independent review and checkpoint are pending.
   76 missed; package: 3874 statements, 287 missed). The adapter measured
   **90.1%**, versus the previous tracker's **77.5%**. Its live-service path is
   still environment-dependent: this receipt does not attribute the entire
-  **92.2% → 92.6%** movement to the consent repair or claim gate determinism.
+  **92.2% â†’ 92.6%** movement to the consent repair or claim gate determinism.
   Deterministic adapter proof remains a separate correction.
 - Scope remains bootstrap's critical `GLOBAL:EXECUTE` baseline, not all tenant
   consent, schema uniqueness, external-writer races, direct live restore calls,
@@ -257,7 +257,7 @@ before this separate test-harness correction began.
   timeout, and malformed-response paths every time. The five prompt-discipline
   assertions inspect serialized requests rather than function source text.
 - Focused proof grows from **6 to 40 assertions**. Canonical acceptance grows
-  **179 / 2652 / 0 → 179 / 2686 / 0**; no test function or claim anchor is removed.
+  **179 / 2652 / 0 â†’ 179 / 2686 / 0**; no test function or claim anchor is removed.
   The permissive live-or-fallback check is replaced by explicit response,
   request, caching, cleanup, fallback, and runner-failure checks. Claim
   traceability remains **121 sections / 179 claims / 179 tests**.
@@ -277,7 +277,7 @@ before this separate test-harness correction began.
   repository-root CWD. Both controlled service outcomes run in each invocation;
   no real service was started, stopped, or contacted for this proof. Repeatability
   here closes the model-service dependency, not every possible cross-environment
-  coverage variation. The measured total moves **92.6% → 92.7%** from added proof,
+  coverage variation. The measured total moves **92.6% â†’ 92.7%** from added proof,
   without changing production code, Pact text, broker behavior, or versions.
 
 ### 2026-09-08 broker claim-time revalidation candidate
@@ -294,7 +294,7 @@ separate production correction began.
 - The initial registered regression matrix produced **90 failed assertions**
   against the old broker, with valid controls still passing. The final focused
   proof has **222 assertions**, including the subsequent refusal-persistence
-  and retry proofs. Canonical acceptance grows **179 / 2686 / 0 → 180 / 2908 / 0**;
+  and retry proofs. Canonical acceptance grows **179 / 2686 / 0 â†’ 180 / 2908 / 0**;
   no prior test or assertion was removed or weakened.
 - The matrix covers 18 refusal scenarios and six permitted controls. It changes
   top-level/nested payloads, hashability, global/tenant consent, current tool
@@ -308,13 +308,13 @@ separate production correction began.
   for payload, consent, and tool-registration changes, without a new lease or
   CYCLE charge. All cases use temporary databases and controlled time, not sleeps
   or external execution.
-- Claim traceability grows **121 → 124 Pact sections**, **179 → 180 claims**,
-  and **179 → 180 tests**. The three newly represented real
-  headings are `§0.9.1`, `§1.6.6`, and `§3.2.3`; the new tag also cites the
-  already represented `§1.6.2`, `§2.8.1`, and `§3.3`. The Pact is unchanged.
-- Coverage remains **92.7% total**: package statements grow **3874 → 3883**, with
+- Claim traceability grows **121 â†’ 124 Pact sections**, **179 â†’ 180 claims**,
+  and **179 â†’ 180 tests**. The three newly represented real
+  headings are `Â§0.9.1`, `Â§1.6.6`, and `Â§3.2.3`; the new tag also cites the
+  already represented `Â§1.6.2`, `Â§2.8.1`, and `Â§3.3`. The Pact is unchanged.
+- Coverage remains **92.7% total**: package statements grow **3874 â†’ 3883**, with
   **282 missed** in both measurements. Broker coverage remains **100.0%** and
-  its statements grow **150 → 159**; runtime remains **89.0%** and adapter
+  its statements grow **150 â†’ 159**; runtime remains **89.0%** and adapter
   **97.2%**. This is statement execution evidence, not proof of race freedom.
   Environment: Python 3.13.13, SQLite 3.50.4, coverage 7.16.0, Windows, Roots CWD.
 - This closes sequential claim-time governance, not concurrent or post-claim
@@ -333,7 +333,7 @@ All public-facing docs listed below were synced during the 2026-04-29 public-doc
 - `CHANGELOG.md`
 - `THREAT_MODEL.md`
 
-<!-- BEGIN GENERATED: baseline · owner sync_baseline.py · do not edit by hand -->
+<!-- BEGIN GENERATED: baseline Â· owner sync_baseline.py Â· do not edit by hand -->
 Current synced public numbers:
 - **181 / 3013 / 0**
 - **92.7%** coverage
@@ -956,7 +956,7 @@ or the earlier review's failure/error split.
 Qualifications to the preceding F1-F8 receipt; the entire prior 65,910 bytes of
 history are preserved:
 
-- **L1 — executable discovery:** bare `git` follows the platform's process
+- **L1 â€” executable discovery:** bare `git` follows the platform's process
   search. On Windows, the parent application's directory, parent current
   directory and Windows/system directories are searched before PATH. TESTING
   now describes that search rather than treating PATH as the sole source.
@@ -965,7 +965,7 @@ history are preserved:
   establish the executable image used by each test/selector child invoking
   bare `git`. Existing artifact fields and earlier "PATH-resolved Git" labels
   are lookup/probe records, not observed identities of those children.
-- **L2 — TEMP observation:** for each run, a same-environment probe child's
+- **L2 â€” TEMP observation:** for each run, a same-environment probe child's
   `tempfile.gettempdir()` matched the selected spelling. The probe was separate
   from the test process; the latter did not report its selected temp directory.
   Earlier "each child's" wording must be read with this qualification.
@@ -1398,6 +1398,34 @@ packets and empty fixture directories are preserved. This checkpoint is local:
 no Main integration, push, tag, release or full-gate acceptance. BUILD-03 and
 DOCS-04 stay open; the next work returns to DOCS-04 separation design. F3 remains
 deferred; SITE-01 and BUILD-05 keep their holds.
+## 2026-09-19 DOCS-04 S2 Demo Extract Local Checkpoint
+
+The human accepted the independent CL PASS on the corrected S2 demo-extract
+candidate (pass-2; Lo-1–3 cleanup CR-approved) and authorized this bounded local
+checkpoint and receipt. 
+eference_pack lives under src/rss_demo/; Kernel must
+not import demo. Coverage regex accepts src/(rss|rss_demo)/…. Walk-count
+enforcement and optional-import documentation limits are in the cleanup packet.
+Design authority remains polish L1/L2; generators stay out of this Landing (S3).
+
+Landing authority cleanup packet:
+
+ss-docs04-s2-demo-extract-GK-build-lo-cleanup-0d841f46
+after.json SHA-256:
+15e21e50d2cfe0cf848d469607a85c6d89d9f8eb66537679ee7cc4d23d74fab9.
+Prior chain: a918bde5 → corr-f83f5f9f → corr2-0aab5c54 / 1385e94e… → cleanup 0d841f46.
+Design authority polish-l1l2-9542a1ed / 31908605…cbd0.
+
+Builder evidence retained from the cleanup packet (not re-run for Landing):
+- Aggregate: 182 test functions / 3019 assertions / 0 failures.
+- Demo reference-pack suite: 4 / 111 / 0.
+- proof_support harness: 17 OK.
+- Coverage TOTAL 92.7%; 
+eference_pack.py label 100.0.
+
+This local checkpoint is not accumulated Main-bound acceptance, Main integration,
+a push, a tag, Lab sync, or S3. No Main merge or remote update is authorized here.
+
 ## 2026-09-18 DOCS-04 S1 Harness Purity Local Checkpoint
 
 The human accepted the independent CL PASS on the corrected S1 harness-purity
@@ -1414,7 +1442,7 @@ Landing authority cleanup packet:
 `rss-docs04-s1-harness-purity-GK-cleanup-n1n4-5ea708c9`
 after.json SHA-256:
 `ff7469628e3345ab46d08b9eaa3c0400f571a82dd9c8bc1ec1f1ddc50e3a0f79`.
-Prior chain: Build `921803b6` → HOLD-fix `2d9b4603` → cleanup `5ea708c9`.
+Prior chain: Build `921803b6` â†’ HOLD-fix `2d9b4603` â†’ cleanup `5ea708c9`.
 Design authority polish-l1l2-9542a1ed.
 
 Builder evidence retained from the cleanup packet (not re-run for Landing):

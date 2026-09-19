@@ -245,6 +245,8 @@ facts and describes enforcement only where a specific check was inspected.
 
 ### Harness and proof dependencies
 
+**DOCS-04 S2 demo extraction (2026-09-18).** `reference_pack` lives under `src/rss_demo/`; Kernel bootstrap must not import `rss_demo`. Thin `src/main.py` demo commands import `rss_demo` explicitly. Discriminating proof runs in a fresh child process with an `rss_demo` import-refusal positive control.
+
 **DOCS-04 S1 harness purity (2026-09-18).** `proof_support` is the Crucible runner (stdlib-only; no `rss.*`). Tooling proofs import runners from `proof_support` only. `test_support` remains the Kernel-fixture facade for Kernel-subject proofs. The two static AST boundary proofs are listed as `DOCS-04::test_proof_support.ProofSupportTests.test_proof_support_source_has_no_rss_imports` and `DOCS-04::test_proof_support.ProofSupportTests.test_docs_tooling_source_imports_runners_only_from_proof_support` in the standalone `ProofSupportTests` identity table below (role: test; subject: tooling static AST import boundary; effects: file-read, memory — not a confinement boundary). TESTING.md carries the operator-facing boundary note. Generator moves and `src/rss_demo/` remain later slices.
 
 The harness is shared infrastructure; proof subjects belong to individual test
@@ -299,13 +301,13 @@ This does not exclude dynamic or external consumers.
 
 | Unit / source anchor | Role | Potential effects | Callers / interpretation |
 | --- | --- | --- | --- |
-| [ReferencePackError](../src/rss/reference_pack.py#L40); [_reference_row](../src/rss/reference_pack.py#L234), _require_text, _require_list, _validate_hub, _validate_redline | example support / validation | memory; raises errors | Internal schema helpers used by the validators. The class names an error, not authority. |
-| [validate_reference_pack](../src/rss/reference_pack.py#L266), [validate_demo_containers](../src/rss/reference_pack.py#L295) | example support / validation | memory | Called by their loaders and seed_demo_world, and explicitly by test_demo_reference_pack. Validation is not permission to write. |
-| [iter_container_entries](../src/rss/reference_pack.py#L350) | example support / normalization | memory | Called by load_demo_containers and demo proof checks; supports current and legacy data shapes. |
-| [load_reference_pack](../src/rss/reference_pack.py#L372) | example loader | database-read, database-write | Called by main.run_demo, seed_demo_world and demo proofs. Writes through rss.save_hub_entry, rather than a development-only store. |
-| [_find_container_by_label](../src/rss/reference_pack.py#L386) | example lookup | memory / database-read through supplied runtime | Internal caller: load_demo_containers. |
-| [load_demo_containers](../src/rss/reference_pack.py#L393) | example loader | database-read, database-write | Creates/activates/populates containers through rss.tecton. Called by seed_demo_world and demo proofs; do not claim every loader operation passes a common authenticated T-0 gate. |
-| [seed_demo_world](../src/rss/reference_pack.py#L441) | example orchestration | database-read, database-write | Calls both validators and loaders. Demo caller: examples.demo_suite.build_demo_report at line 310; main imports the name but uses load_reference_pack in run_demo. |
+| [ReferencePackError](../src/rss_demo/reference_pack.py#L40); [_reference_row](../src/rss_demo/reference_pack.py#L234), _require_text, _require_list, _validate_hub, _validate_redline | example support / validation | memory; raises errors | Internal schema helpers used by the validators. The class names an error, not authority. |
+| [validate_reference_pack](../src/rss_demo/reference_pack.py#L266), [validate_demo_containers](../src/rss_demo/reference_pack.py#L295) | example support / validation | memory | Called by their loaders and seed_demo_world, and explicitly by test_demo_reference_pack. Validation is not permission to write. |
+| [iter_container_entries](../src/rss_demo/reference_pack.py#L350) | example support / normalization | memory | Called by load_demo_containers and demo proof checks; supports current and legacy data shapes. |
+| [load_reference_pack](../src/rss_demo/reference_pack.py#L372) | example loader | database-read, database-write | Called by main.run_demo, seed_demo_world and demo proofs. Writes through rss.save_hub_entry, rather than a development-only store. |
+| [_find_container_by_label](../src/rss_demo/reference_pack.py#L386) | example lookup | memory / database-read through supplied runtime | Internal caller: load_demo_containers. |
+| [load_demo_containers](../src/rss_demo/reference_pack.py#L393) | example loader | database-read, database-write | Creates/activates/populates containers through rss.tecton. Called by seed_demo_world and demo proofs; do not claim every loader operation passes a common authenticated T-0 gate. |
+| [seed_demo_world](../src/rss_demo/reference_pack.py#L441) | example orchestration | database-read, database-write | Calls both validators and loaders. Demo caller: examples.demo_suite.build_demo_report at line 310; main imports the name but uses load_reference_pack in run_demo. |
 | [build_demo_report](../examples/demo_suite.py#L239) | example + embedded verification | database-write, file-write; conditional network | Helper defaults offline and creates a temporary DB unless supplied one. Calls seed_demo_world, runtime operations, recovery and the cold verifier; optional artifacts write files. CLI _main instead defaults live_llm=True. |
 | [write_demo_artifacts](../examples/demo_suite.py#L219) | example output | database-read, file-write | Writes report, summary and TRACE output. Intended artifact ownership is not host confinement. |
 | [demo _cleanup_db](../examples/demo_suite.py#L133), [report finalization](../examples/demo_suite.py#L500) | example lifecycle | file-write (deletion) | Finalization closes the runtime and conditionally cleans an owned temporary DB. Existing suppressed errors and demo exit-status issues are retained, not repaired here. |
@@ -1272,11 +1274,11 @@ Keep the adjacent `reference_pack_module` alias and all proof/helper bodies.
 
 | Existing defining symbol | Kind | Proposed consumer ownership |
 | --- | --- | --- |
-| [rss.reference_pack.load_reference_pack](../src/rss/reference_pack.py#L372) | demonstration loader | explicit demo-proof import |
-| [rss.reference_pack.load_demo_containers](../src/rss/reference_pack.py#L393) | demonstration loader | explicit demo-proof import |
-| [rss.reference_pack.seed_demo_world](../src/rss/reference_pack.py#L441) | demonstration orchestration | explicit demo-proof import |
-| [rss.reference_pack.REFERENCE_PACK](../src/rss/reference_pack.py#L44) | reference data | explicit demo-proof import, same object |
-| [rss.reference_pack.DEMO_CONTAINERS](../src/rss/reference_pack.py#L104) | demonstration data | explicit demo-proof import, same object |
+| [rss.reference_pack.load_reference_pack](../src/rss_demo/reference_pack.py#L372) | demonstration loader | explicit demo-proof import |
+| [rss.reference_pack.load_demo_containers](../src/rss_demo/reference_pack.py#L393) | demonstration loader | explicit demo-proof import |
+| [rss.reference_pack.seed_demo_world](../src/rss_demo/reference_pack.py#L441) | demonstration orchestration | explicit demo-proof import |
+| [rss.reference_pack.REFERENCE_PACK](../src/rss_demo/reference_pack.py#L44) | reference data | explicit demo-proof import, same object |
+| [rss.reference_pack.DEMO_CONTAINERS](../src/rss_demo/reference_pack.py#L104) | demonstration data | explicit demo-proof import, same object |
 
 The facade's [dynamic export list](../tests/test_support.py#L129) will then omit
 these five names. This intentionally narrows that facade interface; no alias,

@@ -63,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
                    PYTHONIOENCODING="utf-8", COVERAGE_FILE=str(owned / ".coverage"),
                    COVERAGE_RCFILE=str(config))
         steps = [
-            ("test suite", ["run", "--source=rss", str(here / "tests" / "test_all.py")]),
+            ("test suite", ["run", "--source=rss,rss_demo", str(here / "tests" / "test_all.py")]),
             ("report", ["report", "--precision=1"]),
         ]
         if args.html:

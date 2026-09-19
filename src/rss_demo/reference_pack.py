@@ -1,6 +1,6 @@
 # ==============================================================================
 # RSS v0.1.0 Kernel Runtime
-# Module: Shared Demo Reference Pack
+# Module: Operator Demo Reference Pack (rss_demo)
 # Copyright (c) 2025-2026 Christain Robert Rose
 #
 # DUAL-LICENSE NOTICE:
@@ -27,7 +27,7 @@
 # ==============================================================================
 """Shared demo/reference data for CLI, examples, and tests.
 
-Keep the *code* in src/rss/reference_pack.py.
+Keep the *code* in src/rss_demo/reference_pack.py.
 Keep narrative / operator docs for it under docs/demo/.
 """
 from __future__ import annotations

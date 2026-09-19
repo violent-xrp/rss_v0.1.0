@@ -250,7 +250,7 @@ class ProofSupportTests(unittest.TestCase):
             import proof_support
             assert test_all._support is test_support
             assert test_docs_tooling.check is test_support.check is proof_support.check
-            assert len(test_all.TESTS) == 181
+            assert len(test_all.TESTS) == 182
             origin = Path(proof_support.__file__).resolve()
             instances = [(n, m) for n, m in sys.modules.items()
                          if getattr(m, "__file__", None)
@@ -312,32 +312,32 @@ class ProofSupportTests(unittest.TestCase):
             import importlib.abc
             from pathlib import Path
             sys.path.insert(0, str(Path.cwd() / "src"))
-            assert "rss.reference_pack" not in sys.modules
+            assert "rss_demo.reference_pack" not in sys.modules
 
             class ReferenceImportRefused(RuntimeError):
                 pass
 
             class RefuseReferencePack(importlib.abc.MetaPathFinder):
                 def find_spec(self, fullname, path=None, target=None):
-                    if fullname == "rss.reference_pack" or fullname.startswith("rss.reference_pack."):
+                    if fullname == "rss_demo.reference_pack" or fullname.startswith("rss_demo.reference_pack."):
                         raise ReferenceImportRefused("reference-import-refused:" + fullname)
 
             guard = RefuseReferencePack()
             sys.meta_path.insert(0, guard)
             try:
-                importlib.import_module("rss.reference_pack")
+                importlib.import_module("rss_demo.reference_pack")
             except ReferenceImportRefused as error:
-                assert str(error) == "reference-import-refused:rss.reference_pack"
+                assert str(error) == "reference-import-refused:rss_demo.reference_pack"
             else:
                 raise AssertionError("reference refusal positive control failed")
             print("reference-refusal-positive-control", flush=True)
-            assert "rss.reference_pack" not in sys.modules
+            assert "rss_demo.reference_pack" not in sys.modules
 
             import test_support as facade
             import proof_support
             assert guard in sys.meta_path
             assert "rss.core.runtime" in sys.modules
-            assert not any(name == "rss.reference_pack" or name.startswith("rss.reference_pack.")
+            assert not any(name == "rss_demo.reference_pack" or name.startswith("rss_demo.reference_pack.")
                            for name in sys.modules)
             for name in ("load_reference_pack", "load_demo_containers", "seed_demo_world",
                          "REFERENCE_PACK", "DEMO_CONTAINERS"):
@@ -357,7 +357,7 @@ class ProofSupportTests(unittest.TestCase):
             import ast
             from pathlib import Path
             import test_demo_reference_pack as demo
-            import rss.reference_pack as reference
+            import rss_demo.reference_pack as reference
             for name in ("load_reference_pack", "load_demo_containers", "seed_demo_world",
                          "REFERENCE_PACK", "DEMO_CONTAINERS"):
                 assert hasattr(demo, name), "missing reference binding: " + name
@@ -368,7 +368,7 @@ class ProofSupportTests(unittest.TestCase):
             instances = [(name, module) for name, module in sys.modules.items()
                          if getattr(module, "__file__", None)
                          and Path(module.__file__).resolve() == origin]
-            assert instances == [("rss.reference_pack", reference)], instances
+            assert instances == [("rss_demo.reference_pack", reference)], instances
 
             tree = ast.parse(Path(test_all.__file__).read_text(encoding="utf-8"))
             bindings = {}
@@ -388,12 +388,12 @@ class ProofSupportTests(unittest.TestCase):
             assert all(isinstance(entry, ast.Name) for entry in entries)
             expected = [bindings[entry.id] for entry in entries]
             actual = [function.__module__ + "." + function.__name__ for function in test_all.TESTS]
-            assert len(expected) == len(set(expected)) == 181
-            assert len(actual) == len(set(actual)) == 181
+            assert len(expected) == len(set(expected)) == 182
+            assert len(actual) == len(set(actual)) == 182
             assert actual == expected, (actual, expected)
-            print("reference-identities-and-181-registrations-preserved")
+            print("reference-identities-and-182-registrations-preserved")
         ''')
-        self.assertIn("reference-identities-and-181-registrations-preserved", output)
+        self.assertIn("reference-identities-and-182-registrations-preserved", output)
 
 
 

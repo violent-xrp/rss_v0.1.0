@@ -28,7 +28,7 @@ from rss.audit.verify import read_safe_stop_state, verify_trace_file
 from rss.core.config import RSSConfig
 from rss.core.runtime import bootstrap
 from rss.hubs.tecton import ContainerRequest, SEAT_SIGILS
-from rss.reference_pack import DEMO_CONTAINERS, DEMO_QUESTIONS, seed_demo_world
+from rss_demo.reference_pack import DEMO_CONTAINERS, DEMO_QUESTIONS, seed_demo_world
 
 
 NORMAL_ADVISOR_QUESTIONS = [

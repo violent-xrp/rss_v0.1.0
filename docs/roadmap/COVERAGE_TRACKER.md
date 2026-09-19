@@ -10,6 +10,10 @@ This file preserves coverage detail that used to live in `ROADMAP.md`.
 
 Verified on the current synced baseline pass.
 
+This legacy table contains the synchronizer's configured module aliases, not a
+complete package inventory. Evaluate every-module targets against the full
+fresh `run_coverage.py` report, including modules absent from this table.
+
 ```text
 config.py                  100.0%
 state_machine.py            95.0%
@@ -45,10 +49,15 @@ Phase F target:
 
 Phase G target:
 - every package module at or above 85% coverage
-- status: **met**
+- status: **not currently met**
 
 Modules below the Phase G 85% target:
-- none
+- `oath.py`: 84.8% in the 2026-09-12 BUILD-05 measurement. It is the only
+  below-target module in the full fresh package report, not just this alias table.
+
+The target is unchanged. Promotion disposition remains pending in ROADMAP's
+BUILD-05 row; a passing sync/hygiene command does not waive this target or
+validate the authored conclusion automatically.
 
 ## Coverage Notes
 
@@ -73,7 +82,21 @@ Modules below the Phase G 85% target:
 
 ## Next Coverage Work
 
-- Maintain the >=85% package-module floor as new modules and branches land.
+- Restore and then maintain the >=85% package-module floor as new modules and branches land.
 - Do not chase 100% coverage mechanically; prioritize governance, auditability, operator trust, and threat-model proof.
 
 Do not add shallow assertions only to increase a number. Coverage work should prove meaningful branches that matter to governance, auditability, or operator trust.
+
+## 2026-09-12 Current-Target Clarification
+
+BUILD-05 reproduced the existing module measurements and found that the authored
+Phase G status still said met and listed no exception despite OATH being below
+the target. Only the current conclusion and next-action wording are corrected;
+the module table and all earlier Coverage Notes remain unchanged. No test,
+assertion, or measured coverage was removed or lowered by this correction.
+The synchronizer updates the table, not these authored target conclusions.
+
+
+## DOCS-04 S2 coverage path note (2026-09-18)
+
+`reference_pack.py` is measured under package `rss_demo` (`src/rss_demo/reference_pack.py`). Coverage `--source` includes `rss,rss_demo`. Label `reference_pack.py` maps from `rss_demo/reference_pack.py` via `COVERAGE_LABELS`, and `COVERAGE_MODULE_RE` accepts `src/rss_demo/*.py` report lines so the tracker row can update from a real coverage report.
